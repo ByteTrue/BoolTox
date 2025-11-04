@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 开发环境 CSP: 允许 Vite HMR -->
+    <!-- 生产环境应由构建工具注入更严格的 CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' data: blob:; connect-src 'self' http://localhost:3000 http://localhost:5173 ws://localhost:* wss://localhost:* https://raw.githubusercontent.com; frame-src 'self';"
+    />
+    <title>Booltox · 不二工具箱</title>
+    <script>
+      // 记录 HTML 开始解析时间（用于完整启动时间测量）
+      window.__APP_START_TIME__ = performance.now();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

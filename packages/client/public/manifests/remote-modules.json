@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2025-10-21T00:00:00Z",
+  "modules": [
+    {
+      "id": "calculator",
+      "name": "计算器",
+      "description": "简单实用的计算器工具，支持基本四则运算和科学计算",
+      "version": "1.0.0",
+      "author": "Booltox Team",
+      "category": "productivity",
+      "keywords": ["calculator", "math", "计算"],
+      "icon": "🔢",
+      "bundleUrl": "https://raw.githubusercontent.com/ByteTrue/booltox-modules/main/dist/calculator.js",
+      "checksum": "abc123...",
+      "size": 45678,
+      "screenshots": [
+        "https://example.com/screenshots/calculator-1.png"
+      ]
+    },
+    {
+      "id": "json-formatter",
+      "name": "JSON 格式化",
+      "description": "在线格式化和验证 JSON 数据，支持压缩和美化",
+      "version": "1.2.0",
+      "author": "Booltox Team",
+      "category": "developer",
+      "keywords": ["json", "format", "developer"],
+      "icon": "📝",
+      "bundleUrl": "https://raw.githubusercontent.com/ByteTrue/booltox-modules/main/dist/json-formatter.js",
+      "checksum": "def456...",
+      "size": 38912
+    },
+    {
+      "id": "color-picker",
+      "name": "取色器",
+      "description": "屏幕取色工具，支持多种颜色格式转换",
+      "version": "1.0.1",
+      "author": "Booltox Team",
+      "category": "design",
+      "keywords": ["color", "picker", "design"],
+      "icon": "🎨",
+      "bundleUrl": "https://raw.githubusercontent.com/ByteTrue/booltox-modules/main/dist/color-picker.js",
+      "checksum": "ghi789...",
+      "size": 52341
+    }
+  ]
+}

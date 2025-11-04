@@ -1,0 +1,179 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// 发布版本管理
+// ============================================================================
+
+model Release {
+  id             String         @id @default(cuid())
+  version        String         @unique
+  channel        ReleaseChannel @default(STABLE)
+  notes          String?        @db.Text
+  mandatory      Boolean        @default(false)
+  rolloutPercent Int            @default(100)
+  publishedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  assets ReleaseAsset[]
+
+  @@index([channel, publishedAt])
+}
+
+model ReleaseAsset {
+  id           String   @id @default(cuid())
+  releaseId    String
+  platform     Platform
+  architecture Arch
+  downloadUrl  String
+  checksum     String
+  signature    String?
+  sizeBytes    BigInt
+
+  release Release @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@unique([releaseId, platform, architecture])
+  @@index([releaseId])
+}
+
+// ============================================================================
+// 模块市场
+// ============================================================================
+
+model Module {
+  id             String       @id @default(cuid())
+  name           String       @unique
+  displayName    String
+  description    String       @db.Text
+  author         String
+  category       String
+  keywords       String[]
+  currentVersion String
+  downloads      Int          @default(0)
+  rating         Float?
+  featured       Boolean      @default(false)
+  status         ModuleStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  versions ModuleVersion[]
+
+  @@index([category, status])
+  @@index([featured, status])
+}
+
+model ModuleVersion {
+  id            String   @id @default(cuid())
+  moduleId      String
+  version       String
+  changelog     String?  @db.Text
+  bundleUrl     String
+  checksum      String
+  sizeBytes     BigInt
+  minAppVersion String?
+  publishedAt   DateTime @default(now())
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, version])
+  @@index([moduleId, publishedAt])
+}
+
+// ============================================================================
+// 公告系统
+// ============================================================================
+
+model Announcement {
+  id        String             @id @default(cuid())
+  title     String
+  content   String             @db.Text
+  type      AnnouncementType   @default(ANNOUNCEMENT)
+  priority  Int                @default(0)
+  status    AnnouncementStatus @default(DRAFT)
+  publishAt DateTime?
+  expireAt  DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([status, publishAt])
+  @@index([type, status])
+}
+
+// ============================================================================
+// 日志收集
+// ============================================================================
+
+model ClientLog {
+  id               String   @id @default(cuid())
+  clientIdentifier String
+  level            LogLevel
+  namespace        String
+  message          String   @db.Text
+  args             Json?
+  context          Json?
+  appVersion       String
+  platform         String?
+  timestamp        DateTime
+  receivedAt       DateTime @default(now())
+
+  @@index([clientIdentifier, timestamp])
+  @@index([level, receivedAt])
+  @@index([namespace, receivedAt])
+}
+
+// ============================================================================
+// 枚举类型
+// ============================================================================
+
+enum ReleaseChannel {
+  STABLE
+  BETA
+  ALPHA
+}
+
+enum Platform {
+  WINDOWS
+  MACOS
+  LINUX
+}
+
+enum Arch {
+  X64
+  ARM64
+}
+
+enum ModuleStatus {
+  ACTIVE
+  DEPRECATED
+  ARCHIVED
+}
+
+enum AnnouncementType {
+  ANNOUNCEMENT
+  UPDATE
+  NOTICE
+  MAINTENANCE
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+  EXPIRED
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
