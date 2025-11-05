@@ -4,6 +4,7 @@ import { syncService } from '../github/sync.service';
 import { sendSuccess } from '../../common/response.util';
 import { validateRequest } from '../../common/middleware/validate.middleware';
 import { authenticateAdmin } from '../../common/middleware/auth.middleware';
+import { authorizePermissions } from '../../common/middleware/rbac.middleware';
 import {
   CheckUpdateQuerySchema,
   CreateReleaseSchema,
@@ -11,6 +12,7 @@ import {
   SyncGitHubReleaseSchema,
   ListReleasesQuerySchema,
 } from './releases.schema';
+import { PermissionCode } from '@booltox/shared';
 
 /**
  * 注册 Releases 公共路由
@@ -37,9 +39,6 @@ export async function registerPublicReleasesRoutes(app: FastifyInstance) {
  * 注册 Releases 管理路由
  */
 export async function registerAdminReleasesRoutes(app: FastifyInstance) {
-  // 所有管理路由都需要认证
-  app.addHook('preHandler', authenticateAdmin);
-
   /**
    * GET /api/admin/releases
    * 列出所有版本
@@ -47,7 +46,11 @@ export async function registerAdminReleasesRoutes(app: FastifyInstance) {
   app.get(
     '/',
     {
-      preHandler: validateRequest(ListReleasesQuerySchema, 'query'),
+      preHandler: [
+        authenticateAdmin,
+        authorizePermissions(PermissionCode.RELEASE_READ),
+        validateRequest(ListReleasesQuerySchema, 'query'),
+      ],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const query = request.query as any;
@@ -66,6 +69,9 @@ export async function registerAdminReleasesRoutes(app: FastifyInstance) {
    */
   app.get(
     '/:id',
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.RELEASE_READ)],
+    },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { id } = request.params as { id: string };
       const result = await releasesService.getReleaseById(id);
@@ -80,7 +86,11 @@ export async function registerAdminReleasesRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      preHandler: validateRequest(CreateReleaseSchema, 'body'),
+      preHandler: [
+        authenticateAdmin,
+        authorizePermissions(PermissionCode.RELEASE_WRITE),
+        validateRequest(CreateReleaseSchema, 'body'),
+      ],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const body = request.body as any;
@@ -96,7 +106,11 @@ export async function registerAdminReleasesRoutes(app: FastifyInstance) {
   app.put(
     '/:id',
     {
-      preHandler: validateRequest(UpdateReleaseSchema, 'body'),
+      preHandler: [
+        authenticateAdmin,
+        authorizePermissions(PermissionCode.RELEASE_WRITE),
+        validateRequest(UpdateReleaseSchema, 'body'),
+      ],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { id } = request.params as { id: string };
@@ -112,6 +126,9 @@ export async function registerAdminReleasesRoutes(app: FastifyInstance) {
    */
   app.delete(
     '/:id',
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.RELEASE_WRITE)],
+    },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { id } = request.params as { id: string };
       await releasesService.deleteRelease(id);
@@ -126,7 +143,11 @@ export async function registerAdminReleasesRoutes(app: FastifyInstance) {
   app.post(
     '/sync-github',
     {
-      preHandler: validateRequest(SyncGitHubReleaseSchema, 'body'),
+      preHandler: [
+        authenticateAdmin,
+        authorizePermissions(PermissionCode.GITHUB_SYNC, 'any'),
+        validateRequest(SyncGitHubReleaseSchema, 'body'),
+      ],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const body = request.body as any;

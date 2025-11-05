@@ -25,6 +25,7 @@ export const serverConfig = {
   rateLimit: {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
+    allowList: env.RATE_LIMIT_WHITELIST,
   },
   
   // Request body limits
@@ -47,6 +48,10 @@ export const securityConfig = {
   clientApiToken: env.CLIENT_API_TOKEN,
   ingestSharedSecret: env.INGEST_SHARED_SECRET,
   jwtSecret: env.JWT_SECRET,
+  accessTokenTtl: env.JWT_ACCESS_TTL,
+  refreshTokenTtl: env.JWT_REFRESH_TTL,
+  passwordHashRounds: env.PASSWORD_HASH_ROUNDS,
+  apiKeyTtlDays: env.API_KEY_TTL_DAYS,
 } as const;
 
 /**

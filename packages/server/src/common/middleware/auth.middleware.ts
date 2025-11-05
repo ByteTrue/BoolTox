@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { securityConfig } from '../../config/server.config';
 import { createError } from '../error.handler';
+import { authService } from '../../modules/auth/auth.service';
 
 /**
  * Authentication middleware for client API
@@ -50,23 +51,28 @@ export async function authenticateAdmin(
 ): Promise<void> {
   const authorization = request.headers.authorization;
 
-  if (!authorization) {
+  if (!authorization || !authorization.startsWith('Bearer ')) {
     throw createError.unauthorized('Missing authorization header');
   }
 
-  // TODO: Implement JWT validation
-  // For now, check if JWT_SECRET is configured
   if (!securityConfig.jwtSecret) {
     throw createError.internal('JWT authentication not configured');
   }
 
-  // Placeholder: Extract and validate JWT token
-  const token = authorization.replace('Bearer ', '');
+  const token = authorization.replace('Bearer ', '').trim();
+
   if (!token) {
     throw createError.unauthorized('Invalid authorization format');
   }
 
-  // TODO: Verify JWT token
-  // const payload = jwt.verify(token, securityConfig.jwtSecret);
-  // request.user = payload;
+  const { user, tokenId } = await authService.verifyAccessToken(token);
+
+  request.user = {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    roles: user.roles,
+    permissions: user.permissions,
+    tokenId,
+  };
 }

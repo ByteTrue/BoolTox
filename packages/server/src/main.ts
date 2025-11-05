@@ -13,6 +13,8 @@ import { registerModulesRoutes } from './modules/modules/modules.controller';
 import { registerAnnouncementRoutes } from './modules/announcements/announcements.controller';
 import { registerLogsRoutes } from './modules/logs/logs.controller';
 import { syncCronService } from './modules/github/sync.cron';
+import { registerAuthRoutes } from './modules/auth/auth.controller';
+import { authService } from './modules/auth/auth.service';
 
 /**
  * Create and configure Fastify application
@@ -41,6 +43,7 @@ async function createApp() {
   await app.register(rateLimit, {
     max: serverConfig.rateLimit.max,
     timeWindow: serverConfig.rateLimit.timeWindow,
+    allowList: serverConfig.rateLimit.allowList,
     errorResponseBuilder: () => ({
       success: false,
       error: {
@@ -106,6 +109,9 @@ async function createApp() {
   // Register logs routes
   await app.register(registerLogsRoutes);
 
+  // Register auth routes
+  await app.register(registerAuthRoutes);
+
   return app;
 }
 
@@ -117,6 +123,9 @@ async function start() {
     // Connect to database
     logger.info('Connecting to database...');
     await connectDatabase();
+
+    // Initialize authentication subsystem
+    await authService.initialize();
 
     // Create and start app
     const app = await createApp();

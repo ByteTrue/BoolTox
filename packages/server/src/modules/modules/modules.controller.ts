@@ -12,6 +12,9 @@ import {
   CreateModuleVersionSchema,
 } from './modules.schema';
 import { logger } from '../../common/logger.service';
+import { authenticateAdmin } from '../../common/middleware/auth.middleware';
+import { authorizePermissions } from '../../common/middleware/rbac.middleware';
+import { PermissionCode } from '@booltox/shared';
 
 /**
  * 注册模块相关路由
@@ -55,9 +58,9 @@ export async function registerModulesRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/modules/:id - 获取模块详情
    */
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/api/modules/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = ModuleIdParamSchema.parse(request.params);
         const module = await modulesService.getModuleById(id);
@@ -73,9 +76,9 @@ export async function registerModulesRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/modules/:id/versions - 获取模块所有版本
    */
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/api/modules/:id/versions',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = ModuleIdParamSchema.parse(request.params);
         const versions = await modulesService.getModuleVersions(id);
@@ -91,9 +94,9 @@ export async function registerModulesRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/modules/:id/stats - 获取模块统计信息
    */
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/api/modules/:id/stats',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = ModuleIdParamSchema.parse(request.params);
         const stats = await modulesService.getModuleStats(id);
@@ -109,15 +112,9 @@ export async function registerModulesRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/modules/:id/download - 获取模块下载信息并增加下载计数
    */
-  fastify.post(
+  fastify.post<{ Params: { id: string }; Querystring: { version?: string } }>(
     '/api/modules/:id/download',
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Querystring: { version?: string };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = ModuleDownloadParamSchema.parse(request.params);
         const { version } = ModuleDownloadQuerySchema.parse(request.query);
@@ -139,24 +136,33 @@ export async function registerModulesRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/modules - 创建模块（管理端）
    */
-  fastify.post('/api/modules', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const input = CreateModuleSchema.parse(request.body);
-      const module = await modulesService.createModule(input);
+  fastify.post(
+    '/api/modules',
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.MODULE_WRITE)],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const input = CreateModuleSchema.parse(request.body);
+        const module = await modulesService.createModule(input);
 
-      return sendSuccess(reply, module, 201);
-    } catch (error) {
-      logger.error({ error }, 'Failed to create module');
-      throw error;
+        return sendSuccess(reply, module, 201);
+      } catch (error) {
+        logger.error({ error }, 'Failed to create module');
+        throw error;
+      }
     }
-  });
+  );
 
   /**
    * PATCH /api/modules/:id - 更新模块（管理端）
    */
-  fastify.patch(
+  fastify.patch<{ Params: { id: string } }>(
     '/api/modules/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.MODULE_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = ModuleIdParamSchema.parse(request.params);
         const input = UpdateModuleSchema.parse(request.body);
@@ -173,9 +179,12 @@ export async function registerModulesRoutes(fastify: FastifyInstance) {
   /**
    * DELETE /api/modules/:id - 删除模块（管理端）
    */
-  fastify.delete(
+  fastify.delete<{ Params: { id: string } }>(
     '/api/modules/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.MODULE_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = ModuleIdParamSchema.parse(request.params);
         await modulesService.deleteModule(id);
@@ -191,9 +200,12 @@ export async function registerModulesRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/modules/:id/versions - 创建模块版本（管理端）
    */
-  fastify.post(
+  fastify.post<{ Params: { id: string } }>(
     '/api/modules/:id/versions',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.MODULE_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = ModuleIdParamSchema.parse(request.params);
         const input = CreateModuleVersionSchema.parse(request.body);

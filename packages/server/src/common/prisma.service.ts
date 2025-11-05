@@ -15,7 +15,7 @@ class PrismaService {
   static getInstance(): PrismaClient {
     if (!PrismaService.instance) {
       PrismaService.instance = new PrismaClient({
-        log: databaseConfig.log,
+        log: [...databaseConfig.log],
         errorFormat: databaseConfig.errorFormat,
       });
 

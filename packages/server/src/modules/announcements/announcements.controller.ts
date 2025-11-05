@@ -9,6 +9,9 @@ import {
   PublishAnnouncementSchema,
 } from './announcements.schema';
 import { logger } from '../../common/logger.service';
+import { authenticateAdmin } from '../../common/middleware/auth.middleware';
+import { authorizePermissions } from '../../common/middleware/rbac.middleware';
+import { PermissionCode } from '@booltox/shared';
 
 /**
  * 注册公告相关路由
@@ -17,16 +20,22 @@ export async function registerAnnouncementRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/announcements - 获取公告列表（管理端）
    */
-  fastify.get('/api/announcements', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const query = AnnouncementListQuerySchema.parse(request.query);
-      const result = await announcementsService.listAnnouncements(query);
-      return sendSuccess(reply, result);
-    } catch (error) {
-      logger.error({ error }, 'Failed to list announcements');
-      throw error;
+  fastify.get(
+    '/api/announcements',
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.ANNOUNCEMENT_READ)],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const query = AnnouncementListQuerySchema.parse(request.query);
+        const result = await announcementsService.listAnnouncements(query);
+        return sendSuccess(reply, result);
+      } catch (error) {
+        logger.error({ error }, 'Failed to list announcements');
+        throw error;
+      }
     }
-  });
+  );
 
   /**
    * GET /api/announcements/active - 获取活跃公告（客户端）
@@ -47,9 +56,9 @@ export async function registerAnnouncementRoutes(fastify: FastifyInstance) {
   /**
    * GET /api/announcements/:id - 获取公告详情
    */
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/api/announcements/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = AnnouncementIdParamSchema.parse(request.params);
         const announcement = await announcementsService.getAnnouncementById(id);
@@ -64,23 +73,32 @@ export async function registerAnnouncementRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/announcements - 创建公告（管理端）
    */
-  fastify.post('/api/announcements', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const data = CreateAnnouncementSchema.parse(request.body);
-      const announcement = await announcementsService.createAnnouncement(data);
-      return sendSuccess(reply, announcement, 201);
-    } catch (error) {
-      logger.error({ error }, 'Failed to create announcement');
-      throw error;
+  fastify.post(
+    '/api/announcements',
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.ANNOUNCEMENT_WRITE)],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const data = CreateAnnouncementSchema.parse(request.body);
+        const announcement = await announcementsService.createAnnouncement(data);
+        return sendSuccess(reply, announcement, 201);
+      } catch (error) {
+        logger.error({ error }, 'Failed to create announcement');
+        throw error;
+      }
     }
-  });
+  );
 
   /**
    * PATCH /api/announcements/:id - 更新公告（管理端）
    */
-  fastify.patch(
+  fastify.patch<{ Params: { id: string } }>(
     '/api/announcements/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.ANNOUNCEMENT_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = AnnouncementIdParamSchema.parse(request.params);
         const data = UpdateAnnouncementSchema.parse(request.body);
@@ -96,9 +114,12 @@ export async function registerAnnouncementRoutes(fastify: FastifyInstance) {
   /**
    * DELETE /api/announcements/:id - 删除公告（管理端）
    */
-  fastify.delete(
+  fastify.delete<{ Params: { id: string } }>(
     '/api/announcements/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.ANNOUNCEMENT_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = AnnouncementIdParamSchema.parse(request.params);
         await announcementsService.deleteAnnouncement(id);
@@ -113,9 +134,12 @@ export async function registerAnnouncementRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/announcements/:id/publish - 发布公告（管理端）
    */
-  fastify.post(
+  fastify.post<{ Params: { id: string } }>(
     '/api/announcements/:id/publish',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.ANNOUNCEMENT_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = AnnouncementIdParamSchema.parse(request.params);
         const data = PublishAnnouncementSchema.parse(request.body || {});
@@ -131,9 +155,12 @@ export async function registerAnnouncementRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/announcements/:id/unpublish - 撤回公告（管理端）
    */
-  fastify.post(
+  fastify.post<{ Params: { id: string } }>(
     '/api/announcements/:id/unpublish',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.ANNOUNCEMENT_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = AnnouncementIdParamSchema.parse(request.params);
         const announcement = await announcementsService.unpublishAnnouncement(id);
@@ -148,9 +175,12 @@ export async function registerAnnouncementRoutes(fastify: FastifyInstance) {
   /**
    * POST /api/announcements/:id/expire - 设置公告为过期（管理端）
    */
-  fastify.post(
+  fastify.post<{ Params: { id: string } }>(
     '/api/announcements/:id/expire',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    {
+      preHandler: [authenticateAdmin, authorizePermissions(PermissionCode.ANNOUNCEMENT_WRITE)],
+    },
+    async (request, reply: FastifyReply) => {
       try {
         const { id } = AnnouncementIdParamSchema.parse(request.params);
         const announcement = await announcementsService.expireAnnouncement(id);

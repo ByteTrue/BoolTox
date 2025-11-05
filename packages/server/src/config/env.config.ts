@@ -24,7 +24,11 @@ const envSchema = z.object({
   // Security
   CLIENT_API_TOKEN: z.string().min(32),
   INGEST_SHARED_SECRET: z.string().min(32),
-  JWT_SECRET: z.string().min(32).optional(),
+  JWT_SECRET: z.string().min(32),
+  JWT_ACCESS_TTL: z.string().default('900').transform(Number), // 15 minutes default
+  JWT_REFRESH_TTL: z.string().default('1209600').transform(Number), // 14 days default
+  PASSWORD_HASH_ROUNDS: z.string().default('3').transform(Number),
+  API_KEY_TTL_DAYS: z.string().default('180').transform(Number),
 
   // CORS
   CORS_ORIGIN: z.string().default('*'),
@@ -32,6 +36,15 @@ const envSchema = z.object({
   // Rate limiting
   RATE_LIMIT_MAX: z.string().default('100').transform(Number),
   RATE_LIMIT_WINDOW: z.string().default('60000').transform(Number), // 1 minute in ms
+  RATE_LIMIT_WHITELIST: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+    ),
 
   // Logging
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),

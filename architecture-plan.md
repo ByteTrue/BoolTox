@@ -59,7 +59,14 @@ BoolTox/
 | `@booltox/client` | 客户端应用 | Electron + React + Vite |
 | `@booltox/server` | 后台 API 服务 | Fastify + Prisma + PostgreSQL |
 | `@booltox/shared` | 类型和工具共享 | TypeScript |
-| `@booltox/admin` | 管理后台（可选） | React + Vite |
+| `@booltox/admin-dashboard` | 管理后台 | React + Vite + Ant Design |
+
+### 管理后台现状（2025 Q4）
+
+- ✅ 使用 Vite + React 19 + Ant Design 搭建骨架，集成 React Query、Ant Design 主题与全局 Provider。
+- ✅ 实现登录页、访问令牌刷新、基于 RBAC 的路由守卫与退出逻辑。
+- ✅ 提供仪表盘、版本、模块、公告、日志、系统设置等页面骨架，等待后端 API 对接填充数据。
+- 🔜 计划补充表格视图、操作表单、权限驱动的菜单/按钮显隐控制。
 
 ## 🗄️ 数据库设计
 
@@ -175,6 +182,113 @@ model ClientLog {
   @@index([clientIdentifier, timestamp])
   @@index([level, receivedAt])
   @@index([namespace, receivedAt])
+}
+
+// 用户与权限
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  displayName   String?
+  isActive      Boolean       @default(true)
+  lastLoginAt   DateTime?
+  failedLogins  Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  roles         UserRole[]
+  apiKeys       ApiKey[]
+  refreshTokens RefreshToken[]
+
+  @@index([isActive])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  description String?
+  category    String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  roles       RolePermission[]
+}
+
+model UserRole {
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  assignedBy String?
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  id            String   @id @default(cuid())
+  roleId        String
+  permissionId  String
+  grantedAt     DateTime @default(now())
+  grantedBy     String?
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  prefix     String
+  hashedKey  String
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([prefix])
+}
+
+model RefreshToken {
+  id                 String        @id @default(cuid())
+  userId             String
+  tokenHash          String
+  expiresAt          DateTime
+  createdAt          DateTime      @default(now())
+  revokedAt          DateTime?
+  replacedByTokenId  String?
+  ipAddress          String?
+  userAgent          String?
+
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedByToken   RefreshToken? @relation("RefreshTokenReplacement", fields: [replacedByTokenId], references: [id])
+  previousTokens    RefreshToken[] @relation("RefreshTokenReplacement")
+
+  @@index([userId])
+  @@unique([tokenHash])
+  @@index([expiresAt])
 }
 
 // 枚举类型
@@ -633,8 +747,9 @@ packages:
 
 ### 1. API 认证
 - 公开 API：使用 `x-client-token` 令牌
-- 管理 API：使用 JWT + 角色权限
+- 管理 API：使用短期访问令牌（JWT）+ 刷新令牌，结合 RBAC 权限控制
 - 日志上传：使用 `x-ingest-secret` 共享密钥
+- 刷新令牌与 API Key 仅存储哈希，支持过期与轮换，便于审计
 
 ### 2. 数据验证
 - 使用 Zod 验证所有输入
@@ -645,8 +760,9 @@ packages:
 ```typescript
 // 使用 @fastify/rate-limit
 fastify.register(rateLimit, {
-  max: 100,
-  timeWindow: '1 minute',
+  max: serverConfig.rateLimit.max,
+  timeWindow: serverConfig.rateLimit.timeWindow,
+  allowList: serverConfig.rateLimit.allowList,
 });
 ```
 

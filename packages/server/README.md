@@ -161,6 +161,24 @@ GET /
 - `GET /api/logs/client/:clientIdentifier` - 获取特定客户端日志
 - `DELETE /api/logs/cleanup` - 清理旧日志
 
+### 认证与权限
+
+**公共端点**:
+- `POST /api/auth/login` - 使用邮箱/密码登录，返回访问令牌与刷新令牌
+- `POST /api/auth/refresh` - 使用刷新令牌换取新访问令牌
+
+**管理端点**（需具备对应权限）:
+- `POST /api/auth/logout` - 撤销当前刷新令牌
+- `GET /api/auth/profile` - 查看当前管理员信息与权限
+- `GET /api/auth/roles` - 查看系统内置角色及权限矩阵
+- `POST /api/auth/users` - 创建后台用户并分配角色（`users.manage`）
+- `PATCH /api/auth/users/:id/roles` - 调整用户角色（`users.manage`）
+- `PATCH /api/auth/users/:id/status` - 启用/禁用用户账号（`users.manage`）
+- `GET /api/auth/api-keys` - 查看当前用户 API Key 列表（`apikeys.manage`）
+- `POST /api/auth/api-keys` - 创建新的 API Key（`apikeys.manage`）
+- `POST /api/auth/api-keys/rotate` - 轮换 API Key（`apikeys.manage`）
+- `DELETE /api/auth/api-keys/:id` - 撤销 API Key（`apikeys.manage`）
+
 详细文档请查看 [公告和日志功能文档](./ANNOUNCEMENTS_AND_LOGS.md)。
 
 ## 项目结构
@@ -181,6 +199,7 @@ packages/server/
 │   │   ├── env.config.ts
 │   │   └── server.config.ts
 │   ├── modules/               # 功能模块
+│   │   ├── auth/
 │   │   ├── announcements/
 │   │   ├── github/
 │   │   ├── logs/
@@ -235,23 +254,31 @@ packages/server/
 | `GITHUB_TOKEN` | GitHub API Token（可选） | - |
 | `CLIENT_API_TOKEN` | 客户端 API 令牌 | - |
 | `INGEST_SHARED_SECRET` | 日志收集密钥 | - |
-| `JWT_SECRET` | JWT 密钥（可选） | - |
+| `JWT_SECRET` | 管理端 JWT 签名密钥（必填） | - |
+| `JWT_ACCESS_TTL` | 访问令牌有效期（秒） | `900` |
+| `JWT_REFRESH_TTL` | 刷新令牌有效期（秒） | `1209600` |
+| `PASSWORD_HASH_ROUNDS` | Argon2 时间成本（2-6） | `3` |
+| `API_KEY_TTL_DAYS` | API Key 默认有效期（天，0=不过期） | `180` |
 | `CORS_ORIGIN` | CORS 来源 | `*` |
 | `RATE_LIMIT_MAX` | 速率限制最大请求数 | `100` |
 | `RATE_LIMIT_WINDOW` | 速率限制时间窗口（毫秒） | `60000` |
+| `RATE_LIMIT_WHITELIST` | 免限流 IP/CIDR 列表（逗号分隔） | `[]` |
 | `LOG_LEVEL` | 日志级别 | `info` |
 | `LOG_PRETTY` | 美化日志输出 | `true` |
 
 ## 安全考虑
 
-1. **认证**
-   - 客户端 API 使用 `x-client-token` 头
-   - 日志 API 使用 `x-ingest-secret` 头
-   - 管理 API 使用 JWT（待实现）
+1. **认证与授权**
+   - 客户端 API 使用 `x-client-token` 头校验
+   - 日志采集使用 `x-ingest-secret` 共享密钥
+   - 管理端使用短期访问令牌（JWT）+ 刷新令牌，令牌签名由 `JWT_SECRET` 控制
+   - 刷新令牌、API Key 仅存储哈希值，支持可选过期与轮换
+   - 角色-权限矩阵在启动时自动同步，`super_admin` 拥有所有权限
 
 2. **速率限制**
    - 默认：100 请求/分钟
-   - 可通过环境变量配置
+   - 支持通过 `RATE_LIMIT_WHITELIST` 配置免限流的 IP/CIDR
+   - 其余阈值可通过环境变量调整
 
 3. **CORS**
    - 默认允许所有来源（开发）
