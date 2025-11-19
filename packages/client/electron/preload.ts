@@ -5,13 +5,9 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import type {
-  UpdateDownloadPayload,
-  UpdateStatus,
-  UpdateDownloadResult,
-  UpdateOperationResult,
-} from './services/update-manager.service';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types';
+import type { Announcement, GitOpsConfig, PluginRegistry } from './services/git-ops.service';
+import type { AutoUpdateStatus } from './services/auto-update.service';
 
 /**
  * 窗口控制API
@@ -110,25 +106,40 @@ const moduleStoreAPI = {
 };
 
 const updateAPI = {
-  download: async (payload: UpdateDownloadPayload): Promise<UpdateDownloadResult> => {
-    return await ipcRenderer.invoke('update:download', payload) as UpdateDownloadResult;
+  check: async () => {
+    return await ipcRenderer.invoke('auto-update:check');
   },
-  cancel: async (): Promise<UpdateOperationResult> => {
-    return await ipcRenderer.invoke('update:cancel') as UpdateOperationResult;
+  download: async () => {
+    return await ipcRenderer.invoke('auto-update:download');
   },
-  install: async (): Promise<UpdateOperationResult> => {
-    return await ipcRenderer.invoke('update:install') as UpdateOperationResult;
+  install: async () => {
+    return await ipcRenderer.invoke('auto-update:quit-and-install');
   },
-  getStatus: async (): Promise<UpdateStatus> => {
-    return await ipcRenderer.invoke('update:get-status') as UpdateStatus;
+  getStatus: async (): Promise<AutoUpdateStatus> => {
+    return await ipcRenderer.invoke('auto-update:get-status') as AutoUpdateStatus;
   },
-  onStatus: (listener: (status: UpdateStatus) => void) => {
+  onStatus: (listener: (status: AutoUpdateStatus) => void) => {
     const channel = 'update:status';
-    const handler = (_event: unknown, status: UpdateStatus) => listener(status);
+    const handler = (_event: unknown, status: AutoUpdateStatus) => listener(status);
     ipcRenderer.on(channel, handler);
     return () => {
       ipcRenderer.removeListener(channel, handler);
     };
+  },
+};
+
+const gitOpsAPI = {
+  getConfig: async (): Promise<GitOpsConfig> => {
+    return await ipcRenderer.invoke('git-ops:get-config') as GitOpsConfig;
+  },
+  updateConfig: async (config: Partial<GitOpsConfig>): Promise<GitOpsConfig> => {
+    return await ipcRenderer.invoke('git-ops:update-config', config) as GitOpsConfig;
+  },
+  getAnnouncements: async (): Promise<Announcement[]> => {
+    return await ipcRenderer.invoke('git-ops:get-announcements') as Announcement[];
+  },
+  getPlugins: async (): Promise<PluginRegistry> => {
+    return await ipcRenderer.invoke('git-ops:get-plugins') as PluginRegistry;
   },
 };
 
@@ -144,3 +155,5 @@ contextBridge.exposeInMainWorld('ipc', ipcAPI);
 contextBridge.exposeInMainWorld('moduleStore', moduleStoreAPI);
 
 contextBridge.exposeInMainWorld('update', updateAPI);
+
+contextBridge.exposeInMainWorld('gitOps', gitOpsAPI);

@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { type ActivityFeedItem, sortByPriority } from '@/content/activity-feed';
 import { fetchAnnouncements, type Announcement } from '@/lib/announcements-service';
-import { checkForAppUpdate } from '@/lib/update-service';
-import { APP_VERSION } from '@/config/app-info';
 
 const CACHE_KEY = 'booltox:activity-feed:cache';
 const CACHE_DURATION = 30 * 60 * 1000; // 30分钟
@@ -82,30 +80,6 @@ export function ActivityFeedProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('fetchAnnouncements error:', error);
       fetchError = error;
-    }
-
-    try {
-      const update = await checkForAppUpdate(APP_VERSION);
-      if (update.updateAvailable && update.version && update.downloadUrl) {
-        remoteItems.unshift({
-          id: `release-${update.version}`,
-          type: 'update',
-          title: `🚀 新版本 ${update.version} 可用`,
-          content:
-            update.notes ??
-            `检测到新版本 ${update.version}，点击下载链接获取最新安装包：${update.downloadUrl}`,
-          timestamp: Date.now(),
-          priority: update.mandatory ? 'high' : 'normal',
-          icon: '🎉',
-          ctaLabel: '立即下载更新',
-          ctaUrl: update.downloadUrl,
-        });
-      }
-    } catch (error) {
-      console.error('checkForAppUpdate error:', error);
-      if (!fetchError) {
-        fetchError = error;
-      }
     }
 
     const now = Date.now();

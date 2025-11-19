@@ -1,21 +1,53 @@
-import { apiFetch } from "@/lib/backend-client";
+import type { Announcement as GitOpsAnnouncement } from '../../../electron/services/git-ops.service';
+
+export type AnnouncementType = 'ANNOUNCEMENT' | 'UPDATE' | 'NOTICE';
 
 export type Announcement = {
   id: string;
   title: string;
   content: string;
-  type: "ANNOUNCEMENT" | "UPDATE" | "NOTICE";
-  status: string;
+  type: AnnouncementType;
   publishAt: string | null;
   createdAt: string;
 };
 
-type AnnouncementResponse = {
-  data: Announcement[];
+const TYPE_MAP: Record<GitOpsAnnouncement['type'], AnnouncementType> = {
+  info: 'ANNOUNCEMENT',
+  warning: 'NOTICE',
+  alert: 'UPDATE',
 };
 
-export async function fetchAnnouncements(limit = 5) {
-  const params = new URLSearchParams({ limit: String(limit) });
-  const response = await apiFetch<AnnouncementResponse>(`/api/public/announcements?${params}`);
-  return response.data;
+function normalize(items: GitOpsAnnouncement[]): Announcement[] {
+  return items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    content: item.content,
+    type: TYPE_MAP[item.type] ?? 'ANNOUNCEMENT',
+    publishAt: item.date ?? null,
+    createdAt: item.date ?? new Date().toISOString(),
+  }));
+}
+
+export async function fetchAnnouncements(limit = 5): Promise<Announcement[]> {
+  const take = Math.max(1, limit);
+  try {
+    if (window.gitOps?.getAnnouncements) {
+      const payload = await window.gitOps.getAnnouncements();
+      return normalize(payload).slice(0, take);
+    }
+  } catch (error) {
+    console.error('gitOps 获取公告失败:', error);
+  }
+
+  try {
+    const response = await fetch('/resources/announcements/news.json');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch announcements: ${response.statusText}`);
+    }
+    const payload = await response.json() as GitOpsAnnouncement[];
+    return normalize(payload).slice(0, take);
+  } catch (error) {
+    console.error('公告本地回退读取失败:', error);
+    return [];
+  }
 }

@@ -13,7 +13,8 @@ import path from 'node:path';
 import os from 'os';
 import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
 import { moduleStoreService } from './services/module-store.service.js';
-import { UpdateManager, type UpdateDownloadPayload } from './services/update-manager.service.js';
+import { AutoUpdateService } from './services/auto-update.service.js';
+import { gitOpsService, type GitOpsConfig } from './services/git-ops.service.js';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,7 +31,7 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let mainWindow: BrowserWindow | null = null;
-const updateManager = new UpdateManager(() => mainWindow);
+let autoUpdateService: AutoUpdateService | null = null;
 
 /**
  * 创建主窗口
@@ -304,28 +305,23 @@ ipcMain.handle('module-store:get-config-path', () => {
 });
 
 /**
- * 应用更新 - IPC Handlers
+ * GitOps 服务 - IPC Handlers
  */
-ipcMain.handle('update:download', async (_event, payload: UpdateDownloadPayload) => {
-  try {
-    return await updateManager.download(payload);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[IPC] update:download failed:', message);
-    return { success: false, error: message };
-  }
+ipcMain.handle('git-ops:get-config', () => {
+  return gitOpsService.getConfig();
 });
 
-ipcMain.handle('update:cancel', async () => {
-  return await updateManager.cancel();
+ipcMain.handle('git-ops:update-config', (_event, config: Partial<GitOpsConfig>) => {
+  gitOpsService.updateConfig(config);
+  return gitOpsService.getConfig();
 });
 
-ipcMain.handle('update:install', async () => {
-  return await updateManager.install();
+ipcMain.handle('git-ops:get-announcements', async () => {
+  return await gitOpsService.getAnnouncements();
 });
 
-ipcMain.handle('update:get-status', () => {
-  return updateManager.getStatus();
+ipcMain.handle('git-ops:get-plugins', async () => {
+  return await gitOpsService.getPluginRegistry();
 });
 
 /**
@@ -336,6 +332,7 @@ app.whenReady().then(() => {
   setupPlatformOptimizations();
   
   createWindow();
+  autoUpdateService = new AutoUpdateService(() => mainWindow);
 
   app.on('activate', () => {
     // macOS 特性：点击 Dock 图标时重新创建窗口

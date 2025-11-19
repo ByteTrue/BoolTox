@@ -30,6 +30,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "electron-store": "^11.0.2",
+    "electron-updater": "^6.6.2",
     "framer-motion": "^12.23.16",
     "lucide-react": "^0.544.0",
     "react": "^19.1.0",

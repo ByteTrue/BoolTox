@@ -1,13 +1,9 @@
 /// <reference types="vite/client" />
 /// <reference path="../vite-env.d.ts" />
 
-import type {
-  UpdateDownloadPayload,
-  UpdateStatus,
-  UpdateDownloadResult,
-  UpdateOperationResult,
-} from '../electron/services/update-manager.service';
 import type { StoredModuleInfo } from './shared/types/module-store.types';
+import type { Announcement, GitOpsConfig, PluginRegistry } from '../electron/services/git-ops.service';
+import type { AutoUpdateStatus } from '../electron/services/auto-update.service';
 
 declare const __APP_VERSION__: string;
 
@@ -37,11 +33,17 @@ declare global {
       getConfigPath: () => Promise<string | null>;
     };
     update: {
-      download: (payload: UpdateDownloadPayload) => Promise<UpdateDownloadResult>;
-      cancel: () => Promise<UpdateOperationResult>;
-      install: () => Promise<UpdateOperationResult>;
-      getStatus: () => Promise<UpdateStatus>;
-      onStatus: (listener: (status: UpdateStatus) => void) => () => void;
+      check: () => Promise<unknown>;
+      download: () => Promise<unknown>;
+      install: () => Promise<unknown>;
+      getStatus: () => Promise<AutoUpdateStatus>;
+      onStatus: (listener: (status: AutoUpdateStatus) => void) => () => void;
+    };
+    gitOps: {
+      getConfig: () => Promise<GitOpsConfig>;
+      updateConfig: (config: Partial<GitOpsConfig>) => Promise<GitOpsConfig>;
+      getAnnouncements: () => Promise<Announcement[]>;
+      getPlugins: () => Promise<PluginRegistry>;
     };
   }
 }

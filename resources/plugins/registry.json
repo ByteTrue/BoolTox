@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    {
+      "id": "demo-plugin",
+      "version": "1.0.0",
+      "name": "示例插件",
+      "description": "这是一个示例插件的描述",
+      "author": "BoolTox Team",
+      "downloadUrl": "https://raw.githubusercontent.com/ByteTrue/BoolTox/plugins/demo-plugin.zip",
+      "hash": ""
+    }
+  ]
+}

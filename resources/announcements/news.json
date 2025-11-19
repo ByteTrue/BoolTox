@@ -1,0 +1,9 @@
+[
+  {
+    "id": "welcome",
+    "title": "欢迎使用 BoolTox",
+    "content": "这是第一条公告，欢迎使用全新的 BoolTox 工具箱！",
+    "date": "2025-11-20",
+    "type": "info"
+  }
+]

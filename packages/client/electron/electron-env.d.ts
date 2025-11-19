@@ -8,7 +8,7 @@ declare namespace NodeJS {
 }
 
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types';
-import type { UpdateDownloadPayload, UpdateStatus } from './services/update-manager.service';
+import type { AutoUpdateStatus } from './services/auto-update.service';
 
 interface Window {
   electron: {
@@ -30,10 +30,10 @@ interface Window {
     getConfigPath: () => Promise<string | null>;
   };
   update: {
-    download: (payload: UpdateDownloadPayload) => Promise<{ success: boolean; error?: string; aborted?: boolean; filePath?: string }>;
-    cancel: () => Promise<{ success: boolean; error?: string }>;
-    install: () => Promise<{ success: boolean; error?: string }>;
-    getStatus: () => Promise<UpdateStatus>;
-    onStatus: (listener: (status: UpdateStatus) => void) => () => void;
+    check: () => Promise<unknown>;
+    download: () => Promise<unknown>;
+    install: () => Promise<unknown>;
+    getStatus: () => Promise<AutoUpdateStatus>;
+    onStatus: (listener: (status: AutoUpdateStatus) => void) => () => void;
   };
 }
