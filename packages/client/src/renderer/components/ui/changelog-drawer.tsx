@@ -2,6 +2,8 @@ import { useId, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useTheme } from '../theme-provider';
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from '@/utils/glass-layers';
 import { iconButtonInteraction, buttonInteraction } from '@/utils/animation-presets';
@@ -165,13 +167,38 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                         borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
                       }}
                     >
-                      <p
-                        className={`text-base leading-relaxed whitespace-pre-wrap ${
-                          theme === 'dark' ? 'text-white/80' : 'text-slate-600'
-                        }`}
-                      >
-                        {selectedItem.content}
-                      </p>
+                      <div className={`prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}>
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code: ({className, children, ...props}) => {
+                              const match = /language-(\w+)/.exec(className || '');
+                              const isInline = !match && !String(children).includes('\n');
+                              if (isInline) {
+                                return (
+                                  <code 
+                                    className={`rounded px-1.5 py-0.5 font-mono text-sm font-medium not-prose ${
+                                      theme === 'dark' 
+                                        ? 'bg-white/10 text-brand-blue-300 border border-white/10' 
+                                        : 'bg-slate-100 text-brand-blue-600 border border-slate-200'
+                                    }`} 
+                                    {...props}
+                                  >
+                                    {children}
+                                  </code>
+                                );
+                              }
+                              return (
+                                <code className={`${className} ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-50'} rounded-lg p-1`} {...props}>
+                                  {children}
+                                </code>
+                              );
+                            }
+                          }}
+                        >
+                          {selectedItem.content}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </motion.div>
                 ) : (

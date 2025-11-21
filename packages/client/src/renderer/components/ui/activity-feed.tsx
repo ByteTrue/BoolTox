@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useTheme } from '../theme-provider';
 import { useActivityFeed } from '@/contexts';
 import { formatRelativeTime, type ActivityFeedItem } from '@/content/activity-feed';
@@ -204,10 +206,10 @@ function ActivityFeedContent({
       </div>
 
       <div className="flex-1 cursor-pointer overflow-hidden" onClick={onViewDetail}>
-        <p
-          className={`text-sm leading-relaxed whitespace-pre-wrap ${
+        <div
+          className={`text-sm leading-relaxed ${
             theme === 'dark' ? 'text-white/80' : 'text-slate-600'
-          }`}
+          } prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}
           style={{
             display: '-webkit-box',
             WebkitLineClamp: 6,
@@ -215,8 +217,38 @@ function ActivityFeedContent({
             overflow: 'hidden',
           }}
         >
-          {latestItem.content}
-        </p>
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={{
+              // 预览模式下禁用图片和标题过大
+              img: () => null,
+              h1: ({children}) => <p className="font-bold">{children}</p>,
+              h2: ({children}) => <p className="font-bold">{children}</p>,
+              h3: ({children}) => <p className="font-bold">{children}</p>,
+              code: ({className, children, ...props}) => {
+                const match = /language-(\w+)/.exec(className || '');
+                const isInline = !match && !String(children).includes('\n');
+                if (isInline) {
+                  return (
+                    <code 
+                      className={`rounded px-1 py-0.5 font-mono text-xs font-medium ${
+                        theme === 'dark' 
+                          ? 'bg-white/10 text-brand-blue-300' 
+                          : 'bg-slate-100 text-brand-blue-600'
+                      }`} 
+                      {...props}
+                    >
+                      {children}
+                    </code>
+                  );
+                }
+                return <code className={className} {...props}>{children}</code>;
+              }
+            }}
+          >
+            {latestItem.content}
+          </ReactMarkdown>
+        </div>
         <div className="mt-2 text-xs text-brand-blue-500 dark:text-brand-blue-400">
           点击查看完整内容 →
         </div>

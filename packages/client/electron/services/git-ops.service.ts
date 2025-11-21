@@ -197,10 +197,13 @@ export class GitOpsService {
           const filename = filePath.split('/').pop() || '';
           const { title, date } = this.parseMarkdownMetadata(content, filename);
 
+          // 移除 Frontmatter
+          const contentBody = content.replace(/^---[\s\S]*?---\n/, '').trim();
+
           return {
             id: filename.replace('.md', ''),
             title,
-            content,
+            content: contentBody,
             date,
             type,
             contentFile: filePath

@@ -1,11 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useTheme } from './theme-provider';
 import { useUpdate } from '@/contexts/update-context';
 import { APP_VERSION } from '@/config/app-info';
 import { ADMIN_API_BASE, RELEASE_CHANNEL } from '@/config/api';
 import { getGlassStyle, getGlassShadow } from '@/utils/glass-layers';
 import { buttonInteraction, cardHover } from '@/utils/animation-presets';
+import { Modal } from './ui/modal';
+import { GlassButton } from './ui/glass-button';
 import {
   Settings as SettingsIcon,
   Info,
@@ -15,11 +19,13 @@ import {
   Loader2,
   Package,
   Server,
+  FileText,
 } from 'lucide-react';
 
 export function SettingsPanel() {
   const { theme } = useTheme();
   const { state, details, retryCheck, downloadUpdate, installUpdate } = useUpdate();
+  const [showNotes, setShowNotes] = useState(false);
 
   const primaryAction = useMemo(() => {
     switch (state.phase) {
@@ -177,6 +183,31 @@ export function SettingsPanel() {
                 <CheckCircle2 className="text-green-500" size={20} />
               )}
 
+              {details && (
+                <motion.button
+                  {...buttonInteraction}
+                  type="button"
+                  onClick={() => setShowNotes(true)}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-[background-color,opacity,box-shadow] duration-150 ease-swift ${
+                    theme === 'dark'
+                      ? 'text-white/90 hover:text-white'
+                      : 'text-slate-800 hover:text-slate-900'
+                  }`}
+                  style={{
+                    ...getGlassStyle('BUTTON', theme, {
+                      withBorderGlow: true,
+                      withInnerShadow: true,
+                    }),
+                    boxShadow: theme === 'dark'
+                      ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                      : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                  }}
+                >
+                  <FileText className="h-4 w-4" />
+                  更新详情
+                </motion.button>
+              )}
+
               <motion.button
                 {...buttonInteraction}
                 type="button"
@@ -253,6 +284,41 @@ export function SettingsPanel() {
           )}
         </div>
       </SettingCard>
+
+      <Modal
+        open={showNotes}
+        onClose={() => setShowNotes(false)}
+        title={details?.name || `版本 ${details?.version || ''} 更新说明`}
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <GlassButton variant="secondary" onClick={() => setShowNotes(false)}>
+              关闭
+            </GlassButton>
+            {state.phase === 'available' && (
+              <GlassButton variant="primary" onClick={() => {
+                setShowNotes(false);
+                downloadUpdate();
+              }}>
+                立即更新
+              </GlassButton>
+            )}
+          </div>
+        }
+      >
+        <div className={`prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}>
+          {details?.date && (
+            <p className={`text-xs mb-4 ${theme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}>
+              发布于 {new Date(details.date).toLocaleDateString()}
+            </p>
+          )}
+          <div className="text-sm leading-relaxed opacity-90">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {details?.notes || '暂无更新说明'}
+            </ReactMarkdown>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -374,7 +374,7 @@ function AppShellContent() {
             style={getGlassStyle('BACKGROUND', theme)}
           >
             <div className="flex-1 overflow-y-auto elegant-scroll px-3 md:px-4 pb-1 pt-3 space-y-4">
-              <UpdateBanner />
+              <UpdateBanner onNavigate={handleNavSelect} />
               {/* 页面切换动画 */}
               <AnimatePresence mode="wait" initial={false}>
                 {activeModule ? (
