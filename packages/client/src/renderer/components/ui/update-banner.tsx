@@ -7,11 +7,23 @@ import { getGlassStyle } from '@/utils/glass-layers';
 import { buttonInteraction } from '@/utils/animation-presets';
 
 export function UpdateBanner() {
-  const { state, details, downloadUpdate, cancelDownload, installUpdate, dismissUpdate, retryCheck } = useUpdate();
+  const {
+    state,
+    details,
+    bannerDismissed,
+    downloadUpdate,
+    cancelDownload,
+    installUpdate,
+    dismissUpdate,
+    retryCheck,
+  } = useUpdate();
   const { theme } = useTheme();
 
   const progressPercent = useMemo(() => {
     if (state.phase !== 'downloading' || !state.progress) return 0;
+    if (typeof state.progress.percent === 'number') {
+      return Math.round(state.progress.percent);
+    }
     const { downloadedBytes, totalBytes } = state.progress;
     if (!totalBytes || totalBytes === 0) {
       return 0;
@@ -19,7 +31,7 @@ export function UpdateBanner() {
     return Math.min(100, Math.round((downloadedBytes / totalBytes) * 100));
   }, [state]);
 
-  if (state.phase === 'idle' || state.phase === 'checking') {
+  if (bannerDismissed || state.phase === 'idle' || state.phase === 'checking') {
     return null;
   }
 

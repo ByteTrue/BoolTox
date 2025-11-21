@@ -1,3 +1,5 @@
-const versionSource = (globalThis as { __APP_VERSION__?: string }).__APP_VERSION__;
+declare const __APP_VERSION__: string | undefined;
 
-export const APP_VERSION = typeof versionSource === "string" && versionSource.length > 0 ? versionSource : "0.0.0";
+const versionSource = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : undefined;
+
+export const APP_VERSION = versionSource && versionSource.length > 0 ? versionSource : '0.0.0';

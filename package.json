@@ -8,6 +8,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
+    "release": "pnpm --filter @booltox/client release:cli",
     "db:migrate": "pnpm --filter @booltox/server db:migrate",
     "db:studio": "pnpm --filter @booltox/server db:studio",
     "db:push": "pnpm --filter @booltox/server db:push",

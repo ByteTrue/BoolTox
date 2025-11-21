@@ -32,18 +32,24 @@ function inferArch(filename) {
   return filename.includes('-x64') ? 'X64' : 'UNKNOWN';
 }
 
-function inferDistribution(ext) {
-  switch (ext) {
+function inferDistribution(filename, ext) {
+  const lowerExt = ext.toLowerCase();
+  switch (lowerExt) {
     case '.exe':
       return 'nsis';
     case '.dmg':
       return 'dmg';
-    case '.AppImage':
+    case '.appimage':
       return 'appimage';
     case '.zip':
       return 'zip';
+    case '.blockmap':
+      return 'blockmap';
+    case '.yml':
+    case '.yaml':
+      return filename.toLowerCase().startsWith('latest') ? 'update-metadata' : 'config';
     default:
-      return ext.replace(/^\./, '') || 'unknown';
+      return lowerExt.replace(/^\./, '') || 'unknown';
   }
 }
 
@@ -61,6 +67,11 @@ async function hashFile(filePath) {
   return hash.digest('hex');
 }
 
+const isLatestMetadata = (name) => {
+  const lower = name.toLowerCase();
+  return lower.startsWith('latest') && (lower.endsWith('.yml') || lower.endsWith('.yaml'));
+};
+
 async function collectArtifacts(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const artifacts = [];
@@ -77,7 +88,12 @@ async function collectArtifacts(dir) {
     }
 
     const ext = path.extname(entry.name);
-    if (!ext || !['.exe', '.dmg', '.AppImage', '.zip'].includes(ext)) {
+    const lowerExt = ext.toLowerCase();
+    const includeInstaller = ['.exe', '.dmg', '.appimage', '.zip'].includes(lowerExt);
+    const includeBlockmap = lowerExt === '.blockmap';
+    const includeMetadata = isLatestMetadata(entry.name);
+
+    if (!includeInstaller && !includeBlockmap && !includeMetadata) {
       continue;
     }
 
@@ -85,7 +101,7 @@ async function collectArtifacts(dir) {
     const sha256 = await hashFile(entryPath);
     const platform = inferPlatform(entry.name);
     const arch = inferArch(entry.name);
-    const distribution = inferDistribution(ext);
+    const distribution = inferDistribution(entry.name, ext);
 
     artifacts.push({
       fileName: entry.name,

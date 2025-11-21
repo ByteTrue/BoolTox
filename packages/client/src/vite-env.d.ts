@@ -5,7 +5,7 @@ import type { StoredModuleInfo } from './shared/types/module-store.types';
 import type { Announcement, GitOpsConfig, PluginRegistry } from '../electron/services/git-ops.service';
 import type { AutoUpdateStatus } from '../electron/services/auto-update.service';
 
-declare const __APP_VERSION__: string;
+declare const __APP_VERSION__: string | undefined;
 
 declare global {
   interface Window {

@@ -17,6 +17,7 @@ type UpdateState = {
   progress?: {
     downloadedBytes: number;
     totalBytes?: number;
+    percent?: number;
   };
   error?: string;
 };
@@ -24,6 +25,7 @@ type UpdateState = {
 interface UpdateContextValue {
   state: UpdateState;
   details: UpdateDetails | null;
+  bannerDismissed: boolean;
   downloadUpdate: () => Promise<void>;
   cancelDownload: () => Promise<void>;
   installUpdate: () => Promise<void>;
@@ -36,6 +38,7 @@ const UpdateContext = createContext<UpdateContextValue | null>(null);
 export function UpdateProvider({ children }: { children: ReactNode }) {
   const [details, setDetails] = useState<UpdateDetails | null>(null);
   const [state, setState] = useState<UpdateState>({ phase: 'checking' });
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const { showToast } = useToast();
 
   const ensureUpdateAvailable = useCallback(() => {
@@ -76,24 +79,35 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     (status: AutoUpdateStatus): void => {
       switch (status.state) {
         case 'checking':
-          setState({ phase: 'checking' });
+          setState((prev) => (prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'checking' }));
           break;
         case 'available': {
+          setBannerDismissed(false);
           const info = extractDetails(status.info);
           setDetails(info);
           setState({ phase: 'available' });
           break;
         }
-        case 'downloading':
+        case 'downloading': {
+          setBannerDismissed(false);
+          const { transferred, total, percent } = status.progress;
+          const normalizedPercent = typeof percent === 'number'
+            ? Math.max(0, Math.min(100, percent))
+            : total && total > 0
+              ? Math.max(0, Math.min(100, (transferred / total) * 100))
+              : undefined;
           setState({
             phase: 'downloading',
             progress: {
-              downloadedBytes: status.progress.transferred,
-              totalBytes: status.progress.total,
+              downloadedBytes: transferred,
+              totalBytes: total,
+              percent: normalizedPercent,
             },
           });
           break;
+        }
         case 'downloaded': {
+          setBannerDismissed(false);
           const info = extractDetails(status.info);
           setDetails(info);
           setState({ phase: 'downloaded' });
@@ -104,15 +118,16 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
           setState({ phase: 'idle' });
           break;
         case 'error':
+          setBannerDismissed(false);
           setState({ phase: 'error', error: status.error });
           break;
         case 'idle':
         default:
-          setState(details ? { phase: 'available' } : { phase: 'idle' });
+          setState((prev) => (prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'idle' }));
           break;
       }
     },
-    [details, extractDetails],
+    [extractDetails],
   );
 
   useEffect(() => {
@@ -196,8 +211,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   }, [showToast]);
 
   const dismissUpdate = useCallback(() => {
-    setDetails(null);
-    setState({ phase: 'idle' });
+    setBannerDismissed(true);
   }, []);
 
   const retryCheck = useCallback(async () => {
@@ -206,6 +220,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setBannerDismissed(false);
     setState({ phase: 'checking' });
     try {
       await window.update.check();
@@ -219,12 +234,13 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   const value = useMemo<UpdateContextValue>(() => ({
     state,
     details,
+    bannerDismissed,
     downloadUpdate,
     cancelDownload,
     installUpdate,
     dismissUpdate,
     retryCheck,
-  }), [state, details, downloadUpdate, cancelDownload, installUpdate, dismissUpdate, retryCheck]);
+  }), [state, details, bannerDismissed, downloadUpdate, cancelDownload, installUpdate, dismissUpdate, retryCheck]);
 
   return <UpdateContext.Provider value={value}>{children}</UpdateContext.Provider>;
 }

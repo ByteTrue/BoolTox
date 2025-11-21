@@ -1,19 +1,24 @@
-import path from 'node:path';
-import { promises as fs } from 'node:fs';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
+import readline from 'node:readline';
 
 import {
   loadRawConfig,
   normalizeConfig,
   saveConfig,
   publishRelease,
-  syncReleases,
 } from './release-manager.mjs';
 
-const clientRoot = process.cwd();
-
 const rl = createInterface({ input, output });
+readline.emitKeypressEvents(input);
+
+const handleCancel = () => {
+  console.log('\n👋 已取消');
+  rl.close();
+  process.exit(0);
+};
+
+rl.on('SIGINT', handleCancel);
 
 const ask = async (question, defaultValue = '') => {
   const suffix = defaultValue ? ` (${defaultValue})` : '';
@@ -29,15 +34,141 @@ const askRequired = async (question, defaultValue = '') => {
   }
 };
 
-const askSelect = async (question, options, defaultValue) => {
-  const display = options.join('/');
-  while (true) {
-    const value = (await ask(`${question} [${display}]`, defaultValue)).toLowerCase();
-    if (options.includes(value)) {
-      return value;
+const askChoice = async (title, options, defaultValue) => {
+  const normalized = options.map((option, index) => {
+    if (typeof option === 'string') {
+      return { value: option, label: option, hint: '', index };
     }
-    console.log(`⚠️ 请输入 ${display} 之一`);
+    return { index, ...option };
+  });
+
+  const fallback = async () => {
+    const display = normalized.map((item) => item.value).join('/');
+    while (true) {
+      const answer = (await ask(`${title} [${display}]`, defaultValue ?? normalized[0].value))
+        .trim()
+        .toLowerCase();
+      const selected = normalized.find((item) => item.value.toLowerCase() === answer);
+      if (selected) {
+        return selected.value;
+      }
+      console.log(`⚠️ 请输入 ${display} 之一`);
+    }
+  };
+
+  if (!input.isTTY || !output.isTTY) {
+    return fallback();
   }
+
+  const wasRaw = Boolean(input.isRaw);
+  if (!wasRaw) {
+    input.setRawMode(true);
+  }
+
+  const defaultIndex = normalized.findIndex((item) => item.value === defaultValue);
+  let current = defaultIndex >= 0 ? defaultIndex : 0;
+  let renderedLines = 0;
+  let searchBuffer = '';
+  let searchTimer;
+
+  const render = () => {
+    if (renderedLines) {
+      output.moveCursor(0, -renderedLines);
+      output.clearScreenDown();
+    }
+
+    const lines = [''];
+    lines.push(title);
+    normalized.forEach((item, idx) => {
+      const pointer = idx === current ? '>' : ' ';
+      const hint = item.hint ? ` — ${item.hint}` : '';
+      const ordinal = `${idx + 1}.`.padStart(4, ' ');
+      lines.push(`${ordinal} ${pointer} ${item.label}${hint}`);
+    });
+    lines.push('');
+    lines.push('  Up/Down 切换 | 输入序号或关键字 | Enter 确认 | Ctrl+C 取消');
+
+    output.write(`${lines.join('\n')}\n`);
+    renderedLines = lines.length + 1;
+  };
+
+  return new Promise((resolve) => {
+    let onKeypress;
+
+    const cleanup = () => {
+      clearTimeout(searchTimer);
+      if (onKeypress) {
+        input.removeListener('keypress', onKeypress);
+      }
+      if (!wasRaw) {
+        input.setRawMode(false);
+      }
+      if (renderedLines) {
+        output.moveCursor(0, -renderedLines);
+        output.clearScreenDown();
+        renderedLines = 0;
+      }
+      console.log('');
+    };
+
+    const updateSearch = (char) => {
+      searchBuffer += char.toLowerCase();
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        searchBuffer = '';
+      }, 800);
+      const match = normalized.find((item) =>
+        item.value.toLowerCase().startsWith(searchBuffer) || item.label.toLowerCase().startsWith(searchBuffer),
+      );
+      if (match) {
+        current = match.index;
+        render();
+      }
+    };
+
+    onKeypress = (str, key = {}) => {
+      if (key.ctrl && key.name === 'c') {
+        cleanup();
+        handleCancel();
+        return;
+      }
+
+      if (key.name === 'up') {
+        current = (current - 1 + normalized.length) % normalized.length;
+        render();
+        return;
+      }
+
+      if (key.name === 'down') {
+        current = (current + 1) % normalized.length;
+        render();
+        return;
+      }
+
+      if (key.name === 'return' || key.name === 'enter') {
+        const choice = normalized[current];
+        cleanup();
+        resolve(choice.value);
+        return;
+      }
+
+      if (/^[1-9]$/.test(str)) {
+        const idx = Number(str) - 1;
+        if (idx >= 0 && idx < normalized.length) {
+          current = idx;
+          render();
+        }
+        return;
+      }
+
+      if (/[a-z0-9]/i.test(str)) {
+        updateSearch(str);
+      }
+    };
+
+    render();
+    input.on('keypress', onKeypress);
+  });
 };
 
 const askBoolean = async (question, defaultValue = false) => {
@@ -51,133 +182,8 @@ const askBoolean = async (question, defaultValue = false) => {
   }
 };
 
-const resolveInputPath = (inputPath) => {
-  if (!inputPath) {
-    return clientRoot;
-  }
-  if (path.isAbsolute(inputPath)) {
-    return path.normalize(inputPath);
-  }
-  return path.resolve(clientRoot, inputPath);
-};
 
-const normalizeEnvPath = (absPath) => {
-  const relative = path.relative(clientRoot, absPath) || '.';
-  return relative.split(path.sep).join('/');
-};
-
-const fileExists = async (filePath) => {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      return false;
-    }
-    throw error;
-  }
-};
-
-const ensureFileFromTemplate = async (targetPath, templates) => {
-  if (await fileExists(targetPath)) {
-    return false;
-  }
-  for (const template of templates) {
-    if (await fileExists(template)) {
-      await fs.copyFile(template, targetPath);
-      return true;
-    }
-  }
-  await fs.writeFile(targetPath, '# Booltox Admin environment\n', 'utf8');
-  return true;
-};
-
-const upsertEnvKeys = async (filePath, updates) => {
-  const updateEntries = updates instanceof Map ? updates : new Map(Object.entries(updates));
-  let content = '';
-  try {
-    content = await fs.readFile(filePath, 'utf8');
-  } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      throw error;
-    }
-  }
-
-  const lines = content ? content.split(/\r?\n/) : [];
-  const handled = new Set();
-  const result = lines.map((line) => {
-    const match = line.match(/^(?:export\s+)?([A-Z0-9_]+)\s*=.*/);
-    if (match) {
-      const key = match[1];
-      if (updateEntries.has(key)) {
-        handled.add(key);
-        return `${key}=${updateEntries.get(key) ?? ''}`;
-      }
-    }
-    return line;
-  });
-
-  for (const [key, value] of updateEntries) {
-    if (!handled.has(key)) {
-      result.push(`${key}=${value ?? ''}`);
-    }
-  }
-
-  const output = result.join('\n').replace(/\s*$/, '');
-  await fs.writeFile(filePath, `${output}\n`, 'utf8');
-};
-
-const ensureAdminEnv = async ({
-  adminProjectDir,
-  platform,
-  repository,
-  token,
-  baseUrl,
-  releaseToken,
-}) => {
-  const envPath = path.join(adminProjectDir, '.env.local');
-  const created = await ensureFileFromTemplate(envPath, [
-    path.join(adminProjectDir, '.env.local.example'),
-    path.join(adminProjectDir, '.env.example'),
-    path.join(adminProjectDir, 'ops', '.env.compose'),
-  ]);
-  if (created) {
-    console.log(`📝 已创建后台环境文件: ${normalizeEnvPath(envPath)}`);
-  }
-
-  const updates = new Map();
-  updates.set('GIT_RELEASE_PROVIDER', platform);
-  updates.set('GIT_RELEASE_REPOSITORY', repository);
-  updates.set('GIT_RELEASE_TOKEN', token);
-  updates.set('GIT_RELEASE_BASE_URL', platform === 'gitlab' ? baseUrl ?? '' : '');
-  updates.set('RELEASE_SERVICE_TOKEN', releaseToken);
-
-  await upsertEnvKeys(envPath, updates);
-  console.log(`✅ 已更新后台环境变量文件: ${normalizeEnvPath(envPath)}`);
-};
-
-const askPath = async (question, defaultValue) => {
-  while (true) {
-    const value = await ask(question, defaultValue);
-    const resolved = resolveInputPath(value);
-    try {
-      const stat = await fs.stat(resolved);
-      if (!stat.isDirectory()) {
-        console.log('⚠️ 目标路径不是目录');
-        continue;
-      }
-      return { input: value, resolved };
-    } catch (error) {
-      if (error?.code === 'ENOENT') {
-        console.log('⚠️ 路径不存在');
-        continue;
-      }
-      throw error;
-    }
-  }
-};
-
-const ensureUrl = async (value, fallback) => {
+const ensureUrl = async (value, fallback, label = 'URL') => {
   while (true) {
     const candidate = value ?? fallback ?? '';
     try {
@@ -187,10 +193,10 @@ const ensureUrl = async (value, fallback) => {
       }
     } catch {
       console.log('⚠️ 请输入合法的 URL');
-      value = await ask('URL');
+      value = await ask(label);
       continue;
     }
-    value = await ask('URL');
+    value = await ask(label);
   }
 };
 
@@ -211,60 +217,84 @@ const normalizeRepository = (platform, value) => {
   return trimmed.replace(/^\//, '').replace(/\.git$/, '');
 };
 
+const printHint = (title, lines = []) => {
+  console.log(`\n${title}`);
+  lines.forEach((line) => console.log(`  - ${line}`));
+};
+
 const configure = async () => {
   const raw = await loadRawConfig();
   const cfg = normalizeConfig(raw);
 
   console.log('\n=== 发布环境配置 ===');
-
-  const defaultAdminRelative = cfg.adminProjectDir && cfg.adminProjectDir.length > 0 ? cfg.adminProjectDir : '../booltox-admin';
-  const { resolved: adminProjectDir } = await askPath('后台项目目录', defaultAdminRelative);
-  const ADMIN_PROJECT_DIR = normalizeEnvPath(adminProjectDir);
-
-  const ADMIN_API_BASE_URL = await ensureUrl(
-    await ask('后台 API 地址', cfg.adminApiBaseUrl ?? 'http://localhost:3000'),
-    'http://localhost:3000',
-  );
-  const ADMIN_RELEASE_TOKEN = await askRequired('后台发布令牌', cfg.adminReleaseToken ?? '');
-
-  const platform = await askSelect('安装包托管平台', ['github', 'gitlab'], cfg.releasePlatform ?? 'github');
+  const platform = await askChoice('请选择安装包托管平台', [
+    { value: 'github', label: 'GitHub Releases', hint: '适用于 GitHub 仓库' },
+    { value: 'gitlab', label: 'GitLab Releases', hint: '适用于 GitLab 项目' },
+  ], cfg.releasePlatform ?? 'github');
 
   let RELEASE_GIT_BASE_URL = cfg.releaseGitBaseUrl ?? '';
   if (platform === 'gitlab') {
+    printHint('GitLab 基础地址', [
+      '例如 https://gitlab.com，如果使用自建 GitLab 请输入对应域名',
+      '无需输入项目路径，仅需域名部分',
+    ]);
     RELEASE_GIT_BASE_URL = await ensureUrl(
       await ask('GitLab 基础地址', RELEASE_GIT_BASE_URL || 'https://gitlab.com'),
       'https://gitlab.com',
+      'GitLab 基础地址',
     );
   } else {
     RELEASE_GIT_BASE_URL = '';
   }
 
+  printHint(
+    platform === 'github' ? '仓库 owner/repo' : '项目 namespace/project',
+    [
+      platform === 'github'
+        ? 'owner 是 GitHub 用户名或组织，repo 是仓库名'
+        : 'namespace 可以是 GitLab 用户、组或子组，project 是项目名',
+      '示例：booltox/booltox-client 或 group/subgroup/project',
+      '支持粘贴 HTTPS/SSH 仓库地址，脚本会自动提取路径',
+    ],
+  );
   const rawRepository = await askRequired(
     platform === 'github' ? '仓库 (owner/repo)' : '项目 (namespace/project)',
     cfg.releaseRepository ?? '',
   );
   const RELEASE_REPOSITORY = normalizeRepository(platform, rawRepository);
+  printHint('访问令牌 (Personal Access Token)', [
+    '需要具备创建 Release 以及上传附件的权限',
+    platform === 'github' ? 'GitHub 勾选 repo 范围即可' : 'GitLab 建议开启 api、read_repository、write_repository',
+    '凭证仅保存在本地 .env.release.local',
+  ]);
   const RELEASE_GIT_TOKEN = await askRequired('托管平台访问令牌', cfg.releaseGitToken ?? '');
+
+  printHint('构建分支或 Tag', [
+    '默认 main，如需回溯发布请输入对应 Tag',
+    'GitLab 用户可留空使用默认分支',
+  ]);
   const RELEASE_GIT_REF = await ask('构建分支/Tag (GitLab 可选)', cfg.releaseGitRef ?? 'main');
+
+  printHint('Tag 前缀', [
+    '生成的 Tag 会是 前缀 + 版本号，例如 v1.2.3',
+  ]);
   const RELEASE_TAG_PREFIX = await ask('Tag 前缀', cfg.releaseTagPrefix ?? 'v');
 
-  const RELEASE_CHANNEL = (await askSelect(
-    '默认发布渠道',
-    ['stable', 'beta', 'alpha'],
-    (cfg.releaseChannel ?? 'STABLE').toLowerCase(),
-  )).toUpperCase();
-  const RELEASE_TENANT_ID = await ask('默认租户 ID (可留空)', cfg.releaseTenantId ?? '');
-  const RELEASE_MANDATORY = (await askBoolean('默认是否强制更新', cfg.releaseMandatory ?? false)) ? 'true' : 'false';
-  const RELEASE_ROLLOUT_PERCENT = await ask('默认灰度百分比 (1-100)', String(cfg.releaseRolloutPercent ?? 100));
+  const RELEASE_CHANNEL = (
+    await askChoice('默认发布渠道', [
+      { value: 'stable', label: 'stable', hint: '正式用户可见' },
+      { value: 'beta', label: 'beta', hint: '面向体验用户' },
+      { value: 'alpha', label: 'alpha', hint: '内部测试' },
+    ], (cfg.releaseChannel ?? 'STABLE').toLowerCase())
+  ).toUpperCase();
 
+  printHint('版本说明文件 (可选)', [
+    '填写 Markdown 文件路径，例如 docs/releases/v1.2.3.md',
+    '留空则可在发布后手动撰写 Release Notes',
+  ]);
   const RELEASE_NOTES_FILE = await ask('版本说明文件路径 (可留空)', cfg.releaseNotesFile ?? '');
-  const RELEASE_ANNOUNCE_TITLE = await ask('默认公告标题 (可留空)', cfg.releaseAnnounceTitle ?? '');
-  const RELEASE_ANNOUNCE_FILE = await ask('公告内容文件路径 (可留空)', cfg.releaseAnnounceFile ?? '');
 
   const entries = new Map();
-  entries.set('ADMIN_PROJECT_DIR', ADMIN_PROJECT_DIR);
-  entries.set('ADMIN_API_BASE_URL', ADMIN_API_BASE_URL);
-  entries.set('ADMIN_RELEASE_TOKEN', ADMIN_RELEASE_TOKEN);
   entries.set('RELEASE_PLATFORM', platform);
   entries.set('RELEASE_REPOSITORY', RELEASE_REPOSITORY);
   entries.set('RELEASE_GIT_TOKEN', RELEASE_GIT_TOKEN);
@@ -272,24 +302,10 @@ const configure = async () => {
   entries.set('RELEASE_GIT_REF', RELEASE_GIT_REF);
   entries.set('RELEASE_TAG_PREFIX', RELEASE_TAG_PREFIX);
   entries.set('RELEASE_CHANNEL', RELEASE_CHANNEL);
-  entries.set('RELEASE_TENANT_ID', RELEASE_TENANT_ID);
-  entries.set('RELEASE_MANDATORY', RELEASE_MANDATORY);
-  entries.set('RELEASE_ROLLOUT_PERCENT', RELEASE_ROLLOUT_PERCENT);
   entries.set('RELEASE_NOTES_FILE', RELEASE_NOTES_FILE);
-  entries.set('RELEASE_ANNOUNCE_TITLE', RELEASE_ANNOUNCE_TITLE);
-  entries.set('RELEASE_ANNOUNCE_FILE', RELEASE_ANNOUNCE_FILE);
 
   await saveConfig(entries);
   console.log('\n✅ 已更新 .env.release.local');
-
-  await ensureAdminEnv({
-    adminProjectDir,
-    platform,
-    repository: RELEASE_REPOSITORY,
-    token: RELEASE_GIT_TOKEN,
-    baseUrl: RELEASE_GIT_BASE_URL,
-    releaseToken: ADMIN_RELEASE_TOKEN,
-  });
 };
 
 const publish = async () => {
@@ -304,36 +320,20 @@ const publish = async () => {
   }
 };
 
-const syncOnly = async () => {
-  console.log('\n=== 仅同步 Git Release ===');
-  try {
-    const raw = await loadRawConfig();
-    const cfg = normalizeConfig(raw);
-    await syncReleases(cfg);
-    console.log('✅ 已触发后台同步');
-  } catch (error) {
-    console.error('❌ 同步失败:', error.message ?? error);
-  }
-};
-
 const mainMenu = async () => {
   while (true) {
-    console.log('\n--- Booltox 发布助手 ---');
-    console.log('1. 配置发布环境');
-    console.log('2. 构建并发布');
-    console.log('3. 仅同步 Git Release');
-    console.log('4. 退出');
-    const choice = await ask('请选择', '4');
-    if (choice === '1') {
+    const choice = await askChoice('--- Booltox 发布助手 ---', [
+      { value: 'configure', label: '配置发布环境', hint: '设置仓库、令牌等信息' },
+      { value: 'publish', label: '构建并发布', hint: '执行打包并推送 Release' },
+      { value: 'exit', label: '退出', hint: '返回命令行' },
+    ], 'exit');
+
+    if (choice === 'configure') {
       await configure();
-    } else if (choice === '2') {
+    } else if (choice === 'publish') {
       await publish();
-    } else if (choice === '3') {
-      await syncOnly();
-    } else if (choice === '4') {
-      break;
     } else {
-      console.log('⚠️ 无效选项');
+      break;
     }
   }
 };
@@ -341,12 +341,6 @@ const mainMenu = async () => {
 const run = async () => {
   if (process.argv.includes('--setup')) {
     await configure();
-    rl.close();
-    return;
-  }
-
-  if (process.argv.includes('--sync')) {
-    await syncOnly();
     rl.close();
     return;
   }

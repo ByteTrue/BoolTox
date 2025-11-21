@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from './theme-provider';
 import { useUpdate } from '@/contexts/update-context';
@@ -19,16 +19,69 @@ import {
 
 export function SettingsPanel() {
   const { theme } = useTheme();
-  const { state, details, retryCheck } = useUpdate();
-  const [checking, setChecking] = useState(false);
+  const { state, details, retryCheck, downloadUpdate, installUpdate } = useUpdate();
 
-  const handleCheckUpdate = async () => {
-    setChecking(true);
-    try {
-      await retryCheck();
-    } finally {
-      setChecking(false);
+  const primaryAction = useMemo(() => {
+    switch (state.phase) {
+      case 'available':
+        return {
+          label: '立即下载',
+          icon: Download,
+          handler: downloadUpdate,
+          disabled: false,
+          spinning: false,
+        } as const;
+      case 'downloading':
+        return {
+          label: '下载中...',
+          icon: Loader2,
+          handler: undefined,
+          disabled: true,
+          spinning: true,
+        } as const;
+      case 'downloaded':
+        return {
+          label: '安装更新',
+          icon: CheckCircle2,
+          handler: installUpdate,
+          disabled: false,
+          spinning: false,
+        } as const;
+      case 'checking':
+        return {
+          label: '检查中...',
+          icon: Loader2,
+          handler: undefined,
+          disabled: true,
+          spinning: true,
+        } as const;
+      case 'error':
+        return {
+          label: '重新检查',
+          icon: RefreshCw,
+          handler: retryCheck,
+          disabled: false,
+          spinning: false,
+        } as const;
+      case 'idle':
+      default:
+        return {
+          label: '检查更新',
+          icon: RefreshCw,
+          handler: retryCheck,
+          disabled: false,
+          spinning: false,
+        } as const;
     }
+  }, [state.phase, downloadUpdate, installUpdate, retryCheck]);
+
+  const PrimaryIcon = primaryAction.icon;
+
+  const handlePrimaryAction = async () => {
+    if (!primaryAction.handler || primaryAction.disabled) {
+      return;
+    }
+    await primaryAction.handler();
   };
 
   return (
@@ -106,7 +159,7 @@ export function SettingsPanel() {
             </div>
 
             <div className="flex items-center gap-3">
-              {state.phase === 'checking' && (
+              {(state.phase === 'checking' || state.phase === 'downloading') && (
                 <Loader2
                   className={`animate-spin ${
                     theme === 'dark' ? 'text-white/60' : 'text-slate-500'
@@ -120,12 +173,15 @@ export function SettingsPanel() {
               {state.phase === 'available' && (
                 <Download className="text-brand-blue-400" size={20} />
               )}
+              {state.phase === 'downloaded' && (
+                <CheckCircle2 className="text-green-500" size={20} />
+              )}
 
               <motion.button
                 {...buttonInteraction}
                 type="button"
-                onClick={handleCheckUpdate}
-                disabled={checking || state.phase === 'checking'}
+                onClick={handlePrimaryAction}
+                disabled={primaryAction.disabled}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-[background-color,opacity,box-shadow] duration-150 ease-swift disabled:opacity-50 disabled:cursor-not-allowed ${
                   theme === 'dark'
                     ? 'text-white/90 hover:text-white'
@@ -136,18 +192,15 @@ export function SettingsPanel() {
                     withBorderGlow: true,
                     withInnerShadow: true,
                   }),
-                  // 增强按钮的浮起感
                   boxShadow: theme === 'dark'
                     ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
                     : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
                 }}
               >
-                <RefreshCw
-                  className={`h-4 w-4 ${
-                    checking || state.phase === 'checking' ? 'animate-spin' : ''
-                  }`}
+                <PrimaryIcon
+                  className={`h-4 w-4 ${primaryAction.spinning ? 'animate-spin' : ''}`}
                 />
-                检查更新
+                {primaryAction.label}
               </motion.button>
             </div>
           </div>
