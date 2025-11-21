@@ -170,11 +170,32 @@ export const readFileIfExists = async (filePath) => {
   }
 };
 
-export const getReleaseNotes = async (config) => {
+export const getReleaseNotes = async (config, notesInput = '') => {
+  // 优先级: 1. CLI 输入 2. 配置的 RELEASE_NOTES 3. 配置的文件路径
+  if (notesInput) {
+    // 判断是文件路径还是直接内容
+    const trimmed = notesInput.trim();
+    // 如果是文件路径(含 .md 或 / 或 \)
+    if (trimmed.match(/\.(md|markdown|txt)$/i) || trimmed.includes('/') || trimmed.includes('\\')) {
+      const content = await readFileIfExists(trimmed);
+      if (content) {
+        console.log(`📄 已从文件读取更新说明: ${trimmed}`);
+        return content;
+      }
+      console.warn(`⚠️ 文件未找到 ${trimmed},将作为直接内容使用`);
+    }
+    // 否则作为直接输入的内容
+    return trimmed;
+  }
+  
   if (config.releaseNotes) {
     return config.releaseNotes;
   }
+  
   const content = await readFileIfExists(config.releaseNotesFile);
+  if (content) {
+    console.log(`📄 已从配置的默认文件读取更新说明: ${config.releaseNotesFile}`);
+  }
   return content;
 };
 
@@ -497,7 +518,7 @@ const artifactArchFromName = (fileName) => {
   return 'UNKNOWN';
 };
 
-export const publishRelease = async ({ skipBuild = false } = {}) => {
+export const publishRelease = async ({ skipBuild = false, notesInput = '' } = {}) => {
   const raw = await loadRawConfig();
   const config = normalizeConfig(raw);
 
@@ -516,7 +537,7 @@ export const publishRelease = async ({ skipBuild = false } = {}) => {
   const { artifacts } = await loadManifest(version);
   console.log(`📦 已准备 ${artifacts.length} 个安装包`);
 
-  const notes = await getReleaseNotes(config);
+  const notes = await getReleaseNotes(config, notesInput);
 
   const enrichedArtifacts = artifacts.map((artifact) => ({
     ...artifact,
@@ -532,6 +553,7 @@ export const publishRelease = async ({ skipBuild = false } = {}) => {
 
   return {
     version,
+    notes,
     uploadResult,
   };
 };

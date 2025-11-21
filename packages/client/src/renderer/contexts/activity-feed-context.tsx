@@ -194,8 +194,6 @@ const mapAnnouncementType = (type: Announcement['type']): ActivityFeedItem['type
   switch (type) {
     case 'UPDATE':
       return 'update';
-    case 'NOTICE':
-      return 'notice';
     default:
       return 'announcement';
   }
@@ -205,8 +203,6 @@ const iconForType = (type: ActivityFeedItem['type']): string => {
   switch (type) {
     case 'update':
       return '🚀';
-    case 'notice':
-      return '💡';
     default:
       return '📢';
   }

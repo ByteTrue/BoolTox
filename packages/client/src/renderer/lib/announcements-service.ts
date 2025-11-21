@@ -1,6 +1,6 @@
 import type { Announcement as GitOpsAnnouncement } from '../../../electron/services/git-ops.service';
 
-export type AnnouncementType = 'ANNOUNCEMENT' | 'UPDATE' | 'NOTICE';
+export type AnnouncementType = 'ANNOUNCEMENT' | 'UPDATE';
 
 export type Announcement = {
   id: string;
@@ -12,16 +12,15 @@ export type Announcement = {
 };
 
 const TYPE_MAP: Record<GitOpsAnnouncement['type'], AnnouncementType> = {
-  info: 'ANNOUNCEMENT',
-  warning: 'NOTICE',
-  alert: 'UPDATE',
+  announcement: 'ANNOUNCEMENT',
+  update: 'UPDATE',
 };
 
 function normalize(items: GitOpsAnnouncement[]): Announcement[] {
   return items.map((item) => ({
     id: item.id,
     title: item.title,
-    content: item.content,
+    content: item.content ?? '',
     type: TYPE_MAP[item.type] ?? 'ANNOUNCEMENT',
     publishAt: item.date ?? null,
     createdAt: item.date ?? new Date().toISOString(),

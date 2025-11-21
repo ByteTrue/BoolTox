@@ -289,7 +289,9 @@ const configure = async () => {
   ).toUpperCase();
 
   printHint('版本说明文件 (可选)', [
-    '填写 Markdown 文件路径，例如 docs/releases/v1.2.3.md',
+    '填写 Markdown 文件路径,例如 resources/announcements/v1.2.3.md',
+    '支持相对路径(从项目根目录)或绝对路径',
+    '该文件内容会自动上传到 GitHub/GitLab Release 作为更新说明',
     '留空则可在发布后手动撰写 Release Notes',
   ]);
   const RELEASE_NOTES_FILE = await ask('版本说明文件路径 (可留空)', cfg.releaseNotesFile ?? '');
@@ -311,10 +313,22 @@ const configure = async () => {
 const publish = async () => {
   console.log('\n=== 构建并发布安装包 ===');
   const skipBuild = !(await askBoolean('是否重新执行构建', true)) ? true : false;
+  
+  printHint('本次发布的更新说明', [
+    '你可以直接输入 Markdown 文件路径(如 resources/announcements/v1.2.3.md)',
+    '或者留空使用配置文件中的默认路径',
+    '也可以直接粘贴文本内容(支持多行)',
+  ]);
+  const notesInput = await ask('更新说明(文件路径或直接输入内容,留空使用配置)', '');
+  
   try {
-    const result = await publishRelease({ skipBuild });
+    const result = await publishRelease({ skipBuild, notesInput });
     console.log('\n✅ 发布成功');
     console.table([{ Version: result.version, Provider: result.uploadResult.provider, Tag: result.uploadResult.tagName }]);
+    if (result.notes) {
+      console.log('\n📝 更新说明预览:');
+      console.log(result.notes.slice(0, 200) + (result.notes.length > 200 ? '...' : ''));
+    }
   } catch (error) {
     console.error('\n❌ 发布失败:', error.message ?? error);
   }

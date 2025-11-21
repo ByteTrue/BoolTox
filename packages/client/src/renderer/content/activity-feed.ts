@@ -1,6 +1,6 @@
 export interface ActivityFeedItem {
   id: string;
-  type: 'announcement' | 'update' | 'notice';
+  type: 'announcement' | 'update';
   title: string;
   content: string;
   timestamp: number;

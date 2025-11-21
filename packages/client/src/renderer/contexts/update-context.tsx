@@ -8,6 +8,8 @@ type UpdateDetails = {
   notes?: string | null;
   sizeBytes?: number;
   mandatory?: boolean;
+  date?: string;
+  name?: string;
 };
 
 type UpdatePhase = 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error';
@@ -41,6 +43,42 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const { showToast } = useToast();
 
+  useEffect(() => {
+    if (state.phase === 'available' && details?.version && !details.notes) {
+      const fetchNotes = async () => {
+        try {
+          // 这里的 owner/repo 暂时硬编码，后续可从配置读取
+          const owner = 'ByteTrue';
+          const repo = 'BoolTox';
+          const tags = [`v${details.version}`, details.version];
+          
+          for (const tag of tags) {
+            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.body) {
+                setDetails((prev) => {
+                  if (!prev || prev.version !== details.version) return prev;
+                  return {
+                    ...prev,
+                    notes: data.body,
+                    name: data.name || prev.name,
+                    date: data.published_at || prev.date,
+                  };
+                });
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to fetch release notes from GitHub:', error);
+        }
+      };
+      
+      void fetchNotes();
+    }
+  }, [state.phase, details?.version, details?.notes]);
+
   const ensureUpdateAvailable = useCallback(() => {
     if (!details) {
       throw new Error('当前没有可用的更新信息');
@@ -72,6 +110,8 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       notes,
       sizeBytes,
       mandatory: false,
+      date: info.releaseDate,
+      name: info.releaseName || undefined,
     };
   }, []);
 

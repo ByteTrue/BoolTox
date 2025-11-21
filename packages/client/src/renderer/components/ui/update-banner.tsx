@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
-import { Download, Loader2, RefreshCw, XCircle, CheckCircle2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Download, Loader2, RefreshCw, XCircle, CheckCircle2, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUpdate } from '@/contexts/update-context';
 import { useTheme } from '../theme-provider';
 import { getGlassStyle } from '@/utils/glass-layers';
 import { buttonInteraction } from '@/utils/animation-presets';
+import { Modal } from './modal';
+import { GlassButton } from './glass-button';
 
 export function UpdateBanner() {
   const {
@@ -18,6 +20,7 @@ export function UpdateBanner() {
     retryCheck,
   } = useUpdate();
   const { theme } = useTheme();
+  const [showNotes, setShowNotes] = useState(false);
 
   const progressPercent = useMemo(() => {
     if (state.phase !== 'downloading' || !state.progress) return 0;
@@ -76,6 +79,25 @@ export function UpdateBanner() {
               onClick={downloadUpdate}
             >
               <Download size={16} /> 立即下载
+            </motion.button>
+            <motion.button
+              {...buttonInteraction}
+              type="button"
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-[background-color,box-shadow] duration-200 ${
+                theme === 'dark' ? 'text-white/90' : 'text-slate-800'
+              }`}
+              style={{
+                ...getGlassStyle('BUTTON', theme, {
+                  withBorderGlow: true,
+                  withInnerShadow: true,
+                }),
+                boxShadow: theme === 'dark'
+                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+              }}
+              onClick={() => setShowNotes(true)}
+            >
+              <FileText size={16} /> 更新详情
             </motion.button>
             <motion.button
               {...buttonInteraction}
@@ -272,6 +294,37 @@ export function UpdateBanner() {
           </div>
         </div>
       )}
+
+      <Modal
+        open={showNotes}
+        onClose={() => setShowNotes(false)}
+        title={details?.name || `版本 ${details?.version || ''} 更新说明`}
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <GlassButton variant="secondary" onClick={() => setShowNotes(false)}>
+              关闭
+            </GlassButton>
+            <GlassButton variant="primary" onClick={() => {
+              setShowNotes(false);
+              downloadUpdate();
+            }}>
+              立即更新
+            </GlassButton>
+          </div>
+        }
+      >
+        <div className={`prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}>
+          {details?.date && (
+            <p className={`text-xs mb-4 ${theme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}>
+              发布于 {new Date(details.date).toLocaleDateString()}
+            </p>
+          )}
+          <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed opacity-90">
+            {details?.notes || '暂无更新说明'}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

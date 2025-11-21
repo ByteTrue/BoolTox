@@ -12,9 +12,10 @@ export interface GitOpsConfig {
 export interface Announcement {
   id: string;
   title: string;
-  content: string;
+  content?: string;
+  contentFile?: string;
   date: string;
-  type: 'info' | 'warning' | 'alert';
+  type: 'announcement' | 'update';
 }
 
 export interface PluginInfo {
@@ -95,19 +96,122 @@ export class GitOpsService {
   }
 
   /**
-   * 获取公告列表
+   * 调用 GitHub/GitLab API
+   */
+  private async fetchApi(path: string): Promise<any> {
+    const { provider, owner, repo, branch, baseUrl } = this.config;
+    let url = '';
+    const headers = this.getHeaders();
+
+    if (provider === 'github') {
+      // GitHub API
+      url = `https://api.github.com/repos/${owner}/${repo}/${path}`;
+      headers['Accept'] = 'application/vnd.github.v3+json';
+    } else {
+      // GitLab API
+      const host = baseUrl || 'https://gitlab.com';
+      const projectId = encodeURIComponent(`${owner}/${repo}`);
+      url = `${host}/api/v4/projects/${projectId}/${path}`;
+    }
+
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * 列出目录下的 Markdown 文件
+   */
+  private async listMarkdownFiles(dirPath: string): Promise<string[]> {
+    const { provider, branch } = this.config;
+    try {
+      if (provider === 'github') {
+        const data = await this.fetchApi(`contents/${dirPath}?ref=${branch}`);
+        if (Array.isArray(data)) {
+          return data
+            .filter((item: any) => item.type === 'file' && item.name.endsWith('.md'))
+            .map((item: any) => item.path);
+        }
+      } else {
+        // GitLab
+        const data = await this.fetchApi(`repository/tree?path=${dirPath}&ref=${branch}`);
+        if (Array.isArray(data)) {
+           return data
+            .filter((item: any) => item.type === 'blob' && item.name.endsWith('.md'))
+            .map((item: any) => `${dirPath}/${item.name}`);
+        }
+      }
+    } catch (e) {
+      console.warn(`[GitOps] Failed to list files in ${dirPath}`, e);
+    }
+    return [];
+  }
+
+  /**
+   * 解析 Markdown 内容元数据
+   */
+  private parseMarkdownMetadata(content: string, filename: string): { title: string; date: string } {
+    // 1. 尝试从 Frontmatter 获取日期 (date: YYYY-MM-DD)
+    const frontmatterDate = content.match(/^date:\s*(\d{4}-\d{2}-\d{2})/m)?.[1];
+    // 2. 尝试从文件名获取日期 (YYYY-MM-DD-xxx.md)
+    const filenameDate = filename.match(/(\d{4}-\d{2}-\d{2})/)?.[1];
+    
+    const date = frontmatterDate || filenameDate || new Date().toISOString().split('T')[0];
+
+    // 1. 尝试从 Frontmatter 获取标题 (title: xxx)
+    const frontmatterTitle = content.match(/^title:\s*(.+)$/m)?.[1];
+    // 2. 尝试从一级标题获取 (# Title)
+    const h1Title = content.match(/^#\s+(.+)$/m)?.[1];
+    
+    const title = frontmatterTitle || h1Title || filename.replace('.md', '');
+
+    return { title, date };
+  }
+
+  /**
+   * 获取公告列表 (自动扫描目录)
    */
   async getAnnouncements(): Promise<Announcement[]> {
     try {
-      const url = this.getRawUrl('resources/announcements/news.json');
-      const response = await fetch(url, { headers: this.getHeaders() });
-      
-      if (!response.ok) {
-        console.warn(`[GitOps] Failed to fetch announcements: ${response.statusText}`);
-        return [];
-      }
+      // 1. 扫描目录
+      const [newsFiles, releaseFiles] = await Promise.all([
+        this.listMarkdownFiles('resources/announcements/news'),
+        this.listMarkdownFiles('resources/announcements/releases')
+      ]);
 
-      return await response.json() as Announcement[];
+      const allFiles = [
+        ...newsFiles.map(f => ({ path: f, type: 'announcement' as const })),
+        ...releaseFiles.map(f => ({ path: f, type: 'update' as const }))
+      ];
+
+      // 2. 并发获取内容并解析
+      const items = await Promise.all(allFiles.map(async ({ path: filePath, type }) => {
+        try {
+          const url = this.getRawUrl(filePath);
+          const response = await fetch(url, { headers: this.getHeaders() });
+          if (!response.ok) return null;
+          
+          const content = await response.text();
+          const filename = filePath.split('/').pop() || '';
+          const { title, date } = this.parseMarkdownMetadata(content, filename);
+
+          return {
+            id: filename.replace('.md', ''),
+            title,
+            content,
+            date,
+            type,
+            contentFile: filePath
+          } as Announcement;
+        } catch (err) {
+          console.warn(`[GitOps] Failed to process announcement ${filePath}:`, err);
+          return null;
+        }
+      }));
+
+      return items.filter((item): item is Announcement => item !== null);
     } catch (error) {
       console.error('[GitOps] Error fetching announcements:', error);
       return [];
