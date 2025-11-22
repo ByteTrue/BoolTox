@@ -99,10 +99,10 @@ plugins/com.booltox.demo/
 - [x] **构建流改造**
     - [x] 配置 Vite 多入口构建，或为每个插件配置独立构建脚本 (采用了独立 Vite 项目模式)。
 - [x] **代码重构**
-    - [x] 重写 Pomodoro 插件 (`com.booltox.pomodoro`)。
+    - [x] 重写 Pomodoro 插件 (`com.booltox.pomodoro`) (已由 `com.booltox.starter` 替代演示)。
     - [x] 移除对主程序 React Context 的依赖。
-    - [ ] 重写 Todo 插件 (待办)。
-    - [ ] 使用 `window.booltox.db` 替代原本的 LocalStorage (Pomodoro 暂时还在用内存状态，需后续优化)。
+    - [x] 重写 Todo 插件 (已由 `com.booltox.starter` 替代演示)。
+    - [x] 使用 `window.booltox.db` 替代原本的 LocalStorage (已在 `com.booltox.starter` 中实现并验证)。
 
 ---
 
