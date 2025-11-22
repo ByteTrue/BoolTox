@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ExternalLink, Download, Play, Pause, Trash2 } from "lucide-react";
+import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, GLASS_BORDERS } from "@/utils/glass-layers";
 import { iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
@@ -32,13 +33,21 @@ export function ModuleDetailModal({
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [activeTab, setActiveTab] = useState<DetailTab>("details");
+  const [mounted, setMounted] = useState(false);
 
-  // 重置 Tab 当模块改变时
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   useEffect(() => {
     setActiveTab("details");
   }, [module?.id]);
 
-  if (!module) return null;
+  if (!module || !mounted) return null;
 
   const definition = "definition" in module ? module.definition : module;
   const runtime = "runtime" in module ? module.runtime : undefined;
@@ -48,77 +57,73 @@ export function ModuleDetailModal({
   const isRunning = launchState === "running";
   const isLaunchError = launchState === "error";
 
-  // Modal 背景样式
-  const modalStyle = {
-    background: isDark ? "rgba(15, 23, 42, 0.95)" : "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    WebkitBackdropFilter: "blur(20px)",
-  };
-
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={modalStyle}
-          onClick={onClose}
-        >
+        <>
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className={`relative w-full max-w-4xl rounded-3xl border ${
-              isDark ? "shadow-2xl" : "shadow-xl shadow-brand-blue-400/20"
-            }`}
-            style={getGlassStyle('CARD', theme)}
-            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9998] bg-slate-950/55 backdrop-blur-xl dark:bg-slate-950/60"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 260, damping: 32 }}
+            className="fixed right-0 top-0 z-[9999] h-full w-full sm:w-[80vw]"
+            style={{ maxWidth: "1200px" }}
           >
-            {/* 关闭按钮 */}
-            <motion.button
-              {...iconButtonInteraction}
-              type="button"
-              onClick={onClose}
-              className={`absolute right-4 top-4 z-10 rounded-full p-2 transition-[background-color,transform] duration-250 ease-swift ${
-                isDark
-                  ? "bg-white/10 text-white hover:bg-white/20"
-                  : "bg-slate-200/50 text-slate-700 hover:bg-slate-300"
-              }`}
+            <div
+              className={`flex h-full flex-col border-l ${isDark ? "shadow-2xl shadow-blue-900/30" : "shadow-xl shadow-blue-200/30"}`}
+              style={getGlassStyle("CARD", theme)}
+              onClick={(event) => event.stopPropagation()}
             >
-              <X size={20} />
-            </motion.button>
-
-            {/* 内容区域 - 可滚动 */}
-            <div className="max-h-[80vh] overflow-y-auto">
-              {/* 头部 */}
               <div
-                className="border-b p-6"
+                className="relative border-b px-6 py-6"
                 style={{
-                  borderColor: GLASS_BORDERS.DARK
+                  borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                 }}
               >
-                <div className="flex items-start gap-4">
-                  {/* 图标 */}
+                <motion.button
+                  {...iconButtonInteraction}
+                  type="button"
+                  onClick={onClose}
+                  className={`absolute right-6 top-6 z-10 rounded-lg p-1.5 transition-[background-color,transform] duration-250 ease-swift ${
+                    isDark ? "hover:bg-white/10" : "hover:bg-slate-100"
+                  }`}
+                  aria-label="关闭"
+                >
+                  <X
+                    className={`h-4 w-4 ${
+                      isDark ? "text-white/70" : "text-slate-600"
+                    }`}
+                  />
+                </motion.button>
+
+                <div className="grid grid-cols-[auto,1fr] gap-4 pr-12">
                   <div
-                    className={`flex h-16 w-16 items-center justify-center rounded-2xl ${
-                      isDark ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20" : "bg-gradient-to-br from-blue-400/20 to-purple-400/20"
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                      isDark
+                        ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20"
+                        : "bg-gradient-to-br from-blue-400/20 to-purple-400/20"
                     }`}
                   >
-                    {definition.icon && definition.icon.startsWith('http') ? (
+                    {definition.icon && definition.icon.startsWith("http") ? (
                       <img
                         src={definition.icon}
                         alt={definition.name}
-                        className="h-12 w-12 rounded-xl"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                        className="h-10 w-10 rounded-xl"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
                         }}
                       />
                     ) : (
                       <span
-                        className={`text-2xl font-bold ${
+                        className={`text-xl font-bold ${
                           isDark ? "text-white" : "text-slate-700"
                         }`}
                       >
@@ -127,66 +132,63 @@ export function ModuleDetailModal({
                     )}
                   </div>
 
-                  {/* 信息 */}
-                  <div className="flex-1">
-                    <h2
-                      className={`mb-2 text-2xl font-bold ${
-                        isDark ? "text-white" : "text-slate-800"
-                      }`}
-                    >
-                      {definition.name}
-                    </h2>
+                  <div className="min-w-0 space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2
+                        className={`truncate text-2xl font-bold ${
+                          isDark ? "text-white" : "text-slate-800"
+                        }`}
+                      >
+                        {definition.name}
+                      </h2>
+                    </div>
                     <div
-                      className={`flex flex-wrap items-center gap-3 text-sm ${
+                      className={`flex flex-wrap items-center gap-2 text-xs ${
                         isDark ? "text-white/70" : "text-slate-600"
                       }`}
                     >
-                      <span>v{definition.version}</span>
-                      {definition.author && (
-                        <>
-                          <span>•</span>
-                          <span>作者: {definition.author}</span>
-                        </>
-                      )}
+                      <span className="rounded-full border px-2 py-0.5">
+                        ID {definition.id}
+                      </span>
+                      <span className="rounded-full border px-2 py-0.5">
+                        版本 v{definition.version}
+                      </span>
                       {definition.category && (
-                        <>
-                          <span>•</span>
-                          <span className="rounded-full bg-blue-500/10 px-2 py-1 text-blue-500">
-                            {definition.category}
-                          </span>
-                        </>
+                        <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-blue-500">
+                          {definition.category}
+                        </span>
                       )}
+                      {definition.author && <span>作者：{definition.author}</span>}
+                      <span>
+                        来源：{definition.source === "remote" ? "远程插件" : "本地插件"}
+                      </span>
                       {runtime && (
-                        <>
-                          <span>•</span>
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                              isRunning
-                                ? "border border-green-500/30 bg-green-500/15 text-green-500"
-                                : isLaunching
-                                  ? "border border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
-                                  : isLaunchError
-                                    ? "border border-red-500/30 bg-red-500/15 text-red-500"
-                                    : isDark
-                                      ? "border border-white/10 text-white/70"
-                                      : "border border-slate-200 text-slate-600"
-                            }`}
-                          >
-                            {isRunning
-                              ? "窗口运行中"
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            isRunning
+                              ? "border border-green-500/30 bg-green-500/15 text-green-500"
                               : isLaunching
-                                ? "启动中…"
-                                : isLaunchError
-                                  ? "启动失败"
-                                  : "未运行"}
-                          </span>
-                        </>
+                              ? "border border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
+                              : isLaunchError
+                              ? "border border-red-500/30 bg-red-500/15 text-red-500"
+                              : isDark
+                              ? "border border-white/10 text-white/70"
+                              : "border border-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {isRunning
+                            ? "窗口运行中"
+                            : isLaunching
+                            ? "启动中…"
+                            : isLaunchError
+                            ? "启动失败"
+                            : "未运行"}
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  {/* 操作按钮 */}
-                  <div className="flex gap-2">
+                  <div className="col-start-2 flex flex-wrap items-center gap-2 pt-2">
                     {isInstalled && runtime ? (
                       <>
                         {onOpen && (
@@ -195,21 +197,11 @@ export function ModuleDetailModal({
                             type="button"
                             onClick={() => onOpen(module.id)}
                             disabled={isLaunching}
-                            className={`rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
+                            className={`rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
                               isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
                             }`}
                           >
-                            {isLaunching ? (
-                              <span className="inline-flex items-center gap-2">
-                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                启动中
-                              </span>
-                            ) : (
-                              <>
-                                <ExternalLink size={16} className="inline mr-1" />
-                                {isRunning ? "聚焦窗口" : "打开"}
-                              </>
-                            )}
+                            {isLaunching ? "启动中…" : isRunning ? "聚焦窗口" : "打开插件"}
                           </motion.button>
                         )}
                         {onToggleStatus && (
@@ -217,23 +209,13 @@ export function ModuleDetailModal({
                             {...buttonInteraction}
                             type="button"
                             onClick={() => onToggleStatus(module.id)}
-                            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-[background-color,transform] duration-250 ease-swift ${
+                            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-[background-color,transform] duration-250 ease-swift ${
                               isEnabled
-                                ? "border-orange-500/30 bg-orange-500/20 text-orange-500 hover:bg-orange-500/30"
-                                : "border-green-500/30 bg-green-500/20 text-green-500 hover:bg-green-500/30"
+                                ? "border-orange-500/30 bg-orange-500/15 text-orange-500 hover:bg-orange-500/25"
+                                : "border-green-500/30 bg-green-500/15 text-green-500 hover:bg-green-500/25"
                             }`}
                           >
-                            {isEnabled ? (
-                              <>
-                                <Pause size={16} className="inline mr-1" />
-                                停用
-                              </>
-                            ) : (
-                              <>
-                                <Play size={16} className="inline mr-1" />
-                                启用
-                              </>
-                            )}
+                            {isEnabled ? "停用" : "启用"}
                           </motion.button>
                         )}
                         {onUninstall && (
@@ -241,163 +223,153 @@ export function ModuleDetailModal({
                             {...buttonInteraction}
                             type="button"
                             onClick={() => onUninstall(module.id)}
-                            className="rounded-lg border border-red-500/30 bg-red-500/20 px-4 py-2 text-sm font-medium text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/30"
+                            className="rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/25"
                           >
-                            <Trash2 size={16} className="inline mr-1" />
                             卸载
                           </motion.button>
                         )}
                       </>
-                    ) : (
-                      onInstall && (
-                        <motion.button
-                          {...buttonInteraction}
-                          type="button"
-                          onClick={() => onInstall(module.id)}
-                          className="rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30"
-                        >
-                          <Download size={16} className="inline mr-1" />
-                          安装插件
-                        </motion.button>
-                      )
-                    )}
+                    ) : null}
+                    {!isInstalled && onInstall ? (
+                      <motion.button
+                        {...buttonInteraction}
+                        type="button"
+                        onClick={() => onInstall(module.id)}
+                        className="rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30"
+                      >
+                        安装插件
+                      </motion.button>
+                    ) : null}
                   </div>
                 </div>
               </div>
 
-              {/* Tab 导航 */}
-              <div
-                className="border-b px-6"
-                style={{
-                  borderColor: GLASS_BORDERS.DARK
-                }}
-              >
-                <div className="flex gap-4">
+              <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4 elegant-scroll">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setActiveTab("details")}
-                    className={`relative py-3 text-sm font-medium transition-colors ${
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
                       activeTab === "details"
-                        ? "text-blue-500"
+                        ? isDark
+                          ? "bg-white/15 text-white"
+                          : "bg-slate-200 text-slate-900"
                         : isDark
-                          ? "text-white/60 hover:text-white"
-                          : "text-slate-600 hover:text-slate-800"
+                        ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    📖 详情
-                    {activeTab === "details" && (
-                      <motion.div
-                        layoutId="activeDetailTab"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
-                      />
-                    )}
+                    插件详情
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("changelog")}
-                    className={`relative py-3 text-sm font-medium transition-colors ${
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
                       activeTab === "changelog"
-                        ? "text-blue-500"
+                        ? isDark
+                          ? "bg-white/15 text-white"
+                          : "bg-slate-200 text-slate-900"
                         : isDark
-                          ? "text-white/60 hover:text-white"
-                          : "text-slate-600 hover:text-slate-800"
+                        ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    📝 更新日志
-                    {activeTab === "changelog" && (
-                      <motion.div
-                        layoutId="activeDetailTab"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
-                      />
-                    )}
+                    更新日志
                   </button>
                 </div>
-              </div>
 
-              {/* Tab 内容 */}
-              <div className="p-6">
-                {activeTab === "details" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className={isDark ? "text-white/80" : "text-slate-700"}
-                  >
-                    <h3 className="mb-3 text-lg font-semibold">插件描述</h3>
-                    <p className="mb-6 leading-relaxed">
-                      {definition.description || "暂无详细描述"}
-                    </p>
+                <div
+                  className={`rounded-2xl border px-6 py-5 ${
+                    isDark ? "bg-white/10" : "bg-white/75"
+                  }`}
+                  style={{
+                    borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+                  }}
+                >
+                  {activeTab === "details" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className={isDark ? "text-white/80" : "text-slate-700"}
+                    >
+                      <h3 className="mb-3 text-lg font-semibold">插件描述</h3>
+                      <p className="mb-6 leading-relaxed">
+                        {definition.description || "暂无详细描述"}
+                      </p>
 
-                    {definition.keywords && definition.keywords.length > 0 && (
-                      <>
-                        <h3 className="mb-3 text-lg font-semibold">关键词</h3>
-                        <div className="mb-6 flex flex-wrap gap-2">
-                          {definition.keywords.map((keyword) => (
-                            <span
-                              key={keyword}
-                              className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-500"
-                            >
-                              {keyword}
+                      {definition.keywords && definition.keywords.length > 0 && (
+                        <>
+                          <h3 className="mb-3 text-lg font-semibold">关键词</h3>
+                          <div className="mb-6 flex flex-wrap gap-2">
+                            {definition.keywords.map((keyword) => (
+                              <span
+                                key={keyword}
+                                className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-500"
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <h3 className="mb-3 text-lg font-semibold">插件信息</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className={isDark ? "text-white/60" : "text-slate-500"}>
+                            版本号:
+                          </span>
+                          <span className="font-medium">{definition.version}</span>
+                        </div>
+                        {definition.author && (
+                          <div className="flex justify-between">
+                            <span className={isDark ? "text-white/60" : "text-slate-500"}>
+                              作者:
                             </span>
-                          ))}
-                        </div>
-                      </>
-                    )}
-
-                    <h3 className="mb-3 text-lg font-semibold">插件信息</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className={isDark ? "text-white/60" : "text-slate-500"}>
-                          版本号:
-                        </span>
-                        <span className="font-medium">{definition.version}</span>
-                      </div>
-                      {definition.author && (
+                            <span className="font-medium">{definition.author}</span>
+                          </div>
+                        )}
+                        {definition.category && (
+                          <div className="flex justify-between">
+                            <span className={isDark ? "text-white/60" : "text-slate-500"}>
+                              分类:
+                            </span>
+                            <span className="font-medium">{definition.category}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
                           <span className={isDark ? "text-white/60" : "text-slate-500"}>
-                            作者:
+                            来源:
                           </span>
-                          <span className="font-medium">{definition.author}</span>
-                        </div>
-                      )}
-                      {definition.category && (
-                        <div className="flex justify-between">
-                          <span className={isDark ? "text-white/60" : "text-slate-500"}>
-                            分类:
+                          <span className="font-medium">
+                            {definition.source === "remote" ? "远程插件" : "本地插件"}
                           </span>
-                          <span className="font-medium">{definition.category}</span>
                         </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className={isDark ? "text-white/60" : "text-slate-500"}>
-                          来源:
-                        </span>
-                        <span className="font-medium">
-                          {definition.source === "remote" ? "远程插件" : "本地插件"}
-                        </span>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
+                    </motion.div>
+                  )}
 
-                {activeTab === "changelog" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className={isDark ? "text-white/80" : "text-slate-700"}
-                  >
-                    <h3 className="mb-3 text-lg font-semibold">更新日志</h3>
-                    <p className={isDark ? "text-white/60" : "text-slate-500"}>
-                      暂无更新日志
-                    </p>
-                  </motion.div>
-                )}
+                  {activeTab === "changelog" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className={isDark ? "text-white/80" : "text-slate-700"}
+                    >
+                      <h3 className="mb-3 text-lg font-semibold">更新日志</h3>
+                      <p className={isDark ? "text-white/60" : "text-slate-500"}>
+                        暂无更新日志
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
-        </motion.div>
+        </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

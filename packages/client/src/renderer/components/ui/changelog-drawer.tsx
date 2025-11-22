@@ -78,7 +78,7 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed right-0 top-0 z-[9999] h-full w-full sm:w-[calc(100vw-4rem)] border-l ${getGlassShadow(
+            className={`fixed right-0 top-0 z-[9999] h-full w-full sm:w-[80vw] border-l ${getGlassShadow(
               theme
             )}`}
             style={{
@@ -87,6 +87,7 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                 theme === 'dark'
                   ? 'rgba(255, 255, 255, 0.2)'
                   : 'rgba(101, 187, 233, 0.15)',
+              maxWidth: '1200px',
             }}
             role="dialog"
             aria-modal="true"

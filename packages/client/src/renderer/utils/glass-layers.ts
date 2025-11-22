@@ -46,7 +46,7 @@ export const GLASS_SATURATE = 170; // 饱和度增强百分比
 // 统一边框颜色
 export const GLASS_BORDERS = {
   LIGHT: 'rgba(0, 0, 0, 0.08)',        // 浅色模式边框 (深色半透明)
-  DARK: 'rgba(255, 255, 255, 0.12)',   // 深色模式边框 (白色半透明)
+  DARK: 'rgba(71, 85, 105, 0.35)',     // 深色模式边框 (柔和蓝灰)
 } as const;
 
 export type GlassLayer = keyof typeof GLASS_LAYERS;

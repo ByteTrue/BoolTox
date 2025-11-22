@@ -246,11 +246,11 @@ export function ModuleCenter() {
               className={`rounded-full px-4 py-1.5 transition-colors ${
                 activeTab === "installed"
                   ? isDark
-                    ? "bg-white text-slate-900"
-                    : "bg-slate-900 text-white"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200 text-slate-900"
                   : isDark
-                    ? "text-white/70 hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
               已安装 ({installedModules.length})
@@ -261,11 +261,11 @@ export function ModuleCenter() {
               className={`rounded-full px-4 py-1.5 transition-colors ${
                 activeTab === "store"
                   ? isDark
-                    ? "bg-white text-slate-900"
-                    : "bg-slate-900 text-white"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200 text-slate-900"
                   : isDark
-                    ? "text-white/70 hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
               插件商店 ({filteredAvailable.length})

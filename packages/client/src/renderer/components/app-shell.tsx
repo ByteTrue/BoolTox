@@ -15,7 +15,7 @@ import { useTheme } from "./theme-provider";
 import { getGlassStyle, getGlassShadow, getGlassActiveStyle, GLASS_BORDERS } from "@/utils/glass-layers";
 import { getBlurStyle } from "@/utils/blur-effects";
 import { pageTransitionPresets, staggerPresets } from "@/utils/fluid-animations";
-import { Boxes } from "lucide-react";
+import { Boxes, ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { GlassButton } from "./ui/glass-button";
 import { UpdateBanner } from "./ui/update-banner";
 import { GlassLoadingFallback } from "./ui/glass-loading-fallback";
@@ -198,6 +198,7 @@ function AppShellContent() {
     openModule,
   } = useModulePlatform();
   const [activeNav, setActiveNav] = useState<string>('overview');
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
 
   // 屏幕阅读器公告
   const announce = useScreenReaderAnnounce();
@@ -216,7 +217,7 @@ function AppShellContent() {
       // 屏幕阅读器公告
       const module = getModuleById(moduleId);
       if (module) {
-        announce(`已切换到模块：${module.definition.name}`, 'polite');
+        announce(`已切换到插件：${module.definition.name}`, 'polite');
         if (module.id.startsWith('com.booltox.')) {
           setActiveModuleId(null);
         }
@@ -298,46 +299,76 @@ function AppShellContent() {
         onMouseLeave={() => setSpotlight({ visible: false })}
       >
         {/* 侧边栏 */}
-        <aside
-          role="navigation"
-          aria-label="主导航"
-          aria-expanded={true}
-          className={`flex h-full flex-col overflow-hidden rounded-3xl border p-5 transition-[colors,border-color,box-shadow] duration-500 ease-gentle ${getGlassShadow(theme)}`}
-          style={{
-            width: '268px',
-            minWidth: '268px',
-            ...getGlassStyle('PANEL', theme),
-            ...getBlurStyle('sidebar', theme, 'medium'),
-          }}
-        >
-          {/* Logo 区域 */}
-          <div
-            className={`mb-6 rounded-2xl border p-5 transition-[transform,box-shadow] duration-250 ease-swift hover:scale-[1.01] ${theme === 'dark' ? 'shadow-unified-xl-dark' : 'shadow-unified-xl'}`}
+        <div className="relative">
+          <aside
+            role="navigation"
+            aria-label="主导航"
+            aria-expanded={true}
+            className={`flex h-full flex-col overflow-hidden rounded-3xl border transition-[colors,border-color,box-shadow] duration-500 ease-gentle ${isNavCollapsed ? 'p-3' : 'p-5'} ${getGlassShadow(theme)}`}
             style={{
-              ...getGlassStyle('CARD', theme),
-              background: theme === 'dark'
-                ? 'linear-gradient(135deg, rgba(101, 187, 233, 0.12) 0%, rgba(249, 193, 207, 0.12) 100%), rgba(28, 30, 35, 0.78)'
-                : 'linear-gradient(135deg, rgba(101, 187, 233, 0.12) 0%, rgba(249, 193, 207, 0.12) 100%), rgba(255, 255, 255, 0.55)',
+              width: isNavCollapsed ? '94px' : '240px',
+              minWidth: isNavCollapsed ? '94px' : '240px',
+              ...getGlassStyle('PANEL', theme),
+              ...getBlurStyle('sidebar', theme, 'medium'),
             }}
           >
-            <div className="flex items-center gap-3">
-              <div className="inline-flex rounded-xl bg-brand-gradient p-2.5 shadow-unified-md dark:shadow-unified-md-dark text-white">
-                <Boxes className="h-6 w-6" />
+            {!isNavCollapsed && (
+              <div
+                className="mb-6 rounded-2xl border p-5 transition-[transform,box-shadow] duration-250 ease-swift hover:scale-[1.01]"
+                style={{
+                  ...getGlassStyle('CARD', theme),
+                  background: theme === 'dark'
+                    ? 'linear-gradient(135deg, rgba(101, 187, 233, 0.12) 0%, rgba(249, 193, 207, 0.12) 100%), rgba(28, 30, 35, 0.78)'
+                    : 'linear-gradient(135deg, rgba(101, 187, 233, 0.12) 0%, rgba(249, 193, 207, 0.12) 100%), rgba(255, 255, 255, 0.55)',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex rounded-xl bg-brand-gradient p-2.5 shadow-unified-md dark:shadow-unified-md-dark text-white">
+                    <Boxes className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-blue-300 dark:text-brand-blue-300">BOOLTOX</p>
+                    <p className={`text-lg font-bold drop-shadow ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>不二工具箱</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-blue-300 dark:text-brand-blue-300">BOOLTOX</p>
-                <p className={`text-lg font-bold drop-shadow ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>不二工具箱</p>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* 导航区域 - 添加 padding 防止阴影被截断 */}
-          <div className="elegant-scroll flex-1 overflow-y-auto pr-3 py-2">
-            <nav className="flex flex-col gap-6 px-1">
-              <NavSection title="管理中心" items={primaryNav} active={activeKey} onSelect={handleNavSelect} />
-            </nav>
-          </div>
-        </aside>
+            {/* 导航区域 - 添加 padding 防止阴影被截断 */}
+            <div className={`elegant-scroll flex-1 overflow-y-auto ${isNavCollapsed ? 'px-1 py-1' : 'pr-3 py-2'}`}>
+              <nav className={`flex flex-col ${isNavCollapsed ? 'items-center gap-3' : 'gap-6 px-1'}`}>
+                <NavSection
+                  title="管理中心"
+                  items={primaryNav}
+                  active={activeKey}
+                  onSelect={handleNavSelect}
+                  collapsed={isNavCollapsed}
+                />
+              </nav>
+            </div>
+          </aside>
+
+          <motion.button
+            type="button"
+            onClick={() => setIsNavCollapsed((prev) => !prev)}
+            className="absolute -right-3 bottom-6 z-20 flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition-[background-color,box-shadow] duration-200"
+            style={{
+              background: theme === 'dark' ? 'rgba(24, 38, 52, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(148, 163, 184, 0.35)',
+              boxShadow: theme === 'dark'
+                ? '0 12px 28px rgba(15, 23, 42, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+                : '0 14px 32px rgba(148, 163, 184, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+            }}
+            aria-label={isNavCollapsed ? '展开侧边栏' : '折叠侧边栏'}
+            whileTap={{ scale: 0.94 }}
+          >
+            {isNavCollapsed ? (
+              <ChevronRight className={theme === 'dark' ? 'text-white/80' : 'text-slate-600'} size={18} />
+            ) : (
+              <Menu className={theme === 'dark' ? 'text-white/80' : 'text-slate-600'} size={18} />
+            )}
+          </motion.button>
+        </div>
         {/* 外层：固定容器 */}
         <div className="relative flex min-h-0 min-w-0 flex-1">
           {/* 内层：内容卡片（固定位置，内部滚动） */}
@@ -410,6 +441,7 @@ function NavSection({
   onSelect,
   onReorder,
   sortable = false,
+  collapsed = false,
 }: {
   title: string;
   items: NavItem[];
@@ -417,6 +449,7 @@ function NavSection({
   onSelect: (value: string) => void;
   onReorder?: (event: DragEndEvent) => void;
   sortable?: boolean;
+  collapsed?: boolean;
 }) {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const { theme } = useTheme();
@@ -442,7 +475,11 @@ function NavSection({
         }}
         onMouseEnter={() => setHoveredItem(item.key)}
         onMouseLeave={() => setHoveredItem(null)}
-        className={`group flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 transition-[transform,box-shadow,background-color] duration-250 ease-swift hover:shadow-unified-xl hover:dark:shadow-unified-xl-dark focus-visible:outline-none hover-optimized ${theme === 'dark' ? 'shadow-unified-md-dark' : 'shadow-unified-md'}`}
+        className={`group flex w-full items-center rounded-2xl border transition-[transform,box-shadow,background-color] duration-250 ease-swift hover:shadow-unified-xl hover:dark:shadow-unified-xl-dark focus-visible:outline-none hover-optimized ${
+          collapsed ? 'justify-center gap-0 px-2.5 py-2.5' : 'gap-3 px-3 py-2.5'
+        } ${theme === 'dark' ? 'shadow-unified-md-dark' : 'shadow-unified-md'}`}
+        title={item.label}
+        aria-label={item.label}
         style={{
           ...(isActive ? getGlassActiveStyle() : getGlassStyle('BUTTON', theme)),
           ...(hoveredItem === item.key && !isActive ? {
@@ -452,7 +489,7 @@ function NavSection({
         }}
       >
         <div
-          className={`inline-flex rounded-lg p-2 transition-[box-shadow,background-color,backdrop-filter] duration-250 ease-swift ${
+          className={`inline-flex rounded-lg ${collapsed ? 'p-2.5' : 'p-2'} transition-[box-shadow,background-color,backdrop-filter] duration-250 ease-swift ${
             isActive
               ? 'shadow-unified-lg dark:shadow-unified-lg-dark'
               : 'shadow-unified-sm dark:shadow-unified-sm-dark'
@@ -474,29 +511,33 @@ function NavSection({
             className={isActive ? 'text-white' : 'text-brand-blue-400 dark:text-brand-blue-400'}
           />
         </div>
-        <div className="flex-1 text-left">
-          <p className={`text-sm font-semibold ${isActive ? (theme === 'dark' ? 'text-white' : 'text-slate-800') : (theme === 'dark' ? 'text-white' : 'text-slate-800')}`}>
-            {item.label}
-          </p>
-          {item.description && (
-            <p className={`text-xs ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}>
-              {item.description}
-            </p>
-          )}
-        </div>
-        {item.badge && (
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-semibold shadow-unified-sm dark:shadow-unified-sm-dark border ${
-              item.tone === "accent"
-                ? 'bg-blue-500/20 text-blue-500 border-blue-500/30'
-                : (theme === 'dark' ? 'bg-white/10 text-white/80' : 'bg-slate-200 text-slate-700')
-            }`}
-            style={item.tone !== "accent" ? {
-              borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-            } : undefined}
-          >
-            {item.badge}
-          </span>
+        {!collapsed && (
+          <>
+            <div className="flex-1 text-left">
+              <p className={`text-sm font-semibold ${isActive ? (theme === 'dark' ? 'text-white' : 'text-slate-800') : (theme === 'dark' ? 'text-white' : 'text-slate-800')}`}>
+                {item.label}
+              </p>
+              {item.description && (
+                <p className={`text-xs ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}>
+                  {item.description}
+                </p>
+              )}
+            </div>
+            {item.badge && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-semibold shadow-unified-sm dark:shadow-unified-sm-dark border ${
+                  item.tone === "accent"
+                    ? 'bg-blue-500/20 text-blue-500 border-blue-500/30'
+                    : (theme === 'dark' ? 'bg-white/10 text-white/80' : 'bg-slate-200 text-slate-700')
+                }`}
+                style={item.tone !== "accent" ? {
+                  borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                } : undefined}
+              >
+                {item.badge}
+              </span>
+            )}
+          </>
         )}
       </button>
     );
@@ -509,8 +550,10 @@ function NavSection({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className={`text-xs font-semibold uppercase tracking-[0.26em] ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>{title}</p>
+    <div className={`flex flex-col ${collapsed ? 'items-center gap-2' : 'gap-3'}`}>
+      {!collapsed && (
+        <p className={`text-xs font-semibold uppercase tracking-[0.26em] ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>{title}</p>
+      )}
       
       {sortable && onReorder ? (
         <DndContext
@@ -521,7 +564,7 @@ function NavSection({
           <SortableContext items={items.map(item => item.key)} strategy={verticalListSortingStrategy}>
             {/* 列表交错动画 */}
             <motion.div
-              className="flex flex-col gap-2.5"
+              className={`flex flex-col gap-2.5 ${collapsed ? 'w-full' : ''}`}
               variants={staggerPresets.fast.container}
               initial="hidden"
               animate="visible"
@@ -533,8 +576,7 @@ function NavSection({
                   style={getGlassStyle('BUTTON', theme)}
                 >
                   <p className={`mb-3 ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}>
-                    暂无快速访问模块，在插件中心点击"📌"图标添加常用模块。
-                    暂无快速访问模块，在插件中心点击"📌"图标添加常用插件。
+                    暂无导航项，可在插件中心自定义常用入口。
                   </p>
                   <GlassButton
                     variant="primary"
@@ -557,7 +599,7 @@ function NavSection({
       ) : (
         // 列表交错动画 - 非拖拽模式
         <motion.div
-          className="flex flex-col gap-2.5"
+          className={`flex flex-col gap-2.5 ${collapsed ? 'w-full' : ''}`}
           variants={staggerPresets.default.container}
           initial="hidden"
           animate="visible"

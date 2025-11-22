@@ -48,6 +48,9 @@ export function WindowTitlebar() {
     background: theme === 'dark'
       ? 'linear-gradient(135deg, rgba(101, 187, 233, 0.08) 0%, rgba(249, 193, 207, 0.06) 100%), rgba(28, 30, 35, 0.88)'
       : 'linear-gradient(135deg, rgba(101, 187, 233, 0.15) 0%, rgba(249, 193, 207, 0.12) 100%), rgba(255, 255, 255, 0.75)',
+    borderColor: theme === 'dark'
+      ? 'rgba(71, 85, 105, 0.35)'
+      : 'rgba(148, 163, 184, 0.35)',
   } as CSSProperties;
 
   const noDragStyle = { WebkitAppRegion: 'no-drag' } as CSSProperties;
