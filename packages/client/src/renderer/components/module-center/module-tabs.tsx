@@ -18,8 +18,8 @@ export function ModuleTabs({ activeTab, onTabChange, counts }: ModuleTabsProps) 
   const isDark = theme === "dark";
 
   const tabs: Array<{ id: ModuleTab; label: string; icon: typeof Package; count: number }> = [
-    { id: "installed", label: "已安装", icon: Package, count: counts.installed },
-    { id: "store", label: "模块商店", icon: ShoppingBag, count: counts.store },
+    { id: "installed", label: "已安装插件", icon: Package, count: counts.installed },
+    { id: "store", label: "插件商店", icon: ShoppingBag, count: counts.store },
   ];
 
   return (

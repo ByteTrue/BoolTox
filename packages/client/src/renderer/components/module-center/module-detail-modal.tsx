@@ -43,6 +43,10 @@ export function ModuleDetailModal({
   const definition = "definition" in module ? module.definition : module;
   const runtime = "runtime" in module ? module.runtime : undefined;
   const isEnabled = runtime?.status === "enabled";
+  const launchState = runtime?.launchState ?? "idle";
+  const isLaunching = launchState === "launching";
+  const isRunning = launchState === "running";
+  const isLaunchError = launchState === "error";
 
   // Modal 背景样式
   const modalStyle = {
@@ -152,6 +156,32 @@ export function ModuleDetailModal({
                           </span>
                         </>
                       )}
+                      {runtime && (
+                        <>
+                          <span>•</span>
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                              isRunning
+                                ? "border border-green-500/30 bg-green-500/15 text-green-500"
+                                : isLaunching
+                                  ? "border border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
+                                  : isLaunchError
+                                    ? "border border-red-500/30 bg-red-500/15 text-red-500"
+                                    : isDark
+                                      ? "border border-white/10 text-white/70"
+                                      : "border border-slate-200 text-slate-600"
+                            }`}
+                          >
+                            {isRunning
+                              ? "窗口运行中"
+                              : isLaunching
+                                ? "启动中…"
+                                : isLaunchError
+                                  ? "启动失败"
+                                  : "未运行"}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -164,10 +194,22 @@ export function ModuleDetailModal({
                             {...buttonInteraction}
                             type="button"
                             onClick={() => onOpen(module.id)}
-                            className="rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30"
+                            disabled={isLaunching}
+                            className={`rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
+                              isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
+                            }`}
                           >
-                            <ExternalLink size={16} className="inline mr-1" />
-                            打开
+                            {isLaunching ? (
+                              <span className="inline-flex items-center gap-2">
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                启动中
+                              </span>
+                            ) : (
+                              <>
+                                <ExternalLink size={16} className="inline mr-1" />
+                                {isRunning ? "聚焦窗口" : "打开"}
+                              </>
+                            )}
                           </motion.button>
                         )}
                         {onToggleStatus && (
@@ -215,7 +257,7 @@ export function ModuleDetailModal({
                           className="rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30"
                         >
                           <Download size={16} className="inline mr-1" />
-                          安装模块
+                          安装插件
                         </motion.button>
                       )
                     )}
@@ -281,7 +323,7 @@ export function ModuleDetailModal({
                     exit={{ opacity: 0, y: 10 }}
                     className={isDark ? "text-white/80" : "text-slate-700"}
                   >
-                    <h3 className="mb-3 text-lg font-semibold">模块描述</h3>
+                    <h3 className="mb-3 text-lg font-semibold">插件描述</h3>
                     <p className="mb-6 leading-relaxed">
                       {definition.description || "暂无详细描述"}
                     </p>
@@ -302,7 +344,7 @@ export function ModuleDetailModal({
                       </>
                     )}
 
-                    <h3 className="mb-3 text-lg font-semibold">模块信息</h3>
+                    <h3 className="mb-3 text-lg font-semibold">插件信息</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className={isDark ? "text-white/60" : "text-slate-500"}>
@@ -331,7 +373,7 @@ export function ModuleDetailModal({
                           来源:
                         </span>
                         <span className="font-medium">
-                          {definition.source === "remote" ? "远程模块" : "本地模块"}
+                          {definition.source === "remote" ? "远程插件" : "本地插件"}
                         </span>
                       </div>
                     </div>

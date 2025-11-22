@@ -30,8 +30,10 @@ export interface PluginRuntime {
   manifest: PluginManifest;
   /** Absolute path to the plugin directory on disk */
   path: string;
-  status: 'stopped' | 'running' | 'error';
+  status: 'stopped' | 'running' | 'loading' | 'error';
   /** WebContents ID of the BrowserView (if running) */
   viewId?: number;
+  /** BrowserWindow ID (when running in dedicated window mode) */
+  windowId?: number;
   error?: string;
 }

@@ -32,7 +32,7 @@ export function ModuleGrid({
   onOpen,
   onPinToggle,
   onCardClick,
-  emptyMessage = "暂无模块",
+  emptyMessage = "暂无插件",
 }: ModuleGridProps) {
   // 加载状态
   if (isLoading) {

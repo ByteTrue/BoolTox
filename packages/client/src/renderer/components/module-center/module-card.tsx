@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Play, Pause, Trash2, Download, ExternalLink, Pin } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
-import { cardHover, buttonInteraction } from "@/utils/animation-presets";
+import { cardHover } from "@/utils/animation-presets";
 import type { ModuleInstance } from "@core/modules/types";
 
 interface ModuleCardProps {
@@ -25,6 +25,17 @@ export function ModuleCard({
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const isEnabled = module.runtime.status === "enabled";
+  const launchState = module.runtime.launchState ?? "idle";
+  const isLaunching = launchState === "launching";
+  const isRunning = launchState === "running";
+  const isLaunchError = launchState === "error";
+  const launchStateBadge = isRunning
+    ? { label: "窗口运行中", tone: "success" as const }
+    : isLaunching
+      ? { label: "启动中…", tone: "warning" as const }
+      : isLaunchError
+        ? { label: "启动失败", tone: "danger" as const }
+        : null;
 
   return (
     <motion.div
@@ -106,6 +117,19 @@ export function ModuleCard({
           >
             {isEnabled ? "✓ 已启用" : "⏸ 已停用"}
           </span>
+          {launchStateBadge && (
+            <span
+              className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                launchStateBadge.tone === "success"
+                  ? "border-green-500/30 bg-green-500/15 text-green-500"
+                  : launchStateBadge.tone === "warning"
+                    ? "border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
+                    : "border-red-500/30 bg-red-500/15 text-red-500"
+              }`}
+            >
+              {launchStateBadge.label}
+            </span>
+          )}
         </div>
       </div>
 
@@ -158,17 +182,27 @@ export function ModuleCard({
             e.stopPropagation();
             onOpen(module.id);
           }}
+          disabled={isLaunching}
           className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 ${
             isDark
               ? "bg-white/5 text-white hover:bg-white/10"
               : "bg-white/50 text-slate-700 hover:bg-white"
-          }`}
+          } ${isLaunching ? "cursor-wait opacity-70 hover:scale-100" : ""}`}
           style={{
             borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
           }}
-          title="打开模块"
+          title={
+            isLaunching ? "插件正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开插件"
+          }
         >
-          <ExternalLink className="mx-auto" size={14} />
+          {isLaunching ? (
+            <span className="mx-auto flex items-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              启动中
+            </span>
+          ) : (
+            <ExternalLink className="mx-auto" size={14} />
+          )}
         </button>
 
         <button
@@ -178,19 +212,19 @@ export function ModuleCard({
             onPinToggle(module.id);
           }}
           className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 ${
-            module.pinnedToQuickAccess
+            module.isFavorite
               ? "border-yellow-500/30 bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/30"
               : isDark
                 ? "bg-white/5 text-white hover:bg-white/10"
                 : "bg-white/50 text-slate-700 hover:bg-white"
           }`}
-          style={!module.pinnedToQuickAccess ? {
+          style={!module.isFavorite ? {
             borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
           } : undefined}
-          title={module.pinnedToQuickAccess ? "从快速访问移除" : "添加到快速访问"}
+          title={module.isFavorite ? "取消收藏" : "收藏该插件"}
         >
           <Pin 
-            className={`mx-auto ${module.pinnedToQuickAccess ? 'fill-current' : ''}`} 
+            className={`mx-auto ${module.isFavorite ? 'fill-current' : ''}`} 
             size={14} 
           />
         </button>
@@ -206,7 +240,7 @@ export function ModuleCard({
               ? "border-orange-500/30 bg-orange-500/10 text-orange-500 hover:bg-orange-500/20"
               : "border-green-500/30 bg-green-500/10 text-green-500 hover:bg-green-500/20"
           }`}
-          title={isEnabled ? "停用模块" : "启用模块"}
+          title={isEnabled ? "停用插件" : "启用插件"}
         >
           {isEnabled ? <Pause className="mx-auto" size={14} /> : <Play className="mx-auto" size={14} />}
         </button>
@@ -218,7 +252,7 @@ export function ModuleCard({
             onUninstall(module.id);
           }}
           className="flex-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-500 transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 hover:bg-red-500/20"
-          title="卸载模块"
+          title="卸载插件"
         >
           <Trash2 className="mx-auto" size={14} />
         </button>
@@ -355,7 +389,7 @@ export function AvailableModuleCard({
         ) : (
           <span className="flex items-center justify-center gap-2">
             <Download size={16} />
-            安装模块
+            安装插件
           </span>
         )}
       </button>

@@ -12,11 +12,25 @@ interface PluginState {
   refCount: number;
   loadingPromise?: Promise<number>;
   destroyTimer?: NodeJS.Timeout;
+  parentWindow?: BrowserWindow;
 }
 
 export class PluginRunner {
   // Map pluginId -> PluginState
   private states: Map<string, PluginState> = new Map();
+
+  private emitState(state: PluginState, status: PluginRuntime['status'] | 'launching' | 'stopping', extra: Record<string, unknown> = {}) {
+    const payload = {
+      pluginId: state.runtime.id,
+      status,
+      ...extra,
+    };
+
+    const targetWindow = state.parentWindow ?? BrowserWindow.getAllWindows().find((win) => win.isVisible());
+    if (targetWindow && !targetWindow.isDestroyed()) {
+      targetWindow.webContents.send('plugin:state', payload);
+    }
+  }
 
   async startPlugin(pluginId: string, parentWindow: BrowserWindow): Promise<number> {
     let state = this.states.get(pluginId);
@@ -33,6 +47,8 @@ export class PluginRunner {
       this.states.set(pluginId, state);
     }
 
+    state.parentWindow = parentWindow;
+
     // Cancel pending destroy if any
     if (state.destroyTimer) {
       console.log(`[PluginRunner] Cancelled pending destroy for ${pluginId}`);
@@ -42,6 +58,7 @@ export class PluginRunner {
 
     state.refCount++;
     console.log(`[PluginRunner] startPlugin ${pluginId}, refCount: ${state.refCount}`);
+    this.emitState(state, 'launching');
 
     // If already running or loading, return the windowId (or wait for it)
     if (state.loadingPromise) {
@@ -50,6 +67,8 @@ export class PluginRunner {
     
     if (state.runtime.status === 'running' && state.window) {
       state.window.show(); // Ensure it's visible
+      state.window.focus();
+      this.emitState(state, 'running', { windowId: state.window.id, viewId: state.window.webContents.id, focused: true });
       return state.window.webContents.id;
     }
 
@@ -75,6 +94,7 @@ export class PluginRunner {
         });
 
         state.window = win;
+        state.runtime.windowId = win.id;
         // No need to add to parentWindow
         
         // Load content
@@ -98,6 +118,8 @@ export class PluginRunner {
         // Update state
         state.runtime.status = 'running';
         state.runtime.viewId = win.webContents.id; // We still use viewId property to store webContentsId
+        state.runtime.error = undefined;
+        this.emitState(state, 'running', { windowId: win.id, viewId: win.webContents.id });
         
         // Handle close
         win.on('closed', () => {
@@ -110,10 +132,12 @@ export class PluginRunner {
         return win.webContents.id;
       } catch (e) {
         console.error(`[PluginRunner] Failed to load plugin ${pluginId}`, e);
-        state.runtime.status = 'stopped';
+        state.runtime.status = 'error';
+        state.runtime.error = e instanceof Error ? e.message : String(e);
         state.loadingPromise = undefined;
         state.window = undefined;
         state.refCount = 0; 
+        this.emitState(state, 'error', { message: e instanceof Error ? e.message : String(e) });
         throw e;
       } finally {
         if (state) state.loadingPromise = undefined;
@@ -136,6 +160,7 @@ export class PluginRunner {
       if (state.destroyTimer) clearTimeout(state.destroyTimer);
       
       console.log(`[PluginRunner] Scheduling destroy for ${pluginId} in 1000ms`);
+       this.emitState(state, 'stopping');
       state.destroyTimer = setTimeout(() => {
         this.destroyPlugin(state);
         this.states.delete(pluginId);
@@ -153,7 +178,9 @@ export class PluginRunner {
     }
     state.runtime.status = 'stopped';
     state.runtime.viewId = undefined;
+    state.runtime.windowId = undefined;
     state.window = undefined;
+    this.emitState(state, 'stopped');
     console.log(`[PluginRunner] Plugin destroyed: ${state.runtime.id}`);
   }
 
@@ -162,9 +189,11 @@ export class PluginRunner {
     if (state) {
       state.runtime.status = 'stopped';
       state.runtime.viewId = undefined;
+      state.runtime.windowId = undefined;
       state.window = undefined;
       state.refCount = 0;
       this.states.delete(pluginId);
+      this.emitState(state, 'stopped');
       console.log(`[PluginRunner] Plugin window closed: ${pluginId}`);
     }
   }
@@ -184,6 +213,15 @@ export class PluginRunner {
     // For now, let's ignore resize in window mode to let user control it
     // or just log it.
     // console.log(`[PluginRunner] Resize ignored in window mode for ${pluginId}`);
+  }
+
+  focusPlugin(pluginId: string) {
+    const state = this.states.get(pluginId);
+    if (state?.window && !state.window.isDestroyed()) {
+      state.window.show();
+      state.window.focus();
+      this.emitState(state, 'running', { windowId: state.window.id, viewId: state.window.webContents.id, focused: true });
+    }
   }
 }
 

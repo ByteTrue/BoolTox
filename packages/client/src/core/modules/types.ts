@@ -28,6 +28,8 @@ export interface RemoteModuleConfig {
   size?: number; // 文件大小（字节）
 }
 
+export type ModuleLaunchState = "idle" | "launching" | "running" | "stopping" | "error";
+
 export interface ModuleRuntime {
   status: ModuleStatus;
   loading: boolean;
@@ -36,16 +38,20 @@ export interface ModuleRuntime {
   installed: boolean; // 是否已下载到本地
   installedPath?: string; // 本地安装路径
   updateAvailable?: boolean; // 是否有新版本
+  launchState: ModuleLaunchState;
+  lastLaunchAt?: string;
+  runningWindowId?: number;
+  lastError?: string | null;
 }
 
 export interface ModuleInstance {
   id: string;
   definition: ModuleDefinition;
   runtime: ModuleRuntime;
-  // 快速访问相关 (从存储读取)
-  pinnedToQuickAccess?: boolean;
-  quickAccessOrder?: number;
-  pinnedAt?: string;
+  // 收藏相关 (从存储读取)
+  isFavorite?: boolean;
+  favoriteOrder?: number;
+  favoritedAt?: string;
 }
 
 export interface ModuleStats {

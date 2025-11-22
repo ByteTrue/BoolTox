@@ -1,11 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ComponentType } from "react";
 import { findModuleDefinition, listModuleDefinitions } from "@core/modules/registry";
 import { moduleRegistry } from "@core/modules/registry-remote";
 import { moduleInstaller } from "@core/modules/installer";
-import type { ModuleDefinition, ModuleInstance, ModuleRuntime, ModuleStats, ModuleStatus, RemoteModuleEntry } from "@core/modules/types";
+import type { ModuleDefinition, ModuleInstance, ModuleRuntime, ModuleStats, ModuleStatus, RemoteModuleEntry, ModuleLaunchState } from "@core/modules/types";
 import { logModuleEvent } from "@/utils/module-event-logger";
 import type { StoredModuleInfo } from "@shared/types/module-store.types";
+import type { PluginRuntime as PluginProcessRuntime } from "@booltox/shared";
+import { useToast } from "./toast-context";
 
 interface ModuleContextValue {
   availableModules: ModuleDefinition[];
@@ -14,17 +16,31 @@ interface ModuleContextValue {
   moduleStats: ModuleStats;
   activeModuleId: string | null;
   setActiveModuleId: (moduleId: string | null) => void;
+  openModule: (moduleId: string) => Promise<void>;
+  focusModuleWindow: (moduleId: string) => Promise<void>;
   installModule: (moduleId: string, remote?: boolean) => Promise<void>;
   uninstallModule: (moduleId: string) => Promise<void>;
   setModuleStatus: (moduleId: string, status: ModuleStatus) => void;
   toggleModuleStatus: (moduleId: string) => void;
   getModuleById: (moduleId: string) => ModuleInstance | undefined;
   refreshRemoteModules: () => Promise<void>;
-  // 快速访问功能
-  quickAccessModules: ModuleInstance[];
-  pinToQuickAccess: (moduleId: string) => Promise<void>;
-  unpinFromQuickAccess: (moduleId: string) => Promise<void>;
-  updateQuickAccessOrder: (orderedIds: string[]) => Promise<void>;
+  // 收藏功能
+  favoriteModules: ModuleInstance[];
+  addFavorite: (moduleId: string) => Promise<void>;
+  removeFavorite: (moduleId: string) => Promise<void>;
+  updateFavoriteOrder: (orderedIds: string[]) => Promise<void>;
+  runningPluginIds: string[];
+}
+
+type PluginChannelStatus = "launching" | "loading" | "running" | "stopping" | "stopped" | "error";
+
+interface PluginStatePayload {
+  pluginId: string;
+  status: PluginChannelStatus;
+  windowId?: number;
+  viewId?: number;
+  message?: string;
+  focused?: boolean;
 }
 
 const registryDefinitions: ModuleDefinition[] = listModuleDefinitions();
@@ -42,6 +58,8 @@ function createRuntime(
     loading,
     error: null,
     installed,
+    launchState: "idle",
+    lastError: null,
   };
 }
 
@@ -51,6 +69,193 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const [installedModules, setInstalledModules] = useState<ModuleInstance[]>([]);
   const [remoteModules, setRemoteModules] = useState<RemoteModuleEntry[]>([]);
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const [pluginRegistry, setPluginRegistry] = useState<PluginProcessRuntime[]>([]);
+  const installedModulesRef = useRef<ModuleInstance[]>([]);
+  const toastHistoryRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    installedModulesRef.current = installedModules;
+  }, [installedModules]);
+
+  const refreshPluginRegistry = useCallback(async () => {
+    try {
+      const plugins = await window.ipc.invoke('plugin:get-all');
+      if (Array.isArray(plugins)) {
+        setPluginRegistry(plugins as PluginProcessRuntime[]);
+      } else {
+        setPluginRegistry([]);
+      }
+    } catch (error) {
+      console.error('[ModuleContext] 获取插件列表失败:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPluginRegistry();
+  }, [refreshPluginRegistry]);
+
+  const pluginIdSet = useMemo(() => new Set(pluginRegistry.map((plugin) => plugin.id)), [pluginRegistry]);
+
+  const isWindowPlugin = useCallback(
+    (moduleId: string) => pluginIdSet.has(moduleId) || moduleId.startsWith("com.booltox."),
+    [pluginIdSet],
+  );
+
+  const mapStatusToLaunchState = useCallback((status: PluginChannelStatus): ModuleLaunchState => {
+    switch (status) {
+      case "launching":
+      case "loading":
+        return "launching";
+      case "running":
+        return "running";
+      case "stopping":
+        return "stopping";
+      case "error":
+        return "error";
+      case "stopped":
+      default:
+        return "idle";
+    }
+  }, []);
+
+  const patchModuleRuntime = useCallback(
+    (moduleId: string, patch: Partial<ModuleRuntime> | ((runtime: ModuleRuntime) => Partial<ModuleRuntime>)) => {
+      setInstalledModules((current) =>
+        current.map((module) => {
+          if (module.id !== moduleId) return module;
+          const nextPatch = typeof patch === "function" ? patch(module.runtime) : patch;
+          return {
+            ...module,
+            runtime: {
+              ...module.runtime,
+              ...nextPatch,
+            },
+          };
+        }),
+      );
+    },
+    [setInstalledModules],
+  );
+
+  const shouldAnnounceToast = useCallback(
+    (key: string, interval = 1500) => {
+      const now = Date.now();
+      const last = toastHistoryRef.current.get(key);
+      if (last && now - last < interval) {
+        return false;
+      }
+      toastHistoryRef.current.set(key, now);
+      return true;
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const handler = (payload: PluginStatePayload) => {
+      if (!payload?.pluginId) return;
+      const { pluginId, status, windowId, message } = payload;
+      const launchState = mapStatusToLaunchState(status);
+
+      patchModuleRuntime(pluginId, (runtime) => ({
+        launchState,
+        runningWindowId:
+          status === "running"
+            ? windowId ?? runtime.runningWindowId
+            : status === "stopped"
+              ? undefined
+              : runtime.runningWindowId,
+        lastLaunchAt: status === "running" ? new Date().toISOString() : runtime.lastLaunchAt,
+        lastError: status === "error" ? (message ?? "插件启动失败") : status === "running" ? null : runtime.lastError,
+      }));
+
+      const isFocusedUpdate = payload.focused === true;
+
+      if ((status === "running" && !isFocusedUpdate) || status === "error") {
+        const targetModule = installedModulesRef.current.find((module) => module.id === pluginId);
+        const moduleName = targetModule?.definition.name ?? pluginId;
+        if (status === "running" && !isFocusedUpdate) {
+          if (shouldAnnounceToast(`running:${pluginId}`)) {
+            showToast({
+              message: `${moduleName} 已在新窗口打开`,
+              type: "success",
+              duration: 2600,
+            });
+          }
+        } else if (status === "error") {
+          if (shouldAnnounceToast(`error:${pluginId}`, 2000)) {
+            showToast({
+              message: `${moduleName} 启动失败: ${message ?? "未知错误"}`,
+              type: "error",
+              duration: 4200,
+            });
+          }
+        }
+      }
+    };
+
+    window.ipc.on("plugin:state", handler);
+    return () => {
+      window.ipc.off("plugin:state", handler);
+    };
+}, [mapStatusToLaunchState, patchModuleRuntime, shouldAnnounceToast, showToast]);
+
+const openModule = useCallback(
+  async (moduleId: string) => {
+    const module = installedModulesRef.current.find((item) => item.id === moduleId);
+    if (!module) {
+      return;
+    }
+
+    if (isWindowPlugin(moduleId)) {
+      patchModuleRuntime(moduleId, {
+        launchState: "launching",
+        lastError: null,
+      });
+      try {
+        await window.ipc.invoke("plugin:start", moduleId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        patchModuleRuntime(moduleId, {
+          launchState: "error",
+          lastError: message,
+        });
+        showToast({
+          message: `${module.definition.name} 启动失败: ${message}`,
+          type: "error",
+          duration: 4200,
+        });
+      }
+      return;
+    }
+
+    setActiveModuleId(moduleId);
+  },
+  [isWindowPlugin, patchModuleRuntime, setActiveModuleId, showToast],
+);
+
+const focusModuleWindow = useCallback(
+  async (moduleId: string) => {
+    if (!isWindowPlugin(moduleId)) {
+      setActiveModuleId(moduleId);
+      return;
+    }
+
+    try {
+      await window.ipc.invoke("plugin:focus", moduleId);
+    } catch (error) {
+      const module = installedModulesRef.current.find((item) => item.id === moduleId);
+      const moduleName = module?.definition.name ?? moduleId;
+      const message = error instanceof Error ? error.message : String(error);
+      showToast({
+        message: `${moduleName} 聚焦失败: ${message}`,
+        type: "error",
+        duration: 3800,
+      });
+    }
+  },
+  [isWindowPlugin, setActiveModuleId, showToast],
+);
 
   // 从持久化存储恢复已安装模块
   useEffect(() => {
@@ -66,6 +271,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
               id: definition.id,
               definition,
               runtime: createRuntime("enabled"),
+              isFavorite: false,
             }));
           
           setInstalledModules(defaultModules);
@@ -79,10 +285,10 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
               lastUsedAt: new Date().toISOString(),
               version: module.definition.version,
               source: module.definition.source || 'local',
-              // 初始化快速访问字段为 false
-              pinnedToQuickAccess: false,
-              quickAccessOrder: undefined,
-              pinnedAt: undefined,
+              // 初始化收藏字段为 false
+              isFavorite: false,
+              favoriteOrder: undefined,
+              favoritedAt: undefined,
             };
             await window.moduleStore.add(info);
           }
@@ -94,14 +300,20 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
             const definition = registryMap.get(stored.id) ?? findModuleDefinition(stored.id);
             
             if (definition) {
+              const isFavorite = stored.isFavorite ?? stored.pinnedToQuickAccess ?? false;
+              const favoriteOrder =
+                stored.favoriteOrder ?? (stored as any).quickAccessOrder ?? undefined;
+              const favoritedAt =
+                stored.favoritedAt ?? (stored as any).pinnedAt ?? undefined;
+
               restoredModules.push({
                 id: stored.id,
                 definition,
                 runtime: createRuntime(stored.status, null, false, true),
-                // 携带快速访问信息
-                pinnedToQuickAccess: stored.pinnedToQuickAccess,
-                quickAccessOrder: stored.quickAccessOrder,
-                pinnedAt: stored.pinnedAt,
+                // 携带收藏信息
+                isFavorite,
+                favoriteOrder,
+                favoritedAt,
               });
             } else {
               console.warn(`[ModuleContext] 无法找到模块定义: ${stored.id}`);
@@ -120,6 +332,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
             id: definition.id,
             definition,
             runtime: createRuntime("enabled"),
+            isFavorite: false,
           }));
         setInstalledModules(defaultModules);
       }
@@ -224,6 +437,14 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     );
   }, [installedModules]);
 
+  const runningPluginIds = useMemo(
+    () =>
+      installedModules
+        .filter((module) => module.runtime.launchState === "running")
+        .map((module) => module.id),
+    [installedModules],
+  );
+
   const installModule = useCallback(
     async (moduleId: string, remote = false) => {
       // 如果是远程模块,先下载安装
@@ -250,6 +471,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
               id: moduleId,
               definition,
               runtime: createRuntime("enabled", null, true, true),
+              isFavorite: false,
             },
           ];
         });
@@ -263,14 +485,15 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           version: definition.version,
           source: 'remote',
           cachedPath: cachePath || undefined,
-          // 初始化快速访问字段
-          pinnedToQuickAccess: false,
-          quickAccessOrder: undefined,
-          pinnedAt: undefined,
+          // 初始化收藏字段
+          isFavorite: false,
+          favoriteOrder: undefined,
+          favoritedAt: undefined,
         };
         await window.moduleStore.add(info);
 
         await loadModuleComponent(moduleId, definition);
+        void refreshPluginRegistry();
         return;
       }
 
@@ -299,17 +522,18 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         id: moduleId,
         status: 'enabled',
         installedAt: new Date().toISOString(),
-        lastUsedAt: new Date().toISOString(),
-        version: definition.version,
-        source: definition.source || 'local',
-        // 初始化快速访问字段
-        pinnedToQuickAccess: false,
-        quickAccessOrder: undefined,
-        pinnedAt: undefined,
-      };
+      lastUsedAt: new Date().toISOString(),
+      version: definition.version,
+      source: definition.source || 'local',
+      // 初始化收藏字段
+      isFavorite: false,
+      favoriteOrder: undefined,
+      favoritedAt: undefined,
+    };
       await window.moduleStore.add(info);
 
       await loadModuleComponent(moduleId, definition);
+      void refreshPluginRegistry();
 
       // 记录安装事件
       logModuleEvent({
@@ -319,12 +543,24 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         category: definition.category || 'unknown',
       });
     },
-    [loadModuleComponent, remoteModules],
+    [loadModuleComponent, refreshPluginRegistry, remoteModules],
   );
 
   const uninstallModule = useCallback(
     async (moduleId: string) => {
       const module = installedModules.find((m) => m.id === moduleId);
+
+      if (module && isWindowPlugin(moduleId)) {
+        try {
+          await window.ipc.invoke("plugin:stop", moduleId);
+        } catch (error) {
+          console.warn(`[ModuleContext] 停止插件失败: ${moduleId}`, error);
+        }
+        patchModuleRuntime(moduleId, {
+          launchState: "idle",
+          runningWindowId: undefined,
+        });
+      }
       
       // 如果是远程模块,清理缓存
       if (module?.definition.source === "remote") {
@@ -348,8 +584,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
       setInstalledModules((current) => current.filter((module) => module.id !== moduleId));
       setActiveModuleId((current) => (current === moduleId ? null : current));
+      void refreshPluginRegistry();
     },
-    [installedModules],
+    [installedModules, isWindowPlugin, patchModuleRuntime, refreshPluginRegistry],
   );
 
   const setModuleStatus = useCallback(async (moduleId: string, status: ModuleStatus) => {
@@ -372,10 +609,22 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     // 持久化状态变更
     await window.moduleStore.updateStatus(moduleId, status);
 
+    if (status === "disabled" && isWindowPlugin(moduleId)) {
+      try {
+        await window.ipc.invoke("plugin:stop", moduleId);
+      } catch (error) {
+        console.warn(`[ModuleContext] 停止插件失败: ${moduleId}`, error);
+      }
+      patchModuleRuntime(moduleId, {
+        launchState: "idle",
+        runningWindowId: undefined,
+      });
+    }
+
     if (status === "disabled") {
       setActiveModuleId((current) => (current === moduleId ? null : current));
     }
-  }, []);
+  }, [isWindowPlugin, patchModuleRuntime]);
 
   const toggleModuleStatus = useCallback(async (moduleId: string) => {
     let newStatus: ModuleStatus = 'enabled';
@@ -396,27 +645,43 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     
     // 持久化状态变更
     await window.moduleStore.updateStatus(moduleId, newStatus);
-  }, []);
+
+    if (newStatus === "disabled" && isWindowPlugin(moduleId)) {
+      try {
+        await window.ipc.invoke("plugin:stop", moduleId);
+      } catch (error) {
+        console.warn(`[ModuleContext] 停止插件失败: ${moduleId}`, error);
+      }
+      patchModuleRuntime(moduleId, {
+        launchState: "idle",
+        runningWindowId: undefined,
+      });
+    } else if (newStatus === "enabled") {
+      patchModuleRuntime(moduleId, {
+        launchState: "idle",
+      });
+    }
+  }, [isWindowPlugin, patchModuleRuntime]);
 
   const getModuleById = useCallback(
     (moduleId: string) => installedModules.find((module) => module.id === moduleId),
     [installedModules],
   );
 
-  // 快速访问功能实现
-  const quickAccessModules = useMemo(() => {
-    const pinned = installedModules
-      .filter((module) => module.pinnedToQuickAccess === true)
+  // 收藏功能实现
+  const favoriteModules = useMemo(() => {
+    const favorites = installedModules
+      .filter((module) => module.isFavorite === true)
       .sort((a, b) => {
-        const orderA = a.quickAccessOrder ?? 999;
-        const orderB = b.quickAccessOrder ?? 999;
+        const orderA = a.favoriteOrder ?? 999;
+        const orderB = b.favoriteOrder ?? 999;
         return orderA - orderB;
       });
     
-    return pinned;
+    return favorites;
   }, [installedModules]);
 
-  const pinToQuickAccess = useCallback(async (moduleId: string) => {
+  const addFavorite = useCallback(async (moduleId: string) => {
     const module = installedModules.find((m) => m.id === moduleId);
     if (!module) return;
 
@@ -424,8 +689,8 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     const maxOrder = Math.max(
       0,
       ...installedModules
-        .filter((m) => m.pinnedToQuickAccess)
-        .map((m) => m.quickAccessOrder ?? 0)
+        .filter((m) => m.isFavorite)
+        .map((m) => m.favoriteOrder ?? 0)
     );
 
     const now = new Date().toISOString();
@@ -436,9 +701,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     // 即使 stored 不存在（理论上不应该），我们也尝试更新或处理
     if (stored) {
       await window.moduleStore.update(moduleId, {
-        pinnedToQuickAccess: true,
-        quickAccessOrder: maxOrder + 1,
-        pinnedAt: now,
+        isFavorite: true,
+        favoriteOrder: maxOrder + 1,
+        favoritedAt: now,
       });
     } else {
       console.warn(`[ModuleContext] Pin failed: Module ${moduleId} not found in store`);
@@ -450,9 +715,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         m.id === moduleId
           ? {
               ...m,
-              pinnedToQuickAccess: true,
-              quickAccessOrder: maxOrder + 1,
-              pinnedAt: now,
+              isFavorite: true,
+              favoriteOrder: maxOrder + 1,
+              favoritedAt: now,
             }
           : m
       )
@@ -466,7 +731,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     });
   }, [installedModules]);
 
-  const unpinFromQuickAccess = useCallback(async (moduleId: string) => {
+  const removeFavorite = useCallback(async (moduleId: string) => {
     const module = installedModules.find((m) => m.id === moduleId);
     if (!module) return;
 
@@ -474,9 +739,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     const stored = await window.moduleStore.get(moduleId);
     if (stored) {
       await window.moduleStore.update(moduleId, {
-        pinnedToQuickAccess: false,
-        quickAccessOrder: undefined,
-        pinnedAt: undefined,
+        isFavorite: false,
+        favoriteOrder: undefined,
+        favoritedAt: undefined,
       });
 
       // 更新本地状态
@@ -485,9 +750,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           m.id === moduleId
             ? {
                 ...m,
-                pinnedToQuickAccess: false,
-                quickAccessOrder: undefined,
-                pinnedAt: undefined,
+                isFavorite: false,
+                favoriteOrder: undefined,
+                favoritedAt: undefined,
               }
             : m
         )
@@ -502,14 +767,14 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     }
   }, [installedModules]);
 
-  const updateQuickAccessOrder = useCallback(async (orderedIds: string[]) => {
+  const updateFavoriteOrder = useCallback(async (orderedIds: string[]) => {
     // 批量更新排序
     for (let i = 0; i < orderedIds.length; i++) {
       const moduleId = orderedIds[i];
       const stored = await window.moduleStore.get(moduleId);
       if (stored) {
         await window.moduleStore.update(moduleId, {
-          quickAccessOrder: i,
+          favoriteOrder: i,
         });
       }
     }
@@ -521,7 +786,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         if (newOrder >= 0) {
           return {
             ...m,
-            quickAccessOrder: newOrder,
+            favoriteOrder: newOrder,
           };
         }
         return m;
@@ -537,32 +802,38 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       moduleStats,
       activeModuleId,
       setActiveModuleId,
+      openModule,
+      focusModuleWindow,
       installModule,
       uninstallModule,
       setModuleStatus,
       toggleModuleStatus,
       getModuleById,
       refreshRemoteModules,
-      quickAccessModules,
-      pinToQuickAccess,
-      unpinFromQuickAccess,
-      updateQuickAccessOrder,
+      favoriteModules,
+      addFavorite,
+      removeFavorite,
+      updateFavoriteOrder,
+      runningPluginIds,
     }),
     [
       activeModuleId,
+      focusModuleWindow,
       getModuleById,
       installModule,
       installedModules,
+      openModule,
       moduleStats,
       remoteModules,
       setModuleStatus,
       toggleModuleStatus,
       uninstallModule,
       refreshRemoteModules,
-      quickAccessModules,
-      pinToQuickAccess,
-      unpinFromQuickAccess,
-      updateQuickAccessOrder,
+      favoriteModules,
+      addFavorite,
+      removeFavorite,
+      updateFavoriteOrder,
+      runningPluginIds,
     ],
   );
 

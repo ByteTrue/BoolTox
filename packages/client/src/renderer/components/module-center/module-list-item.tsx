@@ -30,6 +30,19 @@ export function ModuleListItem({
   const isInstalled = "runtime" in module;
   const isEnabled = isInstalled && module.runtime.status === "enabled";
   const definition = isInstalled ? module.definition : module;
+  const launchState = isInstalled ? module.runtime.launchState ?? "idle" : "idle";
+  const isLaunching = launchState === "launching";
+  const isRunning = launchState === "running";
+  const isLaunchError = launchState === "error";
+  const launchStateBadge = isInstalled
+    ? isRunning
+      ? { label: "窗口运行中", className: "border-green-500/30 bg-green-500/15 text-green-500" }
+      : isLaunching
+        ? { label: "启动中…", className: "border-yellow-500/30 bg-yellow-500/15 text-yellow-600" }
+        : isLaunchError
+          ? { label: "启动失败", className: "border-red-500/30 bg-red-500/15 text-red-500" }
+          : null
+    : null;
 
   return (
     <motion.div
@@ -101,6 +114,13 @@ export function ModuleListItem({
               {isEnabled ? "✓ 已启用" : "⏸ 已停用"}
             </span>
           )}
+          {launchStateBadge && (
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${launchStateBadge.className}`}
+            >
+              {launchStateBadge.label}
+            </span>
+          )}
         </div>
         <p
           className={`line-clamp-1 text-sm ${
@@ -154,7 +174,7 @@ export function ModuleListItem({
               style={!isEnabled ? {
                 borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
               } : undefined}
-              title={isEnabled ? "停用模块" : "启用模块"}
+              title={isEnabled ? "停用插件" : "启用插件"}
             >
               {isEnabled ? <Pause size={16} /> : <Play size={16} />}
             </motion.button>
@@ -168,10 +188,21 @@ export function ModuleListItem({
                   e.stopPropagation();
                   onOpen?.(module.id);
                 }}
-                className={`rounded-lg border border-blue-500/30 bg-blue-500/20 p-2 text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30`}
-                title="打开模块"
+                disabled={isLaunching}
+                className={`rounded-lg border border-blue-500/30 bg-blue-500/20 p-2 text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
+                  isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
+                }`}
+                title={
+                  isLaunching ? "插件正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开插件"
+                }
               >
-                <ExternalLink size={16} />
+                {isLaunching ? (
+                  <span className="flex items-center justify-center">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  </span>
+                ) : (
+                  <ExternalLink size={16} />
+                )}
               </motion.button>
             )}
 
@@ -184,7 +215,7 @@ export function ModuleListItem({
                 onUninstall?.(module.id);
               }}
               className={`rounded-lg border border-red-500/30 bg-red-500/20 p-2 text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/30`}
-              title="卸载模块"
+              title="卸载插件"
             >
               <Trash2 size={16} />
             </motion.button>

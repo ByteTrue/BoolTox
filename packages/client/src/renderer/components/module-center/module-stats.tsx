@@ -15,14 +15,14 @@ export function ModuleStats({ stats }: ModuleStatsProps) {
 
   const statsCards = [
     {
-      label: "已安装",
+      label: "插件总数",
       value: stats.total,
       icon: Package,
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
     {
-      label: "已启用",
+      label: "正在使用",
       value: stats.enabled,
       icon: CheckCircle,
       color: "text-green-500",

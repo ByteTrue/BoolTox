@@ -1,7 +1,7 @@
 import type { ModuleDefinition } from "@core/modules/types";
 
 /**
- * 模块中心类型定义
+ * 插件中心类型定义
  */
 
 // Tab 类型
@@ -37,7 +37,7 @@ export interface RecommendedModules {
   smart: ModuleDefinition[];
 }
 
-// 模块中心状态
+// 插件中心状态
 export interface ModuleCenterState {
   activeTab: ModuleTab;
   filter: ModuleFilter;

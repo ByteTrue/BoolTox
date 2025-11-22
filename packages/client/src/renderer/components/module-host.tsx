@@ -1,11 +1,13 @@
 import type { ModuleInstance } from "@core/modules/types";
-import { PluginPlaceholder } from "@/components/PluginPlaceholder";
+import { useModulePlatform } from "@/contexts/module-context";
 
 interface ModuleHostProps {
   module: ModuleInstance | null;
 }
 
 export function ModuleHost({ module }: ModuleHostProps) {
+  const { openModule, focusModuleWindow } = useModulePlatform();
+
   if (!module) {
     return (
       <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-[var(--shell-border)] bg-[var(--shell-soft)] text-sm text-[var(--text-secondary)]">
@@ -15,13 +17,51 @@ export function ModuleHost({ module }: ModuleHostProps) {
   }
 
   // New Architecture: Plugin (BrowserView)
-  // We identify new plugins by checking if they have a 'source' of 'plugin' or similar, 
-  // or if we just decide based on ID convention for now.
-  // Let's assume if it starts with "com.booltox.", it's a new plugin.
+  // New plugins run inside dedicated windows, we keep an informative panel here.
   if (module.id.startsWith("com.booltox.")) {
+    const launchState = module.runtime.launchState ?? "idle";
+    const isRunning = launchState === "running";
+    const isLaunching = launchState === "launching";
+    const handleOpen = () => {
+      if (isRunning) {
+        void focusModuleWindow(module.id);
+      } else {
+        void openModule(module.id);
+      }
+    };
+
     return (
-      <div className="h-full w-full min-h-[400px] overflow-hidden rounded-3xl relative bg-white/5">
-        <PluginPlaceholder pluginId={module.id} />
+      <div className="flex h-full w-full min-h-[320px] flex-col items-center justify-center gap-6 rounded-3xl border border-dashed border-[var(--shell-border)] bg-[var(--shell-soft)] px-6 text-center">
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+            {module.definition.name} 在独立窗口中运行
+          </h3>
+          <p className="text-sm text-[var(--text-secondary)]">
+            点击下方按钮即可{isRunning ? "聚焦" : isLaunching ? "等待启动完成后重试" : "在新窗口启动"}插件。
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleOpen}
+            disabled={isLaunching}
+            className={`rounded-full border border-blue-500/30 bg-blue-500/15 px-5 py-2 text-sm font-semibold text-blue-500 shadow-sm transition-[transform,background-color] duration-200 hover:bg-blue-500/25 hover:scale-[1.02] ${
+              isLaunching ? "cursor-wait opacity-70 hover:scale-100 hover:bg-blue-500/15" : ""
+            }`}
+          >
+            {isLaunching ? "启动中…" : isRunning ? "聚焦插件窗口" : "打开插件窗口"}
+          </button>
+          {isRunning && (
+            <span className="rounded-full border border-green-500/30 bg-green-500/15 px-3 py-1 text-xs font-semibold text-green-500">
+              窗口已运行
+            </span>
+          )}
+          {launchState === "error" && (
+            <span className="rounded-full border border-red-500/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-500">
+              启动失败，可重试
+            </span>
+          )}
+        </div>
       </div>
     );
   }

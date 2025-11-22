@@ -28,14 +28,14 @@ export interface StoredModuleInfo {
   /** 远程模块的缓存文件路径 (仅 remote 类型) */
   cachedPath?: string;
   
-  /** 是否固定到快速访问 */
-  pinnedToQuickAccess?: boolean;
+  /** 是否收藏 */
+  isFavorite?: boolean;
   
-  /** 快速访问排序权重 (数字越小越靠前) */
-  quickAccessOrder?: number;
+  /** 收藏排序权重 (数字越小越靠前) */
+  favoriteOrder?: number;
   
-  /** 固定到快速访问的时间戳 (ISO 8601) */
-  pinnedAt?: string;
+  /** 收藏时间戳 (ISO 8601) */
+  favoritedAt?: string;
 }
 
 /**

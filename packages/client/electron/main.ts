@@ -348,6 +348,10 @@ ipcMain.handle('plugin:resize', (_event, id: string, bounds: Electron.Rectangle)
   pluginRunner.resizePlugin(id, bounds);
 });
 
+ipcMain.handle('plugin:focus', (_event, id: string) => {
+  pluginRunner.focusPlugin(id);
+});
+
 /**
  * 应用启动
  */

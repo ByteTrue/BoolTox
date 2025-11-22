@@ -191,7 +191,12 @@ function AppShellContent() {
   const { setSpotlight } = useSpotlight();
   useSpotlightBackground();
   const { theme } = useTheme();
-  const { quickAccessModules, activeModuleId, setActiveModuleId, getModuleById, updateQuickAccessOrder } = useModulePlatform();
+  const {
+    activeModuleId,
+    setActiveModuleId,
+    getModuleById,
+    openModule,
+  } = useModulePlatform();
   const [activeNav, setActiveNav] = useState<string>('overview');
 
   // 屏幕阅读器公告
@@ -203,25 +208,18 @@ function AppShellContent() {
     return cleanup;
   }, []);
 
-  const explorationNav = useMemo<NavItem[]>(() => quickAccessModules
-    .map(module => ({
-      key: `module:${module.id}`,
-      label: module.definition.name,
-      description: module.definition.description ?? '模块入口',
-      icon: 'spark' as const,
-      badge: module.runtime.component ? undefined : '加载中',
-      tone: 'accent',
-    } satisfies NavItem)), [quickAccessModules]);
-
   const handleNavSelect = useCallback((value: string) => {
     if (value.startsWith('module:')) {
       const moduleId = value.replace('module:', '');
-      setActiveNav('');
-      setActiveModuleId(moduleId);
+      setActiveNav('module-center');
+      void openModule(moduleId);
       // 屏幕阅读器公告
       const module = getModuleById(moduleId);
       if (module) {
         announce(`已切换到模块：${module.definition.name}`, 'polite');
+        if (module.id.startsWith('com.booltox.')) {
+          setActiveModuleId(null);
+        }
       }
       return;
     }
@@ -232,26 +230,11 @@ function AppShellContent() {
     if (navItem) {
       announce(`已切换到：${navItem.label}`, 'polite');
     }
-  }, [setActiveModuleId, announce, getModuleById]);
+  }, [setActiveModuleId, announce, getModuleById, openModule]);
 
   // 处理快速访问拖拽排序
-  const handleQuickAccessReorder = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = explorationNav.findIndex(item => item.key === active.id);
-      const newIndex = explorationNav.findIndex(item => item.key === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(explorationNav, oldIndex, newIndex);
-        const orderedIds = newOrder.map(item => item.key.replace('module:', ''));
-        updateQuickAccessOrder(orderedIds);
-      }
-    }
-  }, [explorationNav, updateQuickAccessOrder]);
-
   const activeModule = useMemo(() => (activeModuleId ? getModuleById(activeModuleId) ?? null : null), [activeModuleId, getModuleById]);
-  const activeKey = activeModule ? `module:${activeModule.id}` : activeNav;
+  const activeKey = activeModule ? 'module-center' : activeNav;
 
   return (
     <div
@@ -352,14 +335,6 @@ function AppShellContent() {
           <div className="elegant-scroll flex-1 overflow-y-auto pr-3 py-2">
             <nav className="flex flex-col gap-6 px-1">
               <NavSection title="管理中心" items={primaryNav} active={activeKey} onSelect={handleNavSelect} />
-              <NavSection 
-                title="快速访问" 
-                items={explorationNav} 
-                active={activeKey} 
-                onSelect={handleNavSelect} 
-                onReorder={handleQuickAccessReorder}
-                sortable={true}
-              />
             </nav>
           </div>
         </aside>
@@ -551,14 +526,15 @@ function NavSection({
               initial="hidden"
               animate="visible"
             >
-              {items.length === 0 && title === "快速访问" && (
+              {items.length === 0 && title === "插件中心" && (
                 <motion.div
                   variants={staggerPresets.fast.item}
                   className={`rounded-2xl border p-4 text-xs shadow-unified-md dark:shadow-unified-md-dark ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}
                   style={getGlassStyle('BUTTON', theme)}
                 >
                   <p className={`mb-3 ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}>
-                    暂无快速访问模块，在模块中心点击"📌"图标添加常用模块。
+                    暂无快速访问模块，在插件中心点击"📌"图标添加常用模块。
+                    暂无快速访问模块，在插件中心点击"📌"图标添加常用插件。
                   </p>
                   <GlassButton
                     variant="primary"

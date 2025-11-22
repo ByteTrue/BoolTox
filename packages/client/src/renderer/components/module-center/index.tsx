@@ -1,9 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useModulePlatform } from "@/contexts/module-context";
 import { useTheme } from "../theme-provider";
-import { ModuleToolbar } from "./module-toolbar";
-import { ModuleTabs } from "./module-tabs";
-import { ModuleStats } from "./module-stats";
 import { ModuleGrid } from "./module-grid";
 import { ModuleDetailModal } from "./module-detail-modal";
 import { ModuleRecommendations } from "./module-recommendations";
@@ -11,11 +8,13 @@ import { useModuleSearch, useSearchInput } from "./hooks/use-module-search";
 import { useModuleFilter } from "./hooks/use-module-filter";
 import { useModuleSort } from "./hooks/use-module-sort";
 import { useRecommendations } from "./hooks/use-recommendations";
+import { CustomSelect } from "./custom-select";
+import { Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import type { ModuleTab, ModuleFilter, ModuleSortConfig, ViewMode } from "./types";
 
 /**
- * 模块中心 - 重构版
- * Tab 切换 + 增强型卡片网格布局
+ * 插件中心（Launchpad 风格）
+ * 收藏区 + 全部插件 + 商店推荐
  */
 export function ModuleCenter() {
   const {
@@ -25,9 +24,10 @@ export function ModuleCenter() {
     toggleModuleStatus,
     uninstallModule,
     installModule,
-    setActiveModuleId,
-    pinToQuickAccess,
-    unpinFromQuickAccess,
+    addFavorite,
+    removeFavorite,
+    openModule,
+    focusModuleWindow,
   } = useModulePlatform();
 
   const { theme } = useTheme();
@@ -35,7 +35,6 @@ export function ModuleCenter() {
 
   // 状态管理
   const [activeTab, setActiveTab] = useState<ModuleTab>("installed");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
 
@@ -74,16 +73,17 @@ export function ModuleCenter() {
   const recommendations = useRecommendations(installedModules, availableModules);
 
   // 当前显示的模块列表
-  const currentModules = useMemo(() => {
-    switch (activeTab) {
-      case "installed":
-        return sortedInstalled;
-      case "store":
-        return sortedAvailable; // 商店页显示所有可用模块
-      default:
-        return [];
-    }
-  }, [activeTab, sortedInstalled, sortedAvailable]);
+  const favoriteModules = useMemo(
+    () => sortedInstalled.filter((module) => module.isFavorite),
+    [sortedInstalled],
+  );
+
+  const regularModules = useMemo(
+    () => sortedInstalled.filter((module) => !module.isFavorite),
+    [sortedInstalled],
+  );
+
+  const availableStoreModules = useMemo(() => sortedAvailable, [sortedAvailable]);
 
   // 详情 Modal 的模块数据
   const selectedModule = useMemo(() => {
@@ -132,27 +132,37 @@ export function ModuleCenter() {
     [toggleModuleStatus]
   );
 
-  // 处理固定/取消固定到快速访问
+  // 处理收藏/取消收藏
   const handlePinToggle = useCallback(
     async (moduleId: string) => {
       const module = installedModules.find((m) => m.id === moduleId);
       if (!module) return;
 
-      if (module.pinnedToQuickAccess) {
-        await unpinFromQuickAccess(moduleId);
+      if (module.isFavorite) {
+        await removeFavorite(moduleId);
       } else {
-        await pinToQuickAccess(moduleId);
+        await addFavorite(moduleId);
       }
     },
-    [installedModules, pinToQuickAccess, unpinFromQuickAccess]
+    [addFavorite, installedModules, removeFavorite]
   );
 
   // 处理打开模块
   const handleOpen = useCallback(
     (moduleId: string) => {
-      setActiveModuleId(moduleId);
+      const targetModule = installedModules.find((m) => m.id === moduleId);
+      if (!targetModule) {
+        return;
+      }
+
+      if (targetModule.runtime.launchState === "running") {
+        void focusModuleWindow(moduleId);
+        return;
+      }
+
+      void openModule(moduleId);
     },
-    [setActiveModuleId]
+    [focusModuleWindow, installedModules, openModule],
   );
 
   // 处理卡片点击
@@ -170,47 +180,125 @@ export function ModuleCenter() {
     setSortConfig((prev) => ({ ...prev, by: sortBy }));
   }, []);
 
+  const viewMode: ViewMode = "grid";
+
+  const statsChips = [
+    { label: "插件总数", value: moduleStats.total },
+    { label: "正在使用", value: moduleStats.enabled },
+    { label: "已停用", value: moduleStats.disabled },
+  ];
+
   return (
     <div className="flex h-full flex-col gap-4">
-      {/* 工具栏 */}
-      <ModuleToolbar
-        searchQuery={inputValue}
-        onSearchChange={setInputValue}
-        sortBy={sortConfig.by}
-        onSortChange={handleSortChange}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        categories={availableCategories}
-        selectedCategory={filter.category || "all"}
-        onCategoryChange={handleCategoryChange}
-      />
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative flex-1 min-w-[220px] md:max-w-lg">
+            <Search
+              size={18}
+              className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${
+                isDark ? "text-white/60" : "text-slate-500"
+              }`}
+            />
+            <input
+              type="text"
+              placeholder="搜索插件..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className={`w-full rounded-full border py-2.5 pl-10 pr-4 text-sm transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
+                isDark
+                  ? "border-white/10 bg-white/5 text-white placeholder:text-white/50"
+                  : "border-slate-200 bg-white/90 text-slate-800 placeholder:text-slate-400"
+              }`}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <CustomSelect
+              value={filter.category || "all"}
+              onChange={handleCategoryChange}
+              options={[
+                { value: "all", label: "全部分类" },
+                ...availableCategories.map((cat) => ({ value: cat, label: cat || "未分类" })),
+              ]}
+              icon={<SlidersHorizontal size={16} />}
+            />
+            <CustomSelect
+              value={sortConfig.by}
+              onChange={(val) => handleSortChange(val as ModuleSortConfig["by"])}
+              options={[
+                { value: "default", label: "默认排序" },
+                { value: "name", label: "按名称" },
+                { value: "updatedAt", label: "按更新时间" },
+              ]}
+              icon={<ArrowUpDown size={16} />}
+            />
+          </div>
+        </div>
 
-      {/* Tab 切换 */}
-      <ModuleTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        counts={{
-          installed: installedModules.length,
-          store: filteredAvailable.length,
-        }}
-      />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div
+            className={`inline-flex rounded-full border p-1 text-sm shadow-sm ${
+              isDark ? "border-white/10 bg-white/5" : "border-slate-200 bg-white"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveTab("installed")}
+              className={`rounded-full px-4 py-1.5 transition-colors ${
+                activeTab === "installed"
+                  ? isDark
+                    ? "bg-white text-slate-900"
+                    : "bg-slate-900 text-white"
+                  : isDark
+                    ? "text-white/70 hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              已安装 ({installedModules.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("store")}
+              className={`rounded-full px-4 py-1.5 transition-colors ${
+                activeTab === "store"
+                  ? isDark
+                    ? "bg-white text-slate-900"
+                    : "bg-slate-900 text-white"
+                  : isDark
+                    ? "text-white/70 hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              插件商店 ({filteredAvailable.length})
+            </button>
+          </div>
 
-      {/* 统计卡片 */}
-      <ModuleStats stats={moduleStats} />
+          <div className="flex flex-wrap gap-2">
+            {statsChips.map((chip) => (
+              <span
+                key={chip.label}
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  isDark ? "bg-white/5 text-white/80" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {chip.label}：{chip.value}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* 内容区域 - 添加 padding 为阴影预留空间 */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
         {activeTab === "store" ? (
-          <div className="space-y-6">
-            {/* 推荐区域 */}
-            {(recommendations.popular.length > 0 || 
-              recommendations.newReleases.length > 0 || 
+          <div className="space-y-8">
+            {(recommendations.popular.length > 0 ||
+              recommendations.newReleases.length > 0 ||
               recommendations.smart.length > 0) && (
               <div>
-                <h2 className={`mb-4 text-xl font-bold ${
-                  isDark ? "text-white" : "text-slate-800"
-                }`}>
-                  💡 为您推荐
+                <h2
+                  className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
+                >
+                  💡 为您推荐的插件
                 </h2>
                 <ModuleRecommendations
                   recommendations={recommendations}
@@ -221,35 +309,73 @@ export function ModuleCenter() {
               </div>
             )}
 
-            {/* 全部可用模块 */}
             <div>
-              <h2 className={`mb-4 text-xl font-bold ${
-                isDark ? "text-white" : "text-slate-800"
-              }`}>
-                🛍️ 全部模块
+              <h2
+                className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
+              >
+                🛍️ 全部可用插件
               </h2>
               <ModuleGrid
-                modules={currentModules}
+                modules={availableStoreModules}
                 viewMode={viewMode}
                 processingModuleId={processingModuleId}
                 onInstall={handleInstall}
                 onCardClick={handleCardClick}
-                emptyMessage="没有找到可用模块"
+                emptyMessage="没有找到可用插件"
               />
             </div>
           </div>
         ) : (
-          <ModuleGrid
-            modules={currentModules}
-            viewMode={viewMode}
-            processingModuleId={processingModuleId}
-            onToggleStatus={handleToggleStatus}
-            onUninstall={handleUninstall}
-            onOpen={handleOpen}
-            onPinToggle={handlePinToggle}
-            onCardClick={handleCardClick}
-            emptyMessage="还没有安装任何模块,前往商店看看吧"
-          />
+          <div className="space-y-10">
+            {favoriteModules.length > 0 && (
+              <section>
+                <div className="mb-4 flex items-center justify-between">
+                  <h2
+                    className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
+                  >
+                    ★ 收藏的插件
+                  </h2>
+                  <p
+                    className={`text-xs md:text-sm ${
+                      isDark ? "text-white/60" : "text-slate-500"
+                    }`}
+                  >
+                    常用插件会显示在这里，可随时取消收藏。
+                  </p>
+                </div>
+                <ModuleGrid
+                  modules={favoriteModules}
+                  viewMode={viewMode}
+                  processingModuleId={processingModuleId}
+                  onToggleStatus={handleToggleStatus}
+                  onUninstall={handleUninstall}
+                  onOpen={handleOpen}
+                  onPinToggle={handlePinToggle}
+                  onCardClick={handleCardClick}
+                  emptyMessage="给喜爱的插件点亮一颗星星吧"
+                />
+              </section>
+            )}
+
+            <section>
+              <h2
+                className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
+              >
+                所有插件
+              </h2>
+              <ModuleGrid
+                modules={regularModules}
+                viewMode={viewMode}
+                processingModuleId={processingModuleId}
+                onToggleStatus={handleToggleStatus}
+                onUninstall={handleUninstall}
+                onOpen={handleOpen}
+                onPinToggle={handlePinToggle}
+                onCardClick={handleCardClick}
+                emptyMessage="还没有安装任何插件，前往插件商店看看吧"
+              />
+            </section>
+          </div>
         )}
       </div>
 

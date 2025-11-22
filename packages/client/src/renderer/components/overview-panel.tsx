@@ -28,7 +28,7 @@ import type { ModuleEvent } from '@/utils/module-event-logger';
  */
 export function OverviewPanel() {
   const { theme } = useTheme();
-  const { installedModules, remoteModules, setActiveModuleId } = useModulePlatform();
+  const { installedModules, remoteModules, openModule } = useModulePlatform();
   const stats = useModuleStats();
   const { events, getRecentlyActiveModules } = useModuleEvents();
 
@@ -62,7 +62,9 @@ export function OverviewPanel() {
       {recentModules.length > 0 && (
         <RecentModulesSection
           modules={recentModules}
-          onModuleClick={setActiveModuleId}
+          onModuleClick={(id) => {
+            void openModule(id);
+          }}
           theme={theme}
         />
       )}

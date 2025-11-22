@@ -21,8 +21,8 @@ const baseNav: NavConfigItem[] = [
   },
   {
     key: 'module-center',
-    label: '模块中心',
-    description: '模块管理',
+    label: '插件中心',
+    description: '插件管理',
     icon: 'layers',
     tone: 'accent',
   },
