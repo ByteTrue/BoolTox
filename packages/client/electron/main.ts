@@ -15,6 +15,9 @@ import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
 import { moduleStoreService } from './services/module-store.service.js';
 import { AutoUpdateService } from './services/auto-update.service.js';
 import { gitOpsService, type GitOpsConfig } from './services/git-ops.service.js';
+import { pluginManager } from './services/plugin/plugin-manager.js';
+import { pluginRunner } from './services/plugin/plugin-runner.js';
+import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -325,6 +328,27 @@ ipcMain.handle('git-ops:get-plugins', async () => {
 });
 
 /**
+ * Plugin System - IPC Handlers
+ */
+ipcMain.handle('plugin:get-all', () => {
+  return pluginManager.getAllPlugins();
+});
+
+ipcMain.handle('plugin:start', async (_event, id: string) => {
+  if (!mainWindow) throw new Error('Main window not found');
+  return await pluginRunner.startPlugin(id, mainWindow);
+});
+
+ipcMain.handle('plugin:stop', (_event, id: string) => {
+  if (!mainWindow) return;
+  pluginRunner.stopPlugin(id, mainWindow);
+});
+
+ipcMain.handle('plugin:resize', (_event, id: string, bounds: Electron.Rectangle) => {
+  pluginRunner.resizePlugin(id, bounds);
+});
+
+/**
  * 应用启动
  */
 app.whenReady().then(() => {
@@ -333,6 +357,9 @@ app.whenReady().then(() => {
   
   createWindow();
   autoUpdateService = new AutoUpdateService(() => mainWindow);
+  
+  // Initialize Plugin System
+  pluginManager.init().catch(err => console.error('Failed to init plugin manager:', err));
 
   app.on('activate', () => {
     // macOS 特性：点击 Dock 图标时重新创建窗口

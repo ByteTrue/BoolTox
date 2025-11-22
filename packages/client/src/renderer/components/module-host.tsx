@@ -1,4 +1,5 @@
 import type { ModuleInstance } from "@core/modules/types";
+import { PluginPlaceholder } from "@/components/PluginPlaceholder";
 
 interface ModuleHostProps {
   module: ModuleInstance | null;
@@ -9,6 +10,18 @@ export function ModuleHost({ module }: ModuleHostProps) {
     return (
       <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-[var(--shell-border)] bg-[var(--shell-soft)] text-sm text-[var(--text-secondary)]">
         选择左侧模块开始使用。
+      </div>
+    );
+  }
+
+  // New Architecture: Plugin (BrowserView)
+  // We identify new plugins by checking if they have a 'source' of 'plugin' or similar, 
+  // or if we just decide based on ID convention for now.
+  // Let's assume if it starts with "com.booltox.", it's a new plugin.
+  if (module.id.startsWith("com.booltox.")) {
+    return (
+      <div className="h-full w-full min-h-[400px] overflow-hidden rounded-3xl relative bg-white/5">
+        <PluginPlaceholder pluginId={module.id} />
       </div>
     );
   }

@@ -433,34 +433,37 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     // 更新存储
     const stored = await window.moduleStore.get(moduleId);
     
+    // 即使 stored 不存在（理论上不应该），我们也尝试更新或处理
     if (stored) {
       await window.moduleStore.update(moduleId, {
         pinnedToQuickAccess: true,
         quickAccessOrder: maxOrder + 1,
         pinnedAt: now,
       });
-
-      // 更新本地状态
-      setInstalledModules((current) =>
-        current.map((m) =>
-          m.id === moduleId
-            ? {
-                ...m,
-                pinnedToQuickAccess: true,
-                quickAccessOrder: maxOrder + 1,
-                pinnedAt: now,
-              }
-            : m
-        )
-      );
-
-      logModuleEvent({
-        moduleId,
-        moduleName: module.definition.name,
-        action: 'pin-to-quick-access',
-        category: module.definition.category || 'unknown',
-      });
+    } else {
+      console.warn(`[ModuleContext] Pin failed: Module ${moduleId} not found in store`);
     }
+
+    // 无论存储是否成功，都更新本地状态以获得即时反馈
+    setInstalledModules((current) =>
+      current.map((m) =>
+        m.id === moduleId
+          ? {
+              ...m,
+              pinnedToQuickAccess: true,
+              quickAccessOrder: maxOrder + 1,
+              pinnedAt: now,
+            }
+          : m
+      )
+    );
+
+    logModuleEvent({
+      moduleId,
+      moduleName: module.definition.name,
+      action: 'pin-to-quick-access',
+      category: module.definition.category || 'unknown',
+    });
   }, [installedModules]);
 
   const unpinFromQuickAccess = useCallback(async (moduleId: string) => {
