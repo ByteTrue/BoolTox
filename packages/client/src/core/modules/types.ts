@@ -18,14 +18,6 @@ export interface ModuleDefinition {
   installedByDefault?: boolean;
   loader: ModuleLoader;
   source?: ModuleSource; // 本地或远程模块
-  remote?: RemoteModuleConfig; // 远程模块配置
-}
-
-export interface RemoteModuleConfig {
-  manifestUrl?: string; // manifest.json 地址
-  bundleUrl: string; // 模块包地址 (js bundle)
-  checksum?: string; // 文件校验和
-  size?: number; // 文件大小（字节）
 }
 
 export type ModuleLaunchState = "idle" | "launching" | "running" | "stopping" | "error";
@@ -52,6 +44,8 @@ export interface ModuleInstance {
   isFavorite?: boolean;
   favoriteOrder?: number;
   favoritedAt?: string;
+  // 开发模式标记 (从开发目录加载的插件)
+  isDev?: boolean;
 }
 
 export interface ModuleStats {
@@ -60,27 +54,4 @@ export interface ModuleStats {
   disabled: number;
   local: number;
   remote: number;
-}
-
-// 远程模块清单
-export interface RemoteModuleManifest {
-  version: string;
-  modules: RemoteModuleEntry[];
-  updatedAt: string;
-}
-
-export interface RemoteModuleEntry {
-  id: string;
-  name: string;
-  description: string;
-  version: string;
-  author: string;
-  category: string;
-  keywords: string[];
-  icon: string;
-  bundleUrl: string;
-  checksum: string;
-  size: number;
-  screenshots?: string[];
-  changelog?: string;
 }

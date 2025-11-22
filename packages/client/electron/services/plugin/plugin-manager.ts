@@ -53,17 +53,17 @@ export class PluginManager {
     this.plugins.clear();
     
     // Load from userData
-    await this.scanDir(this.pluginsDir);
+    await this.scanDir(this.pluginsDir, false);
     
-    // Load from dev dir
+    // Load from dev dir (mark as dev plugins)
     if (this.devPluginsDir) {
-      await this.scanDir(this.devPluginsDir);
+      await this.scanDir(this.devPluginsDir, true);
     }
     
     console.log(`[PluginManager] Loaded ${this.plugins.size} plugins.`);
   }
 
-  private async scanDir(dir: string) {
+  private async scanDir(dir: string, isDev = false) {
     try {
       // Check if dir exists first
       try {
@@ -75,8 +75,9 @@ export class PluginManager {
       const entries = await fs.readdir(dir, { withFileTypes: true });
       
       for (const entry of entries) {
-        if (entry.isDirectory()) {
-          await this.loadPluginFromPath(path.join(dir, entry.name));
+        // 跳过scripts等非插件目录
+        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'scripts' && entry.name !== 'node_modules') {
+          await this.loadPluginFromPath(path.join(dir, entry.name), isDev);
         }
       }
     } catch (error) {
@@ -84,7 +85,7 @@ export class PluginManager {
     }
   }
 
-  async loadPluginFromPath(pluginPath: string) {
+  async loadPluginFromPath(pluginPath: string, isDev = false) {
     try {
       const manifestPath = path.join(pluginPath, 'manifest.json');
       const manifestContent = await fs.readFile(manifestPath, 'utf-8');
@@ -100,11 +101,12 @@ export class PluginManager {
         id: manifest.id,
         manifest,
         path: pluginPath,
-        status: 'stopped'
+        status: 'stopped',
+        isDev
       };
 
       this.plugins.set(manifest.id, runtime);
-      console.log(`[PluginManager] Loaded plugin: ${manifest.name} (${manifest.id})`);
+      console.log(`[PluginManager] Loaded plugin: ${manifest.name} (${manifest.id})${isDev ? ' [DEV]' : ''}`);
     } catch (error) {
       console.error(`[PluginManager] Failed to load plugin at ${pluginPath}:`, error);
     }

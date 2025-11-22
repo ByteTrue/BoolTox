@@ -1,6 +1,10 @@
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import readline from 'node:readline';
+import { execSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'url';
+import fs from 'node:fs';
 
 import {
   loadRawConfig,
@@ -8,6 +12,9 @@ import {
   saveConfig,
   publishRelease,
 } from './release-manager.mjs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const rl = createInterface({ input, output });
 readline.emitKeypressEvents(input);
@@ -200,6 +207,153 @@ const ensureUrl = async (value, fallback, label = 'URL') => {
   }
 };
 
+/**
+ * 扫描可用插件
+ */
+const scanPlugins = () => {
+  const pluginsDir = path.join(__dirname, '../plugins');
+  
+  if (!fs.existsSync(pluginsDir)) {
+    return [];
+  }
+  
+  const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
+  
+  return entries
+    .filter(entry => 
+      entry.isDirectory() && 
+      !entry.name.startsWith('.') && 
+      entry.name !== 'scripts' &&
+      entry.name !== 'node_modules'
+    )
+    .map(entry => {
+      const metadataPath = path.join(pluginsDir, entry.name, 'metadata.json');
+      let name = entry.name;
+      let version = '';
+      
+      try {
+        if (fs.existsSync(metadataPath)) {
+          const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+          name = metadata.name || entry.name;
+          version = metadata.version || '';
+        }
+      } catch (err) {
+        // 忽略解析错误,使用默认值
+      }
+      
+      return {
+        value: entry.name,
+        label: name,
+        hint: version ? `v${version} - ${entry.name}` : entry.name,
+      };
+    });
+};
+
+/**
+ * 插件打包
+ */
+const packagePlugin = async () => {
+  console.log('\n=== 插件打包工具 ===');
+  
+  const plugins = scanPlugins();
+  
+  if (plugins.length === 0) {
+    console.log('⚠️ 未找到任何插件,请确保 plugins/ 目录下有插件项目');
+    return;
+  }
+  
+  const pluginId = await askChoice('请选择要打包的插件', plugins);
+  
+  console.log(`\n📦 正在打包插件: ${pluginId}`);
+  
+  try {
+    const scriptPath = path.join(__dirname, 'package-plugin.mjs');
+    execSync(`node "${scriptPath}" ${pluginId}`, { stdio: 'inherit' });
+    console.log('\n✅ 插件打包完成!');
+  } catch (err) {
+    console.error('\n❌ 打包失败:', err.message);
+  }
+};
+
+/**
+ * 扫描可用版本
+ */
+const scanVersions = () => {
+  const releaseDir = path.join(__dirname, '../release');
+  
+  if (!fs.existsSync(releaseDir)) {
+    return [];
+  }
+  
+  const entries = fs.readdirSync(releaseDir, { withFileTypes: true });
+  
+  return entries
+    .filter(entry => 
+      entry.isDirectory() && 
+      !entry.name.startsWith('.') &&
+      entry.name !== 'plugins' &&
+      /^\d+\.\d+\.\d+/.test(entry.name) // 匹配版本号格式
+    )
+    .map(entry => {
+      const versionDir = path.join(releaseDir, entry.name);
+      const files = fs.readdirSync(versionDir);
+      const hasManifest = files.includes('manifest.json');
+      
+      return {
+        value: entry.name,
+        label: entry.name,
+        hint: hasManifest ? '✓ 已有清单' : '✗ 未生成清单',
+      };
+    })
+    .sort((a, b) => {
+      // 按版本号降序排序
+      const parseVersion = (v) => v.split('.').map(Number);
+      const [aMajor, aMinor, aPatch] = parseVersion(a.value);
+      const [bMajor, bMinor, bPatch] = parseVersion(b.value);
+      
+      if (aMajor !== bMajor) return bMajor - aMajor;
+      if (aMinor !== bMinor) return bMinor - aMinor;
+      return bPatch - aPatch;
+    });
+};
+
+/**
+ * 生成发布清单
+ */
+const generateManifest = async () => {
+  console.log('\n=== 生成发布清单 ===');
+  
+  const versions = scanVersions();
+  
+  let version = '';
+  
+  if (versions.length > 0) {
+    const choices = [
+      { value: '__auto__', label: '自动检测', hint: '使用 package.json 中的版本' },
+      ...versions,
+    ];
+    
+    const selected = await askChoice('请选择版本', choices, '__auto__');
+    
+    if (selected !== '__auto__') {
+      version = selected;
+    }
+  } else {
+    console.log('ℹ️ 未找到已有版本,将使用 package.json 中的版本');
+  }
+  
+  console.log('\n📄 生成清单文件...');
+  
+  try {
+    const scriptPath = path.join(__dirname, 'generate-release-manifest.mjs');
+    const cmd = version ? `node "${scriptPath}" ${version}` : `node "${scriptPath}"`;
+    execSync(cmd, { stdio: 'inherit' });
+    console.log('\n✅ 清单生成完成!');
+  } catch (err) {
+    console.error('\n❌ 生成失败:', err.message);
+  }
+};
+
 const normalizeRepository = (platform, value) => {
   if (!value) {
     return value;
@@ -336,16 +490,22 @@ const publish = async () => {
 
 const mainMenu = async () => {
   while (true) {
-    const choice = await askChoice('--- Booltox 发布助手 ---', [
+    const choice = await askChoice('--- BoolTox 开发者工具 ---', [
+      { value: 'package', label: '打包插件', hint: '将插件打包成 ZIP 文件' },
       { value: 'configure', label: '配置发布环境', hint: '设置仓库、令牌等信息' },
       { value: 'publish', label: '构建并发布', hint: '执行打包并推送 Release' },
+      { value: 'manifest', label: '生成发布清单', hint: '手动生成 manifest.json' },
       { value: 'exit', label: '退出', hint: '返回命令行' },
     ], 'exit');
 
-    if (choice === 'configure') {
+    if (choice === 'package') {
+      await packagePlugin();
+    } else if (choice === 'configure') {
       await configure();
     } else if (choice === 'publish') {
       await publish();
+    } else if (choice === 'manifest') {
+      await generateManifest();
     } else {
       break;
     }

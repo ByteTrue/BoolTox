@@ -144,6 +144,26 @@ const gitOpsAPI = {
 };
 
 /**
+ * Plugin API - 插件安装相关
+ */
+const pluginAPI = {
+  install: async (entry: unknown): Promise<{success: boolean; path?: string; error?: string}> => {
+    return await ipcRenderer.invoke('plugin:install', entry) as {success: boolean; path?: string; error?: string};
+  },
+  uninstall: async (pluginId: string): Promise<{success: boolean; error?: string}> => {
+    return await ipcRenderer.invoke('plugin:uninstall', pluginId) as {success: boolean; error?: string};
+  },
+  cancelInstall: async (pluginId: string): Promise<{success: boolean}> => {
+    return await ipcRenderer.invoke('plugin:cancel-install', pluginId) as {success: boolean};
+  },
+  onInstallProgress: (callback: (progress: unknown) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, progress: unknown) => callback(progress);
+    ipcRenderer.on('plugin:install-progress', listener);
+    return () => ipcRenderer.removeListener('plugin:install-progress', listener);
+  },
+};
+
+/**
  * 暴露API到渲染进程
  */
 contextBridge.exposeInMainWorld('electron', {
@@ -157,3 +177,5 @@ contextBridge.exposeInMainWorld('moduleStore', moduleStoreAPI);
 contextBridge.exposeInMainWorld('update', updateAPI);
 
 contextBridge.exposeInMainWorld('gitOps', gitOpsAPI);
+
+contextBridge.exposeInMainWorld('plugin', pluginAPI);

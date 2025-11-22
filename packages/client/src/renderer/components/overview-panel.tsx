@@ -14,7 +14,7 @@ import { ActivityFeed } from './ui/activity-feed';
 import { SystemMonitor } from './ui/system-monitor';
 import { History } from 'lucide-react';
 import { ActivityHistoryDrawer } from './ui/activity-history-drawer';
-import type { ModuleInstance, RemoteModuleEntry } from '@core/modules/types';
+import type { ModuleInstance } from '@core/modules/types';
 import type { ModuleEvent } from '@/utils/module-event-logger';
 
 /**
@@ -28,7 +28,7 @@ import type { ModuleEvent } from '@/utils/module-event-logger';
  */
 export function OverviewPanel() {
   const { theme } = useTheme();
-  const { installedModules, remoteModules, openModule } = useModulePlatform();
+  const { installedModules, openModule } = useModulePlatform();
   const stats = useModuleStats();
   const { events, getRecentlyActiveModules } = useModuleEvents();
 
@@ -72,7 +72,6 @@ export function OverviewPanel() {
       {/* 5. 推荐与发现 */}
       <DiscoverySection
         installedModules={installedModules}
-        remoteModules={remoteModules}
         theme={theme}
       />
     </div>
@@ -387,62 +386,11 @@ function SystemMonitorSection({
  */
 function DiscoverySection({
   installedModules,
-  remoteModules,
   theme,
 }: {
   installedModules: ModuleInstance[];
-  remoteModules: RemoteModuleEntry[];
   theme: 'light' | 'dark';
 }) {
-  // 智能推荐：基于已安装模块的分类推荐远程模块
-  const recommendedModules = useMemo(() => {
-    const installedCategories = new Set(
-      installedModules.map((m) => m.definition.category)
-    );
-    return remoteModules
-      .filter((rm) => installedCategories.has(rm.category))
-      .slice(0, 3);
-  }, [installedModules, remoteModules]);
-
-  if (recommendedModules.length === 0) return null;
-
-  return (
-    <section>
-      <h2
-        className={`text-xl font-bold mb-4 ${
-          theme === 'dark' ? 'text-white' : 'text-slate-800'
-        }`}
-      >
-        🎁 推荐模块
-      </h2>
-      <div className="grid gap-4 md:grid-cols-3">
-        {recommendedModules.map((rm) => (
-          <motion.div
-            key={rm.id}
-            {...cardHover}
-            className={`rounded-2xl border p-6 transition-shadow duration-250 ease-swift hover:shadow-lg ${getGlassShadow(theme)}`}
-            style={getGlassStyle('CARD', theme)}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-2xl">{rm.icon || '📦'}</span>
-              <h3
-                className={`font-semibold ${
-                  theme === 'dark' ? 'text-white' : 'text-slate-800'
-                }`}
-              >
-                {rm.name}
-              </h3>
-            </div>
-            <p
-              className={`text-sm ${
-                theme === 'dark' ? 'text-white/70' : 'text-slate-600'
-              }`}
-            >
-              {rm.description}
-            </p>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
+  // 暂时不显示推荐,等待新的插件商店实现
+  return null;
 }

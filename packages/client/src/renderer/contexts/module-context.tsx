@@ -1,29 +1,29 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ComponentType } from "react";
 import { findModuleDefinition, listModuleDefinitions } from "@core/modules/registry";
-import { moduleRegistry } from "@core/modules/registry-remote";
-import { moduleInstaller } from "@core/modules/installer";
-import type { ModuleDefinition, ModuleInstance, ModuleRuntime, ModuleStats, ModuleStatus, RemoteModuleEntry, ModuleLaunchState } from "@core/modules/types";
+import type { ModuleDefinition, ModuleInstance, ModuleRuntime, ModuleStats, ModuleStatus, ModuleLaunchState } from "@core/modules/types";
 import { logModuleEvent } from "@/utils/module-event-logger";
 import type { StoredModuleInfo } from "@shared/types/module-store.types";
-import type { PluginRuntime as PluginProcessRuntime } from "@booltox/shared";
+import type { PluginRuntime as PluginProcessRuntime, PluginRegistryEntry, PluginInstallProgress } from "@booltox/shared";
 import { useToast } from "./toast-context";
 
 interface ModuleContextValue {
   availableModules: ModuleDefinition[];
   installedModules: ModuleInstance[];
-  remoteModules: RemoteModuleEntry[];
+  pluginRegistry: PluginProcessRuntime[]; // 已安装的插件列表(新插件系统)
+  availablePlugins: PluginRegistryEntry[]; // 在线插件列表
   moduleStats: ModuleStats;
   activeModuleId: string | null;
   setActiveModuleId: (moduleId: string | null) => void;
   openModule: (moduleId: string) => Promise<void>;
   focusModuleWindow: (moduleId: string) => Promise<void>;
   installModule: (moduleId: string, remote?: boolean) => Promise<void>;
+  installOnlinePlugin: (entry: PluginRegistryEntry) => Promise<void>; // 安装在线插件
   uninstallModule: (moduleId: string) => Promise<void>;
   setModuleStatus: (moduleId: string, status: ModuleStatus) => void;
   toggleModuleStatus: (moduleId: string) => void;
   getModuleById: (moduleId: string) => ModuleInstance | undefined;
-  refreshRemoteModules: () => Promise<void>;
+  refreshAvailablePlugins: () => Promise<void>; // 刷新在线插件
   // 收藏功能
   favoriteModules: ModuleInstance[];
   addFavorite: (moduleId: string) => Promise<void>;
@@ -67,8 +67,8 @@ const ModuleContext = createContext<ModuleContextValue | null>(null);
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [installedModules, setInstalledModules] = useState<ModuleInstance[]>([]);
-  const [remoteModules, setRemoteModules] = useState<RemoteModuleEntry[]>([]);
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  const [availablePlugins, setAvailablePlugins] = useState<PluginRegistryEntry[]>([]);
   const { showToast } = useToast();
   const [pluginRegistry, setPluginRegistry] = useState<PluginProcessRuntime[]>([]);
   const installedModulesRef = useRef<ModuleInstance[]>([]);
@@ -94,6 +94,20 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshPluginRegistry();
   }, [refreshPluginRegistry]);
+
+  // 获取在线插件列表
+  const refreshAvailablePlugins = useCallback(async () => {
+    try {
+      const registry = await window.gitOps.getPlugins();
+      setAvailablePlugins(registry.plugins || []);
+    } catch (error) {
+      console.error('[ModuleContext] 获取在线插件列表失败:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshAvailablePlugins();
+  }, [refreshAvailablePlugins]);
 
   const pluginIdSet = useMemo(() => new Set(pluginRegistry.map((plugin) => plugin.id)), [pluginRegistry]);
 
@@ -341,21 +355,6 @@ const focusModuleWindow = useCallback(
     void restoreInstalledModules();
   }, []);
 
-  // 加载远程模块清单
-  const refreshRemoteModules = useCallback(async () => {
-    try {
-      const manifest = await moduleRegistry.fetchManifest();
-      setRemoteModules(manifest.modules);
-    } catch (error) {
-      console.error("获取远程模块失败:", error);
-    }
-  }, []);
-
-  // 初始化时加载远程模块
-  useEffect(() => {
-    void refreshRemoteModules();
-  }, [refreshRemoteModules]);
-
   const loadModuleComponent = useCallback(async (moduleId: string, definition: ModuleDefinition) => {
     setInstalledModules((current) =>
       current.map((module) =>
@@ -447,54 +446,10 @@ const focusModuleWindow = useCallback(
 
   const installModule = useCallback(
     async (moduleId: string, remote = false) => {
-      // 如果是远程模块,先下载安装
+      // TODO: 实现新的插件在线安装逻辑
+      // 暂时只支持本地模块安装
       if (remote) {
-        const remoteEntry = remoteModules.find((m) => m.id === moduleId);
-        if (!remoteEntry) {
-          throw new Error(`未找到远程模块 ${moduleId}`);
-        }
-
-        // 使用 installer 下载并创建模块定义
-        const definition = await moduleInstaller.installRemoteModule(remoteEntry);
-        registryMap.set(moduleId, definition);
-
-        // 获取缓存路径
-        const cachePath = await window.moduleStore.getCachePath(moduleId);
-
-        setInstalledModules((current) => {
-          if (current.some((module) => module.id === moduleId)) {
-            return current;
-          }
-          return [
-            ...current,
-            {
-              id: moduleId,
-              definition,
-              runtime: createRuntime("enabled", null, true, true),
-              isFavorite: false,
-            },
-          ];
-        });
-
-        // 持久化到存储
-        const info: StoredModuleInfo = {
-          id: moduleId,
-          status: 'enabled',
-          installedAt: new Date().toISOString(),
-          lastUsedAt: new Date().toISOString(),
-          version: definition.version,
-          source: 'remote',
-          cachedPath: cachePath || undefined,
-          // 初始化收藏字段
-          isFavorite: false,
-          favoriteOrder: undefined,
-          favoritedAt: undefined,
-        };
-        await window.moduleStore.add(info);
-
-        await loadModuleComponent(moduleId, definition);
-        void refreshPluginRegistry();
-        return;
+        throw new Error("在线安装功能正在开发中");
       }
 
       // 本地模块安装逻辑
@@ -543,7 +498,62 @@ const focusModuleWindow = useCallback(
         category: definition.category || 'unknown',
       });
     },
-    [loadModuleComponent, refreshPluginRegistry, remoteModules],
+    [loadModuleComponent, refreshPluginRegistry],
+  );
+
+  // 安装在线插件
+  const installOnlinePlugin = useCallback(
+    async (entry: PluginRegistryEntry) => {
+      try {
+        showToast({
+          type: 'info',
+          message: `开始安装 ${entry.name}...`,
+        });
+
+        // 监听安装进度
+        const unsubscribe = window.plugin.onInstallProgress((progress: PluginInstallProgress) => {
+          if (progress.stage === 'complete') {
+            showToast({
+              type: 'success',
+              message: `${entry.name} 安装成功!`,
+            });
+          } else if (progress.stage === 'error') {
+            showToast({
+              type: 'error',
+              message: `安装失败: ${progress.error || '未知错误'}`,
+            });
+          }
+        });
+
+        const result = await window.plugin.install(entry);
+
+        unsubscribe();
+
+        if (!result.success) {
+          throw new Error(result.error || '安装失败');
+        }
+
+        // 刷新插件列表
+        await refreshPluginRegistry();
+        await refreshAvailablePlugins();
+
+        // 记录安装事件
+        logModuleEvent({
+          moduleId: entry.id,
+          moduleName: entry.name,
+          action: 'install',
+          category: entry.category || 'unknown',
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        showToast({
+          type: 'error',
+          message: `安装失败: ${errorMessage}`,
+        });
+        throw error;
+      }
+    },
+    [refreshPluginRegistry, refreshAvailablePlugins, showToast],
   );
 
   const uninstallModule = useCallback(
@@ -562,13 +572,6 @@ const focusModuleWindow = useCallback(
         });
       }
       
-      // 如果是远程模块,清理缓存
-      if (module?.definition.source === "remote") {
-        await moduleInstaller.uninstallModule(moduleId);
-        // 删除文件系统缓存
-        await window.moduleStore.removeCache(moduleId);
-      }
-
       // 记录卸载事件（在删除之前）
       if (module) {
         logModuleEvent({
@@ -798,18 +801,20 @@ const focusModuleWindow = useCallback(
     () => ({
       availableModules: registryDefinitions,
       installedModules,
-      remoteModules,
+      pluginRegistry,
+      availablePlugins,
       moduleStats,
       activeModuleId,
       setActiveModuleId,
       openModule,
       focusModuleWindow,
       installModule,
+      installOnlinePlugin,
       uninstallModule,
       setModuleStatus,
       toggleModuleStatus,
       getModuleById,
-      refreshRemoteModules,
+      refreshAvailablePlugins,
       favoriteModules,
       addFavorite,
       removeFavorite,
@@ -821,14 +826,15 @@ const focusModuleWindow = useCallback(
       focusModuleWindow,
       getModuleById,
       installModule,
+      installOnlinePlugin,
       installedModules,
+      availablePlugins,
       openModule,
       moduleStats,
-      remoteModules,
       setModuleStatus,
       toggleModuleStatus,
       uninstallModule,
-      refreshRemoteModules,
+      refreshAvailablePlugins,
       favoriteModules,
       addFavorite,
       removeFavorite,

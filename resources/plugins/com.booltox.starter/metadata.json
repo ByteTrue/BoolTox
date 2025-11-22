@@ -1,0 +1,12 @@
+{
+  "id": "com.booltox.starter",
+  "version": "1.0.0",
+  "name": "BoolTox Starter",
+  "description": "A comprehensive example showcasing BoolTox plugin capabilities.",
+  "author": "",
+  "icon": "icon.png",
+  "category": "utility",
+  "keywords": [],
+  "hash": "44854404a71ed1e11060fb49376614ec2cf17a6d1edd6cddac281b92e800b6c0",
+  "size": 52191
+}

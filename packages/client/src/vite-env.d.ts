@@ -4,6 +4,7 @@
 import type { StoredModuleInfo } from './shared/types/module-store.types';
 import type { Announcement, GitOpsConfig, PluginRegistry } from '../electron/services/git-ops.service';
 import type { AutoUpdateStatus } from '../electron/services/auto-update.service';
+import type { PluginRegistryEntry, PluginInstallProgress } from '@booltox/shared';
 
 declare const __APP_VERSION__: string | undefined;
 
@@ -44,6 +45,12 @@ declare global {
       updateConfig: (config: Partial<GitOpsConfig>) => Promise<GitOpsConfig>;
       getAnnouncements: () => Promise<Announcement[]>;
       getPlugins: () => Promise<PluginRegistry>;
+    };
+    plugin: {
+      install: (entry: PluginRegistryEntry) => Promise<{success: boolean; path?: string; error?: string}>;
+      uninstall: (pluginId: string) => Promise<{success: boolean; error?: string}>;
+      cancelInstall: (pluginId: string) => Promise<{success: boolean}>;
+      onInstallProgress: (callback: (progress: PluginInstallProgress) => void) => () => void;
     };
   }
 }

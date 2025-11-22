@@ -17,8 +17,10 @@ import { AutoUpdateService } from './services/auto-update.service.js';
 import { gitOpsService, type GitOpsConfig } from './services/git-ops.service.js';
 import { pluginManager } from './services/plugin/plugin-manager.js';
 import { pluginRunner } from './services/plugin/plugin-runner.js';
+import { pluginInstaller } from './services/plugin/plugin-installer.js';
 import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
-import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
+import type { StoredModuleInfo } from '../src/shared/types/module-store.js';
+import type { PluginRegistryEntry } from '@booltox/shared';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -353,6 +355,63 @@ ipcMain.handle('plugin:focus', (_event, id: string) => {
 });
 
 /**
+ * Plugin Installation - IPC Handlers
+ */
+ipcMain.handle('plugin:install', async (_event, entry: PluginRegistryEntry) => {
+  try {
+    const pluginDir = await pluginInstaller.installPlugin(
+      entry,
+      (progress) => {
+        // 发送进度更新到渲染进程
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('plugin:install-progress', progress);
+        }
+      },
+      mainWindow || undefined
+    );
+    
+    // 安装完成后,重新加载插件列表
+    await pluginManager.loadPlugins();
+    
+    return { success: true, path: pluginDir };
+  } catch (error) {
+    console.error('[Main] Plugin installation failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+ipcMain.handle('plugin:uninstall', async (_event, pluginId: string) => {
+  try {
+    // 先停止插件
+    if (mainWindow) {
+      pluginRunner.stopPlugin(pluginId, mainWindow);
+    }
+    
+    // 卸载插件
+    await pluginInstaller.uninstallPlugin(pluginId);
+    
+    // 重新加载插件列表
+    await pluginManager.loadPlugins();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('[Main] Plugin uninstallation failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+ipcMain.handle('plugin:cancel-install', (_event, pluginId: string) => {
+  pluginInstaller.cancelDownload(pluginId);
+  return { success: true };
+});
+
+/**
  * 应用启动
  */
 app.whenReady().then(() => {
@@ -363,6 +422,7 @@ app.whenReady().then(() => {
   autoUpdateService = new AutoUpdateService(() => mainWindow);
   
   // Initialize Plugin System
+  pluginInstaller.init().catch(err => console.error('Failed to init plugin installer:', err));
   pluginManager.init().catch(err => console.error('Failed to init plugin manager:', err));
 
   app.on('activate', () => {

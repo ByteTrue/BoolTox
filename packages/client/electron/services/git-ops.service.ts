@@ -1,3 +1,8 @@
+import type { PluginRegistryEntry } from '@booltox/shared';
+import { app } from 'electron';
+import path from 'path';
+import fs from 'fs/promises';
+
 export type GitProvider = 'github' | 'gitlab';
 
 export interface GitOpsConfig {
@@ -18,18 +23,8 @@ export interface Announcement {
   type: 'announcement' | 'update';
 }
 
-export interface PluginInfo {
-  id: string;
-  version: string;
-  name: string;
-  description: string;
-  author: string;
-  downloadUrl: string;
-  hash?: string;
-}
-
 export interface PluginRegistry {
-  plugins: PluginInfo[];
+  plugins: PluginRegistryEntry[];
 }
 
 // 默认配置
@@ -222,20 +217,92 @@ export class GitOpsService {
   }
 
   /**
-   * 获取插件列表
+   * 获取插件列表 - 扫描 resources/plugins/ 目录下的所有 metadata.json
    */
   async getPluginRegistry(): Promise<PluginRegistry> {
     try {
-      const url = this.getRawUrl('resources/plugins/registry.json');
-      const response = await fetch(url, { headers: this.getHeaders() });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch registry: ${response.statusText}`);
+      // 开发模式: 从本地 resources/plugins/ 目录读取
+      if (!app.isPackaged) {
+        return await this.getLocalPluginRegistry();
       }
+      
+      // 生产模式: 从 GitHub 远程读取
+      // 1. 获取 resources/plugins/ 目录内容
+      const items = await this.fetchApi(`contents/resources/plugins?ref=${this.config.branch}`) as Array<{ name: string; type: 'file' | 'dir' }>;
+      
+      // 2. 过滤出所有子目录(每个插件一个目录)
+      const pluginDirs = items.filter(item => item.type === 'dir');
+      
+      // 3. 并行获取所有 metadata.json
+      const metadataPromises = pluginDirs.map(async dir => {
+        try {
+          const metadataUrl = this.getRawUrl(`resources/plugins/${dir.name}/metadata.json`);
+          const res = await fetch(metadataUrl, { headers: this.getHeaders() });
+          
+          if (!res.ok) {
+            console.warn(`[GitOps] Failed to fetch metadata for ${dir.name}: ${res.statusText}`);
+            return null;
+          }
+          
+          const metadata = await res.json() as Omit<PluginRegistryEntry, 'downloadUrl'>;
+          // 自动生成下载URL: resources/plugins/{plugin-id}/plugin.zip
+          const downloadUrl = this.getRawUrl(`resources/plugins/${dir.name}/plugin.zip`);
+          
+          return { ...metadata, downloadUrl } as PluginRegistryEntry;
+        } catch (error) {
+          console.error(`[GitOps] Error fetching metadata for ${dir.name}:`, error);
+          return null;
+        }
+      });
 
-      return await response.json() as PluginRegistry;
+      const plugins = (await Promise.all(metadataPromises)).filter((p): p is PluginRegistryEntry => p !== null);
+      
+      console.log(`[GitOps] Loaded ${plugins.length} plugins from registry`);
+      return { plugins };
+      
     } catch (error) {
       console.error('[GitOps] Error fetching plugin registry:', error);
+      return { plugins: [] };
+    }
+  }
+
+  /**
+   * 从本地文件系统读取插件列表 (开发模式)
+   */
+  private async getLocalPluginRegistry(): Promise<PluginRegistry> {
+    try {
+      // 在开发模式下,需要找到工作空间根目录
+      // process.cwd() 在 packages/client,需要向上两级到达根目录
+      const workspaceRoot = path.resolve(process.cwd(), '../..');
+      const resourcesDir = path.join(workspaceRoot, 'resources', 'plugins');
+      console.log('[GitOps] Reading local plugins from:', resourcesDir);
+      
+      const entries = await fs.readdir(resourcesDir, { withFileTypes: true });
+      const pluginDirs = entries.filter(e => e.isDirectory());
+      
+      const plugins: PluginRegistryEntry[] = [];
+      
+      for (const dir of pluginDirs) {
+        try {
+          const metadataPath = path.join(resourcesDir, dir.name, 'metadata.json');
+          const content = await fs.readFile(metadataPath, 'utf-8');
+          const metadata = JSON.parse(content) as Omit<PluginRegistryEntry, 'downloadUrl'>;
+          
+          // 本地开发: 使用file://协议
+          const pluginZipPath = path.join(resourcesDir, dir.name, 'plugin.zip');
+          const downloadUrl = `file:///${pluginZipPath.replace(/\\/g, '/')}`;
+          
+          plugins.push({ ...metadata, downloadUrl });
+        } catch (error) {
+          console.warn(`[GitOps] Failed to read metadata for ${dir.name}:`, error);
+        }
+      }
+      
+      console.log(`[GitOps] Loaded ${plugins.length} local plugins`);
+      return { plugins };
+      
+    } catch (error) {
+      console.error('[GitOps] Error reading local plugin registry:', error);
       return { plugins: [] };
     }
   }

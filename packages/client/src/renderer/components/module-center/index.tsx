@@ -20,10 +20,13 @@ export function ModuleCenter() {
   const {
     moduleStats,
     installedModules,
+    pluginRegistry,
     availableModules,
+    availablePlugins,
     toggleModuleStatus,
     uninstallModule,
     installModule,
+    installOnlinePlugin,
     addFavorite,
     removeFavorite,
     openModule,
@@ -83,7 +86,16 @@ export function ModuleCenter() {
     [sortedInstalled],
   );
 
-  const availableStoreModules = useMemo(() => sortedAvailable, [sortedAvailable]);
+  const availableStoreModules = useMemo(() => {
+    // 将在线插件转换为可以在UI中显示的格式
+    // 只过滤掉已正式安装的插件(不包括开发模式插件)
+    const installedPluginIds = new Set(
+      pluginRegistry
+        .filter(p => !p.isDev) // 开发插件不算"已安装"
+        .map(p => p.id)
+    );
+    return availablePlugins.filter(p => !installedPluginIds.has(p.id));
+  }, [availablePlugins, pluginRegistry]);
 
   // 详情 Modal 的模块数据
   const selectedModule = useMemo(() => {
@@ -105,12 +117,18 @@ export function ModuleCenter() {
     async (moduleId: string) => {
       setProcessingModuleId(moduleId);
       try {
-        await installModule(moduleId);
+        // 检查是否是在线插件
+        const onlinePlugin = availablePlugins.find(p => p.id === moduleId);
+        if (onlinePlugin) {
+          await installOnlinePlugin(onlinePlugin);
+        } else {
+          await installModule(moduleId);
+        }
       } finally {
         setProcessingModuleId(null);
       }
     },
-    [installModule]
+    [installModule, installOnlinePlugin, availablePlugins]
   );
 
   // 处理卸载
@@ -268,7 +286,7 @@ export function ModuleCenter() {
                     : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              插件商店 ({filteredAvailable.length})
+              插件商店 ({availableStoreModules.length})
             </button>
           </div>
 
