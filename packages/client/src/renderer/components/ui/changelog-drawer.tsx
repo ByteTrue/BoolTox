@@ -16,7 +16,7 @@ export interface ChangelogDrawerProps {
   initialSelectedId?: string;
 }
 
-type FilterType = 'all' | 'announcement' | 'update' | 'notice';
+type FilterType = 'all' | 'announcement' | 'update';
 
 /**
  * 更新日志历史抽屉组件
@@ -41,7 +41,6 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
   const typeConfig = {
     update: { label: '更新日志', color: 'blue' },
     announcement: { label: '公告', color: 'purple' },
-    notice: { label: '提示', color: 'gray' },
   } as const;
 
   // 筛选按钮配置
@@ -49,7 +48,6 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
     { value: 'all', label: '全部', emoji: '📋' },
     { value: 'announcement', label: '公告', emoji: '📢' },
     { value: 'update', label: '更新', emoji: '🚀' },
-    { value: 'notice', label: '提示', emoji: '💡' },
   ];
 
   const drawerContent = (
@@ -129,23 +127,12 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                                 ? theme === 'dark'
                                   ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
                                   : 'bg-blue-50 text-blue-600 border-blue-200'
-                                : selectedItem.type === 'announcement'
-                                ? theme === 'dark'
+                                : theme === 'dark'
                                   ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
                                   : 'bg-purple-50 text-purple-600 border-purple-200'
-                                : ''
                             }`}
-                            style={
-                              selectedItem.type !== 'update' && selectedItem.type !== 'announcement'
-                                ? {
-                                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgb(248,250,252)',
-                                    color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgb(71,85,105)',
-                                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-                                  }
-                                : undefined
-                            }
                           >
-                            {typeConfig[selectedItem.type].label}
+                            {typeConfig[selectedItem.type]?.label ?? '公告'}
                           </span>
                           <span
                             className={`text-sm ${
@@ -358,23 +345,12 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                                   ? theme === 'dark'
                                     ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
                                     : 'bg-blue-50 text-blue-600 border-blue-200'
-                                  : item.type === 'announcement'
-                                  ? theme === 'dark'
+                                  : theme === 'dark'
                                     ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
                                     : 'bg-purple-50 text-purple-600 border-purple-200'
-                                  : ''
                               }`}
-                              style={
-                                item.type !== 'update' && item.type !== 'announcement'
-                                  ? {
-                                      backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgb(248,250,252)',
-                                      color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgb(71,85,105)',
-                                      borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-                                    }
-                                  : undefined
-                              }
                             >
-                              {typeConfig[item.type].label}
+                              {typeConfig[item.type]?.label ?? '公告'}
                             </span>
                             <span
                               className={`${
