@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type CSSProperties } from "react";
-import { Moon, Sun, Minus, Square, X } from "lucide-react";
+import { Moon, Sun, Minus, Square, X, Menu } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "./theme-provider";
 import { getGlassStyle } from "@/utils/glass-layers";
@@ -61,18 +61,32 @@ export function WindowTitlebar() {
       style={titlebarStyle}
       onDoubleClick={handleDoubleClick}
     >
-      {/* 左侧：主题切换 */}
+      {/* 左侧：折叠 + 主题切换 */}
       <div className="flex items-center gap-2" style={noDragStyle}>
         <motion.button
           {...iconButtonInteraction}
           type="button"
+          aria-label="折叠侧边栏"
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border shadow-unified-sm dark:shadow-unified-sm-dark transition-shadow duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
+          style={getGlassStyle('BUTTON', theme)}
+          onClick={(event) => {
+            event.stopPropagation();
+            window.dispatchEvent(new CustomEvent('sidebar-toggle'));
+          }}
+          onDoubleClick={(event) => event.stopPropagation()}
+        >
+          <Menu className="h-4 w-4" />
+        </motion.button>
+        <motion.button
+          {...iconButtonInteraction}
+          type="button"
           aria-label={`切换为${theme === "light" ? "夜间" : "日间"}模式`}
-          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border shadow-unified-sm dark:shadow-unified-sm-dark transition-shadow duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border shadow-unified-sm dark:shadow-unified-sm-dark transition-shadow duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
           style={buttonStyle}
           onClick={handleThemeToggle}
           onDoubleClick={(event) => event.stopPropagation()}
         >
-          {theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+          {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </motion.button>
       </div>
 
@@ -87,34 +101,34 @@ export function WindowTitlebar() {
           {...iconButtonInteraction}
           type="button"
           aria-label="最小化"
-          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border shadow-unified-sm dark:shadow-unified-sm-dark transition-shadow duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border shadow-unified-sm dark:shadow-unified-sm-dark transition-shadow duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
           style={buttonStyle}
           onClick={handleMinimize}
           onDoubleClick={(event) => event.stopPropagation()}
         >
-          <Minus className="h-3.5 w-3.5" />
+          <Minus className="h-4 w-4" />
         </motion.button>
         <motion.button
           {...iconButtonInteraction}
           type="button"
           aria-label="最大化/还原"
-          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border shadow-unified-sm dark:shadow-unified-sm-dark transition-shadow duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border shadow-unified-sm dark:shadow-unified-sm-dark transition-shadow duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
           style={buttonStyle}
           onClick={handleMaximize}
           onDoubleClick={(event) => event.stopPropagation()}
         >
-          <Square className="h-3 w-3" />
+          <Square className="h-4 w-4" />
         </motion.button>
         <motion.button
           {...iconButtonInteraction}
           type="button"
           aria-label="关闭"
-          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border shadow-unified-sm dark:shadow-unified-sm-dark transition-[shadow,border-color,background-color,color] duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark hover:border-red-400 hover:bg-red-500/20 hover:text-red-500 outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border shadow-unified-sm dark:shadow-unified-sm-dark transition-[shadow,border-color,background-color,color] duration-250 ease-swift hover:shadow-unified-md hover:dark:shadow-unified-md-dark hover:border-red-400 hover:bg-red-500/20 hover:text-red-500 outline-none ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
           style={buttonStyle}
           onClick={handleClose}
           onDoubleClick={(event) => event.stopPropagation()}
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-[18px] w-[18px]" />
         </motion.button>
       </div>
     </div>

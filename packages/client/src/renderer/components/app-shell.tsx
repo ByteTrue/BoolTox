@@ -15,7 +15,7 @@ import { useTheme } from "./theme-provider";
 import { getGlassStyle, getGlassShadow, getGlassActiveStyle, GLASS_BORDERS } from "@/utils/glass-layers";
 import { getBlurStyle } from "@/utils/blur-effects";
 import { pageTransitionPresets, staggerPresets } from "@/utils/fluid-animations";
-import { Boxes, ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { Boxes, Menu } from "lucide-react";
 import { GlassButton } from "./ui/glass-button";
 import { UpdateBanner } from "./ui/update-banner";
 import { GlassLoadingFallback } from "./ui/glass-loading-fallback";
@@ -200,6 +200,17 @@ function AppShellContent() {
   const [activeNav, setActiveNav] = useState<string>('overview');
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler: EventListener = () => {
+      setIsNavCollapsed((prev) => !prev);
+    };
+    window.addEventListener("sidebar-toggle", handler);
+    return () => {
+      window.removeEventListener("sidebar-toggle", handler);
+    };
+  }, []);
+
   // 屏幕阅读器公告
   const announce = useScreenReaderAnnounce();
 
@@ -304,10 +315,10 @@ function AppShellContent() {
             role="navigation"
             aria-label="主导航"
             aria-expanded={true}
-            className={`flex h-full flex-col overflow-hidden rounded-3xl border transition-[colors,border-color,box-shadow] duration-500 ease-gentle ${isNavCollapsed ? 'p-3' : 'p-5'} ${getGlassShadow(theme)}`}
+            className={`relative flex h-full flex-col overflow-hidden rounded-3xl border transition-[colors,border-color,box-shadow] duration-500 ease-gentle ${isNavCollapsed ? 'p-3' : 'p-5'} ${getGlassShadow(theme)}`}
             style={{
-              width: isNavCollapsed ? '94px' : '240px',
-              minWidth: isNavCollapsed ? '94px' : '240px',
+              width: isNavCollapsed ? '72px' : '240px',
+              minWidth: isNavCollapsed ? '72px' : '240px',
               ...getGlassStyle('PANEL', theme),
               ...getBlurStyle('sidebar', theme, 'medium'),
             }}
@@ -335,8 +346,8 @@ function AppShellContent() {
             )}
 
             {/* 导航区域 - 添加 padding 防止阴影被截断 */}
-            <div className={`elegant-scroll flex-1 overflow-y-auto ${isNavCollapsed ? 'px-1 py-1' : 'pr-3 py-2'}`}>
-              <nav className={`flex flex-col ${isNavCollapsed ? 'items-center gap-3' : 'gap-6 px-1'}`}>
+            <div className={`elegant-scroll flex-1 overflow-y-auto ${isNavCollapsed ? 'px-0.5 py-1' : 'pr-3 py-2'}`}>
+              <nav className={`flex flex-col ${isNavCollapsed ? 'items-center gap-2.5' : 'gap-6 px-1'}`}>
                 <NavSection
                   title="管理中心"
                   items={primaryNav}
@@ -346,28 +357,9 @@ function AppShellContent() {
                 />
               </nav>
             </div>
-          </aside>
 
-          <motion.button
-            type="button"
-            onClick={() => setIsNavCollapsed((prev) => !prev)}
-            className="absolute -right-3 bottom-6 z-20 flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition-[background-color,box-shadow] duration-200"
-            style={{
-              background: theme === 'dark' ? 'rgba(24, 38, 52, 0.85)' : 'rgba(255, 255, 255, 0.9)',
-              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(148, 163, 184, 0.35)',
-              boxShadow: theme === 'dark'
-                ? '0 12px 28px rgba(15, 23, 42, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
-                : '0 14px 32px rgba(148, 163, 184, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
-            }}
-            aria-label={isNavCollapsed ? '展开侧边栏' : '折叠侧边栏'}
-            whileTap={{ scale: 0.94 }}
-          >
-            {isNavCollapsed ? (
-              <ChevronRight className={theme === 'dark' ? 'text-white/80' : 'text-slate-600'} size={18} />
-            ) : (
-              <Menu className={theme === 'dark' ? 'text-white/80' : 'text-slate-600'} size={18} />
-            )}
-          </motion.button>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16" />
+          </aside>
         </div>
         {/* 外层：固定容器 */}
         <div className="relative flex min-h-0 min-w-0 flex-1">
@@ -475,8 +467,8 @@ function NavSection({
         }}
         onMouseEnter={() => setHoveredItem(item.key)}
         onMouseLeave={() => setHoveredItem(null)}
-        className={`group flex w-full items-center rounded-2xl border transition-[transform,box-shadow,background-color] duration-250 ease-swift hover:shadow-unified-xl hover:dark:shadow-unified-xl-dark focus-visible:outline-none hover-optimized ${
-          collapsed ? 'justify-center gap-0 px-2.5 py-2.5' : 'gap-3 px-3 py-2.5'
+        className={`group flex items-center rounded-2xl border transition-[transform,box-shadow,background-color] duration-250 ease-swift hover:shadow-unified-xl hover:dark:shadow-unified-xl-dark focus-visible:outline-none hover-optimized ${
+          collapsed ? 'h-11 w-11 justify-center self-center' : 'w-full gap-3 px-3 py-2.5'
         } ${theme === 'dark' ? 'shadow-unified-md-dark' : 'shadow-unified-md'}`}
         title={item.label}
         aria-label={item.label}
@@ -489,7 +481,7 @@ function NavSection({
         }}
       >
         <div
-          className={`inline-flex rounded-lg ${collapsed ? 'p-2.5' : 'p-2'} transition-[box-shadow,background-color,backdrop-filter] duration-250 ease-swift ${
+          className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition-[box-shadow,background-color,backdrop-filter] duration-250 ease-swift ${
             isActive
               ? 'shadow-unified-lg dark:shadow-unified-lg-dark'
               : 'shadow-unified-sm dark:shadow-unified-sm-dark'
@@ -508,7 +500,7 @@ function NavSection({
             name={item.icon}
             active={isActive}
             isHovering={hoveredItem === item.key}
-            className={isActive ? 'text-white' : 'text-brand-blue-400 dark:text-brand-blue-400'}
+            className={`${isActive ? 'text-white' : 'text-brand-blue-400 dark:text-brand-blue-400'} h-3.5 w-3.5`}
           />
         </div>
         {!collapsed && (
