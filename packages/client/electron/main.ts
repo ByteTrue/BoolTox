@@ -123,24 +123,26 @@ function createWindow() {
 }
 
 /**
- * 窗口控制
+ * 窗口控制 - 支持主窗口和所有插件窗口
  */
-ipcMain.handle('window:control', (_event, action: string) => {
-  if (!mainWindow) return;
+ipcMain.handle('window:control', (event, action: string) => {
+  // 获取发送请求的窗口
+  const senderWindow = BrowserWindow.fromWebContents(event.sender);
+  if (!senderWindow) return;
 
   switch (action) {
     case 'minimize':
-      mainWindow.minimize();
+      senderWindow.minimize();
       break;
     case 'toggle-maximize':
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
+      if (senderWindow.isMaximized()) {
+        senderWindow.unmaximize();
       } else {
-        mainWindow.maximize();
+        senderWindow.maximize();
       }
       break;
     case 'close':
-      mainWindow.close();
+      senderWindow.close();
       break;
   }
 });

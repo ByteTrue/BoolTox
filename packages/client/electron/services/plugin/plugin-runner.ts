@@ -79,12 +79,44 @@ export class PluginRunner {
       try {
         console.log(`[PluginRunner] Creating window for ${pluginId}`);
         
-        // Create BrowserWindow instead of BrowserView
+        // 平台特定窗口配置 - 与主窗口保持一致
+        const platformConfig: Partial<Electron.BrowserWindowConstructorOptions> = (() => {
+          switch (process.platform) {
+            case 'win32':
+              return {
+                backgroundMaterial: 'mica',
+                titleBarStyle: 'hidden',
+              };
+            case 'darwin':
+              return {
+                titleBarStyle: 'hiddenInset',
+                trafficLightPosition: { x: 16, y: 16 },
+                vibrancy: 'under-window',
+                visualEffectState: 'active',
+                transparent: false,
+              };
+            case 'linux':
+              return {
+                transparent: false,
+                backgroundColor: '#1c1e23',
+              };
+            default:
+              return {};
+          }
+        })();
+
+        // Create BrowserWindow with custom titlebar (like main window)
         const win = new BrowserWindow({
           width: 900,
           height: 600,
-          show: true, // Show immediately for debugging
+          minWidth: 600,
+          minHeight: 400,
+          show: true,
+          frame: false, // 无边框窗口
+          resizable: true,
+          maximizable: true,
           autoHideMenuBar: true,
+          ...platformConfig,
           webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -95,6 +127,16 @@ export class PluginRunner {
 
         state.window = win;
         state.runtime.windowId = win.id;
+        
+        // 隐藏菜单栏并设置窗口属性
+        win.setMenuBarVisibility(false);
+        win.setMenu(null);
+        
+        // macOS 特定：设置窗口按钮可见性
+        if (process.platform === 'darwin') {
+          win.setWindowButtonVisibility(true);
+        }
+        
         // No need to add to parentWindow
         
         // Load content
