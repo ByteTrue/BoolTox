@@ -220,8 +220,8 @@ export class GitOpsService {
     }
 
     try {
-      // 1. 获取索引文件
-      const indexUrl = this.getRawUrl('resources/announcements/index.json');
+      // 1. 获取索引文件 (暂时不使用CDN,等待缓存刷新)
+      const indexUrl = this.getRawUrl('resources/announcements/index.json', false);
       const indexRes = await fetch(indexUrl);
       if (!indexRes.ok) {
         throw new Error(`Failed to fetch announcements index: ${indexRes.statusText}`);
@@ -293,8 +293,9 @@ export class GitOpsService {
     }
 
     try {
-      // 1. 获取索引文件
-      const indexUrl = this.getRawUrl('resources/plugins/index.json');
+      // 1. 获取索引文件 (暂时不使用CDN,等待缓存刷新)
+      const indexUrl = this.getRawUrl('resources/plugins/index.json', false);
+      console.log('[GitOps] Fetching plugin index from:', indexUrl);
       const indexRes = await fetch(indexUrl);
       if (!indexRes.ok) {
         throw new Error(`Failed to fetch plugin index: ${indexRes.statusText}`);
@@ -303,11 +304,15 @@ export class GitOpsService {
       const index = await indexRes.json() as {
         plugins: Array<{ id: string; metadataFile: string; downloadFile: string }>;
       };
+      
+      console.log(`[GitOps] Found ${index.plugins.length} plugins in index:`, index.plugins.map(p => p.id));
+      console.log('[GitOps] Index data:', JSON.stringify(index, null, 2));
 
       // 2. 并行获取所有插件 metadata
       const metadataPromises = index.plugins.map(async (item) => {
         try {
           const metadataUrl = this.getRawUrl(`resources/plugins/${item.metadataFile}`);
+          console.log(`[GitOps] Fetching metadata for ${item.id} from:`, metadataUrl);
           const res = await fetch(metadataUrl);
           
           if (!res.ok) {
@@ -319,6 +324,7 @@ export class GitOpsService {
           // 使用索引中的下载文件路径
           const downloadUrl = this.getRawUrl(`resources/plugins/${item.downloadFile}`, false); // 下载用原始URL
           
+          console.log(`[GitOps] Successfully loaded metadata for ${item.id}`);
           return { ...metadata, downloadUrl } as PluginRegistryEntry;
         } catch (error) {
           console.error(`[GitOps] Error fetching metadata for ${item.id}:`, error);

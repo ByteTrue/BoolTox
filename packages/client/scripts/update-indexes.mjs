@@ -151,6 +151,56 @@ function updatePluginsIndex() {
 }
 
 /**
+ * 清除 jsDelivr CDN 缓存
+ */
+async function purgeCdnCache() {
+  console.log('🔄 清除 jsDelivr CDN 缓存...');
+  
+  const owner = 'ByteTrue';
+  const repo = 'BoolTox';
+  const branch = 'ref';
+  
+  const filesToPurge = [
+    'resources/announcements/index.json',
+    'resources/plugins/index.json',
+    'resources/plugins/com.booltox.starter/metadata.json'
+  ];
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const file of filesToPurge) {
+    // jsDelivr purge API 使用 GET 请求
+    const purgeUrl = `https://purge.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}`;
+    
+    try {
+      const response = await fetch(purgeUrl);
+      const data = await response.json();
+      
+      if (response.ok && data.id) {
+        console.log(`  ✅ ${file}`);
+        successCount++;
+      } else {
+        console.log(`  ❌ ${file} - ${data.message || response.statusText}`);
+        failCount++;
+      }
+    } catch (error) {
+      console.log(`  ❌ ${file} - ${error.message}`);
+      failCount++;
+    }
+    
+    // 避免请求过快
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.log(`\n  完成: ${successCount} 成功, ${failCount} 失败`);
+  
+  if (successCount > 0) {
+    console.log('  💡 提示: CDN 缓存清除后可能需要等待几分钟才能生效');
+  }
+}
+
+/**
  * 主函数
  */
 function main() {
@@ -161,6 +211,17 @@ function main() {
   updatePluginsIndex();
   
   console.log('\n✨ 索引更新完成!');
+  console.log('\n是否清除 CDN 缓存? (推荐在更新后执行)');
+  console.log('运行: node scripts/update-indexes.mjs --purge');
 }
 
-main();
+// 检查是否需要清除缓存
+if (process.argv.includes('--purge') || process.argv.includes('-p')) {
+  (async () => {
+    main();
+    console.log('');
+    await purgeCdnCache();
+  })();
+} else {
+  main();
+}

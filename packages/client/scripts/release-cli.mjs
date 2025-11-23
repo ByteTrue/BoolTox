@@ -578,6 +578,61 @@ const updateIndexes = async () => {
   } catch (error) {
     console.error('❌ 更新索引失败:', error.message);
   }
+  
+  // 询问是否清除 CDN 缓存
+  const shouldPurge = await askChoice('\n是否清除 jsDelivr CDN 缓存?', [
+    { value: 'yes', label: '是', hint: '清除后立即生效(推荐)' },
+    { value: 'no', label: '否', hint: '跳过此步骤' },
+  ], 'yes');
+  
+  if (shouldPurge === 'yes') {
+    await purgeCdnCache();
+  }
+};
+
+const purgeCdnCache = async () => {
+  console.log('\n🔄 清除 jsDelivr CDN 缓存...');
+  
+  const owner = 'ByteTrue';
+  const repo = 'BoolTox';
+  const branch = 'ref';
+  
+  const filesToPurge = [
+    'resources/announcements/index.json',
+    'resources/plugins/index.json',
+    'resources/plugins/com.booltox.starter/metadata.json'
+  ];
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const file of filesToPurge) {
+    const purgeUrl = `https://purge.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}`;
+    
+    try {
+      const response = await fetch(purgeUrl);
+      const data = await response.json();
+      
+      if (response.ok && data.id) {
+        console.log(`  ✅ ${file}`);
+        successCount++;
+      } else {
+        console.log(`  ❌ ${file} - ${data.message || response.statusText}`);
+        failCount++;
+      }
+    } catch (error) {
+      console.log(`  ❌ ${file} - ${error.message}`);
+      failCount++;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.log(`\n  完成: ${successCount} 成功, ${failCount} 失败`);
+  
+  if (successCount > 0) {
+    console.log('  💡 提示: CDN 缓存清除后可能需要等待几分钟才能生效');
+  }
 };
 
 const mainMenu = async () => {
