@@ -1,3 +1,14 @@
+/**
+ * Git Operations Service
+ * 
+ * 资源获取策略:
+ * - 索引文件 (index.json): 直连 GitHub raw URL,避免 CDN 缓存导致更新延迟
+ * - 元数据文件 (metadata.json): 使用 jsDelivr CDN 加速
+ * - 下载文件 (plugin.zip): 使用 jsDelivr CDN 加速
+ * 
+ * 这种混合策略确保索引实时更新,同时大文件享受 CDN 加速
+ */
+
 import type { PluginRegistryEntry } from '@booltox/shared';
 import { app } from 'electron';
 import path from 'path';
@@ -220,7 +231,7 @@ export class GitOpsService {
     }
 
     try {
-      // 1. 获取索引文件 (暂时不使用CDN,等待缓存刷新)
+      // 1. 获取索引文件 (索引文件使用 GitHub raw URL 避免 CDN 缓存延迟)
       const indexUrl = this.getRawUrl('resources/announcements/index.json', false);
       const indexRes = await fetch(indexUrl);
       if (!indexRes.ok) {
@@ -293,7 +304,7 @@ export class GitOpsService {
     }
 
     try {
-      // 1. 获取索引文件 (暂时不使用CDN,等待缓存刷新)
+      // 1. 获取索引文件 (索引文件使用 GitHub raw URL 避免 CDN 缓存延迟)
       const indexUrl = this.getRawUrl('resources/plugins/index.json', false);
       console.log('[GitOps] Fetching plugin index from:', indexUrl);
       const indexRes = await fetch(indexUrl);
