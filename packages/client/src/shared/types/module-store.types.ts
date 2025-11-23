@@ -19,8 +19,8 @@ export interface StoredModuleInfo {
   /** 模块版本号 */
   version?: string;
   
-  /** 模块来源: local=本地内置, remote=远程下载 */
-  source: 'local' | 'remote';
+  /** 模块来源: local=本地内置, remote=远程下载, dev=开发插件 */
+  source: 'local' | 'remote' | 'dev';
   
   /** 远程模块的缓存文件路径 (仅 remote 类型) */
   cachedPath?: string;

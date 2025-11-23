@@ -12,11 +12,9 @@ export class PluginManager {
     // Use userData/plugins for installed plugins
     this.pluginsDir = path.join(app.getPath('userData'), 'plugins');
     
-    // In development, load from packages/client/plugins
-    // process.env.APP_ROOT is set in main.ts to path.join(__dirname, '..')
-    // When running with vite-plugin-electron, __dirname is dist-electron
-    // So APP_ROOT is packages/client
-    if (process.env.NODE_ENV === 'development') {
+    // 只在开发模式下加载开发目录的插件
+    // 使用 app.isPackaged 判断更可靠,打包后为 true,开发时为 false
+    if (!app.isPackaged) {
       // Try to find the plugins directory relative to CWD or APP_ROOT
       // In dev mode, CWD is usually packages/client
       this.devPluginsDir = path.resolve(process.cwd(), 'plugins');

@@ -1,7 +1,7 @@
 /**
  * Electron Main Process - 极简版
  * 
- * 只做必要的事情：
+ * 只做必要的事情:
  * 1. 创建窗口
  * 2. 注册IPC处理器
  * 3. 管理内部模块
@@ -11,6 +11,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'os';
+import { setupLogger, createLogger, openLogFolder, getLogPath } from './utils/logger.js';
 import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
 import { moduleStoreService } from './services/module-store.service.js';
 import { AutoUpdateService } from './services/auto-update.service.js';
@@ -21,6 +22,10 @@ import { pluginInstaller } from './services/plugin/plugin-installer.js';
 import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { PluginRegistryEntry } from '@booltox/shared';
+
+// 初始化日志系统 (必须在所有其他代码之前)
+setupLogger();
+const logger = createLogger('Main');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -316,6 +321,18 @@ ipcMain.handle('git-ops:get-announcements', async () => {
 
 ipcMain.handle('git-ops:get-plugins', async () => {
   return await gitOpsService.getPluginRegistry();
+});
+
+/**
+ * Logger - IPC Handlers
+ */
+ipcMain.handle('logger:get-log-path', () => {
+  return getLogPath();
+});
+
+ipcMain.handle('logger:open-log-folder', async () => {
+  await openLogFolder();
+  return { success: true };
 });
 
 /**

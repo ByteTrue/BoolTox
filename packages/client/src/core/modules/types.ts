@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 
 export type ModuleLoader = () => Promise<ComponentType> | ComponentType;
 
-export type ModuleSource = "local" | "remote";
+export type ModuleSource = "local" | "remote" | "dev";
 
 export interface ModuleDefinition {
   id: string;

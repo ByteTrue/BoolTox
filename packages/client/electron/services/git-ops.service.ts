@@ -27,6 +27,11 @@ export interface PluginRegistry {
   plugins: PluginRegistryEntry[];
 }
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
 // 默认配置
 const DEFAULT_CONFIG: GitOpsConfig = {
   provider: 'github',
@@ -35,8 +40,12 @@ const DEFAULT_CONFIG: GitOpsConfig = {
   branch: 'ref',
 };
 
+// 缓存时间(毫秒)
+const CACHE_TTL = 5 * 60 * 1000; // 5分钟
+
 export class GitOpsService {
   private config: GitOpsConfig;
+  private cache: Map<string, CacheEntry<any>> = new Map();
 
   constructor(config: Partial<GitOpsConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -57,15 +66,46 @@ export class GitOpsService {
   }
 
   /**
-   * 构建 Raw 文件 URL
+   * 获取缓存
    */
-  private getRawUrl(filePath: string): string {
+  private getCache<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    const age = Date.now() - entry.timestamp;
+    if (age > CACHE_TTL) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.data as T;
+  }
+
+  /**
+   * 设置缓存
+   */
+  private setCache<T>(key: string, data: T): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * 构建 Raw 文件 URL
+   * 优先使用 jsDelivr CDN 加速(GitHub only)
+   */
+  private getRawUrl(filePath: string, useCdn = true): string {
     const { provider, owner, repo, branch, baseUrl } = this.config;
     
     // 移除开头的斜杠
     const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
 
     if (provider === 'github') {
+      // 使用 jsDelivr CDN 加速,更快且不消耗 API 配额
+      if (useCdn) {
+        return `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${cleanPath}`;
+      }
       return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${cleanPath}`;
     } else {
       // GitLab
@@ -166,50 +206,66 @@ export class GitOpsService {
   }
 
   /**
-   * 获取公告列表 (自动扫描目录)
+   * 获取公告列表 (新闻 + 发布说明)
+   * 使用索引文件,避免 API 调用
    */
   async getAnnouncements(): Promise<Announcement[]> {
+    const cacheKey = 'announcements';
+    
+    // 检查缓存
+    const cached = this.getCache<Announcement[]>(cacheKey);
+    if (cached) {
+      console.log('[GitOps] Using cached announcements');
+      return cached;
+    }
+
     try {
-      // 1. 扫描目录
-      const [newsFiles, releaseFiles] = await Promise.all([
-        this.listMarkdownFiles('resources/announcements/news'),
-        this.listMarkdownFiles('resources/announcements/releases')
-      ]);
+      // 1. 获取索引文件
+      const indexUrl = this.getRawUrl('resources/announcements/index.json');
+      const indexRes = await fetch(indexUrl);
+      if (!indexRes.ok) {
+        throw new Error(`Failed to fetch announcements index: ${indexRes.statusText}`);
+      }
+      
+      const index = await indexRes.json() as {
+        announcements: Array<{ id: string; file: string; type: 'announcement' | 'update' }>;
+      };
 
-      const allFiles = [
-        ...newsFiles.map(f => ({ path: f, type: 'announcement' as const })),
-        ...releaseFiles.map(f => ({ path: f, type: 'update' as const }))
-      ];
-
-      // 2. 并发获取内容并解析
-      const items = await Promise.all(allFiles.map(async ({ path: filePath, type }) => {
+      // 2. 并发获取所有公告内容
+      const items = await Promise.all(index.announcements.map(async (item) => {
         try {
-          const url = this.getRawUrl(filePath);
-          const response = await fetch(url, { headers: this.getHeaders() });
+          const fileUrl = this.getRawUrl(`resources/announcements/${item.file}`);
+          const response = await fetch(fileUrl);
           if (!response.ok) return null;
           
           const content = await response.text();
-          const filename = filePath.split('/').pop() || '';
+          const filename = item.file.split('/').pop() || '';
           const { title, date } = this.parseMarkdownMetadata(content, filename);
 
           // 移除 Frontmatter
           const contentBody = content.replace(/^---[\s\S]*?---\n/, '').trim();
 
           return {
-            id: filename.replace('.md', ''),
+            id: item.id,
             title,
             content: contentBody,
             date,
-            type,
-            contentFile: filePath
+            type: item.type,
+            contentFile: item.file
           } as Announcement;
         } catch (err) {
-          console.warn(`[GitOps] Failed to process announcement ${filePath}:`, err);
+          console.warn(`[GitOps] Failed to process announcement ${item.file}:`, err);
           return null;
         }
       }));
 
-      return items.filter((item): item is Announcement => item !== null);
+      const result = items.filter((item): item is Announcement => item !== null);
+      
+      // 缓存结果
+      this.setCache(cacheKey, result);
+      console.log(`[GitOps] Loaded ${result.length} announcements`);
+      
+      return result;
     } catch (error) {
       console.error('[GitOps] Error fetching announcements:', error);
       return [];
@@ -217,51 +273,68 @@ export class GitOpsService {
   }
 
   /**
-   * 获取插件列表 - 扫描 resources/plugins/ 目录下的所有 metadata.json
+   * 获取插件列表
+   * 使用索引文件,避免 API 调用
    */
   async getPluginRegistry(): Promise<PluginRegistry> {
+    const cacheKey = 'plugins';
+    
+    // 开发模式: 从本地读取
+    if (!app.isPackaged) {
+      console.log('[GitOps] Development mode: using local plugin registry');
+      return await this.getLocalPluginRegistry();
+    }
+    
+    // 检查缓存
+    const cached = this.getCache<PluginRegistry>(cacheKey);
+    if (cached) {
+      console.log('[GitOps] Using cached plugin registry');
+      return cached;
+    }
+
     try {
-      // 开发模式: 返回空列表,避免与 packages/client/plugins/ 中的开发插件冲突
-      // 开发者应该直接在 packages/client/plugins/ 中开发插件
-      if (!app.isPackaged) {
-        console.log('[GitOps] Development mode: plugin registry disabled');
-        return { plugins: [] };
+      // 1. 获取索引文件
+      const indexUrl = this.getRawUrl('resources/plugins/index.json');
+      const indexRes = await fetch(indexUrl);
+      if (!indexRes.ok) {
+        throw new Error(`Failed to fetch plugin index: ${indexRes.statusText}`);
       }
       
-      // 生产模式: 从 GitHub 远程读取
-      // 1. 获取 resources/plugins/ 目录内容
-      const items = await this.fetchApi(`contents/resources/plugins?ref=${this.config.branch}`) as Array<{ name: string; type: 'file' | 'dir' }>;
-      
-      // 2. 过滤出所有子目录(每个插件一个目录)
-      const pluginDirs = items.filter(item => item.type === 'dir');
-      
-      // 3. 并行获取所有 metadata.json
-      const metadataPromises = pluginDirs.map(async dir => {
+      const index = await indexRes.json() as {
+        plugins: Array<{ id: string; metadataFile: string; downloadFile: string }>;
+      };
+
+      // 2. 并行获取所有插件 metadata
+      const metadataPromises = index.plugins.map(async (item) => {
         try {
-          const metadataUrl = this.getRawUrl(`resources/plugins/${dir.name}/metadata.json`);
-          const res = await fetch(metadataUrl, { headers: this.getHeaders() });
+          const metadataUrl = this.getRawUrl(`resources/plugins/${item.metadataFile}`);
+          const res = await fetch(metadataUrl);
           
           if (!res.ok) {
-            console.warn(`[GitOps] Failed to fetch metadata for ${dir.name}: ${res.statusText}`);
+            console.warn(`[GitOps] Failed to fetch metadata for ${item.id}: ${res.statusText}`);
             return null;
           }
           
           const metadata = await res.json() as Omit<PluginRegistryEntry, 'downloadUrl'>;
-          // 自动生成下载URL: resources/plugins/{plugin-id}/plugin.zip
-          const downloadUrl = this.getRawUrl(`resources/plugins/${dir.name}/plugin.zip`);
+          // 使用索引中的下载文件路径
+          const downloadUrl = this.getRawUrl(`resources/plugins/${item.downloadFile}`, false); // 下载用原始URL
           
           return { ...metadata, downloadUrl } as PluginRegistryEntry;
         } catch (error) {
-          console.error(`[GitOps] Error fetching metadata for ${dir.name}:`, error);
+          console.error(`[GitOps] Error fetching metadata for ${item.id}:`, error);
           return null;
         }
       });
 
       const plugins = (await Promise.all(metadataPromises)).filter((p): p is PluginRegistryEntry => p !== null);
       
-      console.log(`[GitOps] Loaded ${plugins.length} plugins from registry`);
-      return { plugins };
+      const result = { plugins };
       
+      // 缓存结果
+      this.setCache(cacheKey, result);
+      console.log(`[GitOps] Loaded ${plugins.length} plugins from registry`);
+      
+      return result;
     } catch (error) {
       console.error('[GitOps] Error fetching plugin registry:', error);
       return { plugins: [] };

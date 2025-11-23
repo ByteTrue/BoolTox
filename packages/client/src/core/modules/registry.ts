@@ -1,17 +1,9 @@
 import type { ModuleDefinition } from "./types";
 
+// 硬编码的模块定义(非插件系统的模块)
+// 插件系统的模块通过 pluginDefinitions 动态加载
 const moduleDefinitions: ModuleDefinition[] = [
-  {
-    id: "com.booltox.starter",
-    name: "BoolTox Starter",
-    description: "A comprehensive example showcasing BoolTox plugin capabilities.",
-    version: "1.0.0",
-    category: "development",
-    keywords: ["starter", "demo", "system", "files", "db"],
-    icon: "🚀",
-    installedByDefault: true,
-    loader: () => Promise.resolve(() => null), // Dummy loader
-  },
+  // 未来可以在这里添加非插件系统的内置模块
 ];
 
 export function listModuleDefinitions(): ModuleDefinition[] {

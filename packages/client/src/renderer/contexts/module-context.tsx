@@ -108,6 +108,25 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
   const pluginIdSet = useMemo(() => new Set(pluginRegistry.map((plugin) => plugin.id)), [pluginRegistry]);
 
+  // 将 pluginRegistry 转换为 ModuleDefinition (动态插件定义)
+  const pluginDefinitions = useMemo<ModuleDefinition[]>(() => {
+    return pluginRegistry.map((plugin) => {
+      const manifest = plugin.manifest;
+      return {
+        id: manifest.id,
+        name: manifest.name,
+        description: manifest.description || '',
+        version: manifest.version,
+        category: manifest.category || 'utilities',
+        keywords: manifest.keywords || [],
+        icon: manifest.icon || '🔌',
+        installedByDefault: false,
+        source: plugin.isDev ? 'dev' : 'remote', // 开发插件标记为 dev,其他为 remote
+        loader: () => Promise.resolve(() => null), // 插件使用 BrowserView,不需要 React 组件
+      } as ModuleDefinition;
+    });
+  }, [pluginRegistry]);
+
   const isWindowPlugin = useCallback(
     (moduleId: string) => pluginIdSet.has(moduleId) || moduleId.startsWith("com.booltox."),
     [pluginIdSet],
@@ -316,7 +335,11 @@ const focusModuleWindow = useCallback(
           const restoredModules: ModuleInstance[] = [];
           
           for (const stored of storedModules) {
-            const definition = registryMap.get(stored.id) ?? findModuleDefinition(stored.id);
+            // 优先从 pluginDefinitions 查找,再从 registry,最后用 findModuleDefinition
+            const definition = 
+              pluginDefinitions.find(d => d.id === stored.id) ??
+              registryMap.get(stored.id) ?? 
+              findModuleDefinition(stored.id);
             
             if (definition) {
               const isFavorite = stored.isFavorite ?? false;
@@ -357,6 +380,103 @@ const focusModuleWindow = useCallback(
 
     void restoreInstalledModules();
   }, []);
+
+  // 同步 pluginRegistry 到 installedModules
+  useEffect(() => {
+    if (pluginRegistry.length === 0) return;
+
+    const syncPlugins = async () => {
+      try {
+        // 获取存储中的所有模块
+        const storedModules = await window.moduleStore.getAll();
+        const storedIds = new Set(storedModules.map(m => m.id));
+
+        setInstalledModules((current) => {
+          const currentIds = new Set(current.map(m => m.id));
+          const updates = [...current];
+          const toStore: StoredModuleInfo[] = [];
+
+          // 遍历所有插件
+          for (const plugin of pluginRegistry) {
+            const pluginId = plugin.manifest.id;
+            const pluginDef = pluginDefinitions.find(d => d.id === pluginId);
+            
+            if (!pluginDef) continue;
+
+            // 如果已在存储中但未在当前列表,添加它
+            if (storedIds.has(pluginId) && !currentIds.has(pluginId)) {
+              const stored = storedModules.find(m => m.id === pluginId);
+              if (stored) {
+                console.log(`[ModuleContext] 从存储恢复插件: ${pluginId}`);
+                updates.push({
+                  id: pluginId,
+                  definition: pluginDef,
+                  runtime: createRuntime(null, false, true),
+                  isFavorite: stored.isFavorite ?? false,
+                  favoriteOrder: stored.favoriteOrder,
+                  favoritedAt: stored.favoritedAt,
+                });
+              }
+            } else if (currentIds.has(pluginId)) {
+              // 如果已存在,更新其定义(确保 source 正确)
+              const index = updates.findIndex(m => m.id === pluginId);
+              if (index !== -1) {
+                updates[index] = {
+                  ...updates[index],
+                  definition: pluginDef,
+                };
+              }
+            } else if (!currentIds.has(pluginId)) {
+              // 所有不在当前列表的插件都需要添加(开发插件或新安装的远程插件)
+              const source = plugin.isDev ? 'dev' : 'remote';
+              console.log(`[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}插件: ${pluginId}`);
+              
+              updates.push({
+                id: pluginId,
+                definition: pluginDef,
+                runtime: createRuntime(null, false, true),
+                isFavorite: false,
+              });
+              
+              // 持久化到存储
+              if (!storedIds.has(pluginId)) {
+                toStore.push({
+                  id: pluginId,
+                  installedAt: new Date().toISOString(),
+                  lastUsedAt: new Date().toISOString(),
+                  version: pluginDef.version,
+                  source,
+                  isFavorite: false,
+                  favoriteOrder: undefined,
+                  favoritedAt: undefined,
+                });
+              }
+            }
+          }
+
+          // 异步存储新插件
+          if (toStore.length > 0) {
+            void (async () => {
+              for (const info of toStore) {
+                try {
+                  await window.moduleStore.add(info);
+                  console.log(`[ModuleContext] 插件已存储: ${info.id}`);
+                } catch (error) {
+                  console.error(`[ModuleContext] 存储插件失败 ${info.id}:`, error);
+                }
+              }
+            })();
+          }
+
+          return updates;
+        });
+      } catch (error) {
+        console.error('[ModuleContext] 同步插件失败:', error);
+      }
+    };
+
+    void syncPlugins();
+  }, [pluginRegistry, pluginDefinitions]);
 
   const loadModuleComponent = useCallback(async (moduleId: string, definition: ModuleDefinition) => {
     setInstalledModules((current) =>
@@ -450,8 +570,12 @@ const focusModuleWindow = useCallback(
         throw new Error("在线安装功能正在开发中");
       }
 
-      // 本地模块安装逻辑
-      const definition = registryMap.get(moduleId) ?? findModuleDefinition(moduleId);
+      // 优先从 pluginDefinitions 查找,再从 registry
+      const definition = 
+        pluginDefinitions.find(d => d.id === moduleId) ??
+        registryMap.get(moduleId) ?? 
+        findModuleDefinition(moduleId);
+        
       if (!definition) {
         throw new Error(`未找到模块 ${moduleId}`);
       }
@@ -495,7 +619,7 @@ const focusModuleWindow = useCallback(
         category: definition.category || 'unknown',
       });
     },
-    [loadModuleComponent, refreshPluginRegistry],
+    [loadModuleComponent, refreshPluginRegistry, pluginDefinitions],
   );
 
   // 安装在线插件

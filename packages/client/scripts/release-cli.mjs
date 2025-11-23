@@ -488,6 +488,68 @@ const publish = async () => {
   }
 };
 
+const updateIndexes = async () => {
+  console.log('\n📋 更新资源索引...');
+  
+  const rootDir = path.resolve(__dirname, '../../../');
+  const announcementsDir = path.join(rootDir, 'resources/announcements');
+  const pluginsDir = path.join(rootDir, 'resources/plugins');
+  
+  try {
+    // 更新公告索引
+    const newsDir = path.join(announcementsDir, 'news');
+    const releasesDir = path.join(announcementsDir, 'releases');
+    
+    const announcements = {
+      news: [],
+      releases: [],
+      lastUpdated: new Date().toISOString()
+    };
+    
+    if (fs.existsSync(newsDir)) {
+      announcements.news = fs.readdirSync(newsDir)
+        .filter(file => file.endsWith('.md'))
+        .map(file => file.replace('.md', ''));
+    }
+    
+    if (fs.existsSync(releasesDir)) {
+      announcements.releases = fs.readdirSync(releasesDir)
+        .filter(file => file.endsWith('.md'))
+        .map(file => file.replace('.md', ''));
+    }
+    
+    const announcementIndexPath = path.join(announcementsDir, 'index.json');
+    fs.writeFileSync(announcementIndexPath, JSON.stringify(announcements, null, 2));
+    console.log('✅ 公告索引已更新:', announcementIndexPath);
+    console.log(`   - 新闻: ${announcements.news.length} 篇`);
+    console.log(`   - 版本说明: ${announcements.releases.length} 篇`);
+    
+    // 更新插件索引
+    const pluginIds = [];
+    if (fs.existsSync(pluginsDir)) {
+      const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && entry.name.startsWith('com.booltox.')) {
+          pluginIds.push(entry.name);
+        }
+      }
+    }
+    
+    const pluginIndex = {
+      plugins: pluginIds,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    const pluginIndexPath = path.join(pluginsDir, 'index.json');
+    fs.writeFileSync(pluginIndexPath, JSON.stringify(pluginIndex, null, 2));
+    console.log('✅ 插件索引已更新:', pluginIndexPath);
+    console.log(`   - 插件数量: ${pluginIds.length} 个`);
+    
+  } catch (error) {
+    console.error('❌ 更新索引失败:', error.message);
+  }
+};
+
 const mainMenu = async () => {
   while (true) {
     const choice = await askChoice('--- BoolTox 开发者工具 ---', [
@@ -495,6 +557,7 @@ const mainMenu = async () => {
       { value: 'configure', label: '配置发布环境', hint: '设置仓库、令牌等信息' },
       { value: 'publish', label: '构建并发布', hint: '执行打包并推送 Release' },
       { value: 'manifest', label: '生成发布清单', hint: '手动生成 manifest.json' },
+      { value: 'update-indexes', label: '更新资源索引', hint: '更新公告和插件索引文件' },
       { value: 'exit', label: '退出', hint: '返回命令行' },
     ], 'exit');
 
@@ -506,6 +569,8 @@ const mainMenu = async () => {
       await publish();
     } else if (choice === 'manifest') {
       await generateManifest();
+    } else if (choice === 'update-indexes') {
+      await updateIndexes();
     } else {
       break;
     }

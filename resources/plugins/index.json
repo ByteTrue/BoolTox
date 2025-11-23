@@ -1,0 +1,12 @@
+{
+  "plugins": [
+    {
+      "id": "com.booltox.starter",
+      "name": "BoolTox Starter",
+      "version": "1.0.0",
+      "description": "A comprehensive example showcasing BoolTox plugin capabilities.",
+      "author": ""
+    }
+  ],
+  "lastUpdated": "2025-11-23T06:15:22.780Z"
+}

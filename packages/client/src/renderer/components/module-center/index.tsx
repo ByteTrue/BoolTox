@@ -97,12 +97,45 @@ export function ModuleCenter() {
   const selectedModule = useMemo(() => {
     if (!selectedModuleId) return null;
     
+    // 优先从已安装模块查找
     const installed = installedModules.find((m) => m.id === selectedModuleId);
     if (installed) return installed;
     
+    // 从本地可用模块查找
     const available = availableModules.find((m) => m.id === selectedModuleId);
-    return available || null;
-  }, [selectedModuleId, installedModules, availableModules]);
+    if (available) return available;
+    
+    // 从在线插件查找并转换为 ModuleInstance 格式
+    const onlinePlugin = availablePlugins.find((p) => p.id === selectedModuleId);
+    if (onlinePlugin) {
+      return {
+        id: onlinePlugin.id,
+        definition: {
+          id: onlinePlugin.id,
+          name: onlinePlugin.name,
+          description: onlinePlugin.description || '',
+          version: onlinePlugin.version,
+          category: onlinePlugin.category || 'utilities',
+          keywords: onlinePlugin.keywords || [],
+          icon: onlinePlugin.icon || '🔌',
+          installedByDefault: false,
+          source: 'remote' as const,
+          loader: () => Promise.resolve(() => null),
+        },
+        runtime: {
+          component: null,
+          loading: false,
+          error: null,
+          installed: false,
+          launchState: 'idle' as const,
+          lastError: null,
+        },
+        isFavorite: false,
+      };
+    }
+    
+    return null;
+  }, [selectedModuleId, installedModules, availableModules, availablePlugins]);
 
   const isSelectedModuleInstalled = useMemo(() => {
     return installedModules.some((m) => m.id === selectedModuleId);

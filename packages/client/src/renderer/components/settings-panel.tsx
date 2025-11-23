@@ -10,6 +10,7 @@ import { getGlassStyle, getGlassShadow } from '@/utils/glass-layers';
 import { buttonInteraction, cardHover } from '@/utils/animation-presets';
 import { Modal } from './ui/modal';
 import { GlassButton } from './ui/glass-button';
+import { LogManager } from './settings/log-manager';
 import {
   Settings as SettingsIcon,
   Info,
@@ -283,6 +284,11 @@ export function SettingsPanel() {
             </div>
           )}
         </div>
+      </SettingCard>
+
+      {/* 日志管理（独占一行） */}
+      <SettingCard title="日志管理" icon={FileText} theme={theme}>
+        <LogManager />
       </SettingCard>
 
       <Modal
