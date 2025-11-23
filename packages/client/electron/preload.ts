@@ -162,6 +162,18 @@ const pluginAPI = {
 };
 
 /**
+ * 应用设置 API
+ */
+const appSettingsAPI = {
+  getAutoLaunch: async (): Promise<boolean> => {
+    return await ipcRenderer.invoke('app-settings:get-auto-launch') as boolean;
+  },
+  setAutoLaunch: async (enabled: boolean): Promise<{success: boolean; error?: string}> => {
+    return await ipcRenderer.invoke('app-settings:set-auto-launch', enabled) as {success: boolean; error?: string};
+  },
+};
+
+/**
  * 暴露API到渲染进程
  */
 contextBridge.exposeInMainWorld('electron', {
@@ -177,3 +189,5 @@ contextBridge.exposeInMainWorld('update', updateAPI);
 contextBridge.exposeInMainWorld('gitOps', gitOpsAPI);
 
 contextBridge.exposeInMainWorld('plugin', pluginAPI);
+
+contextBridge.exposeInMainWorld('appSettings', appSettingsAPI);

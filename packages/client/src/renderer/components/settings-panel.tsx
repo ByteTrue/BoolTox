@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTheme } from './theme-provider';
@@ -21,12 +21,54 @@ import {
   Package,
   Server,
   FileText,
+  Sliders,
+  ChevronDown,
+  ChevronUp,
+  Sun,
+  Moon,
+  Rocket,
 } from 'lucide-react';
 
 export function SettingsPanel() {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { state, details, retryCheck, downloadUpdate, installUpdate } = useUpdate();
   const [showNotes, setShowNotes] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [autoLaunch, setAutoLaunch] = useState(false);
+  const [isLoadingAutoLaunch, setIsLoadingAutoLaunch] = useState(false);
+
+  const isDev = import.meta.env.MODE === 'development';
+
+  // 加载开机启动状态
+  useEffect(() => {
+    if (window.appSettings) {
+      window.appSettings.getAutoLaunch().then(enabled => {
+        setAutoLaunch(enabled);
+      }).catch(err => {
+        console.error('Failed to load auto launch status:', err);
+      });
+    }
+  }, []);
+
+  // 切换开机启动
+  const handleAutoLaunchToggle = async () => {
+    if (!window.appSettings || isLoadingAutoLaunch) return;
+    
+    setIsLoadingAutoLaunch(true);
+    try {
+      const newState = !autoLaunch;
+      const result = await window.appSettings.setAutoLaunch(newState);
+      if (result.success) {
+        setAutoLaunch(newState);
+      } else {
+        console.error('Failed to set auto launch:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to toggle auto launch:', error);
+    } finally {
+      setIsLoadingAutoLaunch(false);
+    }
+  };
 
   const primaryAction = useMemo(() => {
     switch (state.phase) {
@@ -115,25 +157,31 @@ export function SettingsPanel() {
           <div className="space-y-3">
             <SettingItem label="应用名称" value="Booltox 不二工具箱" />
             <SettingItem label="当前版本" value={APP_VERSION} />
-            <SettingItem label="更新渠道" value={RELEASE_CHANNEL} />
-            <SettingItem label="API 地址" value={ADMIN_API_BASE} />
           </div>
         </SettingCard>
 
-        {/* 右列：开发者信息 */}
-        <SettingCard title="开发者信息" icon={Server} theme={theme}>
-          <div className="space-y-3">
-            <SettingItem
-              label="环境"
-              value={import.meta.env.MODE === 'development' ? '开发环境' : '生产环境'}
+        {/* 右列：偏好设置 */}
+        <SettingCard title="偏好设置" icon={Sliders} theme={theme}>
+          <div className="space-y-4">
+            {/* 主题切换 */}
+            <SettingToggle
+              label="主题模式"
+              description={theme === 'dark' ? '深色' : '浅色'}
+              icon={theme === 'dark' ? Moon : Sun}
+              checked={theme === 'dark'}
+              onChange={toggleTheme}
+              theme={theme}
             />
-            <SettingItem
-              label="Electron"
-              value={typeof window !== 'undefined' && window.electron ? '已启用' : '未启用'}
-            />
-            <SettingItem
-              label="Node 集成"
-              value={typeof process !== 'undefined' ? '已启用' : '未启用'}
+            
+            {/* 开机启动 */}
+            <SettingToggle
+              label="开机启动"
+              description={autoLaunch ? '已启用' : '未启用'}
+              icon={Rocket}
+              checked={autoLaunch}
+              onChange={handleAutoLaunchToggle}
+              disabled={isLoadingAutoLaunch}
+              theme={theme}
             />
           </div>
         </SettingCard>
@@ -291,6 +339,56 @@ export function SettingsPanel() {
         <LogManager />
       </SettingCard>
 
+      {/* 高级选项（仅开发环境，折叠面板） */}
+      {isDev && (
+        <SettingCard title="高级选项" icon={Server} theme={theme}>
+          <div className="space-y-3">
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={`flex items-center justify-between w-full text-sm font-medium transition-colors ${
+                theme === 'dark'
+                  ? 'text-white/90 hover:text-white'
+                  : 'text-slate-800 hover:text-slate-900'
+              }`}
+            >
+              <span>开发者信息</span>
+              {showAdvanced ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </button>
+            
+            <AnimatePresence>
+              {showAdvanced && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden space-y-3 pt-2"
+                >
+                  <SettingItem
+                    label="环境"
+                    value={import.meta.env.MODE === 'development' ? '开发环境' : '生产环境'}
+                  />
+                  <SettingItem label="API 地址" value={ADMIN_API_BASE} />
+                  <SettingItem label="更新渠道" value={RELEASE_CHANNEL} />
+                  <SettingItem
+                    label="Electron"
+                    value={typeof window !== 'undefined' && window.electron ? '已启用' : '未启用'}
+                  />
+                  <SettingItem
+                    label="Node 集成"
+                    value={typeof process !== 'undefined' ? '已启用' : '未启用'}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </SettingCard>
+      )}
+
       <Modal
         open={showNotes}
         onClose={() => setShowNotes(false)}
@@ -383,6 +481,73 @@ function SettingItem({ label, value }: { label: string; value: string }) {
       >
         {value}
       </span>
+    </div>
+  );
+}
+
+function SettingToggle({
+  label,
+  description,
+  icon: Icon,
+  checked,
+  onChange,
+  disabled = false,
+  theme,
+}: {
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  theme: 'light' | 'dark';
+}) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div className="flex items-center gap-2.5">
+        <Icon
+          className={`h-4 w-4 ${
+            theme === 'dark' ? 'text-white/60' : 'text-slate-500'
+          }`}
+        />
+        <div>
+          <p
+            className={`text-xs font-medium ${
+              theme === 'dark' ? 'text-white/90' : 'text-slate-800'
+            }`}
+          >
+            {label}
+          </p>
+          <p
+            className={`text-xs ${
+              theme === 'dark' ? 'text-white/50' : 'text-slate-500'
+            }`}
+          >
+            {description}
+          </p>
+        </div>
+      </div>
+      
+      <button
+        type="button"
+        onClick={onChange}
+        disabled={disabled}
+        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+          checked
+            ? 'bg-brand-blue-500'
+            : theme === 'dark'
+            ? 'bg-white/20'
+            : 'bg-slate-300'
+        }`}
+        role="switch"
+        aria-checked={checked}
+      >
+        <span
+          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+            checked ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </button>
     </div>
   );
 }

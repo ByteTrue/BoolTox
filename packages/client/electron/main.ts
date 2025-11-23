@@ -146,6 +146,32 @@ ipcMain.handle('window:control', (_event, action: string) => {
 });
 
 /**
+ * 应用设置 - 开机启动
+ */
+ipcMain.handle('app-settings:get-auto-launch', () => {
+  try {
+    return app.getLoginItemSettings().openAtLogin;
+  } catch (error) {
+    logger.error('Failed to get auto launch status:', error);
+    return false;
+  }
+});
+
+ipcMain.handle('app-settings:set-auto-launch', (_event, enabled: boolean) => {
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+      openAsHidden: false,
+    });
+    logger.info(`Auto launch ${enabled ? 'enabled' : 'disabled'}`);
+    return { success: true };
+  } catch (error) {
+    logger.error('Failed to set auto launch:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+/**
  * 计算 CPU 使用率
  */
 function getCpuUsage(): number {

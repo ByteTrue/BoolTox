@@ -52,6 +52,10 @@ declare global {
       cancelInstall: (pluginId: string) => Promise<{success: boolean}>;
       onInstallProgress: (callback: (progress: PluginInstallProgress) => void) => () => void;
     };
+    appSettings: {
+      getAutoLaunch: () => Promise<boolean>;
+      setAutoLaunch: (enabled: boolean) => Promise<{success: boolean; error?: string}>;
+    };
   }
 }
 
