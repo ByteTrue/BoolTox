@@ -525,25 +525,55 @@ const updateIndexes = async () => {
     console.log(`   - 版本说明: ${announcements.releases.length} 篇`);
     
     // 更新插件索引
-    const pluginIds = [];
+    const plugins = [];
     if (fs.existsSync(pluginsDir)) {
       const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
       for (const entry of entries) {
-        if (entry.isDirectory() && entry.name.startsWith('com.booltox.')) {
-          pluginIds.push(entry.name);
+        if (!entry.isDirectory()) continue;
+        if (!entry.name.startsWith('com.booltox.')) continue;
+        
+        const pluginDir = path.join(pluginsDir, entry.name);
+        const manifestPath = path.join(pluginDir, 'manifest.json');
+        
+        if (!fs.existsSync(manifestPath)) {
+          console.warn(`  ⚠️ ${entry.name} 缺少 manifest.json,跳过`);
+          continue;
         }
+        
+        // 检查是否有 metadata.json
+        const metadataPath = path.join(pluginDir, 'metadata.json');
+        const hasMetadata = fs.existsSync(metadataPath);
+        
+        // 检查 zip 文件 (优先使用 plugin.zip,其次是 {id}.zip)
+        const pluginZipPath = path.join(pluginDir, 'plugin.zip');
+        const idZipPath = path.join(pluginDir, `${entry.name}.zip`);
+        let zipFile = null;
+        
+        if (fs.existsSync(pluginZipPath)) {
+          zipFile = `${entry.name}/plugin.zip`;
+        } else if (fs.existsSync(idZipPath)) {
+          zipFile = `${entry.name}/${entry.name}.zip`;
+        }
+        
+        plugins.push({
+          id: entry.name,
+          metadataFile: hasMetadata 
+            ? `${entry.name}/metadata.json` 
+            : `${entry.name}/manifest.json`,
+          downloadFile: zipFile || `${entry.name}/manifest.json`
+        });
       }
     }
     
     const pluginIndex = {
-      plugins: pluginIds,
+      plugins,
       lastUpdated: new Date().toISOString()
     };
     
     const pluginIndexPath = path.join(pluginsDir, 'index.json');
     fs.writeFileSync(pluginIndexPath, JSON.stringify(pluginIndex, null, 2));
     console.log('✅ 插件索引已更新:', pluginIndexPath);
-    console.log(`   - 插件数量: ${pluginIds.length} 个`);
+    console.log(`   - 插件数量: ${plugins.length} 个`);
     
   } catch (error) {
     console.error('❌ 更新索引失败:', error.message);

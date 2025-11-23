@@ -102,18 +102,28 @@ function updatePluginsIndex() {
         continue;
       }
       
-      try {
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-        plugins.push({
-          id: entry.name,
-          name: manifest.name || entry.name,
-          version: manifest.version || '0.0.1',
-          description: manifest.description || '',
-          author: manifest.author || ''
-        });
-      } catch (error) {
-        console.warn(`  ⚠️ ${entry.name} manifest.json 解析失败:`, error.message);
+      // 检查是否有 metadata.json,如果没有则使用 manifest.json
+      const metadataPath = path.join(pluginDir, 'metadata.json');
+      const hasMetadata = fs.existsSync(metadataPath);
+      
+      // 检查 zip 文件 (优先使用 plugin.zip,其次是 {id}.zip)
+      const pluginZipPath = path.join(pluginDir, 'plugin.zip');
+      const idZipPath = path.join(pluginDir, `${entry.name}.zip`);
+      let zipFile = null;
+      
+      if (fs.existsSync(pluginZipPath)) {
+        zipFile = `${entry.name}/plugin.zip`;
+      } else if (fs.existsSync(idZipPath)) {
+        zipFile = `${entry.name}/${entry.name}.zip`;
       }
+      
+      plugins.push({
+        id: entry.name,
+        metadataFile: hasMetadata 
+          ? `${entry.name}/metadata.json` 
+          : `${entry.name}/manifest.json`,
+        downloadFile: zipFile || `${entry.name}/manifest.json` // fallback
+      });
     }
   } catch (error) {
     console.error('  ❌ 扫描插件目录失败:', error.message);
@@ -131,6 +141,13 @@ function updatePluginsIndex() {
   
   console.log(`  ✅ 插件索引已更新: ${plugins.length} 个插件`);
   console.log(`     文件: ${indexPath}`);
+  
+  // 打印详情
+  plugins.forEach(p => {
+    console.log(`     - ${p.id}`);
+    console.log(`       metadata: ${p.metadataFile}`);
+    console.log(`       download: ${p.downloadFile}`);
+  });
 }
 
 /**
