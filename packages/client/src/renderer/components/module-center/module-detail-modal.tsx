@@ -13,7 +13,6 @@ interface ModuleDetailModalProps {
   onClose: () => void;
   onInstall?: (moduleId: string) => void;
   onUninstall?: (moduleId: string) => void;
-  onToggleStatus?: (moduleId: string) => void;
   onOpen?: (moduleId: string) => void;
   isInstalled?: boolean;
 }
@@ -26,7 +25,6 @@ export function ModuleDetailModal({
   onClose,
   onInstall,
   onUninstall,
-  onToggleStatus,
   onOpen,
   isInstalled = false,
 }: ModuleDetailModalProps) {
@@ -51,7 +49,6 @@ export function ModuleDetailModal({
 
   const definition = "definition" in module ? module.definition : module;
   const runtime = "runtime" in module ? module.runtime : undefined;
-  const isEnabled = runtime?.status === "enabled";
   const launchState = runtime?.launchState ?? "idle";
   const isLaunching = launchState === "launching";
   const isRunning = launchState === "running";
@@ -204,21 +201,7 @@ export function ModuleDetailModal({
                             {isLaunching ? "启动中…" : isRunning ? "聚焦窗口" : "打开插件"}
                           </motion.button>
                         )}
-                        {onToggleStatus && (
-                          <motion.button
-                            {...buttonInteraction}
-                            type="button"
-                            onClick={() => onToggleStatus(module.id)}
-                            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-[background-color,transform] duration-250 ease-swift ${
-                              isEnabled
-                                ? "border-orange-500/30 bg-orange-500/15 text-orange-500 hover:bg-orange-500/25"
-                                : "border-green-500/30 bg-green-500/15 text-green-500 hover:bg-green-500/25"
-                            }`}
-                          >
-                            {isEnabled ? "停用" : "启用"}
-                          </motion.button>
-                        )}
-                        {onUninstall && (
+                        {isInstalled && onUninstall && (
                           <motion.button
                             {...buttonInteraction}
                             type="button"

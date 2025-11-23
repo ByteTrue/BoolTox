@@ -15,16 +15,6 @@ export function useModuleFilter(
   const filteredInstalled = useMemo(() => {
     let result = installedModules;
 
-    // 按状态过滤
-    if (filter.status && filter.status !== "all") {
-      result = result.filter((module) => {
-        if (filter.status === "enabled") {
-          return module.runtime.status === "enabled";
-        }
-        return module.runtime.status === "disabled";
-      });
-    }
-
     // 按来源过滤
     if (filter.source && filter.source !== "all") {
       result = result.filter((module) => {

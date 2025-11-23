@@ -19,7 +19,7 @@ import { pluginManager } from './services/plugin/plugin-manager.js';
 import { pluginRunner } from './services/plugin/plugin-runner.js';
 import { pluginInstaller } from './services/plugin/plugin-installer.js';
 import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
-import type { StoredModuleInfo } from '../src/shared/types/module-store.js';
+import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { PluginRegistryEntry } from '@booltox/shared';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -253,17 +253,6 @@ ipcMain.handle('module-store:update', (_event, id: string, partialInfo: Partial<
     return { success: true };
   } catch (error) {
     console.error('[IPC] Failed to update module info:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-// 更新模块状态
-ipcMain.handle('module-store:update-status', (_event, id: string, status: 'enabled' | 'disabled') => {
-  try {
-    moduleStoreService.updateModuleStatus(id, status);
-    return { success: true };
-  } catch (error) {
-    console.error('[IPC] Failed to update module status:', error);
     return { success: false, error: String(error) };
   }
 });

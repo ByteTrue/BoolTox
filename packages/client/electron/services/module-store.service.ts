@@ -78,19 +78,7 @@ class ModuleStoreService {
     this.store.set('installedModules', modules);
   }
 
-  /**
-   * 更新模块状态
-   */
-  updateModuleStatus(id: string, status: 'enabled' | 'disabled'): void {
-    const modules = this.getInstalledModules();
-    const module = modules.find(m => m.id === id);
-    
-    if (module) {
-      module.status = status;
-      module.lastUsedAt = new Date().toISOString();
-      this.store.set('installedModules', modules);
-    }
-  }
+
 
   /**
    * 更新模块信息 (部分更新)

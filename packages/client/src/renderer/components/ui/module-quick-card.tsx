@@ -18,8 +18,9 @@ export interface ModuleQuickCardProps {
 export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
   const { theme } = useTheme();
 
-  const isEnabled = module.runtime.status === 'enabled';
   const isLoading = module.runtime.loading;
+  const launchState = module.runtime.launchState ?? 'idle';
+  const isRunning = launchState === 'running';
 
   return (
     <motion.button
@@ -68,7 +69,7 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
         <div className="flex items-start justify-between mb-auto">
           <div
             className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl shadow-lg ${
-              isEnabled
+              isRunning
                 ? 'bg-brand-gradient-secondary'
                 : theme === 'dark'
                 ? 'bg-white/10'
@@ -86,7 +87,7 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
               />
-            ) : isEnabled ? (
+            ) : isRunning ? (
               <div className="h-2 w-2 rounded-full bg-green-500 shadow-lg shadow-green-500/50" />
             ) : (
               <div
@@ -123,17 +124,17 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
         <div className="mt-3 flex items-center gap-2">
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${
-              isEnabled
+              isRunning
                 ? 'bg-green-500/20 text-green-600 border-green-500/30'
                 : theme === 'dark'
                 ? 'bg-white/10 text-white/60'
                 : 'bg-slate-200 text-slate-600'
             }`}
-            style={!isEnabled ? {
+            style={!isRunning ? {
               borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
             } : undefined}
           >
-            {isLoading ? '加载中...' : isEnabled ? '运行中' : '已停用'}
+            {isLoading ? '加载中...' : isRunning ? '运行中' : '未启动'}
           </span>
 
           {/* 分类标签 */}

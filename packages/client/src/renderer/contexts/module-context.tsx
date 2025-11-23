@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ComponentType } from "react";
 import { findModuleDefinition, listModuleDefinitions } from "@core/modules/registry";
-import type { ModuleDefinition, ModuleInstance, ModuleRuntime, ModuleStats, ModuleStatus, ModuleLaunchState } from "@core/modules/types";
+import type { ModuleDefinition, ModuleInstance, ModuleRuntime, ModuleStats, ModuleLaunchState } from "@core/modules/types";
 import { logModuleEvent } from "@/utils/module-event-logger";
 import type { StoredModuleInfo } from "@shared/types/module-store.types";
 import type { PluginRuntime as PluginProcessRuntime, PluginRegistryEntry, PluginInstallProgress } from "@booltox/shared";
@@ -20,9 +20,8 @@ interface ModuleContextValue {
   installModule: (moduleId: string, remote?: boolean) => Promise<void>;
   installOnlinePlugin: (entry: PluginRegistryEntry) => Promise<void>; // 安装在线插件
   uninstallModule: (moduleId: string) => Promise<void>;
-  setModuleStatus: (moduleId: string, status: ModuleStatus) => void;
-  toggleModuleStatus: (moduleId: string) => void;
   getModuleById: (moduleId: string) => ModuleInstance | undefined;
+  isDevPlugin: (moduleId: string) => boolean; // 检查是否为开发插件
   refreshAvailablePlugins: () => Promise<void>; // 刷新在线插件
   // 收藏功能
   favoriteModules: ModuleInstance[];
@@ -47,13 +46,11 @@ const registryDefinitions: ModuleDefinition[] = listModuleDefinitions();
 const registryMap = new Map<string, ModuleDefinition>(registryDefinitions.map((definition) => [definition.id, definition]));
 
 function createRuntime(
-  status: ModuleStatus, 
   component: ComponentType | null = null, 
   loading = false, 
   installed = true
 ): ModuleRuntime {
   return {
-    status,
     component,
     loading,
     error: null,
@@ -114,6 +111,15 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const isWindowPlugin = useCallback(
     (moduleId: string) => pluginIdSet.has(moduleId) || moduleId.startsWith("com.booltox."),
     [pluginIdSet],
+  );
+
+  // 检查是否为开发插件(不可卸载)
+  const isDevPlugin = useCallback(
+    (moduleId: string) => {
+      const plugin = pluginRegistry.find((p) => p.id === moduleId);
+      return plugin?.isDev === true;
+    },
+    [pluginRegistry],
   );
 
   const mapStatusToLaunchState = useCallback((status: PluginChannelStatus): ModuleLaunchState => {
@@ -208,9 +214,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    window.ipc.on("plugin:state", handler);
+    window.ipc.on("plugin:state", handler as (...args: unknown[]) => void);
     return () => {
-      window.ipc.off("plugin:state", handler);
+      window.ipc.off("plugin:state", handler as (...args: unknown[]) => void);
     };
 }, [mapStatusToLaunchState, patchModuleRuntime, shouldAnnounceToast, showToast]);
 
@@ -284,7 +290,7 @@ const focusModuleWindow = useCallback(
             .map((definition) => ({
               id: definition.id,
               definition,
-              runtime: createRuntime("enabled"),
+              runtime: createRuntime(),
               isFavorite: false,
             }));
           
@@ -294,7 +300,6 @@ const focusModuleWindow = useCallback(
           for (const module of defaultModules) {
             const info: StoredModuleInfo = {
               id: module.id,
-              status: module.runtime.status,
               installedAt: new Date().toISOString(),
               lastUsedAt: new Date().toISOString(),
               version: module.definition.version,
@@ -314,16 +319,14 @@ const focusModuleWindow = useCallback(
             const definition = registryMap.get(stored.id) ?? findModuleDefinition(stored.id);
             
             if (definition) {
-              const isFavorite = stored.isFavorite ?? stored.pinnedToQuickAccess ?? false;
-              const favoriteOrder =
-                stored.favoriteOrder ?? (stored as any).quickAccessOrder ?? undefined;
-              const favoritedAt =
-                stored.favoritedAt ?? (stored as any).pinnedAt ?? undefined;
+              const isFavorite = stored.isFavorite ?? false;
+              const favoriteOrder = stored.favoriteOrder ?? undefined;
+              const favoritedAt = stored.favoritedAt ?? undefined;
 
               restoredModules.push({
                 id: stored.id,
                 definition,
-                runtime: createRuntime(stored.status, null, false, true),
+                runtime: createRuntime(null, false, true),
                 // 携带收藏信息
                 isFavorite,
                 favoriteOrder,
@@ -345,7 +348,7 @@ const focusModuleWindow = useCallback(
           .map((definition) => ({
             id: definition.id,
             definition,
-            runtime: createRuntime("enabled"),
+            runtime: createRuntime(),
             isFavorite: false,
           }));
         setInstalledModules(defaultModules);
@@ -420,11 +423,6 @@ const focusModuleWindow = useCallback(
     return installedModules.reduce<ModuleStats>(
       (stats, module) => {
         stats.total += 1;
-        if (module.runtime.status === "enabled") {
-          stats.enabled += 1;
-        } else {
-          stats.disabled += 1;
-        }
         if (module.definition.source === "remote") {
           stats.remote += 1;
         } else {
@@ -467,7 +465,7 @@ const focusModuleWindow = useCallback(
           {
             id: moduleId,
             definition,
-            runtime: createRuntime("enabled", null, true),
+            runtime: createRuntime(null, true),
           },
         ];
       });
@@ -475,7 +473,6 @@ const focusModuleWindow = useCallback(
       // 持久化到存储
       const info: StoredModuleInfo = {
         id: moduleId,
-        status: 'enabled',
         installedAt: new Date().toISOString(),
       lastUsedAt: new Date().toISOString(),
       version: definition.version,
@@ -558,6 +555,16 @@ const focusModuleWindow = useCallback(
 
   const uninstallModule = useCallback(
     async (moduleId: string) => {
+      // 检查是否为开发插件
+      if (isDevPlugin(moduleId)) {
+        showToast({
+          message: '开发插件无法卸载,请在开发目录中手动删除',
+          type: 'info',
+          duration: 3000,
+        });
+        return;
+      }
+
       const module = installedModules.find((m) => m.id === moduleId);
 
       if (module && isWindowPlugin(moduleId)) {
@@ -582,89 +589,45 @@ const focusModuleWindow = useCallback(
         });
       }
 
+      // 如果是插件,调用插件卸载 IPC 删除文件
+      if (isWindowPlugin(moduleId)) {
+        try {
+          const result = await window.ipc.invoke("plugin:uninstall", moduleId) as { success: boolean; error?: string };
+          if (!result.success) {
+            console.error(`[ModuleContext] 插件文件删除失败: ${result.error}`);
+            showToast({
+              message: `卸载失败: ${result.error}`,
+              type: 'error',
+              duration: 4000,
+            });
+            return;
+          }
+        } catch (error) {
+          console.error(`[ModuleContext] 插件卸载失败:`, error);
+          showToast({
+            message: `卸载失败: ${error instanceof Error ? error.message : String(error)}`,
+            type: 'error',
+            duration: 4000,
+          });
+          return;
+        }
+      }
+
       // 从持久化存储删除
       await window.moduleStore.remove(moduleId);
 
       setInstalledModules((current) => current.filter((module) => module.id !== moduleId));
       setActiveModuleId((current) => (current === moduleId ? null : current));
       void refreshPluginRegistry();
+      
+      showToast({
+        message: `${module?.definition.name || moduleId} 已卸载`,
+        type: 'success',
+        duration: 3000,
+      });
     },
-    [installedModules, isWindowPlugin, patchModuleRuntime, refreshPluginRegistry],
+    [installedModules, isWindowPlugin, isDevPlugin, patchModuleRuntime, refreshPluginRegistry, showToast],
   );
-
-  const setModuleStatus = useCallback(async (moduleId: string, status: ModuleStatus) => {
-    setInstalledModules((current) =>
-      current.map((module) => {
-        if (module.id === moduleId) {
-          // 记录状态变更事件
-          logModuleEvent({
-            moduleId,
-            moduleName: module.definition.name,
-            action: status === 'enabled' ? 'enable' : 'disable',
-            category: module.definition.category || 'unknown',
-          });
-          return { ...module, runtime: { ...module.runtime, status } };
-        }
-        return module;
-      }),
-    );
-
-    // 持久化状态变更
-    await window.moduleStore.updateStatus(moduleId, status);
-
-    if (status === "disabled" && isWindowPlugin(moduleId)) {
-      try {
-        await window.ipc.invoke("plugin:stop", moduleId);
-      } catch (error) {
-        console.warn(`[ModuleContext] 停止插件失败: ${moduleId}`, error);
-      }
-      patchModuleRuntime(moduleId, {
-        launchState: "idle",
-        runningWindowId: undefined,
-      });
-    }
-
-    if (status === "disabled") {
-      setActiveModuleId((current) => (current === moduleId ? null : current));
-    }
-  }, [isWindowPlugin, patchModuleRuntime]);
-
-  const toggleModuleStatus = useCallback(async (moduleId: string) => {
-    let newStatus: ModuleStatus = 'enabled';
-    
-    setInstalledModules((current) =>
-      current.map((module) => {
-        if (module.id !== moduleId) {
-          return module;
-        }
-        const nextStatus: ModuleStatus = module.runtime.status === "enabled" ? "disabled" : "enabled";
-        newStatus = nextStatus;
-        return {
-          ...module,
-          runtime: { ...module.runtime, status: nextStatus },
-        };
-      }),
-    );
-    
-    // 持久化状态变更
-    await window.moduleStore.updateStatus(moduleId, newStatus);
-
-    if (newStatus === "disabled" && isWindowPlugin(moduleId)) {
-      try {
-        await window.ipc.invoke("plugin:stop", moduleId);
-      } catch (error) {
-        console.warn(`[ModuleContext] 停止插件失败: ${moduleId}`, error);
-      }
-      patchModuleRuntime(moduleId, {
-        launchState: "idle",
-        runningWindowId: undefined,
-      });
-    } else if (newStatus === "enabled") {
-      patchModuleRuntime(moduleId, {
-        launchState: "idle",
-      });
-    }
-  }, [isWindowPlugin, patchModuleRuntime]);
 
   const getModuleById = useCallback(
     (moduleId: string) => installedModules.find((module) => module.id === moduleId),
@@ -811,9 +774,8 @@ const focusModuleWindow = useCallback(
       installModule,
       installOnlinePlugin,
       uninstallModule,
-      setModuleStatus,
-      toggleModuleStatus,
       getModuleById,
+      isDevPlugin,
       refreshAvailablePlugins,
       favoriteModules,
       addFavorite,
@@ -825,14 +787,13 @@ const focusModuleWindow = useCallback(
       activeModuleId,
       focusModuleWindow,
       getModuleById,
+      isDevPlugin,
       installModule,
       installOnlinePlugin,
       installedModules,
       availablePlugins,
       openModule,
       moduleStats,
-      setModuleStatus,
-      toggleModuleStatus,
       uninstallModule,
       refreshAvailablePlugins,
       favoriteModules,

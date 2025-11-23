@@ -23,7 +23,7 @@ interface Window {
     get: (id: string) => Promise<StoredModuleInfo | null>;
     add: (info: StoredModuleInfo) => Promise<{ success: boolean; error?: string }>;
     update: (id: string, info: Partial<StoredModuleInfo>) => Promise<{ success: boolean; error?: string }>;
-    updateStatus: (id: string, status: 'enabled' | 'disabled') => Promise<{ success: boolean; error?: string }>;
+
     remove: (id: string) => Promise<{ success: boolean; error?: string }>;
     getCachePath: (moduleId: string) => Promise<string | null>;
     removeCache: (moduleId: string) => Promise<boolean>;

@@ -221,9 +221,11 @@ export class GitOpsService {
    */
   async getPluginRegistry(): Promise<PluginRegistry> {
     try {
-      // 开发模式: 从本地 resources/plugins/ 目录读取
+      // 开发模式: 返回空列表,避免与 packages/client/plugins/ 中的开发插件冲突
+      // 开发者应该直接在 packages/client/plugins/ 中开发插件
       if (!app.isPackaged) {
-        return await this.getLocalPluginRegistry();
+        console.log('[GitOps] Development mode: plugin registry disabled');
+        return { plugins: [] };
       }
       
       // 生产模式: 从 GitHub 远程读取

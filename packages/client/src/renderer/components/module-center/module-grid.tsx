@@ -5,20 +5,21 @@ import { SkeletonLoader } from "../ui/skeleton-loader";
 import { ModuleCard, AvailableModuleCard } from "./module-card";
 import { ModuleListItem } from "./module-list-item";
 import type { ModuleInstance, ModuleDefinition } from "@core/modules/types";
+import type { PluginRegistryEntry } from "@booltox/shared";
 import type { ViewMode } from "./types";
 
 interface ModuleGridProps {
-  modules: ModuleInstance[] | ModuleDefinition[];
+  modules: ModuleInstance[] | ModuleDefinition[] | PluginRegistryEntry[];
   viewMode: ViewMode;
   isLoading?: boolean;
   processingModuleId?: string | null;
-  onToggleStatus?: (moduleId: string) => void;
   onUninstall?: (moduleId: string) => void;
   onInstall?: (moduleId: string) => void;
   onOpen?: (moduleId: string) => void;
   onPinToggle?: (moduleId: string) => void;
   onCardClick: (moduleId: string) => void;
   emptyMessage?: string;
+  isDevPlugin?: (moduleId: string) => boolean; // 检查是否为开发插件
 }
 
 export function ModuleGrid({
@@ -26,13 +27,13 @@ export function ModuleGrid({
   viewMode,
   isLoading = false,
   processingModuleId,
-  onToggleStatus,
   onUninstall,
   onInstall,
   onOpen,
   onPinToggle,
   onCardClick,
   emptyMessage = "暂无插件",
+  isDevPlugin,
 }: ModuleGridProps) {
   // 加载状态
   if (isLoading) {
@@ -62,9 +63,15 @@ export function ModuleGrid({
 
   // 判断是已安装模块还是可用模块
   const isInstalledModule = (
-    module: ModuleInstance | ModuleDefinition
+    module: ModuleInstance | ModuleDefinition | PluginRegistryEntry
   ): module is ModuleInstance => {
     return "runtime" in module;
+  };
+
+  const isPluginRegistryEntry = (
+    module: ModuleInstance | ModuleDefinition | PluginRegistryEntry
+  ): module is PluginRegistryEntry => {
+    return "downloadUrl" in module || ("hash" in module && !("loader" in module));
   };
 
   return (
@@ -80,36 +87,44 @@ export function ModuleGrid({
         {modules.map((module) => {
           // 列表视图: 使用统一的列表项组件
           if (viewMode === "list") {
+            // PluginRegistryEntry 不支持列表视图,跳过或使用卡片
+            if (isPluginRegistryEntry(module)) {
+              const moduleData = {
+                id: module.id,
+                name: module.name,
+                description: module.description,
+                version: module.version,
+                category: module.category,
+                icon: module.icon,
+              };
+              return (
+                <AvailableModuleCard
+                  key={module.id}
+                  module={moduleData}
+                  onInstall={onInstall || (() => {})}
+                  onClick={onCardClick}
+                  isInstalling={processingModuleId === module.id}
+                />
+              );
+            }
+            
             return (
               <ModuleListItem
                 key={module.id}
                 module={module}
-                onToggleStatus={onToggleStatus}
                 onUninstall={onUninstall}
                 onOpen={onOpen}
                 onInstall={onInstall}
                 onClick={onCardClick}
                 isProcessing={processingModuleId === module.id}
+                isDev={isDevPlugin?.(module.id) || false}
               />
             );
           }
 
           // 网格视图: 使用不同的卡片组件
-          if (isInstalledModule(module)) {
-            // 已安装模块卡片
-            return (
-              <ModuleCard
-                key={module.id}
-                module={module}
-                onToggleStatus={onToggleStatus || (() => {})}
-                onUninstall={onUninstall || (() => {})}
-                onOpen={onOpen || (() => {})}
-                onPinToggle={onPinToggle || (() => {})}
-                onClick={onCardClick}
-              />
-            );
-          } else {
-            // 可用模块卡片
+          if (isPluginRegistryEntry(module) || !isInstalledModule(module)) {
+            // 可用模块/插件卡片
             const moduleData = {
               id: module.id,
               name: module.name,
@@ -126,6 +141,19 @@ export function ModuleGrid({
                 onInstall={onInstall || (() => {})}
                 onClick={onCardClick}
                 isInstalling={processingModuleId === module.id}
+              />
+            );
+          } else {
+            // 已安装模块卡片
+            return (
+              <ModuleCard
+                key={module.id}
+                module={module}
+                onUninstall={onUninstall || (() => {})}
+                onOpen={onOpen || (() => {})}
+                onPinToggle={onPinToggle || (() => {})}
+                onClick={onCardClick}
+                isDev={isDevPlugin?.(module.id) || false}
               />
             );
           }

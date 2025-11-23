@@ -23,7 +23,6 @@ export function ModuleCenter() {
     pluginRegistry,
     availableModules,
     availablePlugins,
-    toggleModuleStatus,
     uninstallModule,
     installModule,
     installOnlinePlugin,
@@ -31,6 +30,7 @@ export function ModuleCenter() {
     removeFavorite,
     openModule,
     focusModuleWindow,
+    isDevPlugin,
   } = useModulePlatform();
 
   const { theme } = useTheme();
@@ -88,12 +88,8 @@ export function ModuleCenter() {
 
   const availableStoreModules = useMemo(() => {
     // 将在线插件转换为可以在UI中显示的格式
-    // 只过滤掉已正式安装的插件(不包括开发模式插件)
-    const installedPluginIds = new Set(
-      pluginRegistry
-        .filter(p => !p.isDev) // 开发插件不算"已安装"
-        .map(p => p.id)
-    );
+    // 过滤掉所有已安装的插件(包括开发模式和正式安装的)
+    const installedPluginIds = new Set(pluginRegistry.map(p => p.id));
     return availablePlugins.filter(p => !installedPluginIds.has(p.id));
   }, [availablePlugins, pluginRegistry]);
 
@@ -140,14 +136,6 @@ export function ModuleCenter() {
       }
     },
     [uninstallModule, selectedModuleId]
-  );
-
-  // 处理状态切换
-  const handleToggleStatus = useCallback(
-    (moduleId: string) => {
-      toggleModuleStatus(moduleId);
-    },
-    [toggleModuleStatus]
   );
 
   // 处理收藏/取消收藏
@@ -365,11 +353,11 @@ export function ModuleCenter() {
                   modules={favoriteModules}
                   viewMode={viewMode}
                   processingModuleId={processingModuleId}
-                  onToggleStatus={handleToggleStatus}
                   onUninstall={handleUninstall}
                   onOpen={handleOpen}
                   onPinToggle={handlePinToggle}
                   onCardClick={handleCardClick}
+                  isDevPlugin={isDevPlugin}
                   emptyMessage="给喜爱的插件点亮一颗星星吧"
                 />
               </section>
@@ -385,12 +373,12 @@ export function ModuleCenter() {
                 modules={regularModules}
                 viewMode={viewMode}
                 processingModuleId={processingModuleId}
-                onToggleStatus={handleToggleStatus}
                 onUninstall={handleUninstall}
                 onOpen={handleOpen}
                 onPinToggle={handlePinToggle}
                 onCardClick={handleCardClick}
-                emptyMessage="还没有安装任何插件，前往插件商店看看吧"
+                isDevPlugin={isDevPlugin}
+                emptyMessage="还没有安装任何插件,前往插件商店看看吧"
               />
             </section>
           </div>
@@ -404,7 +392,6 @@ export function ModuleCenter() {
         onClose={() => setSelectedModuleId(null)}
         onInstall={handleInstall}
         onUninstall={handleUninstall}
-        onToggleStatus={handleToggleStatus}
         onOpen={handleOpen}
         isInstalled={isSelectedModuleInstalled}
       />

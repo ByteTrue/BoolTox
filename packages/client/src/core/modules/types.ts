@@ -1,7 +1,5 @@
 import type { ComponentType } from "react";
 
-export type ModuleStatus = "enabled" | "disabled";
-
 export type ModuleLoader = () => Promise<ComponentType> | ComponentType;
 
 export type ModuleSource = "local" | "remote";
@@ -23,7 +21,6 @@ export interface ModuleDefinition {
 export type ModuleLaunchState = "idle" | "launching" | "running" | "stopping" | "error";
 
 export interface ModuleRuntime {
-  status: ModuleStatus;
   loading: boolean;
   component: ComponentType | null;
   error: string | null;

@@ -72,9 +72,7 @@ const moduleStoreAPI = {
   /**
    * 更新模块状态
    */
-  updateStatus: async (id: string, status: 'enabled' | 'disabled'): Promise<{ success: boolean; error?: string }> => {
-    return await ipcRenderer.invoke('module-store:update-status', id, status) as { success: boolean; error?: string };
-  },
+
 
   /**
    * 删除模块记录

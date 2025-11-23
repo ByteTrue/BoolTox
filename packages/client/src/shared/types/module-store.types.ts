@@ -10,9 +10,6 @@ export interface StoredModuleInfo {
   /** 模块唯一标识符 */
   id: string;
   
-  /** 模块状态: enabled=启用并运行, disabled=禁用但保留文件 */
-  status: 'enabled' | 'disabled';
-  
   /** 安装时间戳 (ISO 8601) */
   installedAt: string;
   

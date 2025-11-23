@@ -8,7 +8,7 @@ import { createLogger } from '@/lib/logger';
 export interface Toast {
   id: string;
   message: string;
-  type?: 'default' | 'success' | 'error';
+  type?: 'default' | 'success' | 'error' | 'info';
   duration?: number;
 }
 

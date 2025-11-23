@@ -47,8 +47,8 @@ export function useModuleStats(): ModuleStats {
 
   const stats = useMemo(() => {
     const installed = installedModules.length;
-    const enabled = installedModules.filter(m => m.runtime.status === 'enabled').length;
-    const disabled = installedModules.filter(m => m.runtime.status === 'disabled').length;
+    const enabled = 0;  // 不再使用 enabled/disabled 状态
+    const disabled = 0;
     
     // 过滤掉已安装的非开发插件
     const installedPluginIds = new Set(
@@ -58,9 +58,8 @@ export function useModuleStats(): ModuleStats {
     );
     const remote = availablePlugins.filter(p => !installedPluginIds.has(p.id)).length;
 
-    // 按分类统计已启用模块
+    // 按分类统计已安装模块
     const byCategory = installedModules
-      .filter(m => m.runtime.status === 'enabled')
       .reduce((acc, m) => {
         const cat = m.definition.category;
         if (!cat) {

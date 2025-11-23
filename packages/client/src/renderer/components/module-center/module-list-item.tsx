@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Play, Pause, Trash2, Download, ExternalLink } from "lucide-react";
+import { Play, Trash2, Download, ExternalLink } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
 import { cardHover, iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
@@ -7,28 +7,27 @@ import type { ModuleInstance, ModuleDefinition } from "@core/modules/types";
 
 interface ModuleListItemProps {
   module: ModuleInstance | ModuleDefinition;
-  onToggleStatus?: (moduleId: string) => void;
   onUninstall?: (moduleId: string) => void;
   onOpen?: (moduleId: string) => void;
   onInstall?: (moduleId: string) => void;
   onClick: (moduleId: string) => void;
   isProcessing?: boolean;
+  isDev?: boolean; // 是否为开发插件(不可卸载)
 }
 
 export function ModuleListItem({
   module,
-  onToggleStatus,
   onUninstall,
   onOpen,
   onInstall,
   onClick,
   isProcessing = false,
+  isDev = false,
 }: ModuleListItemProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
   const isInstalled = "runtime" in module;
-  const isEnabled = isInstalled && module.runtime.status === "enabled";
   const definition = isInstalled ? module.definition : module;
   const launchState = isInstalled ? module.runtime.launchState ?? "idle" : "idle";
   const isLaunching = launchState === "launching";
@@ -52,9 +51,7 @@ export function ModuleListItem({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.2 }}
-      className={`group relative flex items-center gap-4 rounded-2xl border p-4 transition-shadow duration-250 ease-swift ${getGlassShadow(theme)} ${
-        isEnabled ? "border-l-4 border-l-green-500" : ""
-      }`}
+      className={`group relative flex items-center gap-4 rounded-2xl border p-4 transition-shadow duration-250 ease-swift ${getGlassShadow(theme)}`}
       style={getGlassStyle('CARD', theme)}
     >
       {/* 左侧: 图标 */}
@@ -98,22 +95,6 @@ export function ModuleListItem({
           >
             {definition.name}
           </h3>
-          {isInstalled && (
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-semibold border ${
-                isEnabled
-                  ? "border-green-500/30 bg-green-500/20 text-green-500"
-                  : isDark
-                    ? "bg-white/10 text-white/80"
-                    : "bg-slate-200 text-slate-700"
-              }`}
-              style={!isEnabled ? {
-                borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-              } : undefined}
-            >
-              {isEnabled ? "✓ 已启用" : "⏸ 已停用"}
-            </span>
-          )}
           {launchStateBadge && (
             <span
               className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${launchStateBadge.className}`}
@@ -156,69 +137,46 @@ export function ModuleListItem({
       <div className="flex shrink-0 items-center gap-2">
         {isInstalled ? (
           <>
-            {/* 启用/停用按钮 */}
+            {/* 打开按钮 */}
             <motion.button
               {...iconButtonInteraction}
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleStatus?.(module.id);
+                onOpen?.(module.id);
               }}
-              className={`rounded-lg border p-2 transition-[background-color,transform] duration-250 ease-swift ${
-                isEnabled
-                  ? "border-green-500/30 bg-green-500/20 text-green-500 hover:bg-green-500/30"
-                  : isDark
-                    ? "bg-white/10 text-white/80 hover:bg-white/20"
-                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+              disabled={isLaunching}
+              className={`rounded-lg border border-blue-500/30 bg-blue-500/20 p-2 text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
+                isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
               }`}
-              style={!isEnabled ? {
-                borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-              } : undefined}
-              title={isEnabled ? "停用插件" : "启用插件"}
+              title={
+                isLaunching ? "插件正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开插件"
+              }
             >
-              {isEnabled ? <Pause size={16} /> : <Play size={16} />}
+              {isLaunching ? (
+                <span className="flex items-center justify-center">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                </span>
+              ) : (
+                <ExternalLink size={16} />
+              )}
             </motion.button>
 
-            {/* 打开按钮 */}
-            {isEnabled && (
+            {/* 卸载按钮 - 开发插件不显示 */}
+            {!isDev && (
               <motion.button
                 {...iconButtonInteraction}
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onOpen?.(module.id);
+                  onUninstall?.(module.id);
                 }}
-                disabled={isLaunching}
-                className={`rounded-lg border border-blue-500/30 bg-blue-500/20 p-2 text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
-                  isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
-                }`}
-                title={
-                  isLaunching ? "插件正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开插件"
-                }
+                className={`rounded-lg border border-red-500/30 bg-red-500/20 p-2 text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/30`}
+                title="卸载插件"
               >
-                {isLaunching ? (
-                  <span className="flex items-center justify-center">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  </span>
-                ) : (
-                  <ExternalLink size={16} />
-                )}
+                <Trash2 size={16} />
               </motion.button>
             )}
-
-            {/* 卸载按钮 */}
-            <motion.button
-              {...iconButtonInteraction}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onUninstall?.(module.id);
-              }}
-              className={`rounded-lg border border-red-500/30 bg-red-500/20 p-2 text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/30`}
-              title="卸载插件"
-            >
-              <Trash2 size={16} />
-            </motion.button>
           </>
         ) : (
           <motion.button

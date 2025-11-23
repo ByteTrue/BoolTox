@@ -41,18 +41,8 @@ export function useModuleSort<T extends ModuleDefinition | ModuleInstance>(
 
         case "default":
         default:
-          // 默认排序: 已启用的在前,然后按名称
-          if ("runtime" in a && "runtime" in b) {
-            const statusA = a.runtime.status === "enabled" ? 0 : 1;
-            const statusB = b.runtime.status === "enabled" ? 0 : 1;
-            if (statusA !== statusB) {
-              comparison = statusA - statusB;
-            } else {
-              comparison = defA.name.localeCompare(defB.name, "zh-CN");
-            }
-          } else {
-            comparison = defA.name.localeCompare(defB.name, "zh-CN");
-          }
+          // 默认排序: 按名称排序
+          comparison = defA.name.localeCompare(defB.name, "zh-CN");
           break;
       }
 

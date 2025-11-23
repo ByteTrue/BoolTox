@@ -7,24 +7,23 @@ import type { ModuleInstance } from "@core/modules/types";
 
 interface ModuleCardProps {
   module: ModuleInstance;
-  onToggleStatus: (moduleId: string) => void;
   onUninstall: (moduleId: string) => void;
   onOpen: (moduleId: string) => void;
   onClick: (moduleId: string) => void;
   onPinToggle: (moduleId: string) => void;
+  isDev?: boolean; // 是否为开发插件(不可卸载)
 }
 
 export function ModuleCard({
   module,
-  onToggleStatus,
   onUninstall,
   onOpen,
   onClick,
   onPinToggle,
+  isDev = false,
 }: ModuleCardProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const isEnabled = module.runtime.status === "enabled";
   const launchState = module.runtime.launchState ?? "idle";
   const isLaunching = launchState === "launching";
   const isRunning = launchState === "running";
@@ -57,18 +56,6 @@ export function ModuleCard({
         transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      {/* 启用状态指示器 - 独立元素 */}
-      {isEnabled && (
-        <div 
-          className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-green-500"
-          style={{
-            boxShadow: isDark 
-              ? '0 0 8px rgba(34, 197, 94, 0.5)' 
-              : '0 0 8px rgba(34, 197, 94, 0.3)',
-          }}
-        />
-      )}
-      
       {/* 头部: 图标和状态 */}
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -101,36 +88,20 @@ export function ModuleCard({
           </div>
         </div>
 
-        {/* 状态标签 */}
-        <div className="flex flex-col gap-1">
+        {/* 运行状态标签 */}
+        {launchStateBadge && (
           <span
-            className={`rounded-full px-2 py-1 text-xs font-semibold border ${
-              isEnabled
-                ? "border-green-500/30 bg-green-500/20 text-green-500"
-                : isDark
-                  ? "bg-white/10 text-white/80"
-                  : "bg-slate-200 text-slate-700"
+            className={`rounded-full px-2 py-1 text-xs font-semibold ${
+              launchStateBadge.tone === "success"
+                ? "border-green-500/30 bg-green-500/15 text-green-500"
+                : launchStateBadge.tone === "warning"
+                  ? "border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
+                  : "border-red-500/30 bg-red-500/15 text-red-500"
             }`}
-            style={!isEnabled ? {
-              borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-            } : undefined}
           >
-            {isEnabled ? "✓ 已启用" : "⏸ 已停用"}
+            {launchStateBadge.label}
           </span>
-          {launchStateBadge && (
-            <span
-              className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                launchStateBadge.tone === "success"
-                  ? "border-green-500/30 bg-green-500/15 text-green-500"
-                  : launchStateBadge.tone === "warning"
-                    ? "border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
-                    : "border-red-500/30 bg-red-500/15 text-red-500"
-              }`}
-            >
-              {launchStateBadge.label}
-            </span>
-          )}
-        </div>
+        )}
       </div>
 
       {/* 内容 */}
@@ -229,33 +200,20 @@ export function ModuleCard({
           />
         </button>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleStatus(module.id);
-          }}
-          className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 ${
-            isEnabled
-              ? "border-orange-500/30 bg-orange-500/10 text-orange-500 hover:bg-orange-500/20"
-              : "border-green-500/30 bg-green-500/10 text-green-500 hover:bg-green-500/20"
-          }`}
-          title={isEnabled ? "停用插件" : "启用插件"}
-        >
-          {isEnabled ? <Pause className="mx-auto" size={14} /> : <Play className="mx-auto" size={14} />}
-        </button>
-
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onUninstall(module.id);
-          }}
-          className="flex-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-500 transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 hover:bg-red-500/20"
-          title="卸载插件"
-        >
-          <Trash2 className="mx-auto" size={14} />
-        </button>
+        {/* 开发插件不显示卸载按钮 */}
+        {!isDev && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onUninstall(module.id);
+            }}
+            className="flex-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-500 transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-u[1.02] hover:brightness-110 hover:bg-red-500/20"
+            title="卸载插件"
+          >
+            <Trash2 className="mx-auto" size={14} />
+          </button>
+        )}
       </div>
     </motion.div>
   );
