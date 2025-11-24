@@ -58,7 +58,7 @@ export function ModuleCenter() {
   });
 
   // 应用过滤器
-  const { filteredInstalled, filteredAvailable, availableCategories } = useModuleFilter(
+  const { filteredInstalled, availableCategories } = useModuleFilter(
     installedModules,
     availableModules,
     filter
@@ -66,11 +66,9 @@ export function ModuleCenter() {
 
   // 应用搜索
   const searchedInstalled = useModuleSearch(filteredInstalled, debouncedValue);
-  const searchedAvailable = useModuleSearch(filteredAvailable, debouncedValue);
 
   // 应用排序
   const sortedInstalled = useModuleSort(searchedInstalled, sortConfig);
-  const sortedAvailable = useModuleSort(searchedAvailable, sortConfig);
 
   // 获取推荐
   const recommendations = useRecommendations(installedModules, availableModules);

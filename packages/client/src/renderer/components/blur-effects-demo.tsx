@@ -10,9 +10,6 @@ import { useTheme } from './theme-provider';
 import { getGlassStyle } from '../utils/glass-layers';
 import {
   getBlurStyle,
-  getModalBackdropBlur,
-  getDropdownBlur,
-  getTooltipBlur,
   supportsBackdropFilter,
   BlurIntensity,
   BlurLayer,

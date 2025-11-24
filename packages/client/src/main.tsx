@@ -17,14 +17,28 @@ import { ActivityFeedProvider } from './renderer/contexts/activity-feed-context'
 import { initErrorTracking } from './renderer/lib/error-tracking';
 import { ErrorBoundary } from './renderer/components/error-boundary';
 import { profiler } from './renderer/lib/performance-profiler';
+import type { MemoryMonitor, FPSMonitor } from './renderer/lib/performance-profiler';
+
+type PerfWindow = Window & {
+  __APP_START_TIME__?: number;
+  profiler?: typeof profiler;
+  memoryMonitor?: MemoryMonitor;
+  fpsMonitor?: FPSMonitor;
+  __perf__?: {
+    profiler: typeof profiler;
+    memoryMonitor: MemoryMonitor;
+    fpsMonitor: FPSMonitor;
+  };
+};
 
 // ========== Phase 1: Performance Monitoring ==========
 // 记录脚本开始执行时间
 const scriptStartTime = performance.now();
+const perfWindow = window as PerfWindow;
 
 // 标记应用启动开始（如果 HTML 中有全局标记，使用它；否则使用脚本开始时间）
-if (!(window as any).__APP_START_TIME__) {
-  (window as any).__APP_START_TIME__ = scriptStartTime;
+if (!perfWindow.__APP_START_TIME__) {
+  perfWindow.__APP_START_TIME__ = scriptStartTime;
 }
 
 profiler.mark('app-startup-begin');
@@ -61,33 +75,33 @@ profiler.measure('React Initial Render', 'react-render-begin', 'react-render-end
 // 等待首屏渲染完成
 requestAnimationFrame(async () => {
   profiler.mark('app-startup-end');
-  const startupTime = profiler.measure('App Startup Time', 'app-startup-begin', 'app-startup-end');
+  profiler.measure('App Startup Time', 'app-startup-begin', 'app-startup-end');
   
   // 输出性能报告（使用品牌蓝色）
-  console.log('%c🚀 BoolTox Performance Report', 'font-size: 16px; font-weight: bold; color: rgb(101, 187, 233);');
+  console.warn('%c🚀 BoolTox Performance Report', 'font-size: 16px; font-weight: bold; color: rgb(101, 187, 233);');
   profiler.report('Phase 1: Startup Performance');
   
   // 开发环境：启动内存和 FPS 监控
   if (import.meta.env.DEV) {
     const { memoryMonitor, fpsMonitor } = await import('./renderer/lib/performance-profiler');
     
-    console.log('\n🔧 Development Mode: Performance monitoring enabled');
-    console.log('📋 Available commands:');
-    console.log('  - profiler.report()         // 查看启动性能报告');
-    console.log('  - memoryMonitor.start()     // 开始内存监控');
-    console.log('  - memoryMonitor.stop()      // 停止内存监控');
-    console.log('  - memoryMonitor.report()    // 查看内存报告');
-    console.log('  - fpsMonitor.start((fps) => console.log(`FPS: ${fps}`))');
-    console.log('  - fpsMonitor.stop()');
-    console.log('  - fpsMonitor.getFPS()       // 获取当前 FPS\n');
+    console.warn('\n🔧 Development Mode: Performance monitoring enabled');
+    console.warn('📋 Available commands:');
+    console.warn('  - profiler.report()         // 查看启动性能报告');
+    console.warn('  - memoryMonitor.start()     // 开始内存监控');
+    console.warn('  - memoryMonitor.stop()      // 停止内存监控');
+    console.warn('  - memoryMonitor.report()    // 查看内存报告');
+    console.warn('  - fpsMonitor.start((fps) => console.log(`FPS: ${fps}`))');
+    console.warn('  - fpsMonitor.stop()');
+    console.warn('  - fpsMonitor.getFPS()       // 获取当前 FPS\n');
     
     // 暴露到全局（方便调试）
-    (window as any).profiler = profiler;
-    (window as any).memoryMonitor = memoryMonitor;
-    (window as any).fpsMonitor = fpsMonitor;
+    perfWindow.profiler = profiler;
+    perfWindow.memoryMonitor = memoryMonitor;
+    perfWindow.fpsMonitor = fpsMonitor;
     
     // 保留完整对象引用
-    (window as any).__perf__ = {
+    perfWindow.__perf__ = {
       profiler,
       memoryMonitor,
       fpsMonitor,

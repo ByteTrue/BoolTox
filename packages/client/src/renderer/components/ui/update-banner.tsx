@@ -17,7 +17,6 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
     bannerDismissed,
     downloadUpdate,
     cancelDownload,
-    installUpdate,
     dismissUpdate,
     retryCheck,
   } = useUpdate();

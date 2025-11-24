@@ -17,7 +17,6 @@ import { getGlassStyle } from '@/utils/glass-layers';
 import { getScrollbarClassName, getFocusRingClassName } from '@/utils/detail-polish';
 import {
   getBreakpoint,
-  getResponsiveTypography,
   getResponsiveFontSize,
   getResponsiveSpacing,
 } from '@/utils/responsive-scale';
@@ -30,12 +29,10 @@ import {
   LoadingOverlay,
 } from './ui/loading';
 import {
-  Skeleton,
   SkeletonText,
   SkeletonAvatar,
   SkeletonCard,
   SkeletonList,
-  SkeletonTable,
   SkeletonImage,
 } from './ui/skeleton';
 import { EmptyState } from './ui/empty-state';

@@ -376,7 +376,7 @@ export function useTriggerHaptic() {
   const triggerHaptic = (pattern: HapticPattern) => {
     // 在 Electron 中可以调用系统触觉反馈
     // 这里先用动画模拟
-    console.log(`[Haptic] Triggered: ${pattern}`);
+    console.warn(`[Haptic] Triggered: ${pattern}`);
     
     // 未来可以集成 Electron API
     // if (window.electron?.haptic) {

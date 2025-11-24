@@ -5,6 +5,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+import type { IpcRendererEvent } from 'electron';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types';
 import type { Announcement, GitOpsConfig, PluginRegistry } from './services/git-ops.service';
 import type { AutoUpdateStatus } from './services/auto-update.service';
@@ -155,7 +156,7 @@ const pluginAPI = {
     return await ipcRenderer.invoke('plugin:cancel-install', pluginId) as {success: boolean};
   },
   onInstallProgress: (callback: (progress: unknown) => void): (() => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, progress: unknown) => callback(progress);
+    const listener = (_event: IpcRendererEvent, progress: unknown) => callback(progress);
     ipcRenderer.on('plugin:install-progress', listener);
     return () => ipcRenderer.removeListener('plugin:install-progress', listener);
   },

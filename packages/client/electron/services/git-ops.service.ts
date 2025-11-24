@@ -13,6 +13,7 @@ import type { PluginRegistryEntry } from '@booltox/shared';
 import { app } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
+import { createLogger } from '../utils/logger.js';
 
 export type GitProvider = 'github' | 'gitlab';
 
@@ -54,9 +55,22 @@ const DEFAULT_CONFIG: GitOpsConfig = {
 // 缓存时间(毫秒)
 const CACHE_TTL = 5 * 60 * 1000; // 5分钟
 
+const logger = createLogger('GitOpsService');
+
+type GitHubContentItem = {
+  type: string;
+  name: string;
+  path: string;
+};
+
+type GitLabContentItem = {
+  type: string;
+  name: string;
+};
+
 export class GitOpsService {
   private config: GitOpsConfig;
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
 
   constructor(config: Partial<GitOpsConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -144,8 +158,8 @@ export class GitOpsService {
   /**
    * 调用 GitHub/GitLab API
    */
-  private async fetchApi(path: string): Promise<any> {
-    const { provider, owner, repo, branch, baseUrl } = this.config;
+  private async fetchApi(path: string): Promise<unknown> {
+    const { provider, owner, repo, baseUrl } = this.config;
     let url = '';
     const headers = this.getHeaders();
 
@@ -176,21 +190,21 @@ export class GitOpsService {
       if (provider === 'github') {
         const data = await this.fetchApi(`contents/${dirPath}?ref=${branch}`);
         if (Array.isArray(data)) {
-          return data
-            .filter((item: any) => item.type === 'file' && item.name.endsWith('.md'))
-            .map((item: any) => item.path);
+          return (data as GitHubContentItem[])
+            .filter((item) => item.type === 'file' && item.name.endsWith('.md'))
+            .map((item) => item.path);
         }
       } else {
         // GitLab
         const data = await this.fetchApi(`repository/tree?path=${dirPath}&ref=${branch}`);
         if (Array.isArray(data)) {
-           return data
-            .filter((item: any) => item.type === 'blob' && item.name.endsWith('.md'))
-            .map((item: any) => `${dirPath}/${item.name}`);
+          return (data as GitLabContentItem[])
+            .filter((item) => item.type === 'blob' && item.name.endsWith('.md'))
+            .map((item) => `${dirPath}/${item.name}`);
         }
       }
     } catch (e) {
-      console.warn(`[GitOps] Failed to list files in ${dirPath}`, e);
+      logger.warn(`[GitOps] Failed to list files in ${dirPath}`, e);
     }
     return [];
   }
@@ -226,7 +240,7 @@ export class GitOpsService {
     // 检查缓存
     const cached = this.getCache<Announcement[]>(cacheKey);
     if (cached) {
-      console.log('[GitOps] Using cached announcements');
+      logger.debug('[GitOps] Using cached announcements');
       return cached;
     }
 
@@ -265,7 +279,7 @@ export class GitOpsService {
             contentFile: item.file
           } as Announcement;
         } catch (err) {
-          console.warn(`[GitOps] Failed to process announcement ${item.file}:`, err);
+          logger.warn(`[GitOps] Failed to process announcement ${item.file}:`, err);
           return null;
         }
       }));
@@ -274,11 +288,11 @@ export class GitOpsService {
       
       // 缓存结果
       this.setCache(cacheKey, result);
-      console.log(`[GitOps] Loaded ${result.length} announcements`);
+      logger.info(`[GitOps] Loaded ${result.length} announcements`);
       
       return result;
     } catch (error) {
-      console.error('[GitOps] Error fetching announcements:', error);
+      logger.error('[GitOps] Error fetching announcements:', error);
       return [];
     }
   }
@@ -292,21 +306,21 @@ export class GitOpsService {
     
     // 开发模式: 从本地读取
     if (!app.isPackaged) {
-      console.log('[GitOps] Development mode: using local plugin registry');
+      logger.info('[GitOps] Development mode: using local plugin registry');
       return await this.getLocalPluginRegistry();
     }
     
     // 检查缓存
     const cached = this.getCache<PluginRegistry>(cacheKey);
     if (cached) {
-      console.log('[GitOps] Using cached plugin registry');
+      logger.debug('[GitOps] Using cached plugin registry');
       return cached;
     }
 
     try {
       // 1. 获取索引文件 (索引文件使用 GitHub raw URL 避免 CDN 缓存延迟)
       const indexUrl = this.getRawUrl('resources/plugins/index.json', false);
-      console.log('[GitOps] Fetching plugin index from:', indexUrl);
+      logger.info('[GitOps] Fetching plugin index from:', indexUrl);
       const indexRes = await fetch(indexUrl);
       if (!indexRes.ok) {
         throw new Error(`Failed to fetch plugin index: ${indexRes.statusText}`);
@@ -316,18 +330,18 @@ export class GitOpsService {
         plugins: Array<{ id: string; metadataFile: string; downloadFile: string }>;
       };
       
-      console.log(`[GitOps] Found ${index.plugins.length} plugins in index:`, index.plugins.map(p => p.id));
-      console.log('[GitOps] Index data:', JSON.stringify(index, null, 2));
+      logger.debug(`[GitOps] Found ${index.plugins.length} plugins in index:`, index.plugins.map(p => p.id));
+      logger.debug('[GitOps] Index data:', JSON.stringify(index, null, 2));
 
       // 2. 并行获取所有插件 metadata
       const metadataPromises = index.plugins.map(async (item) => {
         try {
           const metadataUrl = this.getRawUrl(`resources/plugins/${item.metadataFile}`);
-          console.log(`[GitOps] Fetching metadata for ${item.id} from:`, metadataUrl);
+          logger.info(`[GitOps] Fetching metadata for ${item.id} from:`, metadataUrl);
           const res = await fetch(metadataUrl);
           
           if (!res.ok) {
-            console.warn(`[GitOps] Failed to fetch metadata for ${item.id}: ${res.statusText}`);
+            logger.warn(`[GitOps] Failed to fetch metadata for ${item.id}: ${res.statusText}`);
             return null;
           }
           
@@ -335,10 +349,10 @@ export class GitOpsService {
           // 使用索引中的下载文件路径
           const downloadUrl = this.getRawUrl(`resources/plugins/${item.downloadFile}`, false); // 下载用原始URL
           
-          console.log(`[GitOps] Successfully loaded metadata for ${item.id}`);
+          logger.info(`[GitOps] Successfully loaded metadata for ${item.id}`);
           return { ...metadata, downloadUrl } as PluginRegistryEntry;
         } catch (error) {
-          console.error(`[GitOps] Error fetching metadata for ${item.id}:`, error);
+          logger.error(`[GitOps] Error fetching metadata for ${item.id}:`, error);
           return null;
         }
       });
@@ -349,11 +363,11 @@ export class GitOpsService {
       
       // 缓存结果
       this.setCache(cacheKey, result);
-      console.log(`[GitOps] Loaded ${plugins.length} plugins from registry`);
+      logger.info(`[GitOps] Loaded ${plugins.length} plugins from registry`);
       
       return result;
     } catch (error) {
-      console.error('[GitOps] Error fetching plugin registry:', error);
+      logger.error('[GitOps] Error fetching plugin registry:', error);
       return { plugins: [] };
     }
   }
@@ -367,7 +381,7 @@ export class GitOpsService {
       // process.cwd() 在 packages/client,需要向上两级到达根目录
       const workspaceRoot = path.resolve(process.cwd(), '../..');
       const resourcesDir = path.join(workspaceRoot, 'resources', 'plugins');
-      console.log('[GitOps] Reading local plugins from:', resourcesDir);
+      logger.info('[GitOps] Reading local plugins from:', resourcesDir);
       
       const entries = await fs.readdir(resourcesDir, { withFileTypes: true });
       const pluginDirs = entries.filter(e => e.isDirectory());
@@ -386,15 +400,15 @@ export class GitOpsService {
           
           plugins.push({ ...metadata, downloadUrl });
         } catch (error) {
-          console.warn(`[GitOps] Failed to read metadata for ${dir.name}:`, error);
+          logger.warn(`[GitOps] Failed to read metadata for ${dir.name}:`, error);
         }
       }
       
-      console.log(`[GitOps] Loaded ${plugins.length} local plugins`);
+      logger.info(`[GitOps] Loaded ${plugins.length} local plugins`);
       return { plugins };
       
     } catch (error) {
-      console.error('[GitOps] Error reading local plugin registry:', error);
+      logger.error('[GitOps] Error reading local plugin registry:', error);
       return { plugins: [] };
     }
   }

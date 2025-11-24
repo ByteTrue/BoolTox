@@ -8,13 +8,13 @@
  * - 支持禁用和加载状态
  */
 
-import { motion, Variants } from 'framer-motion';
-import { getButtonShineVariants, getButtonShineGradient, buttonShinePresets } from '@/utils/fluid-animations';
+import { motion } from 'framer-motion';
+import { buttonShinePresets } from '@/utils/fluid-animations';
 import { useTheme } from '../theme-provider';
-import { CSSProperties } from 'react';
+import { CSSProperties, type ReactNode } from 'react';
 
 export interface ShineButtonProps {
-  children: React.ReactNode;
+  children: ReactNode;
   /** 按钮类型 */
   variant?: 'primary' | 'secondary' | 'ghost';
   /** 尺寸 */
@@ -155,7 +155,7 @@ export function ShineButton({
  * ShineButtonGroup - 按钮组容器
  */
 export interface ShineButtonGroupProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   /** 布局方向 */
   direction?: 'horizontal' | 'vertical';

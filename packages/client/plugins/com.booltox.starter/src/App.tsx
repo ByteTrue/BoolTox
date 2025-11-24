@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useBooltox } from './hooks/useBooltox';
 import { Terminal, FileText, Database, Activity } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -39,7 +39,7 @@ export default function App() {
   );
 }
 
-function TabButton({ active, onClick, children, icon }: { active: boolean; onClick: () => void; children: React.ReactNode; icon: React.ReactNode }) {
+function TabButton({ active, onClick, children, icon }: { active: boolean; onClick: () => void; children: ReactNode; icon: ReactNode }) {
   return (
     <button
       onClick={onClick}
@@ -68,8 +68,9 @@ function SystemTab({ api }: { api: ReturnType<typeof useBooltox> }) {
       } else {
         setOutput(prev => prev + `Error: ${res.error || res.stderr}\n`);
       }
-    } catch (e: any) {
-      setOutput(prev => prev + `Error: ${e.message}\n`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setOutput(prev => prev + `Error: ${message}\n`);
     }
     setLoading(false);
   };
@@ -104,25 +105,22 @@ function SystemTab({ api }: { api: ReturnType<typeof useBooltox> }) {
 
 function NotesTab({ api }: { api: ReturnType<typeof useBooltox> }) {
   const [note, setNote] = useState('');
-  const [savedNote, setSavedNote] = useState('');
   const [status, setStatus] = useState('');
 
-  useEffect(() => {
-    loadNote();
-  }, []);
-
-  const loadNote = async () => {
+  const loadNote = useCallback(async () => {
     const data = await api.db.get<string>('user-note');
     if (data) {
-      setSavedNote(data);
       setNote(data);
     }
-  };
+  }, [api]);
+
+  useEffect(() => {
+    void loadNote();
+  }, [loadNote]);
 
   const saveNote = async () => {
     setStatus('Saving...');
     await api.db.set('user-note', note);
-    setSavedNote(note);
     setStatus('Saved!');
     setTimeout(() => setStatus(''), 2000);
   };

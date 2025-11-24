@@ -29,16 +29,10 @@ export type ScrollbarTheme = 'light' | 'dark';
  * Scrollbar 样式配置
  */
 export interface ScrollbarConfig {
-  /** 滚动条宽度 */
-  width?: number;
   /** 滚动条颜色 */
   thumbColor?: string;
   /** 轨道颜色 */
   trackColor?: string;
-  /** 圆角 */
-  borderRadius?: number;
-  /** Hover 时宽度 */
-  hoverWidth?: number;
 }
 
 /**
@@ -56,11 +50,8 @@ export function getScrollbarStyle(
   config?: ScrollbarConfig
 ): CSSProperties {
   const {
-    width = 6,
     thumbColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
     trackColor = 'transparent',
-    borderRadius = 3,
-    hoverWidth = 8,
   } = config || {};
 
   return {
@@ -92,12 +83,8 @@ export interface FocusRingConfig {
   color?: string;
   /** 环宽度 */
   width?: number;
-  /** 偏移距离 */
-  offset?: number;
   /** 模糊半径 */
   blur?: number;
-  /** 不透明度 */
-  opacity?: number;
 }
 
 /**
@@ -115,9 +102,7 @@ export function getFocusRingStyle(
   const {
     color = theme === 'dark' ? 'rgba(101, 187, 233, 0.6)' : 'rgba(0, 122, 255, 0.5)',
     width = 3,
-    offset = 2,
     blur = 8,
-    opacity = 1,
   } = config || {};
 
   return {

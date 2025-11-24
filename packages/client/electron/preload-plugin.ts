@@ -1,11 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-// Whitelisted channels for plugin communication
-const VALID_CHANNELS = [
-  'booltox:api:call',
-  'window:control' // 添加窗口控制channel
-];
-
 // runtime state for titlebar
 let customTitlebarEnabled = true;
 let titlebarRoot: HTMLElement | null = null;
@@ -140,7 +134,7 @@ const booltoxAPI = {
   },
   db: {
     get: (key: string) => ipcRenderer.invoke('booltox:api:call', 'db', 'get', { key }),
-    set: (key: string, value: any) => ipcRenderer.invoke('booltox:api:call', 'db', 'set', { key, value }),
+    set: (key: string, value: unknown) => ipcRenderer.invoke('booltox:api:call', 'db', 'set', { key, value }),
   }
 };
 
@@ -158,5 +152,3 @@ window.addEventListener('DOMContentLoaded', () => {
     console.warn('[BoolTox] Failed to inject custom titlebar', e);
   }
 });
-
-console.log('[BoolTox] Plugin preload script loaded');

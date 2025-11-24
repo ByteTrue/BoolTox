@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Play, Pause, Trash2, Download, ExternalLink, Pin } from "lucide-react";
+import { Trash2, Download, ExternalLink, Pin } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
 import { cardHover } from "@/utils/animation-presets";

@@ -33,38 +33,38 @@ export function useBooltox() {
       // Return mock API for development outside BoolTox
       return {
         window: {
-          hide: async () => console.log('Mock: window.hide'),
-          show: async () => console.log('Mock: window.show'),
-          close: async () => console.log('Mock: window.close'),
-          setSize: async (w: number, h: number) => console.log(`Mock: window.setSize(${w}, ${h})`),
+          hide: async () => console.warn('Mock: window.hide'),
+          show: async () => console.warn('Mock: window.show'),
+          close: async () => console.warn('Mock: window.close'),
+          setSize: async (w: number, h: number) => console.warn(`Mock: window.setSize(${w}, ${h})`),
         },
         shell: {
           exec: async (cmd: string, args: string[] = []) => {
-            console.log(`Mock: shell.exec(${cmd}, ${args})`);
+            console.warn(`Mock: shell.exec(${cmd}, ${args})`);
             return { success: true, stdout: 'Mock output' };
           },
           runPython: async (script: string, args: string[] = []) => {
-            console.log(`Mock: shell.runPython(${script}, ${args})`);
+            console.warn(`Mock: shell.runPython(${script}, ${args})`);
             return { success: true, stdout: 'Mock python output' };
           },
         },
         fs: {
           readFile: async (path: string) => {
-            console.log(`Mock: fs.readFile(${path})`);
+            console.warn(`Mock: fs.readFile(${path})`);
             return { success: true, data: 'Mock file content' };
           },
           writeFile: async (path: string, content: string) => {
-            console.log(`Mock: fs.writeFile(${path})`);
+            console.warn(`Mock: fs.writeFile(${path}, ${content})`);
             return { success: true };
           },
         },
         db: {
           get: async (key: string) => {
-            console.log(`Mock: db.get(${key})`);
+            console.warn(`Mock: db.get(${key})`);
             return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)!) : undefined;
           },
-          set: async (key: string, value: any) => {
-            console.log(`Mock: db.set(${key}, ${value})`);
+          set: async <T>(key: string, value: T) => {
+            console.warn(`Mock: db.set(${key}, ${value})`);
             localStorage.setItem(key, JSON.stringify(value));
             return { success: true };
           },

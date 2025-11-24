@@ -8,13 +8,13 @@
  * - 平滑过渡
  */
 
-import { useState, useRef, CSSProperties } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { useState, useRef, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { motion, useMotionValue } from 'framer-motion';
 import { getCardTiltStyle, getCardGlareStyle, getMousePosition } from '@/utils/fluid-animations';
 import { useTheme } from '../theme-provider';
 
 export interface TiltCardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   /** 最大倾斜角度 (deg) */
   maxTilt?: number;
   /** 最大缩放 */
@@ -65,12 +65,8 @@ export function TiltCard({
   // 使用 Spring 动画创建平滑的鼠标跟随
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
-  
-  const springConfig = { stiffness: 150, damping: 15, mass: 0.1 };
-  const rotateX = useSpring(mouseX, springConfig);
-  const rotateY = useSpring(mouseY, springConfig);
 
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = (event: MouseEvent<HTMLDivElement>) => {
     if (!enableTilt || !cardRef.current) return;
 
     const pos = getMousePosition(event, cardRef.current);
@@ -159,7 +155,7 @@ export function TiltCard({
  * 用于包裹多个 TiltCard，添加统一的交错动画
  */
 export interface TiltCardGroupProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   /** 列数 */
   columns?: 1 | 2 | 3 | 4;

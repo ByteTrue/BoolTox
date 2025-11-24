@@ -9,7 +9,7 @@
  * - 可选页脚按钮
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { modalVariants, modalBackdropVariants } from '../../utils/micro-interactions';
@@ -22,12 +22,12 @@ export interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
   closeOnBackdrop?: boolean;
   closeOnEsc?: boolean;
-  footer?: React.ReactNode;
+  footer?: ReactNode;
   className?: string;
 }
 
@@ -80,7 +80,7 @@ export function Modal({
     };
   }, [open]);
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
+  const handleBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
     if (closeOnBackdrop && e.target === e.currentTarget) {
       onClose();
     }

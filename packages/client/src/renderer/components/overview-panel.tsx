@@ -70,10 +70,7 @@ export function OverviewPanel() {
       )}
 
       {/* 5. 推荐与发现 */}
-      <DiscoverySection
-        installedModules={installedModules}
-        theme={theme}
-      />
+      <DiscoverySection />
     </div>
   );
 }
@@ -384,13 +381,7 @@ function SystemMonitorSection({
 /**
  * 推荐与发现区域
  */
-function DiscoverySection({
-  installedModules,
-  theme,
-}: {
-  installedModules: ModuleInstance[];
-  theme: 'light' | 'dark';
-}) {
+function DiscoverySection() {
   // 暂时不显示推荐,等待新的插件商店实现
   return null;
 }

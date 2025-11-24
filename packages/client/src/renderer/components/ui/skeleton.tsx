@@ -6,7 +6,7 @@
 
 import { CSSProperties } from 'react';
 import { motion } from 'framer-motion';
-import { getSkeletonStyle, skeletonPresets } from '@/utils/detail-polish';
+import { getSkeletonStyle } from '@/utils/detail-polish';
 import { useTheme } from '../theme-provider';
 import { GLASS_BORDERS } from '@/utils/glass-layers';
 
@@ -75,8 +75,6 @@ export function SkeletonText({
   spacing = 8,
   className = '',
 }: SkeletonTextProps) {
-  const { theme } = useTheme();
-
   return (
     <div className={`space-y-${spacing / 4} ${className}`}>
       {Array.from({ length: lines }).map((_, index) => (
@@ -229,8 +227,6 @@ export function SkeletonTable({
   columns = 4,
   className = '',
 }: SkeletonTableProps) {
-  const { theme } = useTheme();
-
   return (
     <div className={`space-y-3 ${className}`}>
       {/* 表头 */}

@@ -9,7 +9,7 @@
  * - 图标支持
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 import { dropdownVariants } from '../../utils/micro-interactions';
@@ -20,7 +20,7 @@ import { useTheme } from '../theme-provider';
 export interface DropdownItem {
   id: string;
   label: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   disabled?: boolean;
   divider?: boolean; // 是否在下方显示分隔线
   danger?: boolean; // 危险操作（红色文本）
@@ -28,7 +28,7 @@ export interface DropdownItem {
 }
 
 export interface DropdownProps {
-  trigger: React.ReactNode;
+  trigger: ReactNode;
   items: DropdownItem[];
   selected?: string; // 当前选中项 id
   align?: 'left' | 'right';

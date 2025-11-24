@@ -8,10 +8,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from './theme-provider';
 import { getGlassStyle } from '../utils/glass-layers';
-import { GlassButton } from './ui/glass-button';
 import { Toggle } from './ui/toggle';
 import { DraggableCard } from './ui/draggable-card';
-import { HapticScrollContainer, PullToRefresh } from './ui/haptic-scroll';
+import { HapticScrollContainer } from './ui/haptic-scroll';
 import { useToast, ToastContainer } from './ui/toast';
 import {
   buttonTapFeedback,
@@ -26,9 +25,7 @@ import {
 import {
   Heart,
   Star,
-  Trash2,
   Check,
-  X,
   Bell,
   Zap,
   Activity,
@@ -40,12 +37,6 @@ export function HapticFeedbackDemo() {
   const toast = useToast();
   const [checked, setChecked] = useState(false);
   const [toggle, setToggle] = useState(false);
-  const [isLongPressing, setIsLongPressing] = useState(false);
-
-  const handleRefresh = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    toast.success('刷新成功', '数据已更新');
-  };
 
   return (
     <div className="p-8 space-y-12">
@@ -456,9 +447,7 @@ export function HapticFeedbackDemo() {
             variants={longPressFeedback}
             initial="initial"
             whileTap="pressing"
-            onTapStart={() => setIsLongPressing(true)}
             onTap={() => {
-              setIsLongPressing(false);
               toast.info('长按', '检测到长按操作');
             }}
             className={`px-8 py-4 rounded-xl font-medium transition-colors ${

@@ -1,10 +1,13 @@
-import { BrowserView, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
+import type { BrowserWindowConstructorOptions, Rectangle } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pluginManager } from './plugin-manager';
 import { PluginRuntime } from '@booltox/shared';
+import { createLogger } from '../../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const logger = createLogger('PluginRunner');
 
 interface PluginState {
   runtime: PluginRuntime;
@@ -51,13 +54,13 @@ export class PluginRunner {
 
     // Cancel pending destroy if any
     if (state.destroyTimer) {
-      console.log(`[PluginRunner] Cancelled pending destroy for ${pluginId}`);
+      logger.debug(`[PluginRunner] Cancelled pending destroy for ${pluginId}`);
       clearTimeout(state.destroyTimer);
       state.destroyTimer = undefined;
     }
 
     state.refCount++;
-    console.log(`[PluginRunner] startPlugin ${pluginId}, refCount: ${state.refCount}`);
+    logger.info(`[PluginRunner] startPlugin ${pluginId}, refCount: ${state.refCount}`);
     this.emitState(state, 'launching');
 
     // If already running or loading, return the windowId (or wait for it)
@@ -77,10 +80,10 @@ export class PluginRunner {
     
     state.loadingPromise = (async () => {
       try {
-        console.log(`[PluginRunner] Creating window for ${pluginId}`);
+        logger.info(`[PluginRunner] Creating window for ${pluginId}`);
         
         // 平台特定窗口配置 - 与主窗口保持一致
-        const platformConfig: Partial<Electron.BrowserWindowConstructorOptions> = (() => {
+        const platformConfig: Partial<BrowserWindowConstructorOptions> = (() => {
           switch (process.platform) {
             case 'win32':
               return {
@@ -143,16 +146,16 @@ export class PluginRunner {
         const entryPath = path.join(state.runtime.path, state.runtime.manifest.main);
         const entryUrl = fileURLToPath(import.meta.url).startsWith('/') ? `file://${entryPath}` : `file:///${entryPath.replace(/\\/g, '/')}`;
         
-        console.log(`[PluginRunner] Loading entry: ${entryPath}`);
+        logger.info(`[PluginRunner] Loading entry: ${entryPath}`);
         
         try {
             await win.loadURL(entryUrl);
         } catch (err) {
-            console.warn(`[PluginRunner] loadURL failed, trying loadFile`);
+            logger.warn('[PluginRunner] loadURL failed, trying loadFile', err);
             await win.loadFile(entryPath);
         }
         
-        console.log(`[PluginRunner] Loaded entry successfully`);
+        logger.info('[PluginRunner] Loaded entry successfully');
         
         // Open DevTools for debugging
         // win.webContents.openDevTools();
@@ -173,7 +176,7 @@ export class PluginRunner {
 
         return win.webContents.id;
       } catch (e) {
-        console.error(`[PluginRunner] Failed to load plugin ${pluginId}`, e);
+        logger.error(`[PluginRunner] Failed to load plugin ${pluginId}`, e);
         state.runtime.status = 'error';
         state.runtime.error = e instanceof Error ? e.message : String(e);
         state.loadingPromise = undefined;
@@ -189,19 +192,19 @@ export class PluginRunner {
     return state.loadingPromise;
   }
 
-  stopPlugin(pluginId: string, parentWindow: BrowserWindow) {
+  stopPlugin(pluginId: string, _parentWindow: BrowserWindow) {
     const state = this.states.get(pluginId);
     if (!state) return;
 
     state.refCount--;
-    console.log(`[PluginRunner] stopPlugin ${pluginId}, refCount: ${state.refCount}`);
+    logger.info(`[PluginRunner] stopPlugin ${pluginId}, refCount: ${state.refCount}`);
 
     if (state.refCount <= 0) {
       state.refCount = 0;
       
       if (state.destroyTimer) clearTimeout(state.destroyTimer);
       
-      console.log(`[PluginRunner] Scheduling destroy for ${pluginId} in 1000ms`);
+      logger.debug(`[PluginRunner] Scheduling destroy for ${pluginId} in 1000ms`);
        this.emitState(state, 'stopping');
       state.destroyTimer = setTimeout(() => {
         this.destroyPlugin(state);
@@ -214,7 +217,7 @@ export class PluginRunner {
     if (state.window) {
       try {
         state.window.destroy();
-      } catch (e) {
+      } catch {
         // Ignore errors
       }
     }
@@ -223,7 +226,7 @@ export class PluginRunner {
     state.runtime.windowId = undefined;
     state.window = undefined;
     this.emitState(state, 'stopped');
-    console.log(`[PluginRunner] Plugin destroyed: ${state.runtime.id}`);
+    logger.info(`[PluginRunner] Plugin destroyed: ${state.runtime.id}`);
   }
 
   private handlePluginDestroyed(pluginId: string) {
@@ -236,7 +239,7 @@ export class PluginRunner {
       state.refCount = 0;
       this.states.delete(pluginId);
       this.emitState(state, 'stopped');
-      console.log(`[PluginRunner] Plugin window closed: ${pluginId}`);
+      logger.info(`[PluginRunner] Plugin window closed: ${pluginId}`);
     }
   }
   
@@ -249,7 +252,7 @@ export class PluginRunner {
     return undefined;
   }
 
-  resizePlugin(pluginId: string, bounds: Electron.Rectangle) {
+  resizePlugin(_pluginId: string, _bounds: Rectangle) {
     // In window mode, we might not want to resize based on placeholder
     // Or we could sync window size/position if we wanted to simulate embedding
     // For now, let's ignore resize in window mode to let user control it

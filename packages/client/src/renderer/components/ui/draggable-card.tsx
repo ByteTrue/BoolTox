@@ -8,13 +8,12 @@
  */
 
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTheme } from '../theme-provider';
 import { getGlassStyle } from '../../utils/glass-layers';
-import { dragHapticFeedback } from '../../utils/haptic-feedback';
 
 export interface DraggableCardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   onDragEnd?: (info: PanInfo) => void;
   className?: string;
   disabled?: boolean;
@@ -95,7 +94,7 @@ export function DraggableCard({
 export interface DraggableSortableListProps<T> {
   items: T[];
   onReorder: (items: T[]) => void;
-  renderItem: (item: T, index: number) => React.ReactNode;
+  renderItem: (item: T, index: number) => ReactNode;
   keyExtractor: (item: T) => string;
   className?: string;
 }
@@ -135,7 +134,7 @@ export function DraggableSortableList<T>({
             <DraggableCard
               onDragEnd={() => {
                 setDraggedItem(null);
-                // 这里可以实现重新排序逻辑
+                onReorder(items);
               }}
             >
               {renderItem(item, index)}

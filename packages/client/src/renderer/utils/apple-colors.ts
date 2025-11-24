@@ -242,11 +242,11 @@ export const AppleColors = {
  */
 export function getThemeColor(colorPath: string, theme: 'light' | 'dark'): string {
   const parts = colorPath.split('.');
-  let current: any = AppleColors;
+  let current: unknown = AppleColors;
   
   for (const part of parts) {
-    if (current[part]) {
-      current = current[part];
+    if (typeof current === 'object' && current !== null && part in current) {
+      current = (current as Record<string, unknown>)[part];
     } else {
       console.warn(`Color path not found: ${colorPath}`);
       return '#000000';
@@ -254,8 +254,13 @@ export function getThemeColor(colorPath: string, theme: 'light' | 'dark'): strin
   }
   
   // 如果是对象且有 light/dark 属性，返回对应主题的值
-  if (typeof current === 'object' && current[theme]) {
-    return current[theme];
+  if (
+    typeof current === 'object' &&
+    current !== null &&
+    theme in current &&
+    typeof (current as Record<string, unknown>)[theme] === 'string'
+  ) {
+    return (current as Record<'light' | 'dark', string>)[theme];
   }
   
   // 否则直接返回值

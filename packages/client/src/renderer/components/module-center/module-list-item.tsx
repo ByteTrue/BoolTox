@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { Play, Trash2, Download, ExternalLink } from "lucide-react";
+import { Trash2, Download, ExternalLink } from "lucide-react";
 import { useTheme } from "../theme-provider";
-import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
+import { getGlassStyle, getGlassShadow } from "@/utils/glass-layers";
 import { cardHover, iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
 import type { ModuleInstance, ModuleDefinition } from "@core/modules/types";
 

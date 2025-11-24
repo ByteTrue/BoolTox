@@ -12,7 +12,6 @@
 
 import { motion } from 'framer-motion';
 import { useTheme } from '../theme-provider';
-import { toggleVariants } from '@/utils/micro-interactions';
 import { SPRING, getSpring } from '@/config/animation.config';
 
 export interface ToggleProps {

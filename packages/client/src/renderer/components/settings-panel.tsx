@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -434,9 +435,9 @@ function SettingCard({
   children,
 }: {
   title: string;
-  icon: React.ElementType;
+  icon: ElementType;
   theme: 'light' | 'dark';
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <motion.div
@@ -496,7 +497,7 @@ function SettingToggle({
 }: {
   label: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
   checked: boolean;
   onChange: () => void;
   disabled?: boolean;

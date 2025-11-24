@@ -4,7 +4,7 @@
  * 遵循 WAI-ARIA 1.2 规范和 WCAG 2.1 AA 标准
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, type CSSProperties } from 'react';
 
 // ============================================
 // 1. ARIA 属性生成
@@ -433,7 +433,7 @@ export function useScreenReaderAnnounce() {
 /**
  * 生成屏幕阅读器专用文本（视觉隐藏）
  */
-export function getScreenReaderOnlyStyle(): React.CSSProperties {
+export function getScreenReaderOnlyStyle(): CSSProperties {
   return {
     position: 'absolute',
     left: '-10000px',

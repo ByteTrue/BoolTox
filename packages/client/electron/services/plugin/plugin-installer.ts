@@ -5,6 +5,9 @@ import { createWriteStream } from 'fs';
 import { createHash } from 'crypto';
 import AdmZip from 'adm-zip';
 import type { PluginRegistryEntry, PluginInstallProgress } from '@booltox/shared';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('PluginInstaller');
 
 /**
  * 插件安装服务
@@ -121,7 +124,7 @@ export class PluginInstallerService {
         message: '安装完成',
       });
 
-      console.log(`[PluginInstaller] 插件安装成功: ${id}`);
+      logger.info(`[PluginInstaller] 插件安装成功: ${id}`);
       return pluginDir;
     } catch (error) {
       // 清理失败的安装
@@ -153,7 +156,7 @@ export class PluginInstallerService {
     }
 
     await fs.rm(pluginDir, { recursive: true, force: true });
-    console.log(`[PluginInstaller] 插件已卸载: ${pluginId}`);
+    logger.info(`[PluginInstaller] 插件已卸载: ${pluginId}`);
   }
 
   /**

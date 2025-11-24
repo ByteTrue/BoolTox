@@ -2,6 +2,9 @@ import { app } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
 import { PluginManifest, PluginRuntime } from '@booltox/shared';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('PluginManager');
 
 export class PluginManager {
   private plugins: Map<string, PluginRuntime> = new Map();
@@ -30,9 +33,9 @@ export class PluginManager {
   }
 
   async init() {
-    console.log(`[PluginManager] Initializing... Plugins dir: ${this.pluginsDir}`);
+    logger.info(`[PluginManager] Initializing... Plugins dir: ${this.pluginsDir}`);
     if (this.devPluginsDir) {
-      console.log(`[PluginManager] Dev plugins dir: ${this.devPluginsDir}`);
+      logger.info(`[PluginManager] Dev plugins dir: ${this.devPluginsDir}`);
     }
     
     await this.ensurePluginsDir();
@@ -58,7 +61,7 @@ export class PluginManager {
       await this.scanDir(this.devPluginsDir, true);
     }
     
-    console.log(`[PluginManager] Loaded ${this.plugins.size} plugins.`);
+    logger.info(`[PluginManager] Loaded ${this.plugins.size} plugins.`);
   }
 
   private async scanDir(dir: string, isDev = false) {
@@ -79,7 +82,7 @@ export class PluginManager {
         }
       }
     } catch (error) {
-      console.error(`[PluginManager] Failed to scan plugins directory ${dir}:`, error);
+      logger.error(`[PluginManager] Failed to scan plugins directory ${dir}:`, error);
     }
   }
 
@@ -91,7 +94,7 @@ export class PluginManager {
       
       // Basic validation
       if (!manifest.id || !manifest.main) {
-        console.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing id or main`);
+        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing id or main`);
         return;
       }
 
@@ -104,9 +107,9 @@ export class PluginManager {
       };
 
       this.plugins.set(manifest.id, runtime);
-      console.log(`[PluginManager] Loaded plugin: ${manifest.name} (${manifest.id})${isDev ? ' [DEV]' : ''}`);
+      logger.info(`[PluginManager] Loaded plugin: ${manifest.name} (${manifest.id})${isDev ? ' [DEV]' : ''}`);
     } catch (error) {
-      console.error(`[PluginManager] Failed to load plugin at ${pluginPath}:`, error);
+      logger.error(`[PluginManager] Failed to load plugin at ${pluginPath}:`, error);
     }
   }
 

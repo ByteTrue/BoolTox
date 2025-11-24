@@ -5,9 +5,8 @@
  */
 
 import { motion } from 'framer-motion';
-import { getSpinnerStyle, getDotsAnimationConfig, getPulseStyle } from '@/utils/detail-polish';
+import { getSpinnerStyle, getPulseStyle } from '@/utils/detail-polish';
 import { useTheme } from '../theme-provider';
-import { CSSProperties } from 'react';
 
 export interface LoadingSpinnerProps {
   /** 尺寸 */

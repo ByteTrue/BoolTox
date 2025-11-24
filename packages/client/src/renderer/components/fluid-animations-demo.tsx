@@ -14,7 +14,6 @@ import { useTheme } from './theme-provider';
 import { 
   pageTransitionPresets, 
   staggerPresets,
-  PageTransitionDirection,
 } from '@/utils/fluid-animations';
 import { TiltCard, TiltCardGroup } from './ui/tilt-card';
 import { ShineButton, ShineButtonGroup } from './ui/shine-button';
@@ -43,15 +42,11 @@ const demoCards = [
 export function FluidAnimationsDemo() {
   const { theme } = useTheme();
   const [currentPageId, setCurrentPageId] = useState('1');
-  const [transitionDirection, setTransitionDirection] = useState<PageTransitionDirection>('right');
   const [showList, setShowList] = useState(true);
 
   const currentPage = demoPages.find(p => p.id === currentPageId) || demoPages[0];
 
   const handlePageChange = (newPageId: string) => {
-    const currentIndex = demoPages.findIndex(p => p.id === currentPageId);
-    const newIndex = demoPages.findIndex(p => p.id === newPageId);
-    setTransitionDirection(newIndex > currentIndex ? 'right' : 'left');
     setCurrentPageId(newPageId);
   };
 

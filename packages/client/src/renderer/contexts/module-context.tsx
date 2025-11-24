@@ -6,6 +6,9 @@ import { logModuleEvent } from "@/utils/module-event-logger";
 import type { StoredModuleInfo } from "@shared/types/module-store.types";
 import type { PluginRuntime as PluginProcessRuntime, PluginRegistryEntry, PluginInstallProgress } from "@booltox/shared";
 import { useToast } from "./toast-context";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("ModuleContext");
 
 interface ModuleContextValue {
   availableModules: ModuleDefinition[];
@@ -379,7 +382,7 @@ const focusModuleWindow = useCallback(
     };
 
     void restoreInstalledModules();
-  }, []);
+  }, [pluginDefinitions]);
 
   // 同步 pluginRegistry 到 installedModules
   useEffect(() => {
@@ -407,7 +410,7 @@ const focusModuleWindow = useCallback(
             if (storedIds.has(pluginId) && !currentIds.has(pluginId)) {
               const stored = storedModules.find(m => m.id === pluginId);
               if (stored) {
-                console.log(`[ModuleContext] 从存储恢复插件: ${pluginId}`);
+                logger.info(`[ModuleContext] 从存储恢复插件: ${pluginId}`);
                 updates.push({
                   id: pluginId,
                   definition: pluginDef,
@@ -429,7 +432,7 @@ const focusModuleWindow = useCallback(
             } else if (!currentIds.has(pluginId)) {
               // 所有不在当前列表的插件都需要添加(开发插件或新安装的远程插件)
               const source = plugin.isDev ? 'dev' : 'remote';
-              console.log(`[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}插件: ${pluginId}`);
+              logger.info(`[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}插件: ${pluginId}`);
               
               updates.push({
                 id: pluginId,
@@ -460,7 +463,7 @@ const focusModuleWindow = useCallback(
               for (const info of toStore) {
                 try {
                   await window.moduleStore.add(info);
-                  console.log(`[ModuleContext] 插件已存储: ${info.id}`);
+                  logger.info(`[ModuleContext] 插件已存储: ${info.id}`);
                 } catch (error) {
                   console.error(`[ModuleContext] 存储插件失败 ${info.id}:`, error);
                 }
@@ -915,6 +918,7 @@ const focusModuleWindow = useCallback(
       installModule,
       installOnlinePlugin,
       installedModules,
+      pluginRegistry,
       availablePlugins,
       openModule,
       moduleStats,

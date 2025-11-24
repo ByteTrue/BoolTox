@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { lazy, Suspense, useCallback, useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSpotlightBackground } from "@/components/ui/spotlight";
 import { useSpotlight } from "@/contexts/spotlight-context";
@@ -15,15 +15,13 @@ import { useTheme } from "./theme-provider";
 import { getGlassStyle, getGlassShadow, getGlassActiveStyle, GLASS_BORDERS } from "@/utils/glass-layers";
 import { getBlurStyle } from "@/utils/blur-effects";
 import { pageTransitionPresets, staggerPresets } from "@/utils/fluid-animations";
-import { Boxes, Menu } from "lucide-react";
+import { Boxes } from "lucide-react";
 import { GlassButton } from "./ui/glass-button";
 import { UpdateBanner } from "./ui/update-banner";
 import { GlassLoadingFallback } from "./ui/glass-loading-fallback";
 import { ErrorBoundary } from "./error-boundary";
 import { SPRING, DELAY, getSpring } from "@/config/animation.config";
 import {
-  useKeyboardNavigation,
-  useFocusTrap,
   useScreenReaderAnnounce,
   initKeyboardNavigationDetection,
 } from "@/utils/accessibility";
@@ -202,7 +200,7 @@ function AppShellContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const handler: EventListener = () => {
+    const handler = () => {
       setIsNavCollapsed((prev) => !prev);
     };
     window.addEventListener("sidebar-toggle", handler);

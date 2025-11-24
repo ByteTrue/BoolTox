@@ -7,7 +7,15 @@ import tseslintParser from '@typescript-eslint/parser';
 
 export default [
   {
-    ignores: ['dist', 'dist-electron', 'node_modules', 'public/**/*', 'docs/**/*', '**/*.d.ts'],
+    ignores: [
+      'dist',
+      'dist-electron',
+      'node_modules',
+      'public/**/*',
+      'docs/**/*',
+      '**/*.d.ts',
+      'plugins/**/dist/**/*',
+    ],
   },
   {
     files: ['**/*.{ts,tsx,js,jsx}'],

@@ -57,7 +57,7 @@ export function useAppleColors() {
 
     // 主题标识
     isDark,
-  }), [theme, isDark]);
+  }), [isDark]);
 }
 
 /**

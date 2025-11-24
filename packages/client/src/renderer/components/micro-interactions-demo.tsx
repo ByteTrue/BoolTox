@@ -4,8 +4,7 @@
  * 展示 Task 2.2 实现的所有增强动画效果
  */
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, type ChangeEvent } from 'react';
 import { useTheme } from './theme-provider';
 import { getGlassStyle } from '../utils/glass-layers';
 import { GlassButton } from './ui/glass-button';
@@ -25,7 +24,6 @@ import {
   Heart,
   Star,
   Settings,
-  Bell,
   Share2,
   Copy,
   MoreVertical,
@@ -195,7 +193,7 @@ export function MicroInteractionsDemo() {
               placeholder="请输入用户名"
               leftIcon={<User size={16} />}
               value={inputValue}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
               maxLength={20}
               showCount
               helpText="用户名将用于登录"
@@ -207,7 +205,7 @@ export function MicroInteractionsDemo() {
               placeholder="your@email.com"
               leftIcon={<Mail size={16} />}
               value={emailValue}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmailValue(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setEmailValue(e.target.value)}
               success={emailValue.includes('@')}
             />
 
@@ -217,7 +215,7 @@ export function MicroInteractionsDemo() {
               placeholder="••••••••"
               leftIcon={<Lock size={16} />}
               value={passwordValue}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordValue(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setPasswordValue(e.target.value)}
               error={passwordValue && passwordValue.length < 6 ? '密码长度至少 6 位' : undefined}
             />
 

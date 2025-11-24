@@ -5,13 +5,12 @@
  * 模拟 iOS 原生滚动的触觉反馈
  */
 
-import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
-import { useRef, useEffect, useState } from 'react';
+import { motion, useScroll, useSpring } from 'framer-motion';
+import { useRef, useEffect, useState, type ReactNode } from 'react';
 import { useTheme } from '../theme-provider';
-import { scrollBounceHapticFeedback } from '../../utils/haptic-feedback';
 
 export interface HapticScrollContainerProps {
-  children: React.ReactNode;
+  children: ReactNode;
   maxHeight?: string;
   className?: string;
   showScrollbar?: boolean;
@@ -29,7 +28,7 @@ export function HapticScrollContainer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOverscrolling, setIsOverscrolling] = useState(false);
 
-  const { scrollY, scrollYProgress } = useScroll({
+  const { scrollYProgress } = useScroll({
     container: containerRef,
   });
 
@@ -102,7 +101,7 @@ export function HapticScrollContainer({
  * 模拟下拉刷新的触觉反馈
  */
 export interface PullToRefreshProps {
-  children: React.ReactNode;
+  children: ReactNode;
   onRefresh: () => Promise<void>;
   threshold?: number;
   className?: string;

@@ -14,6 +14,7 @@
  */
 
 import { Variants, Transition } from 'framer-motion';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 
 // ============================================
 // 1. 路由切换过渡动画 (Page Transitions)
@@ -507,9 +508,10 @@ export function createEaseTransition(
   duration = 0.3,
   ease: 'easeIn' | 'easeOut' | 'easeInOut' | [number, number, number, number] = 'easeOut'
 ): Transition {
+  const transitionEase: Transition['ease'] = ease;
   return {
     duration,
-    ease: ease as any,
+    ease: transitionEase,
   };
 }
 
@@ -550,7 +552,7 @@ export function getElementCenter(element: HTMLElement) {
  * 计算鼠标相对于元素的位置 (0-1)
  */
 export function getMousePosition(
-  event: React.MouseEvent<HTMLElement>,
+  event: ReactMouseEvent<HTMLElement>,
   element: HTMLElement
 ) {
   const rect = element.getBoundingClientRect();

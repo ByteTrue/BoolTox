@@ -8,6 +8,7 @@
  */
 
 import { app, BrowserWindow, ipcMain } from 'electron';
+import type { BrowserWindowConstructorOptions, Rectangle } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'os';
@@ -41,14 +42,13 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let mainWindow: BrowserWindow | null = null;
-let autoUpdateService: AutoUpdateService | null = null;
 
 /**
  * 创建主窗口
  */
 function createWindow() {
   // 基础窗口配置
-  const baseConfig: Electron.BrowserWindowConstructorOptions = {
+  const baseConfig: BrowserWindowConstructorOptions = {
     width: 1200,
     height: 800,
     minWidth: 960,  // 最小宽度：侧边栏 268px + 内容区最小 650px + 间距
@@ -66,7 +66,7 @@ function createWindow() {
   };
 
   // 平台特定优化
-  const platformConfig: Partial<Electron.BrowserWindowConstructorOptions> = (() => {
+  const platformConfig: Partial<BrowserWindowConstructorOptions> = (() => {
     switch (process.platform) {
       case 'win32':
         // Windows 11 特定优化
@@ -233,7 +233,7 @@ ipcMain.handle('get-system-info', async () => {
       uptime: process.uptime(),
     };
   } catch (error) {
-    console.error('Failed to get system info:', error);
+    logger.error('Failed to get system info:', error);
     return {
       os: { platform: 'unknown', release: '', type: '', name: 'Unknown' },
       cpu: { model: 'Unknown', cores: 0, speed: 0, usage: 0 },
@@ -253,7 +253,7 @@ ipcMain.handle('module-store:get-all', () => {
   try {
     return moduleStoreService.getInstalledModules();
   } catch (error) {
-    console.error('[IPC] Failed to get installed modules:', error);
+    logger.error('[IPC] Failed to get installed modules:', error);
     return [];
   }
 });
@@ -263,7 +263,7 @@ ipcMain.handle('module-store:get', (_event, id: string) => {
   try {
     return moduleStoreService.getModuleInfo(id) || null;
   } catch (error) {
-    console.error('[IPC] Failed to get module info:', error);
+    logger.error('[IPC] Failed to get module info:', error);
     return null;
   }
 });
@@ -274,7 +274,7 @@ ipcMain.handle('module-store:add', (_event, info: StoredModuleInfo) => {
     moduleStoreService.addModule(info);
     return { success: true };
   } catch (error) {
-    console.error('[IPC] Failed to add module:', error);
+    logger.error('[IPC] Failed to add module:', error);
     return { success: false, error: String(error) };
   }
 });
@@ -285,7 +285,7 @@ ipcMain.handle('module-store:update', (_event, id: string, partialInfo: Partial<
     moduleStoreService.updateModuleInfo(id, partialInfo);
     return { success: true };
   } catch (error) {
-    console.error('[IPC] Failed to update module info:', error);
+    logger.error('[IPC] Failed to update module info:', error);
     return { success: false, error: String(error) };
   }
 });
@@ -296,7 +296,7 @@ ipcMain.handle('module-store:remove', (_event, id: string) => {
     moduleStoreService.removeModule(id);
     return { success: true };
   } catch (error) {
-    console.error('[IPC] Failed to remove module:', error);
+    logger.error('[IPC] Failed to remove module:', error);
     return { success: false, error: String(error) };
   }
 });
@@ -306,7 +306,7 @@ ipcMain.handle('module-store:get-cache-path', (_event, moduleId: string) => {
   try {
     return moduleStoreService.getModuleCachePath(moduleId);
   } catch (error) {
-    console.error('[IPC] Failed to get cache path:', error);
+    logger.error('[IPC] Failed to get cache path:', error);
     return null;
   }
 });
@@ -316,7 +316,7 @@ ipcMain.handle('module-store:remove-cache', (_event, moduleId: string) => {
   try {
     return moduleStoreService.removeModuleCache(moduleId);
   } catch (error) {
-    console.error('[IPC] Failed to remove module cache:', error);
+    logger.error('[IPC] Failed to remove module cache:', error);
     return false;
   }
 });
@@ -326,7 +326,7 @@ ipcMain.handle('module-store:get-config-path', () => {
   try {
     return moduleStoreService.getConfigPath();
   } catch (error) {
-    console.error('[IPC] Failed to get config path:', error);
+    logger.error('[IPC] Failed to get config path:', error);
     return null;
   }
 });
@@ -380,7 +380,7 @@ ipcMain.handle('plugin:stop', (_event, id: string) => {
   pluginRunner.stopPlugin(id, mainWindow);
 });
 
-ipcMain.handle('plugin:resize', (_event, id: string, bounds: Electron.Rectangle) => {
+ipcMain.handle('plugin:resize', (_event, id: string, bounds: Rectangle) => {
   pluginRunner.resizePlugin(id, bounds);
 });
 
@@ -409,7 +409,7 @@ ipcMain.handle('plugin:install', async (_event, entry: PluginRegistryEntry) => {
     
     return { success: true, path: pluginDir };
   } catch (error) {
-    console.error('[Main] Plugin installation failed:', error);
+    logger.error('[Main] Plugin installation failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),
@@ -432,7 +432,7 @@ ipcMain.handle('plugin:uninstall', async (_event, pluginId: string) => {
     
     return { success: true };
   } catch (error) {
-    console.error('[Main] Plugin uninstallation failed:', error);
+    logger.error('[Main] Plugin uninstallation failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),
@@ -453,11 +453,11 @@ app.whenReady().then(() => {
   setupPlatformOptimizations();
   
   createWindow();
-  autoUpdateService = new AutoUpdateService(() => mainWindow);
+  new AutoUpdateService(() => mainWindow);
   
   // Initialize Plugin System
-  pluginInstaller.init().catch(err => console.error('Failed to init plugin installer:', err));
-  pluginManager.init().catch(err => console.error('Failed to init plugin manager:', err));
+  pluginInstaller.init().catch(err => logger.error('Failed to init plugin installer:', err));
+  pluginManager.init().catch(err => logger.error('Failed to init plugin manager:', err));
 
   app.on('activate', () => {
     // macOS 特性：点击 Dock 图标时重新创建窗口

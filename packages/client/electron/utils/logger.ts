@@ -37,7 +37,7 @@ export function setupLogger() {
   log.transports.file.maxSize = 10 * 1024 * 1024;
   
   // 开启日志文件归档
-  log.transports.file.archiveLog = (oldLogFile) => {
+  log.transports.file.archiveLog = (_oldLogFile) => {
     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
     const archivePath = path.join(
       logPath,
@@ -56,11 +56,13 @@ export function setupLogger() {
   });
 
   // 重定向 console 到 log
+  /* eslint-disable no-console */
   console.log = log.log.bind(log);
   console.info = log.info.bind(log);
   console.warn = log.warn.bind(log);
   console.error = log.error.bind(log);
   console.debug = log.debug.bind(log);
+  /* eslint-enable no-console */
 
   log.info('='.repeat(80));
   log.info(`BoolTox 启动 - 版本 ${app.getVersion()}`);

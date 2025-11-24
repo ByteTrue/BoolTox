@@ -10,14 +10,14 @@
  * @version 2.0.0
  */
 
-import { useState } from 'react';
+import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../theme-provider';
 import { getGlassStyle, GLASS_BORDERS } from '@/utils/glass-layers';
 import { inputFocusVariants } from '@/utils/micro-interactions';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   /**
    * 标签文本
    */
@@ -49,11 +49,11 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   /**
    * 左侧图标
    */
-  leftIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
   /**
    * 右侧图标
    */
-  rightIcon?: React.ReactNode;
+  rightIcon?: ReactNode;
 }
 
 /**
