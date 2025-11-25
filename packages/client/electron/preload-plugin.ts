@@ -135,6 +135,57 @@ const booltoxAPI = {
   db: {
     get: (key: string) => ipcRenderer.invoke('booltox:api:call', 'db', 'get', { key }),
     set: (key: string, value: unknown) => ipcRenderer.invoke('booltox:api:call', 'db', 'set', { key, value }),
+  },
+  /**
+   * Python 运行时 API
+   * 提供完整的 Python 环境管理和脚本执行能力
+   */
+  python: {
+    /**
+     * 获取 Python 环境状态
+     * @returns {Promise<PythonStatus>} 环境状态信息
+     */
+    getStatus: () => ipcRenderer.invoke('booltox:api:call', 'python', 'getStatus'),
+    
+    /**
+     * 确保 Python 环境就绪（自动安装 Python 和创建虚拟环境）
+     * 首次调用可能需要下载 Python（约 40-50MB）
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    ensure: () => ipcRenderer.invoke('booltox:api:call', 'python', 'ensure'),
+    
+    /**
+     * 安装 Python 依赖包（到插件隔离目录）
+     * 需要 python.install 权限
+     * @param packages - 要安装的包列表，如 ['requests', 'flask>=2.0']
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    installDeps: (packages: string[]) => ipcRenderer.invoke('booltox:api:call', 'python', 'installDeps', { packages }),
+    
+    /**
+     * 列出插件已安装的依赖包
+     * @returns {Promise<{success: boolean, packages: string[], error?: string}>}
+     */
+    listDeps: () => ipcRenderer.invoke('booltox:api:call', 'python', 'listDeps'),
+    
+    /**
+     * 执行 Python 代码字符串
+     * 需要 python.run 权限
+     * @param code - Python 代码
+     * @param timeout - 超时时间（毫秒），可选
+     * @returns {Promise<{success: boolean, code: number|null, stdout: string, stderr: string, error?: string}>}
+     */
+    runCode: (code: string, timeout?: number) => ipcRenderer.invoke('booltox:api:call', 'python', 'runCode', { code, timeout }),
+    
+    /**
+     * 执行 Python 脚本文件
+     * 需要 python.run 权限
+     * @param scriptPath - 脚本文件路径
+     * @param args - 命令行参数，可选
+     * @param timeout - 超时时间（毫秒），可选
+     * @returns {Promise<{success: boolean, code: number|null, stdout: string, stderr: string, error?: string}>}
+     */
+    runScript: (scriptPath: string, args?: string[], timeout?: number) => ipcRenderer.invoke('booltox:api:call', 'python', 'runScript', { scriptPath, args, timeout }),
   }
 };
 

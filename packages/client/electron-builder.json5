@@ -11,13 +11,33 @@
     "dist",
     "dist-electron"
   ],
+  // uv 二进制文件需要从 ASAR 中解包以便执行
+  "asarUnpack": [
+    "resources/uv/**/*"
+  ],
   "mac": {
+    // macOS: 根据架构选择对应的 uv 二进制
+    "extraResources": [
+      {
+        "from": "resources/uv/darwin-${arch}",
+        "to": "uv",
+        "filter": ["**/*"]
+      }
+    ],
     "target": [
       "dmg"
     ],
     "artifactName": "${productName}-${version}-macos-${arch}.${ext}"
   },
   "win": {
+    // Windows: 使用 win-x64 的 uv 二进制
+    "extraResources": [
+      {
+        "from": "resources/uv/win-x64",
+        "to": "uv",
+        "filter": ["**/*"]
+      }
+    ],
     "target": [
       {
         "target": "nsis",
@@ -35,6 +55,14 @@
     "deleteAppDataOnUninstall": false
   },
   "linux": {
+    // Linux: 使用 linux-x64 的 uv 二进制
+    "extraResources": [
+      {
+        "from": "resources/uv/linux-x64",
+        "to": "uv",
+        "filter": ["**/*"]
+      }
+    ],
     "target": [
       "AppImage"
     ],

@@ -1,0 +1,21 @@
+{
+  "id": "com.booltox.python-runner",
+  "version": "1.0.0",
+  "name": "Python Runner",
+  "description": "运行 Python 代码和脚本，管理 Python 依赖。基于 uv 实现跨平台 Python 环境。",
+  "main": "dist/index.html",
+  "icon": "icon.png",
+  "permissions": [
+    "python.run",
+    "python.install"
+  ],
+  "window": {
+    "width": 900,
+    "height": 700,
+    "minWidth": 600,
+    "minHeight": 500,
+    "resizable": true
+  },
+  "author": "BoolTox Team",
+  "keywords": ["python", "runner", "script", "code"]
+}

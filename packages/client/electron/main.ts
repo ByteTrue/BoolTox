@@ -20,6 +20,7 @@ import { gitOpsService, type GitOpsConfig } from './services/git-ops.service.js'
 import { pluginManager } from './services/plugin/plugin-manager.js';
 import { pluginRunner } from './services/plugin/plugin-runner.js';
 import { pluginInstaller } from './services/plugin/plugin-installer.js';
+import { pythonManager } from './services/python-manager.service.js';
 import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { PluginRegistryEntry } from '@booltox/shared';
@@ -443,6 +444,128 @@ ipcMain.handle('plugin:uninstall', async (_event, pluginId: string) => {
 ipcMain.handle('plugin:cancel-install', (_event, pluginId: string) => {
   pluginInstaller.cancelDownload(pluginId);
   return { success: true };
+});
+
+/**
+ * Python Runtime - IPC Handlers
+ */
+
+// 获取 Python 环境状态
+ipcMain.handle('python:status', async () => {
+  try {
+    return await pythonManager.getStatus();
+  } catch (error) {
+    logger.error('[IPC] Failed to get Python status:', error);
+    return {
+      uvAvailable: false,
+      pythonInstalled: false,
+      venvExists: false,
+      error: String(error)
+    };
+  }
+});
+
+// 确保 Python 环境就绪
+ipcMain.handle('python:ensure', async () => {
+  try {
+    await pythonManager.ensurePython((progress) => {
+      // 发送进度更新到渲染进程
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('python:progress', progress);
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    logger.error('[IPC] Failed to ensure Python:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error) 
+    };
+  }
+});
+
+// 安装全局依赖
+ipcMain.handle('python:install-global', async (_event, packages: string[]) => {
+  try {
+    await pythonManager.installGlobalPackages(packages, (progress) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('python:progress', progress);
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    logger.error('[IPC] Failed to install global packages:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error) 
+    };
+  }
+});
+
+// 列出全局已安装包
+ipcMain.handle('python:list-global', async () => {
+  try {
+    return await pythonManager.listGlobalPackages();
+  } catch (error) {
+    logger.error('[IPC] Failed to list global packages:', error);
+    return [];
+  }
+});
+
+// 执行 Python 代码
+ipcMain.handle('python:run-code', async (_event, code: string, options?: { cwd?: string; timeout?: number }) => {
+  try {
+    const result = await pythonManager.runCode(code, {
+      cwd: options?.cwd,
+      timeout: options?.timeout,
+      onOutput: (data, type) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('python:output', { data, type });
+        }
+      }
+    });
+    return result;
+  } catch (error) {
+    logger.error('[IPC] Failed to run Python code:', error);
+    return {
+      success: false,
+      code: null,
+      stdout: '',
+      stderr: '',
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+});
+
+// 执行 Python 脚本文件
+ipcMain.handle('python:run-script', async (
+  _event, 
+  scriptPath: string, 
+  args?: string[], 
+  options?: { cwd?: string; timeout?: number; pythonPath?: string }
+) => {
+  try {
+    const result = await pythonManager.runScript(scriptPath, args || [], {
+      cwd: options?.cwd,
+      timeout: options?.timeout,
+      env: options?.pythonPath ? { PYTHONPATH: options.pythonPath } : undefined,
+      onOutput: (data, type) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('python:output', { data, type });
+        }
+      }
+    });
+    return result;
+  } catch (error) {
+    logger.error('[IPC] Failed to run Python script:', error);
+    return {
+      success: false,
+      code: null,
+      stdout: '',
+      stderr: '',
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
 });
 
 /**

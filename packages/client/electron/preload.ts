@@ -175,6 +175,100 @@ const appSettingsAPI = {
 };
 
 /**
+ * Python 运行时 API
+ */
+interface PythonStatus {
+  uvAvailable: boolean;
+  uvVersion?: string;
+  pythonInstalled: boolean;
+  pythonVersion?: string;
+  pythonPath?: string;
+  venvExists: boolean;
+  venvPath?: string;
+  error?: string;
+}
+
+interface PythonRunResult {
+  success: boolean;
+  code: number | null;
+  stdout: string;
+  stderr: string;
+  error?: string;
+}
+
+interface PythonProgress {
+  stage: 'download' | 'install' | 'venv' | 'deps';
+  message: string;
+  percent?: number;
+}
+
+const pythonAPI = {
+  /**
+   * 获取 Python 环境状态
+   */
+  getStatus: async (): Promise<PythonStatus> => {
+    return await ipcRenderer.invoke('python:status') as PythonStatus;
+  },
+
+  /**
+   * 确保 Python 环境就绪
+   */
+  ensure: async (): Promise<{success: boolean; error?: string}> => {
+    return await ipcRenderer.invoke('python:ensure') as {success: boolean; error?: string};
+  },
+
+  /**
+   * 安装全局依赖
+   */
+  installGlobal: async (packages: string[]): Promise<{success: boolean; error?: string}> => {
+    return await ipcRenderer.invoke('python:install-global', packages) as {success: boolean; error?: string};
+  },
+
+  /**
+   * 列出全局已安装包
+   */
+  listGlobal: async (): Promise<string[]> => {
+    return await ipcRenderer.invoke('python:list-global') as string[];
+  },
+
+  /**
+   * 执行 Python 代码
+   */
+  runCode: async (code: string, options?: { cwd?: string; timeout?: number }): Promise<PythonRunResult> => {
+    return await ipcRenderer.invoke('python:run-code', code, options) as PythonRunResult;
+  },
+
+  /**
+   * 执行 Python 脚本
+   */
+  runScript: async (
+    scriptPath: string, 
+    args?: string[], 
+    options?: { cwd?: string; timeout?: number; pythonPath?: string }
+  ): Promise<PythonRunResult> => {
+    return await ipcRenderer.invoke('python:run-script', scriptPath, args, options) as PythonRunResult;
+  },
+
+  /**
+   * 监听进度事件
+   */
+  onProgress: (callback: (progress: PythonProgress) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, progress: PythonProgress) => callback(progress);
+    ipcRenderer.on('python:progress', listener);
+    return () => ipcRenderer.removeListener('python:progress', listener);
+  },
+
+  /**
+   * 监听输出事件
+   */
+  onOutput: (callback: (data: { data: string; type: 'stdout' | 'stderr' }) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, data: { data: string; type: 'stdout' | 'stderr' }) => callback(data);
+    ipcRenderer.on('python:output', listener);
+    return () => ipcRenderer.removeListener('python:output', listener);
+  },
+};
+
+/**
  * 暴露API到渲染进程
  */
 contextBridge.exposeInMainWorld('electron', {
@@ -192,3 +286,5 @@ contextBridge.exposeInMainWorld('gitOps', gitOpsAPI);
 contextBridge.exposeInMainWorld('plugin', pluginAPI);
 
 contextBridge.exposeInMainWorld('appSettings', appSettingsAPI);
+
+contextBridge.exposeInMainWorld('python', pythonAPI);

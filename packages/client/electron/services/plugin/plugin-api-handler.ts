@@ -1,7 +1,8 @@
 import { ipcMain, app } from 'electron';
 import { pluginManager } from './plugin-manager';
 import { pluginRunner } from './plugin-runner';
-import { exec, spawn } from 'child_process';
+import { pythonManager } from '../python-manager.service.js';
+import { exec } from 'child_process';
 import util from 'util';
 import path from 'path';
 import fs from 'fs/promises';
@@ -10,12 +11,15 @@ import { createLogger } from '../../utils/logger.js';
 const execAsync = util.promisify(exec);
 const logger = createLogger('PluginAPI');
 
-type ApiModule = 'window' | 'shell' | 'fs' | 'db';
+type ApiModule = 'window' | 'shell' | 'fs' | 'db' | 'python';
 type ShellExecParams = { command: string; args: string[] };
 type ShellPythonParams = { scriptPath: string; args: string[] };
 type FsRequestParams = { path: string; content?: string };
 type DbGetParams = { key: string };
 type DbSetParams = { key: string; value: unknown };
+type PythonInstallParams = { packages: string[] };
+type PythonRunCodeParams = { code: string; timeout?: number };
+type PythonRunScriptParams = { scriptPath: string; args?: string[]; timeout?: number };
 
 function isShellExecParams(params: unknown): params is ShellExecParams {
   return Boolean(
@@ -59,6 +63,30 @@ function isDbSetParams(params: unknown): params is DbSetParams {
   );
 }
 
+function isPythonInstallParams(params: unknown): params is PythonInstallParams {
+  return Boolean(
+    params &&
+      typeof params === 'object' &&
+      Array.isArray((params as PythonInstallParams).packages),
+  );
+}
+
+function isPythonRunCodeParams(params: unknown): params is PythonRunCodeParams {
+  return Boolean(
+    params &&
+      typeof params === 'object' &&
+      typeof (params as PythonRunCodeParams).code === 'string',
+  );
+}
+
+function isPythonRunScriptParams(params: unknown): params is PythonRunScriptParams {
+  return Boolean(
+    params &&
+      typeof params === 'object' &&
+      typeof (params as PythonRunScriptParams).scriptPath === 'string',
+  );
+}
+
 export class PluginApiHandler {
   private pluginDataDir: string;
 
@@ -89,6 +117,8 @@ export class PluginApiHandler {
           return this.handleFsApi(plugin.id, method, params);
         case 'db':
           return this.handleDbApi(plugin.id, method, params);
+        case 'python':
+          return this.handlePythonApi(plugin.id, method, params);
         default:
           throw new Error(`Unknown API module: ${module}`);
       }
@@ -140,33 +170,135 @@ export class PluginApiHandler {
         throw new Error('Invalid parameters for shell.python');
       }
       const { scriptPath, args } = params;
-      // TODO: Locate python executable properly
-      const pythonPath = 'python'; 
       
-      return new Promise((resolve) => {
-        const child = spawn(pythonPath, [scriptPath, ...args]);
-        let stdout = '';
-        let stderr = '';
-
-        child.stdout.on('data', (data) => stdout += data.toString());
-        child.stderr.on('data', (data) => stderr += data.toString());
-
-        child.on('close', (code) => {
-          resolve({ 
-            success: code === 0, 
-            code, 
-            stdout, 
-            stderr 
-          });
+      // 使用 PythonManager 执行脚本
+      try {
+        // 设置插件隔离的 PYTHONPATH
+        const pluginPackagesDir = pythonManager.getPluginPackagesDir(pluginId);
+        const result = await pythonManager.runScript(scriptPath, args, {
+          env: { PYTHONPATH: pluginPackagesDir }
         });
-        
-        child.on('error', (err) => {
-          resolve({ success: false, error: err.message });
-        });
-      });
+        return result;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, error: message };
+      }
     }
 
     throw new Error(`Unknown shell method: ${method}`);
+  }
+
+  /**
+   * Python API 处理器
+   * 提供完整的 Python 环境管理能力
+   */
+  private async handlePythonApi(pluginId: string, method: string, params: unknown) {
+    const plugin = pluginManager.getPlugin(pluginId);
+    if (!plugin) throw new Error('Plugin not found');
+
+    // 获取环境状态（不需要权限）
+    if (method === 'getStatus') {
+      try {
+        return await pythonManager.getStatus();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, error: message };
+      }
+    }
+
+    // 确保 Python 环境就绪（不需要权限）
+    if (method === 'ensure') {
+      try {
+        await pythonManager.ensurePython();
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, error: message };
+      }
+    }
+
+    // 以下操作需要 python.install 权限
+    if (method === 'installDeps') {
+      if (!plugin.manifest.permissions?.includes('python.install')) {
+        throw new Error('Permission denied: python.install');
+      }
+
+      if (!isPythonInstallParams(params)) {
+        throw new Error('Invalid parameters for python.installDeps');
+      }
+      const { packages } = params;
+
+      try {
+        // 安装到插件隔离目录
+        await pythonManager.installPluginPackages(pluginId, packages);
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, error: message };
+      }
+    }
+
+    // 列出插件已安装的包
+    if (method === 'listDeps') {
+      try {
+        const packages = pythonManager.listPluginPackages(pluginId);
+        return { success: true, packages };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, error: message, packages: [] };
+      }
+    }
+
+    // 以下操作需要 python.run 权限
+    if (method === 'runCode') {
+      if (!plugin.manifest.permissions?.includes('python.run')) {
+        throw new Error('Permission denied: python.run');
+      }
+
+      if (!isPythonRunCodeParams(params)) {
+        throw new Error('Invalid parameters for python.runCode');
+      }
+      const { code, timeout } = params;
+
+      try {
+        // 设置插件隔离的 PYTHONPATH
+        const pluginPackagesDir = pythonManager.getPluginPackagesDir(pluginId);
+        const result = await pythonManager.runCode(code, {
+          timeout,
+          env: { PYTHONPATH: pluginPackagesDir }
+        });
+        return result;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, code: null, stdout: '', stderr: '', error: message };
+      }
+    }
+
+    if (method === 'runScript') {
+      if (!plugin.manifest.permissions?.includes('python.run')) {
+        throw new Error('Permission denied: python.run');
+      }
+
+      if (!isPythonRunScriptParams(params)) {
+        throw new Error('Invalid parameters for python.runScript');
+      }
+      const { scriptPath, args, timeout } = params;
+
+      try {
+        // 设置插件隔离的 PYTHONPATH
+        const pluginPackagesDir = pythonManager.getPluginPackagesDir(pluginId);
+        const result = await pythonManager.runScript(scriptPath, args || [], {
+          timeout,
+          env: { PYTHONPATH: pluginPackagesDir }
+        });
+        return result;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, code: null, stdout: '', stderr: '', error: message };
+      }
+    }
+
+    throw new Error(`Unknown python method: ${method}`);
   }
 
   private async handleFsApi(pluginId: string, method: string, params: unknown) {
