@@ -306,12 +306,10 @@ class PythonManager {
         windowsHide: true
       });
 
-      let stdout = '';
       let stderr = '';
 
       proc.stdout.on('data', (data) => {
         const text = data.toString();
-        stdout += text;
         logger.debug('[uv stdout]', text.trim());
         
         // 解析进度（uv 会输出下载进度）
