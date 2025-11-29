@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { ModuleDefinition, ModuleInstance } from "@core/modules/types";
+import type { ModuleDefinition, ModuleInstance } from "@/types/module";
 import type { ModuleSortConfig } from "../types";
 
 /**

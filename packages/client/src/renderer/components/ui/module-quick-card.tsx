@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { ModuleInstance } from '@core/modules/types';
+import type { ModuleInstance } from '@/types/module';
 import { useTheme } from '../theme-provider';
 import { getGlassStyle, GLASS_BORDERS } from '@/utils/glass-layers';
 import { cardHover } from '@/utils/animation-presets';

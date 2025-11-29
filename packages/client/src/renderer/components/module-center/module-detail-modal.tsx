@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, GLASS_BORDERS } from "@/utils/glass-layers";
 import { iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
-import type { ModuleInstance, ModuleDefinition } from "@core/modules/types";
+import type { ModuleInstance, ModuleDefinition } from "@/types/module";
 
 interface ModuleDetailModalProps {
   module: ModuleInstance | ModuleDefinition | null;

@@ -6,3 +6,4 @@ export * from './types/announcement.types.js';
 export * from './types/log.types.js';
 export * from './types/auth.types.js';
 export * from './types/plugin.js';
+export * from './types/protocol.js';

@@ -14,7 +14,7 @@ import { ActivityFeed } from './ui/activity-feed';
 import { SystemMonitor } from './ui/system-monitor';
 import { History } from 'lucide-react';
 import { ActivityHistoryDrawer } from './ui/activity-history-drawer';
-import type { ModuleInstance } from '@core/modules/types';
+import type { ModuleInstance } from '@/types/module';
 import type { ModuleEvent } from '@/utils/module-event-logger';
 
 /**

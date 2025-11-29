@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ModuleInstance } from '@core/modules/types';
+import type { ModuleInstance } from '@/types/module';
 import {
   type ModuleEvent,
   getAllEvents,

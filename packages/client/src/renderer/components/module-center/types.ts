@@ -1,4 +1,4 @@
-import type { ModuleDefinition } from "@core/modules/types";
+import type { ModuleDefinition } from "@/types/module";
 
 /**
  * 插件中心类型定义

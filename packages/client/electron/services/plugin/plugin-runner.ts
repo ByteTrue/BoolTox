@@ -3,6 +3,7 @@ import type { BrowserWindowConstructorOptions, Rectangle } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pluginManager } from './plugin-manager';
+import { backendRunner } from './plugin-backend-runner.js';
 import { PluginRuntime } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 
@@ -143,7 +144,11 @@ export class PluginRunner {
         // No need to add to parentWindow
         
         // Load content
-        const entryPath = path.join(state.runtime.path, state.runtime.manifest.main);
+        const entryFile = state.runtime.manifest.main;
+        if (!entryFile) {
+          throw new Error(`Plugin ${pluginId} manifest missing "main" entry`);
+        }
+        const entryPath = path.join(state.runtime.path, entryFile);
         const entryUrl = fileURLToPath(import.meta.url).startsWith('/') ? `file://${entryPath}` : `file:///${entryPath.replace(/\\/g, '/')}`;
         
         logger.info(`[PluginRunner] Loading entry: ${entryPath}`);
@@ -221,6 +226,7 @@ export class PluginRunner {
         // Ignore errors
       }
     }
+    backendRunner.disposeAllForPlugin(state.runtime.id);
     state.runtime.status = 'stopped';
     state.runtime.viewId = undefined;
     state.runtime.windowId = undefined;
@@ -232,6 +238,7 @@ export class PluginRunner {
   private handlePluginDestroyed(pluginId: string) {
     const state = this.states.get(pluginId);
     if (state) {
+      backendRunner.disposeAllForPlugin(state.runtime.id);
       state.runtime.status = 'stopped';
       state.runtime.viewId = undefined;
       state.runtime.windowId = undefined;

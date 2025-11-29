@@ -1,4 +1,4 @@
-import type { ModuleInstance } from "@core/modules/types";
+import type { ModuleInstance } from "@/types/module";
 import { useModulePlatform } from "@/contexts/module-context";
 
 interface ModuleHostProps {

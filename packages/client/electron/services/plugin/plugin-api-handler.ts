@@ -1,380 +1,471 @@
-import { ipcMain, app } from 'electron';
-import { pluginManager } from './plugin-manager';
-import { pluginRunner } from './plugin-runner';
-import { pythonManager } from '../python-manager.service.js';
-import { exec } from 'child_process';
-import util from 'util';
-import path from 'path';
-import fs from 'fs/promises';
+import { exec } from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import util from 'node:util';
+import { webContents } from 'electron';
+import { ExtensionHost, type ExtensionModuleContext } from '../extension-host/extension-host.js';
 import { createLogger } from '../../utils/logger.js';
+import { pythonManager } from '../python-manager.service.js';
+import { backendRunner } from './plugin-backend-runner.js';
+import type { PluginBackendConfig } from '@booltox/shared';
 
 const execAsync = util.promisify(exec);
-const logger = createLogger('PluginAPI');
+const logger = createLogger('ExtensionModules');
 
-type ApiModule = 'window' | 'shell' | 'fs' | 'db' | 'python';
-type ShellExecParams = { command: string; args: string[] };
-type ShellPythonParams = { scriptPath: string; args: string[] };
-type FsRequestParams = { path: string; content?: string };
-type DbGetParams = { key: string };
-type DbSetParams = { key: string; value: unknown };
-type PythonInstallParams = { packages: string[] };
-type PythonRunCodeParams = { code: string; timeout?: number };
-type PythonRunScriptParams = { scriptPath: string; args?: string[]; timeout?: number };
+type StringMap = Record<string, unknown>;
 
-function isShellExecParams(params: unknown): params is ShellExecParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      typeof (params as ShellExecParams).command === 'string' &&
-      Array.isArray((params as ShellExecParams).args),
-  );
+function ensureRecord(payload: unknown, errorHint: string): StringMap {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error(`${errorHint}: payload must be an object`);
+  }
+  return payload as StringMap;
 }
 
-function isShellPythonParams(params: unknown): params is ShellPythonParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      typeof (params as ShellPythonParams).scriptPath === 'string' &&
-      Array.isArray((params as ShellPythonParams).args),
-  );
+function ensureString(value: unknown, field: string): string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`Invalid ${field}: expected non-empty string`);
+  }
+  return value;
 }
 
-function isFsParams(params: unknown): params is FsRequestParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      typeof (params as FsRequestParams).path === 'string',
-  );
+function ensureNumber(value: unknown, field: string): number {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    throw new Error(`Invalid ${field}: expected number`);
+  }
+  return value;
 }
 
-function isDbGetParams(params: unknown): params is DbGetParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      typeof (params as DbGetParams).key === 'string',
-  );
+function resolveSandboxPath(root: string, relativePath: string) {
+  const target = path.resolve(root, relativePath);
+  if (!target.startsWith(root)) {
+    throw new Error('Security Error: access outside plugin sandbox is not allowed');
+  }
+  return target;
 }
 
-function isDbSetParams(params: unknown): params is DbSetParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      typeof (params as DbSetParams).key === 'string',
-  );
+async function readJson<T>(file: string): Promise<T | undefined> {
+  try {
+    const raw = await fs.readFile(file, 'utf-8');
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
-function isPythonInstallParams(params: unknown): params is PythonInstallParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      Array.isArray((params as PythonInstallParams).packages),
-  );
+async function writeJson(file: string, data: unknown) {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-function isPythonRunCodeParams(params: unknown): params is PythonRunCodeParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      typeof (params as PythonRunCodeParams).code === 'string',
-  );
+function coerceBackendConfig(input: unknown): PluginBackendConfig | undefined {
+  if (!input || typeof input !== 'object') {
+    return undefined;
+  }
+  const candidate = input as Partial<PluginBackendConfig>;
+  if (typeof candidate.type !== 'string' || typeof candidate.entry !== 'string') {
+    return undefined;
+  }
+  const args = Array.isArray(candidate.args) ? candidate.args.map(String) : undefined;
+  const env =
+    candidate.env && typeof candidate.env === 'object'
+      ? Object.fromEntries(
+          Object.entries(candidate.env).map(([key, value]) => [key, String(value)]),
+        )
+      : undefined;
+
+  return {
+    type: candidate.type as PluginBackendConfig['type'],
+    entry: candidate.entry,
+    args,
+    env,
+    keepAlive: candidate.keepAlive,
+  };
 }
 
-function isPythonRunScriptParams(params: unknown): params is PythonRunScriptParams {
-  return Boolean(
-    params &&
-      typeof params === 'object' &&
-      typeof (params as PythonRunScriptParams).scriptPath === 'string',
-  );
-}
-
-export class PluginApiHandler {
-  private pluginDataDir: string;
+class BooltoxExtensionHostService {
+  private readonly host = new ExtensionHost();
 
   constructor() {
-    this.pluginDataDir = path.join(app.getPath('userData'), 'plugin-data');
-    this.registerHandlers();
-  }
+    this.registerWindowModule();
+    this.registerShellModule();
+    this.registerFsModule();
+    this.registerStorageModule();
+    this.registerPythonModule();
+    this.registerBackendModule();
+    this.registerTelemetryModule();
+    this.host.attach();
 
-  private registerHandlers() {
-    ipcMain.handle('booltox:api:call', async (event, module: ApiModule, method: string, params: unknown) => {
-      // Find which plugin owns this view
-      const plugin = pluginRunner.getRunningPlugin(event.sender.id);
-
-      if (!plugin) {
-        logger.warn(`[API] Blocked call from unidentified plugin view: ${event.sender.id}`);
-        throw new Error('Access Denied: Plugin not identified');
-      }
-
-      logger.debug(`[API] Call from ${plugin.id}: ${module}.${method}`, params);
-
-      // Dispatch to specific handlers
-      switch (module) {
-        case 'window':
-          return this.handleWindowApi(plugin.id, method);
-        case 'shell':
-          return this.handleShellApi(plugin.id, method, params);
-        case 'fs':
-          return this.handleFsApi(plugin.id, method, params);
-        case 'db':
-          return this.handleDbApi(plugin.id, method, params);
-        case 'python':
-          return this.handlePythonApi(plugin.id, method, params);
-        default:
-          throw new Error(`Unknown API module: ${module}`);
+    backendRunner.on('message', (payload) => {
+      const target = webContents.fromId(payload.webContentsId);
+      if (target && !target.isDestroyed()) {
+        target.send('booltox:backend:message', payload);
       }
     });
   }
 
-  private async handleWindowApi(pluginId: string, method: string) {
-    // TODO: Implement window controls
-    logger.debug(`[API:Window] ${pluginId} called ${method}`);
-    return { success: true };
+  private registerWindowModule() {
+    this.host.registerModule({
+      name: 'window',
+      requiredPermissions: {
+        hide: ['window.hide'],
+        show: ['window.show'],
+        setSize: ['window.setBounds'],
+        setTitle: ['window.setTitle'],
+        minimize: ['window.minimize'],
+        toggleMaximize: ['window.maximize'],
+        close: ['window.close'],
+      },
+      handle: async (ctx, method, payload) => {
+        const win = ctx.window;
+        if (!win) throw new Error('Window handle unavailable');
+
+        switch (method) {
+          case 'hide':
+            win.hide();
+            return { success: true };
+          case 'show':
+            win.show();
+            win.focus();
+            return { success: true };
+          case 'setSize': {
+            const data = ensureRecord(payload, 'window.setSize');
+            const width = Math.round(ensureNumber(data.width, 'width'));
+            const height = Math.round(ensureNumber(data.height, 'height'));
+            win.setSize(width, height);
+            return { success: true, width, height };
+          }
+          case 'setTitle': {
+            const data = ensureRecord(payload, 'window.setTitle');
+            const title = ensureString(data.title, 'title');
+            win.setTitle(title);
+            return { success: true };
+          }
+          case 'minimize':
+            win.minimize();
+            return { success: true };
+          case 'toggleMaximize':
+            if (win.isMaximized()) {
+              win.unmaximize();
+            } else {
+              win.maximize();
+            }
+            return { success: true, maximized: win.isMaximized() };
+          case 'close':
+            win.close();
+            return { success: true };
+          default:
+            throw new Error(`Unknown window method: ${method}`);
+        }
+      },
+    });
   }
 
-  private async handleShellApi(pluginId: string, method: string, params: unknown) {
-    const plugin = pluginManager.getPlugin(pluginId);
-    if (!plugin) throw new Error('Plugin not found');
+  private registerShellModule() {
+    this.host.registerModule({
+      name: 'shell',
+      requiredPermissions: {
+        exec: ['shell.exec'],
+        runPython: ['shell.python'],
+      },
+      handle: async (ctx, method, payload) => {
+        if (method === 'exec') {
+          const data = ensureRecord(payload, 'shell.exec');
+          const command = ensureString(data.command, 'command');
+          const args = Array.isArray(data.args) ? data.args.map(String) : [];
+          const forbidden = ['&&', '||', ';', '|'];
+          if (forbidden.some((token) => command.includes(token))) {
+            throw new Error('Security Error: command chaining is not allowed');
+          }
 
-    // Check permissions
-    if (method === 'exec') {
-      if (!plugin.manifest.permissions?.includes('shell.exec')) {
-        throw new Error('Permission denied: shell.exec');
-      }
-      
-      if (!isShellExecParams(params)) {
-        throw new Error('Invalid parameters for shell.exec');
-      }
-      const { command, args } = params;
-      // Basic security check: don't allow chaining commands
-      if (command.includes('&&') || command.includes('|') || command.includes(';')) {
-        throw new Error('Security Error: Command chaining not allowed');
-      }
+          const cmd = [command, ...args].join(' ').trim();
+          logger.info(`[Shell] ${ctx.plugin.id} -> ${cmd}`);
+          try {
+            const { stdout, stderr } = await execAsync(cmd, {
+              cwd: typeof data.cwd === 'string' ? data.cwd : undefined,
+              env: typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined,
+              timeout: typeof data.timeoutMs === 'number' ? data.timeoutMs : undefined,
+            });
+            return { success: true, stdout, stderr };
+          } catch (error) {
+            const err = error as { code?: number; stderr?: string; stdout?: string; message?: string };
+            return {
+              success: false,
+              code: err.code ?? null,
+              stdout: err.stdout ?? '',
+              stderr: err.stderr ?? '',
+              error: err.message ?? 'Command failed',
+            };
+          }
+        }
 
-      try {
-        const cmdStr = `${command} ${args.join(' ')}`;
-        const { stdout, stderr } = await execAsync(cmdStr);
-        return { success: true, stdout, stderr };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        const stderr = error && typeof error === 'object' && 'stderr' in error ? (error as { stderr?: string }).stderr : undefined;
-        return { success: false, error: message, stderr };
-      }
-    }
+        if (method === 'runPython') {
+          const data = ensureRecord(payload, 'shell.runPython');
+          const scriptPath = ensureString(data.scriptPath, 'scriptPath');
+          const args = Array.isArray(data.args) ? data.args.map(String) : [];
+          const timeout = typeof data.timeoutMs === 'number' ? data.timeoutMs : undefined;
+          const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
 
-    if (method === 'runPython') {
-      if (!plugin.manifest.permissions?.includes('shell.python')) {
-        throw new Error('Permission denied: shell.python');
-      }
+          const pluginPackagesDir = pythonManager.getPluginPackagesDir(ctx.plugin.id);
+          return pythonManager.runScript(scriptPath, args, {
+            timeout,
+            env: {
+              PYTHONPATH: pluginPackagesDir,
+              ...env,
+            },
+          });
+        }
 
-      if (!isShellPythonParams(params)) {
-        throw new Error('Invalid parameters for shell.python');
-      }
-      const { scriptPath, args } = params;
-      
-      // 使用 PythonManager 执行脚本
-      try {
-        // 设置插件隔离的 PYTHONPATH
-        const pluginPackagesDir = pythonManager.getPluginPackagesDir(pluginId);
-        const result = await pythonManager.runScript(scriptPath, args, {
-          env: { PYTHONPATH: pluginPackagesDir }
-        });
-        return result;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { success: false, error: message };
-      }
-    }
-
-    throw new Error(`Unknown shell method: ${method}`);
+        throw new Error(`Unknown shell method: ${method}`);
+      },
+    });
   }
 
-  /**
-   * Python API 处理器
-   * 提供完整的 Python 环境管理能力
-   */
-  private async handlePythonApi(pluginId: string, method: string, params: unknown) {
-    const plugin = pluginManager.getPlugin(pluginId);
-    if (!plugin) throw new Error('Plugin not found');
+  private registerFsModule() {
+    this.host.registerModule({
+      name: 'fs',
+      requiredPermissions: {
+        readFile: ['fs.read'],
+        writeFile: ['fs.write'],
+        listDir: ['fs.list'],
+        stat: ['fs.stat'],
+      },
+      handle: async (ctx, method, payload) => {
+        const data = ensureRecord(payload, `fs.${method}`);
+        const relativePath = ensureString(data.path ?? '.', 'path');
+        const target = resolveSandboxPath(ctx.dataDir, relativePath);
 
-    // 获取环境状态（不需要权限）
-    if (method === 'getStatus') {
-      try {
-        return await pythonManager.getStatus();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { success: false, error: message };
-      }
-    }
+        if (method === 'readFile') {
+          const encoding = typeof data.encoding === 'string' ? (data.encoding as BufferEncoding) : 'utf8';
+          const contents = await fs.readFile(target, { encoding });
+          return { success: true, data: contents };
+        }
 
-    // 确保 Python 环境就绪（不需要权限）
-    if (method === 'ensure') {
-      try {
-        await pythonManager.ensurePython();
-        return { success: true };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { success: false, error: message };
-      }
-    }
+        if (method === 'writeFile') {
+          const content = data.content;
+          if (typeof content !== 'string' && !(content instanceof Uint8Array)) {
+            throw new Error('fs.writeFile requires string or Uint8Array content');
+          }
+          const encoding = typeof data.encoding === 'string' ? (data.encoding as BufferEncoding) : undefined;
+          await fs.mkdir(path.dirname(target), { recursive: true });
+          await fs.writeFile(target, content, encoding ? { encoding } : undefined);
+          return { success: true };
+        }
 
-    // 以下操作需要 python.install 权限
-    if (method === 'installDeps') {
-      if (!plugin.manifest.permissions?.includes('python.install')) {
-        throw new Error('Permission denied: python.install');
-      }
+        if (method === 'listDir') {
+          const entries = await fs.readdir(target, { withFileTypes: true });
+          return {
+            success: true,
+            entries: await Promise.all(
+              entries.map(async (entry) => {
+                const entryPath = path.join(target, entry.name);
+                const stat = await fs.stat(entryPath);
+                return {
+                  name: entry.name,
+                  isDirectory: entry.isDirectory(),
+                  size: stat.size,
+                  modifiedAt: stat.mtime.toISOString(),
+                };
+              }),
+            ),
+          };
+        }
 
-      if (!isPythonInstallParams(params)) {
-        throw new Error('Invalid parameters for python.installDeps');
-      }
-      const { packages } = params;
+        if (method === 'stat') {
+          const stat = await fs.stat(target);
+          return {
+            success: true,
+            entry: {
+              name: path.basename(target),
+              isDirectory: stat.isDirectory(),
+              size: stat.size,
+              modifiedAt: stat.mtime.toISOString(),
+            },
+          };
+        }
 
-      try {
-        // 安装到插件隔离目录
-        await pythonManager.installPluginPackages(pluginId, packages);
-        return { success: true };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { success: false, error: message };
-      }
-    }
-
-    // 列出插件已安装的包
-    if (method === 'listDeps') {
-      try {
-        const packages = pythonManager.listPluginPackages(pluginId);
-        return { success: true, packages };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { success: false, error: message, packages: [] };
-      }
-    }
-
-    // 以下操作需要 python.run 权限
-    if (method === 'runCode') {
-      if (!plugin.manifest.permissions?.includes('python.run')) {
-        throw new Error('Permission denied: python.run');
-      }
-
-      if (!isPythonRunCodeParams(params)) {
-        throw new Error('Invalid parameters for python.runCode');
-      }
-      const { code, timeout } = params;
-
-      try {
-        // 设置插件隔离的 PYTHONPATH
-        const pluginPackagesDir = pythonManager.getPluginPackagesDir(pluginId);
-        const result = await pythonManager.runCode(code, {
-          timeout,
-          env: { PYTHONPATH: pluginPackagesDir }
-        });
-        return result;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { success: false, code: null, stdout: '', stderr: '', error: message };
-      }
-    }
-
-    if (method === 'runScript') {
-      if (!plugin.manifest.permissions?.includes('python.run')) {
-        throw new Error('Permission denied: python.run');
-      }
-
-      if (!isPythonRunScriptParams(params)) {
-        throw new Error('Invalid parameters for python.runScript');
-      }
-      const { scriptPath, args, timeout } = params;
-
-      try {
-        // 设置插件隔离的 PYTHONPATH
-        const pluginPackagesDir = pythonManager.getPluginPackagesDir(pluginId);
-        const result = await pythonManager.runScript(scriptPath, args || [], {
-          timeout,
-          env: { PYTHONPATH: pluginPackagesDir }
-        });
-        return result;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { success: false, code: null, stdout: '', stderr: '', error: message };
-      }
-    }
-
-    throw new Error(`Unknown python method: ${method}`);
+        throw new Error(`Unknown fs method: ${method}`);
+      },
+    });
   }
 
-  private async handleFsApi(pluginId: string, method: string, params: unknown) {
-    const plugin = pluginManager.getPlugin(pluginId);
-    if (!plugin) throw new Error('Plugin not found');
+  private registerStorageModule() {
+    this.host.registerModule({
+      name: 'storage',
+      requiredPermissions: {
+        get: ['storage.get'],
+        set: ['storage.set'],
+        delete: ['storage.delete'],
+        list: ['storage.get'],
+      },
+      handle: async (ctx, method, payload) => {
+        const dbPath = path.join(ctx.dataDir, 'kv-storage.json');
+        const store = (await readJson<Record<string, unknown>>(dbPath)) ?? {};
 
-    // Ensure plugin data directory exists
-    const pluginDir = path.join(this.pluginDataDir, pluginId);
-    await fs.mkdir(pluginDir, { recursive: true });
+        if (method === 'get') {
+          const data = ensureRecord(payload, 'storage.get');
+          const key = ensureString(data.key, 'key');
+          return store[key];
+        }
 
-    if (!isFsParams(params)) {
-      throw new Error('Invalid fs parameters');
-    }
+        if (method === 'set') {
+          const data = ensureRecord(payload, 'storage.set');
+          const key = ensureString(data.key, 'key');
+          store[key] = data.value;
+          await writeJson(dbPath, store);
+          return { success: true };
+        }
 
-    const { path: relativePath, content } = params;
-    
-    // Security check: Prevent directory traversal
-    const targetPath = path.resolve(pluginDir, relativePath);
-    if (!targetPath.startsWith(pluginDir)) {
-      throw new Error('Security Error: Access denied to path outside plugin directory');
-    }
+        if (method === 'delete') {
+          const data = ensureRecord(payload, 'storage.delete');
+          const key = ensureString(data.key, 'key');
+          delete store[key];
+          await writeJson(dbPath, store);
+          return { success: true };
+        }
 
-    if (method === 'readFile') {
-      try {
-        const data = await fs.readFile(targetPath, 'utf-8');
-        return { success: true, data };
-      } catch (error) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
-      }
-    }
+        if (method === 'list') {
+          return Object.keys(store);
+        }
 
-    if (method === 'writeFile') {
-      try {
-        await fs.writeFile(targetPath, content, 'utf-8');
-        return { success: true };
-      } catch (error) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
-      }
-    }
-
-    throw new Error(`Unknown fs method: ${method}`);
+        throw new Error(`Unknown storage method: ${method}`);
+      },
+    });
   }
 
-  private async handleDbApi(pluginId: string, method: string, params: unknown) {
-    const pluginDir = path.join(this.pluginDataDir, pluginId);
-    await fs.mkdir(pluginDir, { recursive: true });
-    const dbPath = path.join(pluginDir, 'db.json');
+  private registerPythonModule() {
+    this.host.registerModule({
+      name: 'python',
+      requiredPermissions: {
+        installDeps: ['python.install'],
+        runCode: ['python.run'],
+        runScript: ['python.run'],
+        listDeps: ['python.inspect'],
+      },
+      handle: async (ctx, method, payload) => {
+        if (method === 'getStatus') {
+          return pythonManager.getStatus();
+        }
 
-    let db: Record<string, unknown> = {};
-    try {
-      const content = await fs.readFile(dbPath, 'utf-8');
-      db = JSON.parse(content);
-    } catch {
-      // Ignore error, db is empty
-    }
+        if (method === 'ensure') {
+          try {
+            await pythonManager.ensurePython();
+            return { success: true };
+          } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+          }
+        }
 
-    if (method === 'get') {
-      if (!isDbGetParams(params)) {
-        throw new Error('Invalid db get parameters');
-      }
-      const { key } = params;
-      return db[key];
-    }
+        if (method === 'installDeps') {
+          const data = ensureRecord(payload, 'python.installDeps');
+          const packages = Array.isArray(data.packages) ? data.packages.map(String) : [];
+          if (packages.length === 0) throw new Error('python.installDeps requires at least one package');
+          await pythonManager.installPluginPackages(ctx.plugin.id, packages);
+          return { success: true };
+        }
 
-    if (method === 'set') {
-      if (!isDbSetParams(params)) {
-        throw new Error('Invalid db set parameters');
-      }
-      const { key, value } = params;
-      db[key] = value;
-      await fs.writeFile(dbPath, JSON.stringify(db, null, 2), 'utf-8');
-      return { success: true };
-    }
+        if (method === 'listDeps') {
+          try {
+            const packages = pythonManager.listPluginPackages(ctx.plugin.id);
+            return { success: true, packages };
+          } catch (error) {
+            return { success: false, packages: [], error: error instanceof Error ? error.message : String(error) };
+          }
+        }
 
-    throw new Error(`Unknown db method: ${method}`);
+        if (method === 'runCode') {
+          const data = ensureRecord(payload, 'python.runCode');
+          const code = ensureString(data.code, 'code');
+          const timeout = typeof data.timeout === 'number' ? data.timeout : undefined;
+          const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
+
+          const pluginPackagesDir = pythonManager.getPluginPackagesDir(ctx.plugin.id);
+          return pythonManager.runCode(code, {
+            timeout,
+            env: {
+              PYTHONPATH: pluginPackagesDir,
+              ...env,
+            },
+          });
+        }
+
+        if (method === 'runScript') {
+          const data = ensureRecord(payload, 'python.runScript');
+          const scriptPath = ensureString(data.scriptPath, 'scriptPath');
+          const args = Array.isArray(data.args) ? data.args.map(String) : [];
+          const timeout = typeof data.timeout === 'number' ? data.timeout : undefined;
+          const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
+
+          const pluginPackagesDir = pythonManager.getPluginPackagesDir(ctx.plugin.id);
+          return pythonManager.runScript(scriptPath, args, {
+            timeout,
+            env: {
+              PYTHONPATH: pluginPackagesDir,
+              ...env,
+            },
+          });
+        }
+
+        throw new Error(`Unknown python method: ${method}`);
+      },
+    });
+  }
+
+  private registerBackendModule() {
+    this.host.registerModule({
+      name: 'backend',
+      requiredPermissions: {
+        register: ['backend.register'],
+        postMessage: ['backend.message'],
+        dispose: ['backend.message'],
+      },
+      handle: async (ctx, method, payload) => {
+        if (method === 'register') {
+          const explicitConfig = coerceBackendConfig(payload);
+          const manifestConfig = ctx.plugin.manifest.runtime?.backend;
+          const config = explicitConfig ?? manifestConfig;
+          if (!config) {
+            throw new Error('Backend configuration missing. Provide definition or manifest.runtime.backend');
+          }
+          return backendRunner.registerBackend(ctx.plugin, config, ctx.sender.id);
+        }
+
+        if (method === 'postMessage') {
+          const data = ensureRecord(payload, 'backend.postMessage');
+          const channelId = ensureString(data.channelId, 'channelId');
+          await backendRunner.postMessage(channelId, data.payload ?? null);
+          return { success: true };
+        }
+
+        if (method === 'dispose') {
+          const data = ensureRecord(payload, 'backend.dispose');
+          const channelId = ensureString(data.channelId, 'channelId');
+          backendRunner.dispose(channelId);
+          return { success: true };
+        }
+
+        throw new Error(`Unknown backend method: ${method}`);
+      },
+    });
+  }
+
+  private registerTelemetryModule() {
+    this.host.registerModule({
+      name: 'telemetry',
+      requiredPermissions: {
+        send: ['telemetry.send'],
+      },
+      handle: async (_ctx, method) => {
+        if (method === 'send') {
+          logger.debug('[Telemetry] Event dropped (not implemented)');
+          return { success: false, reason: 'not-implemented' };
+        }
+        throw new Error(`Unknown telemetry method: ${method}`);
+      },
+    });
   }
 }
 
-export const pluginApiHandler = new PluginApiHandler();
+export const pluginApiHandler = new BooltoxExtensionHostService();

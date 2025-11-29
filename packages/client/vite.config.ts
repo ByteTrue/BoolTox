@@ -41,7 +41,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src/renderer'),
-      '@core': path.resolve(__dirname, 'src/core'),
       '@modules': path.resolve(__dirname, 'src/modules'),
       '@shared': path.resolve(__dirname, 'src/shared'),
     },
@@ -75,8 +74,7 @@ export default defineConfig({
           }
           
           // 模块系统
-          if (id.includes('src/renderer/contexts/module-context') || 
-              id.includes('src/core/modules')) {
+          if (id.includes('src/renderer/contexts/module-context')) {
             return 'module-system';
           }
           

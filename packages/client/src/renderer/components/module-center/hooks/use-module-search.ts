@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
-import type { ModuleDefinition, ModuleInstance } from "@core/modules/types";
+import type { ModuleDefinition, ModuleInstance } from "@/types/module";
 
 /**
  * 搜索 Hook - 提供实时搜索功能

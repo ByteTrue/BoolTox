@@ -3,7 +3,7 @@ import { Trash2, Download, ExternalLink, Pin } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
 import { cardHover } from "@/utils/animation-presets";
-import type { ModuleInstance } from "@core/modules/types";
+import type { ModuleInstance } from "@/types/module";
 
 interface ModuleCardProps {
   module: ModuleInstance;

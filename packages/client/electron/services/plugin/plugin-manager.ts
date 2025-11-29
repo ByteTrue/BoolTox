@@ -1,10 +1,11 @@
 import { app } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
-import { PluginManifest, PluginRuntime } from '@booltox/shared';
+import { BOOLTOX_PROTOCOL_VERSION, PluginManifest, PluginRuntime } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('PluginManager');
+const DEFAULT_PROTOCOL_RANGE = '^1.0.0';
 
 export class PluginManager {
   private plugins: Map<string, PluginRuntime> = new Map();
@@ -90,11 +91,16 @@ export class PluginManager {
     try {
       const manifestPath = path.join(pluginPath, 'manifest.json');
       const manifestContent = await fs.readFile(manifestPath, 'utf-8');
-      const manifest = JSON.parse(manifestContent) as PluginManifest;
+      const rawManifest = JSON.parse(manifestContent) as PluginManifest;
+      const manifest = this.normalizeManifest(rawManifest, pluginPath);
+      
+      if (!manifest) {
+        return;
+      }
       
       // Basic validation
-      if (!manifest.id || !manifest.main) {
-        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing id or main`);
+      if (!manifest.id) {
+        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing id`);
         return;
       }
 
@@ -123,6 +129,98 @@ export class PluginManager {
   
   getPluginsDir(): string {
     return this.pluginsDir;
+  }
+
+  private normalizeManifest(manifest: PluginManifest, pluginPath: string): PluginManifest | null {
+    const normalizedPermissions = manifest.permissions ?? [];
+    const protocolRange = manifest.protocol ?? DEFAULT_PROTOCOL_RANGE;
+
+    if (!this.satisfiesProtocol(protocolRange, BOOLTOX_PROTOCOL_VERSION)) {
+      logger.error(
+        `[PluginManager] Plugin ${manifest.id ?? pluginPath} requires protocol ${protocolRange}, but host is ${BOOLTOX_PROTOCOL_VERSION}`,
+      );
+      return null;
+    }
+
+    const runtime =
+      manifest.runtime ??
+      (manifest.main
+        ? {
+            ui: {
+              type: 'webview' as const,
+              entry: manifest.main,
+            },
+          }
+        : undefined);
+
+    const entry = runtime?.ui?.entry ?? manifest.main;
+    if (!entry) {
+      logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing runtime.ui.entry or main`);
+      return null;
+    }
+
+    return {
+      ...manifest,
+      permissions: normalizedPermissions,
+      protocol: protocolRange,
+      main: entry,
+      runtime: runtime ?? {
+        ui: {
+          type: 'webview',
+          entry,
+        },
+      },
+    };
+  }
+
+  private satisfiesProtocol(range: string, version: string): boolean {
+    if (!range) {
+      return true;
+    }
+
+    const compare = (a: string, b: string): number => {
+      const parse = (input: string) => {
+        const core = input.split('-')[0];
+        const parts = core.split('.').map((part) => Number.parseInt(part, 10));
+        if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+          return null;
+        }
+        return { major: parts[0], minor: parts[1], patch: parts[2] };
+      };
+
+      const left = parse(a);
+      const right = parse(b);
+      if (!left || !right) {
+        return 0;
+      }
+
+      if (left.major !== right.major) return left.major - right.major;
+      if (left.minor !== right.minor) return left.minor - right.minor;
+      if (left.patch !== right.patch) return left.patch - right.patch;
+      return 0;
+    };
+
+    if (range.startsWith('^')) {
+      const base = range.slice(1);
+      const baseParts = base.split('-')[0].split('.');
+      const versionParts = version.split('-')[0].split('.');
+      if (baseParts[0] !== versionParts[0]) {
+        return false;
+      }
+      return compare(version, base) >= 0;
+    }
+
+    if (range.startsWith('>=')) {
+      const base = range.slice(2);
+      return compare(version, base) >= 0;
+    }
+
+    if (range.startsWith('=')) {
+      const target = range.slice(1);
+      return compare(version, target) === 0;
+    }
+
+    return compare(version, range) === 0;
   }
 }
 

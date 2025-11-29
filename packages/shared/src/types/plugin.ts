@@ -1,3 +1,10 @@
+import type {
+  BooltoxPermission,
+  PluginActivationEvent,
+  PluginCapabilityRequest,
+  PluginRuntimeConfig,
+} from './protocol.js';
+
 export interface PluginManifest {
   /** Unique identifier (e.g., "com.booltox.todo") */
   id: string;
@@ -7,12 +14,20 @@ export interface PluginManifest {
   name: string;
   /** Short description */
   description?: string;
-  /** Entry HTML file path relative to plugin root (e.g., "index.html") */
-  main: string;
+  /** Entry HTML file path relative to plugin root (legacy) */
+  main?: string;
   /** Icon file path relative to plugin root */
   icon?: string;
   /** Requested permissions */
-  permissions?: string[];
+  permissions?: BooltoxPermission[];
+  /** Protocol version range, e.g. "^1.0.0" */
+  protocol?: string;
+  /** Activation events */
+  activation?: PluginActivationEvent[];
+  /** Capability requests (fine-grained permissions) */
+  capabilities?: PluginCapabilityRequest[];
+  /** Runtime configuration describing UI/backend */
+  runtime?: PluginRuntimeConfig;
   /** Default window configuration */
   window?: {
     width?: number;

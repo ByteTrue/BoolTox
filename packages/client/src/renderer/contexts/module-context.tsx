@@ -1,7 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { ComponentType } from "react";
-import { findModuleDefinition, listModuleDefinitions } from "@core/modules/registry";
-import type { ModuleDefinition, ModuleInstance, ModuleRuntime, ModuleStats, ModuleLaunchState } from "@core/modules/types";
+import type {
+  ModuleDefinition,
+  ModuleInstance,
+  ModuleRuntime,
+  ModuleStats,
+  ModuleLaunchState,
+} from "@/types/module";
 import { logModuleEvent } from "@/utils/module-event-logger";
 import type { StoredModuleInfo } from "@shared/types/module-store.types";
 import type { PluginRuntime as PluginProcessRuntime, PluginRegistryEntry, PluginInstallProgress } from "@booltox/shared";
@@ -45,17 +49,10 @@ interface PluginStatePayload {
   focused?: boolean;
 }
 
-const registryDefinitions: ModuleDefinition[] = listModuleDefinitions();
-const registryMap = new Map<string, ModuleDefinition>(registryDefinitions.map((definition) => [definition.id, definition]));
-
-function createRuntime(
-  component: ComponentType | null = null, 
-  loading = false, 
-  installed = true
-): ModuleRuntime {
+function createRuntime(installed = true): ModuleRuntime {
   return {
-    component,
-    loading,
+    component: null,
+    loading: false,
     error: null,
     installed,
     launchState: "idle",
@@ -125,7 +122,6 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         icon: manifest.icon || '🔌',
         installedByDefault: false,
         source: plugin.isDev ? 'dev' : 'remote', // 开发插件标记为 dev,其他为 remote
-        loader: () => Promise.resolve(() => null), // 插件使用 BrowserView,不需要 React 组件
       } as ModuleDefinition;
     });
   }, [pluginRegistry]);
@@ -299,85 +295,45 @@ const focusModuleWindow = useCallback(
   [isWindowPlugin, setActiveModuleId, showToast],
 );
 
-  // 从持久化存储恢复已安装模块
+  // 从持久化存储恢复已安装插件（包含收藏信息等元数据）
   useEffect(() => {
+    if (pluginDefinitions.length === 0) {
+      setInstalledModules([]);
+      return;
+    }
+
     const restoreInstalledModules = async () => {
       try {
         const storedModules = await window.moduleStore.getAll();
-        
         if (storedModules.length === 0) {
-          // 首次启动：加载默认模块
-          const defaultModules = registryDefinitions
-            .filter((definition) => definition.installedByDefault)
-            .map((definition) => ({
-              id: definition.id,
-              definition,
-              runtime: createRuntime(),
-              isFavorite: false,
-            }));
-          
-          setInstalledModules(defaultModules);
-          
-          // 持久化默认模块
-          for (const module of defaultModules) {
-            const info: StoredModuleInfo = {
-              id: module.id,
-              installedAt: new Date().toISOString(),
-              lastUsedAt: new Date().toISOString(),
-              version: module.definition.version,
-              source: module.definition.source || 'local',
-              // 初始化收藏字段为 false
-              isFavorite: false,
-              favoriteOrder: undefined,
-              favoritedAt: undefined,
-            };
-            await window.moduleStore.add(info);
-          }
-        } else {
-          // 从存储恢复
-          const restoredModules: ModuleInstance[] = [];
-          
-          for (const stored of storedModules) {
-            // 优先从 pluginDefinitions 查找,再从 registry,最后用 findModuleDefinition
-            const definition = 
-              pluginDefinitions.find(d => d.id === stored.id) ??
-              registryMap.get(stored.id) ?? 
-              findModuleDefinition(stored.id);
-            
-            if (definition) {
-              const isFavorite = stored.isFavorite ?? false;
-              const favoriteOrder = stored.favoriteOrder ?? undefined;
-              const favoritedAt = stored.favoritedAt ?? undefined;
-
-              restoredModules.push({
-                id: stored.id,
-                definition,
-                runtime: createRuntime(null, false, true),
-                // 携带收藏信息
-                isFavorite,
-                favoriteOrder,
-                favoritedAt,
-              });
-            } else {
-              console.warn(`[ModuleContext] 无法找到模块定义: ${stored.id}`);
-            }
-          }
-          
-          setInstalledModules(restoredModules);
+          setInstalledModules([]);
+          return;
         }
-        
-      } catch (error) {
-        console.error('[ModuleContext] 恢复模块失败:', error);
-        // 降级：使用默认模块
-        const defaultModules = registryDefinitions
-          .filter((definition) => definition.installedByDefault)
-          .map((definition) => ({
-            id: definition.id,
+
+        const restoredModules: ModuleInstance[] = [];
+
+        for (const stored of storedModules) {
+          const definition = pluginDefinitions.find((definition) => definition.id === stored.id);
+
+          if (!definition) {
+            console.warn(`[ModuleContext] 无法找到插件定义: ${stored.id}`);
+            continue;
+          }
+
+          restoredModules.push({
+            id: stored.id,
             definition,
-            runtime: createRuntime(),
-            isFavorite: false,
-          }));
-        setInstalledModules(defaultModules);
+            runtime: createRuntime(true),
+            isFavorite: stored.isFavorite ?? false,
+            favoriteOrder: stored.favoriteOrder ?? undefined,
+            favoritedAt: stored.favoritedAt ?? undefined,
+          });
+        }
+
+        setInstalledModules(restoredModules);
+      } catch (error) {
+        console.error("[ModuleContext] 恢复插件失败:", error);
+        setInstalledModules([]);
       }
     };
 
@@ -414,7 +370,7 @@ const focusModuleWindow = useCallback(
                 updates.push({
                   id: pluginId,
                   definition: pluginDef,
-                  runtime: createRuntime(null, false, true),
+                  runtime: createRuntime(true),
                   isFavorite: stored.isFavorite ?? false,
                   favoriteOrder: stored.favoriteOrder,
                   favoritedAt: stored.favoritedAt,
@@ -437,7 +393,7 @@ const focusModuleWindow = useCallback(
               updates.push({
                 id: pluginId,
                 definition: pluginDef,
-                runtime: createRuntime(null, false, true),
+                runtime: createRuntime(true),
                 isFavorite: false,
               });
               
@@ -481,80 +437,25 @@ const focusModuleWindow = useCallback(
     void syncPlugins();
   }, [pluginRegistry, pluginDefinitions]);
 
-  const loadModuleComponent = useCallback(async (moduleId: string, definition: ModuleDefinition) => {
-    setInstalledModules((current) =>
-      current.map((module) =>
-        module.id === moduleId
-          ? { ...module, runtime: { ...module.runtime, loading: true, error: null } }
-          : module,
-      ),
-    );
-
-    try {
-      const result = await definition.loader();
-      if (!result) {
-        throw new Error(`${definition.name} 未提供可用入口`);
-      }
-      const component: ComponentType = result;
-
-      setInstalledModules((current) =>
-        current.map((module) =>
-          module.id === moduleId
-            ? {
-                ...module,
-                runtime: {
-                  ...module.runtime,
-                  component,
-                  loading: false,
-                  error: null,
-                },
-              }
-            : module,
-        ),
-      );
-    } catch (error) {
-      setInstalledModules((current) =>
-        current.map((module) =>
-          module.id === moduleId
-            ? {
-                ...module,
-                runtime: {
-                  ...module.runtime,
-                  loading: false,
-                  error: error instanceof Error ? error.message : "模块加载失败",
-                },
-              }
-            : module,
-        ),
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    installedModules.forEach((module) => {
-      if (module.runtime.component || module.runtime.loading) {
-        return;
-      }
-      const definition = registryMap.get(module.id);
-      if (definition) {
-        void loadModuleComponent(module.id, definition);
-      }
-    });
-  }, [installedModules, loadModuleComponent]);
 
   const moduleStats = useMemo<ModuleStats>(() => {
-    return installedModules.reduce<ModuleStats>(
-      (stats, module) => {
-        stats.total += 1;
-        if (module.definition.source === "remote") {
-          stats.remote += 1;
-        } else {
-          stats.local += 1;
+    const stats = installedModules.reduce<ModuleStats>(
+      (acc, module) => {
+        acc.total += 1;
+        if (module.runtime.launchState === "running") {
+          acc.enabled += 1;
         }
-        return stats;
+        if (module.definition.source === "remote") {
+          acc.remote += 1;
+        } else {
+          acc.local += 1;
+        }
+        return acc;
       },
       { total: 0, enabled: 0, disabled: 0, local: 0, remote: 0 },
     );
+    stats.disabled = Math.max(stats.total - stats.enabled, 0);
+    return stats;
   }, [installedModules]);
 
   const runningPluginIds = useMemo(
@@ -566,21 +467,12 @@ const focusModuleWindow = useCallback(
   );
 
   const installModule = useCallback(
-    async (moduleId: string, remote = false) => {
-      // TODO: 实现新的插件在线安装逻辑
-      // 暂时只支持本地模块安装
-      if (remote) {
-        throw new Error("在线安装功能正在开发中");
-      }
+    async (moduleId: string) => {
+      const plugin = pluginRegistry.find((item) => item.id === moduleId);
+      const definition = pluginDefinitions.find((item) => item.id === moduleId);
 
-      // 优先从 pluginDefinitions 查找,再从 registry
-      const definition = 
-        pluginDefinitions.find(d => d.id === moduleId) ??
-        registryMap.get(moduleId) ?? 
-        findModuleDefinition(moduleId);
-        
-      if (!definition) {
-        throw new Error(`未找到模块 ${moduleId}`);
+      if (!plugin || !definition) {
+        throw new Error(`未找到插件 ${moduleId}，请先在插件商店安装`);
       }
 
       setInstalledModules((current) => {
@@ -592,37 +484,32 @@ const focusModuleWindow = useCallback(
           {
             id: moduleId,
             definition,
-            runtime: createRuntime(null, true),
+            runtime: createRuntime(true),
           },
         ];
       });
 
-      // 持久化到存储
       const info: StoredModuleInfo = {
         id: moduleId,
         installedAt: new Date().toISOString(),
-      lastUsedAt: new Date().toISOString(),
-      version: definition.version,
-      source: definition.source || 'local',
-      // 初始化收藏字段
-      isFavorite: false,
-      favoriteOrder: undefined,
-      favoritedAt: undefined,
-    };
+        lastUsedAt: new Date().toISOString(),
+        version: definition.version,
+        source: plugin.isDev ? "dev" : "remote",
+        isFavorite: false,
+        favoriteOrder: undefined,
+        favoritedAt: undefined,
+      };
+
       await window.moduleStore.add(info);
 
-      await loadModuleComponent(moduleId, definition);
-      void refreshPluginRegistry();
-
-      // 记录安装事件
       logModuleEvent({
         moduleId,
         moduleName: definition.name,
-        action: 'install',
-        category: definition.category || 'unknown',
+        action: "install",
+        category: definition.category || "unknown",
       });
     },
-    [loadModuleComponent, refreshPluginRegistry, pluginDefinitions],
+    [pluginDefinitions, pluginRegistry],
   );
 
   // 安装在线插件
@@ -889,7 +776,7 @@ const focusModuleWindow = useCallback(
 
   const contextValue = useMemo<ModuleContextValue>(
     () => ({
-      availableModules: registryDefinitions,
+      availableModules: pluginDefinitions,
       installedModules,
       pluginRegistry,
       availablePlugins,

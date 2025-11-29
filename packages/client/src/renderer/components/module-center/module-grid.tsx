@@ -4,7 +4,7 @@ import { EmptyState } from "../ui/empty-state";
 import { SkeletonLoader } from "../ui/skeleton-loader";
 import { ModuleCard, AvailableModuleCard } from "./module-card";
 import { ModuleListItem } from "./module-list-item";
-import type { ModuleInstance, ModuleDefinition } from "@core/modules/types";
+import type { ModuleInstance, ModuleDefinition } from "@/types/module";
 import type { PluginRegistryEntry } from "@booltox/shared";
 import type { ViewMode } from "./types";
 

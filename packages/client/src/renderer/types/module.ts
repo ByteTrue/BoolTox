@@ -1,0 +1,52 @@
+import type { ComponentType } from "react";
+
+export type ModuleLoader = () => Promise<ComponentType> | ComponentType;
+
+export type ModuleSource = "local" | "remote" | "dev";
+
+export interface ModuleDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  version: string;
+  author?: string;
+  category?: string;
+  keywords?: string[];
+  icon?: string;
+  installedByDefault?: boolean;
+  loader?: ModuleLoader;
+  source?: ModuleSource;
+}
+
+export type ModuleLaunchState = "idle" | "launching" | "running" | "stopping" | "error";
+
+export interface ModuleRuntime {
+  loading: boolean;
+  component?: ComponentType | null;
+  error: string | null;
+  installed: boolean;
+  installedPath?: string;
+  updateAvailable?: boolean;
+  launchState: ModuleLaunchState;
+  lastLaunchAt?: string;
+  runningWindowId?: number;
+  lastError?: string | null;
+}
+
+export interface ModuleInstance {
+  id: string;
+  definition: ModuleDefinition;
+  runtime: ModuleRuntime;
+  isFavorite?: boolean;
+  favoriteOrder?: number;
+  favoritedAt?: string;
+  isDev?: boolean;
+}
+
+export interface ModuleStats {
+  total: number;
+  enabled: number;
+  disabled: number;
+  local: number;
+  remote: number;
+}
