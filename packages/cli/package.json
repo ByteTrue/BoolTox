@@ -1,0 +1,25 @@
+{
+  "name": "@booltox/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "BoolTox CLI (create/dev/build/pack)",
+  "bin": {
+    "booltox": "./bin/booltox.js"
+  },
+  "scripts": {
+    "dev": "node ./bin/booltox.js dev",
+    "create": "node ./bin/booltox.js create"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "chalk": "^5.3.0",
+    "chokidar": "^3.6.0",
+    "commander": "^12.1.0",
+    "fs-extra": "^11.2.0",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.8"
+  }
+}

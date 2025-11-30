@@ -1,0 +1,113 @@
+import { spawn, type ChildProcess } from 'node:child_process';
+import path from 'node:path';
+import chokidar, { type FSWatcher } from 'chokidar';
+import type { PluginBackendConfig } from '@booltox/shared';
+import { createLogger } from '../../utils/logger.js';
+import { pythonManager } from '../python-manager.service.js';
+
+const logger = createLogger('PluginDevServer');
+
+export interface PluginDevServerOptions {
+  pluginId: string;
+  pluginPath: string;
+  backend?: PluginBackendConfig;
+  onRestart?: (info: { reason: string }) => void;
+}
+
+export class PluginDevServer {
+  private watcher?: FSWatcher;
+  private proc?: ChildProcess;
+  private options?: PluginDevServerOptions;
+
+  async start(options: PluginDevServerOptions): Promise<void> {
+    this.options = options;
+    if (!options.backend) {
+      logger.info(`[DevServer] 插件 ${options.pluginId} 未声明 backend，跳过后端监听`);
+      return;
+    }
+
+    await this.launchBackend('start');
+    this.watcher = chokidar.watch(path.join(options.pluginPath, options.backend.entry), {
+      ignoreInitial: true,
+    });
+    this.watcher.on('all', async (event, filePath) => {
+      logger.info(`[DevServer] 检测到变更 (${event}): ${filePath}`);
+      await this.restart('file-changed');
+    });
+  }
+
+  async restart(reason: string): Promise<void> {
+    if (this.options?.onRestart) {
+      this.options.onRestart({ reason });
+    }
+    await this.stop();
+    if (this.options) {
+      await this.launchBackend(reason);
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (this.watcher) {
+      await this.watcher.close();
+      this.watcher = undefined;
+    }
+    if (this.proc && !this.proc.killed) {
+      try {
+        this.proc.kill();
+      } catch (error) {
+        logger.warn('[DevServer] 停止进程失败', error);
+      }
+    }
+    this.proc = undefined;
+  }
+
+  private async launchBackend(reason: string): Promise<void> {
+    if (!this.options?.backend) return;
+    const { pluginId, pluginPath, backend } = this.options;
+    logger.info(`[DevServer] 启动后端 (${backend.type})，原因=${reason}`);
+
+    if (backend.type === 'python') {
+      const environment = await pythonManager.resolveBackendEnvironment({
+        pluginId,
+        pluginPath,
+        requirementsPath: backend.requirements,
+      });
+      const env = {
+        ...process.env,
+        ...(environment.venvPath ? { VIRTUAL_ENV: environment.venvPath } : {}),
+        PYTHONPATH: [pythonManager.getPluginPackagesDir(pluginId), path.join(process.resourcesPath, 'python-sdk')]
+          .filter(Boolean)
+          .join(path.delimiter),
+        BOOLTOX_PLUGIN_ID: pluginId,
+      };
+      this.proc = pythonManager.spawnPython(
+        path.isAbsolute(backend.entry) ? backend.entry : path.join(pluginPath, backend.entry),
+        backend.args ?? [],
+        {
+          cwd: pluginPath,
+          env,
+          pythonPath: environment.pythonPath,
+          venvPath: environment.venvPath,
+        }
+      );
+    } else if (backend.type === 'node') {
+      const env = {
+        ...process.env,
+        NODE_PATH: path.join(process.resourcesPath, 'node-sdk'),
+        BOOLTOX_PLUGIN_ID: pluginId,
+        ...(backend.env ?? {}),
+      };
+      this.proc = spawn(process.execPath, [backend.entry, ...(backend.args ?? [])], {
+        cwd: pluginPath,
+        env,
+        stdio: 'inherit',
+      });
+    } else {
+      this.proc = spawn(
+        backend.entry,
+        backend.args ?? [],
+        { cwd: pluginPath, env: { ...process.env, ...(backend.env ?? {}) }, stdio: 'inherit' }
+      );
+    }
+  }
+}
