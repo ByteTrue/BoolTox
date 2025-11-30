@@ -23,15 +23,15 @@
         "to": "uv",
         "filter": ["**/*"]
       },
-      // Node.js SDK (从根目录 resources)
+      // Node.js SDK (从根目录 sdks)
       {
-        "from": "../../resources/node-sdk",
+        "from": "../../sdks/node",
         "to": "node-sdk",
         "filter": ["**/*"]
       },
-      // Python SDK (从 packages/client/resources)
+      // Python SDK (从根目录 sdks)
       {
-        "from": "resources/python-sdk",
+        "from": "../../sdks/python",
         "to": "python-sdk",
         "filter": ["**/*"]
       }
@@ -49,15 +49,15 @@
         "to": "uv",
         "filter": ["**/*"]
       },
-      // Node.js SDK (从根目录 resources)
+      // Node.js SDK (从根目录 sdks)
       {
-        "from": "../../resources/node-sdk",
+        "from": "../../sdks/node",
         "to": "node-sdk",
         "filter": ["**/*"]
       },
-      // Python SDK (从 packages/client/resources)
+      // Python SDK (从根目录 sdks)
       {
-        "from": "resources/python-sdk",
+        "from": "../../sdks/python",
         "to": "python-sdk",
         "filter": ["**/*"]
       }
@@ -86,15 +86,15 @@
         "to": "uv",
         "filter": ["**/*"]
       },
-      // Node.js SDK (从根目录 resources)
+      // Node.js SDK (从根目录 sdks)
       {
-        "from": "../../resources/node-sdk",
+        "from": "../../sdks/node",
         "to": "node-sdk",
         "filter": ["**/*"]
       },
-      // Python SDK (从 packages/client/resources)
+      // Python SDK (从根目录 sdks)
       {
-        "from": "resources/python-sdk",
+        "from": "../../sdks/python",
         "to": "python-sdk",
         "filter": ["**/*"]
       }

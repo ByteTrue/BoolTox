@@ -590,13 +590,13 @@ export class PluginBackendRunner extends EventEmitter {
     if (app.isPackaged) {
       return path.join(process.resourcesPath, 'node-sdk');
     }
-    // 开发模式：优先根目录 resources/node-sdk（包含编译后的 SDK）
-    const rootSdkPath = path.resolve(app.getAppPath(), '../../resources/node-sdk');
+    // 开发模式：优先根目录 sdks/node（新目录结构）
+    const rootSdkPath = path.resolve(app.getAppPath(), '../../sdks/node');
     if (fs.existsSync(path.join(rootSdkPath, 'package.json'))) {
       return rootSdkPath;
     }
     // 备选：从 cwd 查找
-    const cwdSdkPath = path.resolve(process.cwd(), 'resources/node-sdk');
+    const cwdSdkPath = path.resolve(process.cwd(), 'sdks/node');
     if (fs.existsSync(path.join(cwdSdkPath, 'package.json'))) {
       return cwdSdkPath;
     }

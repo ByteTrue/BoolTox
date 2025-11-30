@@ -1235,8 +1235,21 @@ class PythonManager {
    * 获取 Python SDK 路径
    */
   getPythonSdkPath(): string {
-    const resourcesPath = app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources');
-    return path.join(resourcesPath, 'python-sdk');
+    if (app.isPackaged) {
+      return path.join(process.resourcesPath, 'python-sdk');
+    }
+    // 开发模式：使用新的 sdks/python 目录
+    const rootSdkPath = path.resolve(app.getAppPath(), '../../sdks/python');
+    if (fs.existsSync(path.join(rootSdkPath, 'booltox_sdk.py'))) {
+      return rootSdkPath;
+    }
+    // 备选：从 cwd 查找
+    const cwdSdkPath = path.resolve(process.cwd(), 'sdks/python');
+    if (fs.existsSync(path.join(cwdSdkPath, 'booltox_sdk.py'))) {
+      return cwdSdkPath;
+    }
+    // 最后回退到 app resources
+    return path.join(app.getAppPath(), 'resources', 'python-sdk');
   }
 }
 
