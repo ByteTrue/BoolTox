@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import util from 'node:util';
 import { webContents } from 'electron';
-import { ExtensionHost, type ExtensionModuleContext } from '../extension-host/extension-host.js';
+import { ExtensionHost } from '../extension-host/extension-host.js';
 import { createLogger } from '../../utils/logger.js';
 import { pythonManager } from '../python-manager.service.js';
 import { backendRunner } from './plugin-backend-runner.js';
@@ -98,10 +98,31 @@ class BooltoxExtensionHostService {
     this.registerTelemetryModule();
     this.host.attach();
 
+    // Forward legacy messages to renderer
     backendRunner.on('message', (payload) => {
       const target = webContents.fromId(payload.webContentsId);
       if (target && !target.isDestroyed()) {
         target.send('booltox:backend:message', payload);
+      }
+    });
+
+    // Forward backend events (JSON-RPC $event notifications) to renderer
+    backendRunner.on('backend-event', (payload: { channelId: string; pluginId: string; event: string; data: unknown; webContentsId: number }) => {
+      const target = webContents.fromId(payload.webContentsId);
+      if (target && !target.isDestroyed()) {
+        target.send('booltox:backend:event', {
+          channelId: payload.channelId,
+          event: payload.event,
+          data: payload.data,
+        });
+      }
+    });
+
+    // Forward backend ready notifications to renderer
+    backendRunner.on('ready', (payload: { channelId: string; pluginId: string; webContentsId: number }) => {
+      const target = webContents.fromId(payload.webContentsId);
+      if (target && !target.isDestroyed()) {
+        target.send('booltox:backend:ready', { channelId: payload.channelId });
       }
     });
   }
@@ -420,11 +441,15 @@ class BooltoxExtensionHostService {
         register: ['backend.register'],
         postMessage: ['backend.message'],
         dispose: ['backend.message'],
+        call: ['backend.message'],
+        notify: ['backend.message'],
       },
       handle: async (ctx, method, payload) => {
         if (method === 'register') {
           const explicitConfig = coerceBackendConfig(payload);
-          const manifestConfig = ctx.plugin.manifest.runtime?.backend;
+          const runtimeConfig = ctx.plugin.manifest.runtime;
+          const manifestConfig =
+            runtimeConfig && runtimeConfig.type !== 'standalone' ? runtimeConfig.backend : undefined;
           const config = explicitConfig ?? manifestConfig;
           if (!config) {
             throw new Error('Backend configuration missing. Provide definition or manifest.runtime.backend');
@@ -443,6 +468,28 @@ class BooltoxExtensionHostService {
           const data = ensureRecord(payload, 'backend.dispose');
           const channelId = ensureString(data.channelId, 'channelId');
           backendRunner.dispose(channelId);
+          return { success: true };
+        }
+
+        // JSON-RPC call method
+        if (method === 'call') {
+          const data = ensureRecord(payload, 'backend.call');
+          const channelId = ensureString(data.channelId, 'channelId');
+          const rpcMethod = ensureString(data.method, 'method');
+          const params = data.params;
+          const timeoutMs = typeof data.timeoutMs === 'number' ? data.timeoutMs : undefined;
+
+          return backendRunner.call(channelId, rpcMethod, params, timeoutMs);
+        }
+
+        // JSON-RPC notify method
+        if (method === 'notify') {
+          const data = ensureRecord(payload, 'backend.notify');
+          const channelId = ensureString(data.channelId, 'channelId');
+          const rpcMethod = ensureString(data.method, 'method');
+          const params = data.params;
+
+          await backendRunner.notify(channelId, rpcMethod, params);
           return { success: true };
         }
 

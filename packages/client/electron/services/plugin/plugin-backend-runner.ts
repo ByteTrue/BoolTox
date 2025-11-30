@@ -1,21 +1,48 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
+import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
+import { app } from 'electron';
 import type { PluginBackendConfig, PluginRuntime } from '@booltox/shared';
+import {
+  type JsonRpcResponse,
+  type JsonRpcNotification,
+  BackendReservedMethods,
+  createRequest,
+  isJsonRpcResponse,
+  isJsonRpcNotification,
+} from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import { pythonManager } from '../python-manager.service.js';
 import type { ChildProcess } from 'node:child_process';
 
 const logger = createLogger('PluginBackendRunner');
 
+// Default timeout for RPC calls (30 seconds)
+const DEFAULT_RPC_TIMEOUT = 30000;
+
+// ============================================================================
+// Types
+// ============================================================================
+
 export interface BackendMessagePayload {
   pluginId: string;
   channelId: string;
-  type: 'stdout' | 'stderr' | 'exit' | 'error';
+  type: 'stdout' | 'stderr' | 'exit' | 'error' | 'jsonrpc';
   data?: string;
   code?: number | null;
   webContentsId: number;
+  // JSON-RPC specific fields
+  jsonrpc?: JsonRpcResponse | JsonRpcNotification;
+}
+
+interface PendingRequest {
+  resolve: (result: unknown) => void;
+  reject: (error: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
+  method: string;
+  startTime: number;
 }
 
 interface BackendProcess {
@@ -24,36 +51,97 @@ interface BackendProcess {
   process: ChildProcess;
   channelId: string;
   webContentsId: number;
+  // JSON-RPC state
+  ready: boolean;
+  pendingRequests: Map<string | number, PendingRequest>;
+  lineBuffer: string;
+  methods: string[];
 }
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
 function isChildProcessWithStreams(proc: ChildProcess): proc is ChildProcessWithoutNullStreams {
   return Boolean(proc.stdout && proc.stderr && proc.stdin);
 }
 
+/**
+ * Parse JSON-RPC messages from a line of text
+ */
+function parseJsonRpcMessage(line: string): JsonRpcResponse | JsonRpcNotification | null {
+  try {
+    const parsed = JSON.parse(line);
+    // Check if it's a valid JSON-RPC 2.0 message (response or notification)
+    if (parsed && parsed.jsonrpc === '2.0') {
+      if (isJsonRpcResponse(parsed) || isJsonRpcNotification(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+
+// ============================================================================
+// PluginBackendRunner Class
+// ============================================================================
+
 export class PluginBackendRunner extends EventEmitter {
   private processes = new Map<string, BackendProcess>();
 
-  async registerBackend(plugin: PluginRuntime, config: PluginBackendConfig, webContentsId: number) {
-    const entryPath = path.isAbsolute(config.entry) ? config.entry : path.join(plugin.path, config.entry);
+  /**
+   * Register and start a backend process for a plugin
+   */
+  async registerBackend(
+    plugin: PluginRuntime,
+    config: PluginBackendConfig,
+    webContentsId: number
+  ): Promise<{ pid: number; channelId: string }> {
+    const entryPath = path.isAbsolute(config.entry)
+      ? config.entry
+      : path.join(plugin.path, config.entry);
     const args = config.args ?? [];
     const env = { ...process.env, ...config.env };
 
     let child: ChildProcess;
 
     if (config.type === 'python') {
-      await pythonManager.ensurePython();
-      const pluginPackagesDir = pythonManager.getPluginPackagesDir(plugin.id);
+      const sdkPath = pythonManager.getPythonSdkPath();
+      const environment = await pythonManager.resolveBackendEnvironment({
+        pluginId: plugin.id,
+        pluginPath: plugin.path,
+        requirementsPath: config.requirements,
+      });
+      const pythonPathEntries = [sdkPath, ...environment.additionalPythonPaths].filter(Boolean);
+      const pythonPathValue = pythonPathEntries.join(path.delimiter);
+
       child = pythonManager.spawnPython(entryPath, args, {
         cwd: plugin.path,
         env: {
           ...env,
-          PYTHONPATH: pluginPackagesDir,
+          ...(environment.venvPath ? { VIRTUAL_ENV: environment.venvPath } : {}),
+          PYTHONPATH: pythonPathValue,
+          BOOLTOX_PLUGIN_ID: plugin.id,
+          BOOLTOX_CHANNEL_ID: '', // Will be set after channelId is generated
         },
+        pythonPath: environment.pythonPath,
+        venvPath: environment.venvPath,
       });
     } else if (config.type === 'node') {
+      // Add SDK path for Node.js via symlink in plugin's node_modules
+      const sdkPath = this.getNodeSdkPath();
+      this.ensureNodeSdkSymlink(plugin.path, sdkPath);
+      // ELECTRON_RUN_AS_NODE=1 让 Electron 以纯 Node.js 模式运行
       child = spawn(process.execPath, [entryPath, ...args], {
         cwd: plugin.path,
-        env,
+        env: {
+          ...env,
+          ELECTRON_RUN_AS_NODE: '1',
+          BOOLTOX_PLUGIN_ID: plugin.id,
+        },
         stdio: 'pipe',
       });
     } else {
@@ -76,34 +164,38 @@ export class PluginBackendRunner extends EventEmitter {
       process: child,
       channelId,
       webContentsId,
+      ready: false,
+      pendingRequests: new Map(),
+      lineBuffer: '',
+      methods: [],
     };
 
     this.processes.set(channelId, record);
-    logger.info(`[BackendRunner] Started backend ${channelId} for plugin ${plugin.id} (${config.type})`);
+    logger.info(`Started backend ${channelId} for plugin ${plugin.id} (${config.type})`);
 
-    child.stdout.on('data', (buffer) => {
-      this.emit('message', {
-        pluginId: plugin.id,
-        channelId,
-        type: 'stdout',
-        data: buffer.toString(),
-        code: null,
-        webContentsId,
-      });
+    // Set up stdout handler for JSON-RPC messages
+    child.stdout.on('data', (buffer: Buffer) => {
+      this.handleStdout(channelId, buffer);
     });
 
-    child.stderr.on('data', (buffer) => {
+    // stderr is for logs/errors, not JSON-RPC
+    child.stderr.on('data', (buffer: Buffer) => {
+      const data = buffer.toString();
+      logger.debug(`[${channelId}] stderr: ${data}`);
       this.emit('message', {
         pluginId: plugin.id,
         channelId,
         type: 'stderr',
-        data: buffer.toString(),
+        data,
         code: null,
         webContentsId,
       });
     });
 
     child.on('exit', (code) => {
+      // Reject all pending requests
+      this.rejectAllPending(channelId, 'Backend process exited');
+
       this.emit('message', {
         pluginId: plugin.id,
         channelId,
@@ -112,10 +204,13 @@ export class PluginBackendRunner extends EventEmitter {
         webContentsId,
       });
       this.processes.delete(channelId);
-      logger.info(`[BackendRunner] Backend ${channelId} exited with code ${code}`);
+      logger.info(`Backend ${channelId} exited with code ${code}`);
     });
 
     child.on('error', (error) => {
+      // Reject all pending requests
+      this.rejectAllPending(channelId, error.message);
+
       this.emit('message', {
         pluginId: plugin.id,
         channelId,
@@ -132,7 +227,219 @@ export class PluginBackendRunner extends EventEmitter {
     };
   }
 
-  async postMessage(channelId: string, payload: unknown) {
+  /**
+   * Handle stdout data - parse JSON-RPC messages line by line
+   */
+  private handleStdout(channelId: string, buffer: Buffer): void {
+    const proc = this.processes.get(channelId);
+    if (!proc) return;
+
+    // Append to line buffer
+    proc.lineBuffer += buffer.toString();
+
+    // Process complete lines
+    const lines = proc.lineBuffer.split('\n');
+    proc.lineBuffer = lines.pop() ?? ''; // Keep incomplete line in buffer
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      const message = parseJsonRpcMessage(trimmed);
+      if (message) {
+        this.handleJsonRpcMessage(channelId, message);
+      } else {
+        // Non-JSON-RPC output, emit as stdout
+        this.emit('message', {
+          pluginId: proc.pluginId,
+          channelId,
+          type: 'stdout',
+          data: trimmed,
+          code: null,
+          webContentsId: proc.webContentsId,
+        });
+      }
+    }
+  }
+
+  /**
+   * Handle a parsed JSON-RPC message
+   */
+  private handleJsonRpcMessage(
+    channelId: string,
+    message: JsonRpcResponse | JsonRpcNotification
+  ): void {
+    const proc = this.processes.get(channelId);
+    if (!proc) return;
+
+    if (isJsonRpcResponse(message)) {
+      // This is a response to a request we sent
+      const pending = proc.pendingRequests.get(message.id);
+      if (pending) {
+        clearTimeout(pending.timeout);
+        proc.pendingRequests.delete(message.id);
+
+        if ('error' in message) {
+          const err = new Error(message.error.message);
+          (err as Error & { code: number }).code = message.error.code;
+          pending.reject(err);
+        } else {
+          pending.resolve(message.result);
+        }
+
+        const duration = Date.now() - pending.startTime;
+        logger.debug(`RPC ${pending.method} completed in ${duration}ms`);
+      } else {
+        logger.warn(`Received response for unknown request id: ${message.id}`);
+      }
+    } else if (isJsonRpcNotification(message)) {
+      // This is a notification from the backend
+      this.handleNotification(channelId, message);
+    }
+  }
+
+  /**
+   * Handle backend notifications
+   */
+  private handleNotification(channelId: string, notification: JsonRpcNotification): void {
+    const proc = this.processes.get(channelId);
+    if (!proc) return;
+
+    const { method, params } = notification;
+
+    switch (method) {
+      case BackendReservedMethods.READY: {
+        proc.ready = true;
+        const readyParams = params as { version?: string; methods?: string[] } | undefined;
+        proc.methods = readyParams?.methods ?? [];
+        logger.info(`Backend ${channelId} is ready (methods: ${proc.methods.join(', ')})`);
+        this.emit('ready', { channelId, pluginId: proc.pluginId, webContentsId: proc.webContentsId });
+        break;
+      }
+
+      case BackendReservedMethods.EVENT: {
+        const eventParams = params as { event: string; data?: unknown } | undefined;
+        if (eventParams?.event) {
+          this.emit('backend-event', {
+            channelId,
+            pluginId: proc.pluginId,
+            event: eventParams.event,
+            data: eventParams.data,
+            webContentsId: proc.webContentsId,
+          });
+        }
+        break;
+      }
+
+      case BackendReservedMethods.LOG: {
+        const logParams = params as {
+          level: string;
+          message: string;
+          timestamp?: string;
+        } | undefined;
+        if (logParams) {
+          const level = logParams.level || 'info';
+          logger.log(level as 'debug' | 'info' | 'warn' | 'error', `[${channelId}] ${logParams.message}`);
+        }
+        break;
+      }
+
+      default:
+        // Custom notification - forward to renderer
+        this.emit('message', {
+          pluginId: proc.pluginId,
+          channelId,
+          type: 'jsonrpc',
+          jsonrpc: notification,
+          webContentsId: proc.webContentsId,
+        });
+    }
+  }
+
+  /**
+   * Call a method on the backend (JSON-RPC request)
+   */
+  async call<TParams = unknown, TResult = unknown>(
+    channelId: string,
+    method: string,
+    params?: TParams,
+    timeoutMs: number = DEFAULT_RPC_TIMEOUT
+  ): Promise<TResult> {
+    const proc = this.processes.get(channelId);
+    if (!proc) {
+      throw new Error(`Backend channel ${channelId} not found`);
+    }
+
+    const stdin = proc.process.stdin;
+    if (!stdin || stdin.destroyed) {
+      throw new Error(`Backend channel ${channelId} stdin not available`);
+    }
+
+    const id = randomUUID();
+    const request = createRequest(id, method, params);
+
+    return new Promise<TResult>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        proc.pendingRequests.delete(id);
+        reject(new Error(`RPC call ${method} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      proc.pendingRequests.set(id, {
+        resolve: resolve as (result: unknown) => void,
+        reject,
+        timeout,
+        method,
+        startTime: Date.now(),
+      });
+
+      const serialized = JSON.stringify(request) + '\n';
+      stdin.write(serialized, (err) => {
+        if (err) {
+          clearTimeout(timeout);
+          proc.pendingRequests.delete(id);
+          reject(err);
+        }
+      });
+    });
+  }
+
+  /**
+   * Send a notification to the backend (no response expected)
+   */
+  async notify<TParams = unknown>(
+    channelId: string,
+    method: string,
+    params?: TParams
+  ): Promise<void> {
+    const proc = this.processes.get(channelId);
+    if (!proc) {
+      throw new Error(`Backend channel ${channelId} not found`);
+    }
+
+    const stdin = proc.process.stdin;
+    if (!stdin || stdin.destroyed) {
+      throw new Error(`Backend channel ${channelId} stdin not available`);
+    }
+
+    const notification: JsonRpcNotification<TParams> = {
+      jsonrpc: '2.0',
+      method,
+      ...(params !== undefined && { params }),
+    };
+
+    const serialized = JSON.stringify(notification) + '\n';
+    return new Promise((resolve, reject) => {
+      stdin.write(serialized, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
+
+  /**
+   * Legacy: Post a raw message to the backend (for backward compatibility)
+   */
+  async postMessage(channelId: string, payload: unknown): Promise<void> {
     const proc = this.processes.get(channelId);
     if (!proc) {
       throw new Error(`Backend channel ${channelId} not found`);
@@ -147,23 +454,154 @@ export class PluginBackendRunner extends EventEmitter {
     stdin.write(serialized + '\n');
   }
 
-  dispose(channelId: string) {
+  /**
+   * Check if a backend is ready
+   */
+  isReady(channelId: string): boolean {
+    const proc = this.processes.get(channelId);
+    return proc?.ready ?? false;
+  }
+
+  /**
+   * Wait for backend to be ready
+   */
+  async waitForReady(channelId: string, timeoutMs: number = 30000): Promise<void> {
+    const proc = this.processes.get(channelId);
+    if (!proc) {
+      throw new Error(`Backend channel ${channelId} not found`);
+    }
+
+    if (proc.ready) return;
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.off('ready', onReady);
+        reject(new Error(`Backend ${channelId} did not become ready within ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      const onReady = (event: { channelId: string }) => {
+        if (event.channelId === channelId) {
+          clearTimeout(timeout);
+          this.off('ready', onReady);
+          resolve();
+        }
+      };
+
+      this.on('ready', onReady);
+    });
+  }
+
+  /**
+   * Get available methods for a backend
+   */
+  getMethods(channelId: string): string[] {
+    const proc = this.processes.get(channelId);
+    return proc?.methods ?? [];
+  }
+
+  /**
+   * Dispose a backend process
+   */
+  dispose(channelId: string): void {
     const proc = this.processes.get(channelId);
     if (!proc) return;
+
+    // Reject all pending requests
+    this.rejectAllPending(channelId, 'Backend disposed');
 
     if (!proc.process.killed) {
       proc.process.kill();
     }
     this.processes.delete(channelId);
-    logger.info(`[BackendRunner] Disposed backend ${channelId}`);
+    logger.info(`Disposed backend ${channelId}`);
   }
 
-  disposeAllForPlugin(pluginId: string) {
+  /**
+   * Dispose all backends for a plugin
+   */
+  disposeAllForPlugin(pluginId: string): void {
     for (const [channelId, proc] of this.processes.entries()) {
       if (proc.pluginId === pluginId) {
         this.dispose(channelId);
       }
     }
+  }
+
+  /**
+   * Reject all pending requests for a channel
+   */
+  private rejectAllPending(channelId: string, reason: string): void {
+    const proc = this.processes.get(channelId);
+    if (!proc) return;
+
+    for (const pending of proc.pendingRequests.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(new Error(reason));
+    }
+    proc.pendingRequests.clear();
+  }
+
+
+  /**
+   * Ensure the Node.js SDK symlink exists in the plugin's node_modules directory
+   * This allows standard Node.js module resolution to find 'booltox-backend'
+   */
+  private ensureNodeSdkSymlink(pluginPath: string, sdkPath: string): void {
+    const nodeModulesDir = path.join(pluginPath, 'node_modules');
+    const symlinkPath = path.join(nodeModulesDir, 'booltox-backend');
+
+    // Create node_modules directory if it doesn't exist
+    if (!fs.existsSync(nodeModulesDir)) {
+      fs.mkdirSync(nodeModulesDir, { recursive: true });
+    }
+
+    // Check if symlink already exists and points to the correct location
+    if (fs.existsSync(symlinkPath)) {
+      try {
+        const linkTarget = fs.readlinkSync(symlinkPath);
+        if (linkTarget === sdkPath || path.resolve(pluginPath, 'node_modules', linkTarget) === sdkPath) {
+          return; // Symlink already correct
+        }
+        // Remove incorrect symlink
+        fs.unlinkSync(symlinkPath);
+      } catch {
+        // Not a symlink or error reading, remove it
+        fs.rmSync(symlinkPath, { recursive: true, force: true });
+      }
+    }
+
+    // Create symlink (use junction on Windows for better compatibility)
+    try {
+      const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
+      fs.symlinkSync(sdkPath, symlinkPath, symlinkType);
+      logger.info(`Created SDK symlink: ${symlinkPath} -> ${sdkPath}`);
+    } catch (err) {
+      logger.error(`Failed to create SDK symlink: ${err}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Get the path to the Node.js SDK
+   * Note: This method is kept here instead of pythonManager because it requires
+   * special path resolution logic for development mode that differs from Python SDK
+   */
+  private getNodeSdkPath(): string {
+    if (app.isPackaged) {
+      return path.join(process.resourcesPath, 'node-sdk');
+    }
+    // 开发模式：优先根目录 resources/node-sdk（包含编译后的 SDK）
+    const rootSdkPath = path.resolve(app.getAppPath(), '../../resources/node-sdk');
+    if (fs.existsSync(path.join(rootSdkPath, 'package.json'))) {
+      return rootSdkPath;
+    }
+    // 备选：从 cwd 查找
+    const cwdSdkPath = path.resolve(process.cwd(), 'resources/node-sdk');
+    if (fs.existsSync(path.join(cwdSdkPath, 'package.json'))) {
+      return cwdSdkPath;
+    }
+    // 最后回退到 app resources
+    return path.join(app.getAppPath(), 'resources', 'node-sdk');
   }
 }
 

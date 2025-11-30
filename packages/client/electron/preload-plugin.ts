@@ -1,6 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { BooltoxAPI, BooltoxBackendMessage, BooltoxEncoding, PluginBackendConfig } from '@booltox/shared';
 
+// ============================================================================
+// Types for JSON-RPC Backend API
+// ============================================================================
+
+type BackendEventListener = (data: unknown) => void;
+
+// Event listeners storage: Map<channelId, Map<event, Set<listener>>>
+const backendEventListeners = new Map<string, Map<string, Set<BackendEventListener>>>();
+
+// Ready state tracking
+const backendReadyState = new Map<string, boolean>();
+const backendReadyWaiters = new Map<string, Array<{ resolve: () => void; reject: (err: Error) => void }>>();
+
 // runtime state for titlebar
 let customTitlebarEnabled = true;
 let titlebarRoot: HTMLElement | null = null;
@@ -187,9 +200,87 @@ const storageBridge = {
 
 const backendSubscribers = new Set<(message: BooltoxBackendMessage) => void>();
 
+// Handle backend messages from main process
 ipcRenderer.on('booltox:backend:message', (_event, message: BooltoxBackendMessage) => {
+  // Forward to legacy subscribers
   backendSubscribers.forEach((listener) => listener(message));
 });
+
+// Handle backend events (JSON-RPC $event notifications)
+ipcRenderer.on('booltox:backend:event', (_event, payload: { channelId: string; event: string; data: unknown }) => {
+  const { channelId, event, data } = payload;
+  const channelListeners = backendEventListeners.get(channelId);
+  if (channelListeners) {
+    const eventListeners = channelListeners.get(event);
+    if (eventListeners) {
+      eventListeners.forEach((listener) => {
+        try {
+          listener(data);
+        } catch (e) {
+          console.error(`[BoolTox] Error in backend event listener for ${event}:`, e);
+        }
+      });
+    }
+  }
+});
+
+// Handle backend ready notifications
+ipcRenderer.on('booltox:backend:ready', (_event, payload: { channelId: string }) => {
+  const { channelId } = payload;
+  backendReadyState.set(channelId, true);
+
+  // Resolve all waiters
+  const waiters = backendReadyWaiters.get(channelId);
+  if (waiters) {
+    waiters.forEach(({ resolve }) => resolve());
+    backendReadyWaiters.delete(channelId);
+  }
+});
+
+// Helper: Add event listener for a channel
+function addBackendEventListener(channelId: string, event: string, listener: BackendEventListener): () => void {
+  let channelListeners = backendEventListeners.get(channelId);
+  if (!channelListeners) {
+    channelListeners = new Map();
+    backendEventListeners.set(channelId, channelListeners);
+  }
+
+  let eventListeners = channelListeners.get(event);
+  if (!eventListeners) {
+    eventListeners = new Set();
+    channelListeners.set(event, eventListeners);
+  }
+
+  eventListeners.add(listener);
+
+  // Return unsubscribe function
+  return () => {
+    eventListeners?.delete(listener);
+    if (eventListeners?.size === 0) {
+      channelListeners?.delete(event);
+    }
+    if (channelListeners?.size === 0) {
+      backendEventListeners.delete(channelId);
+    }
+  };
+}
+
+// Helper: Remove event listener
+function removeBackendEventListener(channelId: string, event: string, listener: BackendEventListener): void {
+  const channelListeners = backendEventListeners.get(channelId);
+  if (!channelListeners) return;
+
+  const eventListeners = channelListeners.get(event);
+  if (!eventListeners) return;
+
+  eventListeners.delete(listener);
+  if (eventListeners.size === 0) {
+    channelListeners.delete(event);
+  }
+  if (channelListeners.size === 0) {
+    backendEventListeners.delete(channelId);
+  }
+}
 
 const booltoxAPI = {
   window: {
@@ -247,13 +338,138 @@ const booltoxAPI = {
       callAPI('python', 'runScript', { scriptPath, args, timeout }),
   },
   backend: {
+    // Legacy API (backward compatible)
     register: (definition?: PluginBackendConfig) => callAPI('backend', 'register', definition),
     postMessage: (channelId: string, payload: unknown) =>
       callAPI('backend', 'postMessage', { channelId, payload }),
-    dispose: (channelId: string) => callAPI('backend', 'dispose', { channelId }),
+    dispose: (channelId: string) => {
+      // Clean up event listeners for this channel
+      backendEventListeners.delete(channelId);
+      backendReadyState.delete(channelId);
+      backendReadyWaiters.delete(channelId);
+      return callAPI('backend', 'dispose', { channelId });
+    },
     onMessage: (listener: (message: BooltoxBackendMessage) => void) => {
       backendSubscribers.add(listener);
       return () => backendSubscribers.delete(listener);
+    },
+
+    // New JSON-RPC API
+    /**
+     * Call a method on the backend and wait for response (JSON-RPC request)
+     * @param channelId - Backend channel ID
+     * @param method - Method name to call
+     * @param params - Method parameters (optional)
+     * @param timeoutMs - Timeout in milliseconds (default: 30000)
+     * @returns Promise resolving to the method result
+     */
+    call: <TParams = unknown, TResult = unknown>(
+      channelId: string,
+      method: string,
+      params?: TParams,
+      timeoutMs?: number
+    ): Promise<TResult> => callAPI<TResult>('backend', 'call', { channelId, method, params, timeoutMs }),
+
+    /**
+     * Send a notification to the backend (no response expected)
+     * @param channelId - Backend channel ID
+     * @param method - Method name
+     * @param params - Method parameters (optional)
+     */
+    notify: <TParams = unknown>(
+      channelId: string,
+      method: string,
+      params?: TParams
+    ): Promise<void> => callAPI<void>('backend', 'notify', { channelId, method, params }),
+
+    /**
+     * Subscribe to backend events
+     * @param channelId - Backend channel ID
+     * @param event - Event name to listen for
+     * @param listener - Callback function
+     * @returns Unsubscribe function
+     */
+    on: (channelId: string, event: string, listener: BackendEventListener): (() => void) => {
+      return addBackendEventListener(channelId, event, listener);
+    },
+
+    /**
+     * Subscribe to backend events (once)
+     * @param channelId - Backend channel ID
+     * @param event - Event name to listen for
+     * @param listener - Callback function
+     * @returns Unsubscribe function
+     */
+    once: (channelId: string, event: string, listener: BackendEventListener): (() => void) => {
+      const wrappedListener: BackendEventListener = (data) => {
+        unsubscribe();
+        listener(data);
+      };
+      const unsubscribe = addBackendEventListener(channelId, event, wrappedListener);
+      return unsubscribe;
+    },
+
+    /**
+     * Remove event listener
+     * @param channelId - Backend channel ID
+     * @param event - Event name
+     * @param listener - Callback function to remove
+     */
+    off: (channelId: string, event: string, listener: BackendEventListener): void => {
+      removeBackendEventListener(channelId, event, listener);
+    },
+
+    /**
+     * Check if backend is ready
+     * @param channelId - Backend channel ID
+     * @returns true if backend has sent $ready notification
+     */
+    isReady: (channelId: string): boolean => {
+      return backendReadyState.get(channelId) ?? false;
+    },
+
+    /**
+     * Wait for backend to be ready
+     * @param channelId - Backend channel ID
+     * @param timeoutMs - Timeout in milliseconds (default: 30000)
+     * @returns Promise that resolves when backend is ready
+     */
+    waitForReady: (channelId: string, timeoutMs: number = 30000): Promise<void> => {
+      // Already ready
+      if (backendReadyState.get(channelId)) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          // Remove from waiters
+          const waiters = backendReadyWaiters.get(channelId);
+          if (waiters) {
+            const index = waiters.findIndex((w) => w.resolve === resolve);
+            if (index !== -1) waiters.splice(index, 1);
+            if (waiters.length === 0) backendReadyWaiters.delete(channelId);
+          }
+          reject(new Error(`Backend ${channelId} did not become ready within ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        const waiter = {
+          resolve: () => {
+            clearTimeout(timeout);
+            resolve();
+          },
+          reject: (err: Error) => {
+            clearTimeout(timeout);
+            reject(err);
+          },
+        };
+
+        let waiters = backendReadyWaiters.get(channelId);
+        if (!waiters) {
+          waiters = [];
+          backendReadyWaiters.set(channelId, waiters);
+        }
+        waiters.push(waiter);
+      });
     },
   },
   telemetry: {
