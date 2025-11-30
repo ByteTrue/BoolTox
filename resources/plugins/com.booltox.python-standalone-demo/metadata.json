@@ -1,0 +1,15 @@
+{
+  "id": "com.booltox.python-standalone-demo",
+  "version": "0.1.0",
+  "name": "Python Standalone Demo",
+  "description": "纯 Python GUI 示例 (tkinter)",
+  "author": "BoolTox Team",
+  "category": "utility",
+  "keywords": [
+    "python",
+    "standalone",
+    "gui"
+  ],
+  "hash": "1d38beafb4f173a9d3fff59bcf52bc06931d320985159431bd03a2f90516a0a9",
+  "size": 415
+}

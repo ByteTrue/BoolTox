@@ -47,6 +47,10 @@ interface PluginStatePayload {
   viewId?: number;
   message?: string;
   focused?: boolean;
+  mode?: 'webview' | 'standalone';
+  pid?: number;
+  external?: boolean;
+  exitCode?: number | null;
 }
 
 function createRuntime(installed = true): ModuleRuntime {
@@ -106,12 +110,19 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     void refreshAvailablePlugins();
   }, [refreshAvailablePlugins]);
 
-  const pluginIdSet = useMemo(() => new Set(pluginRegistry.map((plugin) => plugin.id)), [pluginRegistry]);
+  const pluginRuntimeModeMap = useMemo(() => {
+    const map = new Map<string, 'webview' | 'standalone'>();
+    for (const plugin of pluginRegistry) {
+      map.set(plugin.id, plugin.manifest.runtime?.type === 'standalone' ? 'standalone' : 'webview');
+    }
+    return map;
+  }, [pluginRegistry]);
 
   // 将 pluginRegistry 转换为 ModuleDefinition (动态插件定义)
   const pluginDefinitions = useMemo<ModuleDefinition[]>(() => {
     return pluginRegistry.map((plugin) => {
       const manifest = plugin.manifest;
+      const runtimeMode = plugin.manifest.runtime?.type === 'standalone' ? 'standalone' : 'webview';
       return {
         id: manifest.id,
         name: manifest.name,
@@ -121,14 +132,15 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         keywords: manifest.keywords || [],
         icon: manifest.icon || '🔌',
         installedByDefault: false,
-        source: plugin.isDev ? 'dev' : 'remote', // 开发插件标记为 dev,其他为 remote
+        source: plugin.isDev ? 'dev' : 'remote',
+        runtimeMode,
       } as ModuleDefinition;
     });
   }, [pluginRegistry]);
 
   const isWindowPlugin = useCallback(
-    (moduleId: string) => pluginIdSet.has(moduleId) || moduleId.startsWith("com.booltox."),
-    [pluginIdSet],
+    (moduleId: string) => pluginRuntimeModeMap.has(moduleId) || moduleId.startsWith("com.booltox."),
+    [pluginRuntimeModeMap],
   );
 
   // 检查是否为开发插件(不可卸载)
@@ -799,6 +811,7 @@ const focusModuleWindow = useCallback(
     }),
     [
       activeModuleId,
+      pluginDefinitions,
       focusModuleWindow,
       getModuleById,
       isDevPlugin,

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Python Backend Template</title>
+    <style>
+      body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; background: #0f172a; color: #e2e8f0; }
+      button { padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer; background: linear-gradient(120deg, #3b82f6, #22c55e); color: white; font-weight: 600; }
+      pre { background: rgba(15,23,42,0.6); padding: 12px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.3); }
+    </style>
+  </head>
+  <body>
+    <h2>Python Backend Template</h2>
+    <p>点击“启动后端”将通过 manifest.runtime.backend 注册 Python 进程。</p>
+    <button id="start">启动后端</button>
+    <button id="call" disabled>调用 hello</button>
+    <pre id="log"></pre>
+    <script>
+      const logEl = document.getElementById('log');
+      let channelId = null;
+      function log(line) {
+        logEl.textContent += line + '\n';
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      document.getElementById('start').onclick = async () => {
+        const handle = await window.booltox.backend.register();
+        channelId = handle.channelId;
+        await window.booltox.backend.waitForReady(channelId);
+        log('后端已启动 channel=' + channelId + ' pid=' + handle.pid);
+        document.getElementById('call').disabled = false;
+        window.booltox.backend.on(channelId, 'progress', (data) => log('progress ' + JSON.stringify(data)));
+      };
+      document.getElementById('call').onclick = async () => {
+        const result = await window.booltox.backend.call(channelId, 'hello', { name: 'BoolTox' });
+        log('result ' + JSON.stringify(result));
+      };
+    </script>
+  </body>
+</html>

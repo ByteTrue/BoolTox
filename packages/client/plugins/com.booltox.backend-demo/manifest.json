@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "name": "Backend Bridge Demo",
   "description": "示范如何使用 BoolTox VS Code 风格的 backend API 启动 Python 子进程并与之通信。",
-  "protocol": "^1.0.0",
+  "protocol": "^2.0.0",
   "runtime": {
     "ui": {
       "type": "webview",

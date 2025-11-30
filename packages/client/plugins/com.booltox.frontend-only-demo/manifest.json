@@ -1,0 +1,20 @@
+{
+  "id": "com.booltox.frontend-only-demo",
+  "version": "0.1.0",
+  "name": "Frontend Only Demo",
+  "description": "纯前端示例，无后端进程",
+  "protocol": "^2.0.0",
+  "runtime": {
+    "ui": {
+      "type": "webview",
+      "entry": "index.html"
+    }
+  },
+  "permissions": [],
+  "window": {
+    "width": 900,
+    "height": 640
+  },
+  "author": "BoolTox Team",
+  "keywords": ["frontend", "demo"]
+}

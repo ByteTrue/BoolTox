@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Frontend Only Template</title>
+    <style>
+      body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; background: #0f172a; color: #e2e8f0; }
+      h2 { margin-top: 0; }
+      button { padding: 8px 14px; border-radius: 10px; border: none; cursor: pointer; background: linear-gradient(120deg, #6366f1, #14b8a6); color: white; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h2>Frontend Only Template</h2>
+    <p>这是一个没有后端进程的纯前端模板，适合工具类 UI。</p>
+    <button id="ping">Toast</button>
+    <script>
+      document.getElementById('ping').onclick = () => {
+        alert('Hello BoolTox!');
+      };
+    </script>
+  </body>
+</html>

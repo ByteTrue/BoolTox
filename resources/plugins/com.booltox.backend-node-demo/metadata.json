@@ -1,0 +1,16 @@
+{
+  "id": "com.booltox.backend-node-demo",
+  "version": "0.1.0",
+  "name": "Node.js Backend Demo",
+  "description": "演示如何使用 BoolTox Node SDK 通过 JSON-RPC 方式暴露方法与事件。",
+  "author": "BoolTox Team",
+  "category": "utility",
+  "keywords": [
+    "backend",
+    "node",
+    "json-rpc",
+    "demo"
+  ],
+  "hash": "5b2814a673e2fea6919497440b94e1248f580c463004980a236150f63e099057",
+  "size": 2827
+}

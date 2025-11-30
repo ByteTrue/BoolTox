@@ -28,8 +28,9 @@ export function ModuleCard({
   const isLaunching = launchState === "launching";
   const isRunning = launchState === "running";
   const isLaunchError = launchState === "error";
+  const isStandalone = module.definition.runtimeMode === 'standalone';
   const launchStateBadge = isRunning
-    ? { label: "窗口运行中", tone: "success" as const }
+    ? { label: isStandalone ? "外部工具运行中" : "窗口运行中", tone: "success" as const }
     : isLaunching
       ? { label: "启动中…", tone: "warning" as const }
       : isLaunchError
@@ -140,6 +141,14 @@ export function ModuleCard({
             <span>•</span>
             <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-500">
               {module.definition.category}
+            </span>
+          </>
+        )}
+        {isStandalone && (
+          <>
+            <span>•</span>
+            <span className="rounded-full bg-pink-500/10 px-2 py-0.5 text-pink-500">
+              外部窗口
             </span>
           </>
         )}

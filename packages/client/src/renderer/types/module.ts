@@ -16,6 +16,7 @@ export interface ModuleDefinition {
   installedByDefault?: boolean;
   loader?: ModuleLoader;
   source?: ModuleSource;
+  runtimeMode?: 'webview' | 'standalone';
 }
 
 export type ModuleLaunchState = "idle" | "launching" | "running" | "stopping" | "error";

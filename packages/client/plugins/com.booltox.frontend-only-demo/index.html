@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Frontend Only Demo</title>
+    <style>
+      body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; background: #0f172a; color: #e2e8f0; }
+      h2 { margin-top: 0; }
+      button { padding: 9px 14px; border-radius: 10px; border: none; cursor: pointer; background: linear-gradient(120deg, #6366f1, #14b8a6); color: white; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h2>Frontend Only Demo</h2>
+    <p>纯前端示例，无后端进程。</p>
+    <button id="toast">点击提示</button>
+    <script>
+      document.getElementById('toast').onclick = () => {
+        alert('Hello BoolTox!');
+      };
+    </script>
+  </body>
+</html>
