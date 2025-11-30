@@ -11,6 +11,7 @@
 
 import { app } from 'electron';
 import { spawn, execSync, ChildProcess } from 'child_process';
+import { createHash } from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import log from 'electron-log';
@@ -67,6 +68,10 @@ export interface RunScriptOptions {
   timeout?: number;
   /** 输出回调（流式输出） */
   onOutput?: (data: string, type: 'stdout' | 'stderr') => void;
+  /** 自定义 Python 可执行路径（默认全局虚拟环境） */
+  pythonPath?: string;
+  /** 关联的虚拟环境路径（用于注入 VIRTUAL_ENV） */
+  venvPath?: string;
 }
 
 /**
@@ -80,6 +85,12 @@ export interface RunScriptResult {
   error?: string;
 }
 
+interface PluginEnvMetadata {
+  pythonVersion: string;
+  requirementsHash?: string;
+  updatedAt: string;
+}
+
 /**
  * Python 运行时管理器
  */
@@ -90,8 +101,10 @@ class PythonManager {
   private pythonInstallDir: string;
   /** 虚拟环境目录 */
   private venvDir: string;
-  /** 插件依赖目录 */
+  /** 插件依赖目录 (legacy) */
   private pluginPackagesDir: string;
+  /** 插件独立虚拟环境目录 */
+  private pluginEnvsDir: string;
   /** 是否已初始化 */
   private initialized: boolean = false;
 
@@ -122,12 +135,14 @@ class PythonManager {
     this.pythonInstallDir = path.join(userDataPath, 'python-runtime');
     this.venvDir = path.join(userDataPath, 'python-venv');
     this.pluginPackagesDir = path.join(userDataPath, 'plugin-packages');
+    this.pluginEnvsDir = path.join(userDataPath, 'plugin-envs');
 
     logger.info('PythonManager 初始化', {
       uvPath: this.uvPath,
       pythonInstallDir: this.pythonInstallDir,
       venvDir: this.venvDir,
-      pluginPackagesDir: this.pluginPackagesDir
+      pluginPackagesDir: this.pluginPackagesDir,
+      pluginEnvsDir: this.pluginEnvsDir
     });
   }
 
@@ -740,11 +755,12 @@ class PythonManager {
     args: string[] = [],
     options: RunScriptOptions = {}
   ): ChildProcess {
-    const pythonPath = this.getPythonPath();
+    const pythonPath = options.pythonPath ?? this.getPythonPath();
     
     const env = {
       ...process.env,
       ...options.env,
+      ...(options.venvPath ? { VIRTUAL_ENV: options.venvPath } : {}),
       PYTHONIOENCODING: 'utf-8',
       PYTHONUNBUFFERED: '1'
     };
@@ -792,7 +808,7 @@ class PythonManager {
    */
   listPluginPackages(pluginId: string): string[] {
     const targetDir = this.getPluginPackagesDir(pluginId);
-    
+
     if (!fs.existsSync(targetDir)) {
       return [];
     }
@@ -812,6 +828,415 @@ class PythonManager {
     }
 
     return packages;
+  }
+
+// ============================================================================
+// 插件独立虚拟环境支持 (新增)
+// ============================================================================
+
+  private getPluginEnvMetadataPath(pluginId: string): string {
+    return path.join(this.getPluginEnvDir(pluginId), 'meta.json');
+  }
+
+  private readPluginEnvMetadata(pluginId: string): PluginEnvMetadata | null {
+    const metadataPath = this.getPluginEnvMetadataPath(pluginId);
+    if (!fs.existsSync(metadataPath)) {
+      return null;
+    }
+    try {
+      const raw = fs.readFileSync(metadataPath, 'utf-8');
+      return JSON.parse(raw) as PluginEnvMetadata;
+    } catch (error) {
+      logger.warn(`读取插件 ${pluginId} 虚拟环境 metadata 失败`, error);
+      return null;
+    }
+  }
+
+  private writePluginEnvMetadata(pluginId: string, metadata: PluginEnvMetadata): void {
+    const metadataPath = this.getPluginEnvMetadataPath(pluginId);
+    try {
+      fs.mkdirSync(path.dirname(metadataPath), { recursive: true });
+      fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
+    } catch (error) {
+      logger.warn(`写入插件 ${pluginId} 虚拟环境 metadata 失败`, error);
+    }
+  }
+
+  private computeFileHash(filePath?: string): string | undefined {
+    if (!filePath || !fs.existsSync(filePath)) {
+      return undefined;
+    }
+    const fileBuffer = fs.readFileSync(filePath);
+    return createHash('sha256').update(fileBuffer).digest('hex');
+  }
+
+  /**
+   * 获取插件独立虚拟环境目录
+   */
+  getPluginEnvDir(pluginId: string): string {
+    return path.join(this.pluginEnvsDir, pluginId);
+  }
+
+  /**
+   * 获取插件独立虚拟环境的 Python 路径
+   */
+  getPluginPythonPath(pluginId: string): string {
+    const envDir = this.getPluginEnvDir(pluginId);
+    if (process.platform === 'win32') {
+      return path.join(envDir, '.venv', 'Scripts', 'python.exe');
+    } else {
+      return path.join(envDir, '.venv', 'bin', 'python');
+    }
+  }
+
+  /**
+   * 检查插件是否有独立虚拟环境
+   */
+  hasPluginEnv(pluginId: string): boolean {
+    const pythonPath = this.getPluginPythonPath(pluginId);
+    return fs.existsSync(pythonPath);
+  }
+
+  /**
+   * 为插件创建独立虚拟环境
+   */
+  async ensurePluginEnv(
+    pluginId: string,
+    requirementsPath?: string,
+    onProgress?: ProgressCallback
+  ): Promise<string> {
+    if (!this.initialized) {
+      await this.ensurePython(onProgress);
+    }
+
+    const envDir = this.getPluginEnvDir(pluginId);
+    const venvPath = path.join(envDir, '.venv');
+    const pythonPath = this.getPluginPythonPath(pluginId);
+    const resolvedRequirements =
+      requirementsPath && fs.existsSync(requirementsPath) ? requirementsPath : undefined;
+    if (requirementsPath && !resolvedRequirements) {
+      logger.warn(`插件 ${pluginId} 未找到 requirements 文件: ${requirementsPath}`);
+    }
+
+    const requirementsHash = this.computeFileHash(resolvedRequirements);
+    const metadata = this.readPluginEnvMetadata(pluginId);
+    const venvExists = fs.existsSync(pythonPath);
+    const versionMismatch = metadata?.pythonVersion && metadata.pythonVersion !== PYTHON_VERSION;
+    let recreated = false;
+
+    if (!venvExists || versionMismatch) {
+      if (venvExists && versionMismatch) {
+        logger.info(`插件 ${pluginId} 虚拟环境 Python 版本变更，重新创建`);
+        fs.rmSync(envDir, { recursive: true, force: true });
+      }
+
+      logger.info(`为插件 ${pluginId} 创建独立虚拟环境: ${venvPath}`);
+      onProgress?.({
+        stage: 'venv',
+        message: `正在为插件 ${pluginId} 创建虚拟环境...`,
+        percent: 0
+      });
+
+      fs.mkdirSync(envDir, { recursive: true });
+
+      const env = {
+        ...process.env,
+        UV_PYTHON_INSTALL_DIR: this.pythonInstallDir
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        const args = ['venv', venvPath, '--python', PYTHON_VERSION];
+        logger.info('执行命令:', this.uvPath, args.join(' '));
+
+        const proc = spawn(this.uvPath, args, {
+          env,
+          windowsHide: true
+        });
+
+        let stderr = '';
+
+        proc.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        proc.on('close', (code) => {
+          if (code === 0) {
+            logger.info(`插件 ${pluginId} 虚拟环境创建成功`);
+            onProgress?.({
+              stage: 'venv',
+              message: '虚拟环境创建完成',
+              percent: 50
+            });
+            resolve();
+          } else {
+            const error = new Error(`虚拟环境创建失败 (code: ${code}): ${stderr}`);
+            logger.error(error);
+            reject(error);
+          }
+        });
+
+        proc.on('error', reject);
+      });
+
+      recreated = true;
+    }
+
+    if (resolvedRequirements) {
+      const needsInstall =
+        recreated ||
+        !metadata ||
+        metadata.requirementsHash !== requirementsHash ||
+        metadata.pythonVersion !== PYTHON_VERSION;
+      if (needsInstall) {
+        await this.installPluginEnvRequirements(pluginId, resolvedRequirements, onProgress);
+      } else {
+        logger.info(`插件 ${pluginId} requirements 未变化，跳过安装`);
+      }
+    }
+
+    this.writePluginEnvMetadata(pluginId, {
+      pythonVersion: PYTHON_VERSION,
+      requirementsHash,
+      updatedAt: new Date().toISOString()
+    });
+
+    return venvPath;
+  }
+
+  /**
+   * 在插件独立虚拟环境中安装依赖
+   */
+  async installPluginEnvPackages(
+    pluginId: string,
+    packages: string[],
+    onProgress?: ProgressCallback
+  ): Promise<void> {
+    const venvPath = path.join(this.getPluginEnvDir(pluginId), '.venv');
+
+    if (!fs.existsSync(venvPath)) {
+      await this.ensurePluginEnv(pluginId, undefined, onProgress);
+    }
+
+    logger.info(`在插件 ${pluginId} 虚拟环境中安装依赖:`, packages);
+
+    onProgress?.({
+      stage: 'deps',
+      message: `正在安装: ${packages.join(', ')}`,
+      percent: 0
+    });
+
+    const env = {
+      ...process.env,
+      VIRTUAL_ENV: venvPath
+    };
+
+    return new Promise((resolve, reject) => {
+      const args = ['pip', 'install', ...packages];
+
+      const proc = spawn(this.uvPath, args, {
+        env,
+        windowsHide: true
+      });
+
+      let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        logger.debug('[pip stdout]', data.toString().trim());
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+        logger.debug('[pip stderr]', data.toString().trim());
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          logger.info(`插件 ${pluginId} 依赖安装成功`);
+          onProgress?.({
+            stage: 'deps',
+            message: '依赖安装完成',
+            percent: 100
+          });
+          resolve();
+        } else {
+          const error = new Error(`依赖安装失败 (code: ${code}): ${stderr}`);
+          logger.error(error);
+          reject(error);
+        }
+      });
+
+      proc.on('error', reject);
+    });
+  }
+
+  /**
+   * 从 requirements.txt 安装依赖到插件独立虚拟环境
+   */
+  async installPluginEnvRequirements(
+    pluginId: string,
+    requirementsPath: string,
+    onProgress?: ProgressCallback
+  ): Promise<void> {
+    const venvPath = path.join(this.getPluginEnvDir(pluginId), '.venv');
+
+    if (!fs.existsSync(venvPath)) {
+      await this.ensurePluginEnv(pluginId, undefined, onProgress);
+    }
+
+    logger.info(`从 ${requirementsPath} 安装依赖到插件 ${pluginId} 虚拟环境`);
+
+    onProgress?.({
+      stage: 'deps',
+      message: '正在安装 requirements.txt 中的依赖...',
+      percent: 0
+    });
+
+    const env = {
+      ...process.env,
+      VIRTUAL_ENV: venvPath
+    };
+
+    return new Promise((resolve, reject) => {
+      const args = ['pip', 'install', '-r', requirementsPath];
+
+      const proc = spawn(this.uvPath, args, {
+        env,
+        windowsHide: true
+      });
+
+      let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        logger.debug('[pip stdout]', data.toString().trim());
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          logger.info(`插件 ${pluginId} requirements.txt 依赖安装成功`);
+          onProgress?.({
+            stage: 'deps',
+            message: 'requirements.txt 依赖安装完成',
+            percent: 100
+          });
+          resolve();
+        } else {
+          reject(new Error(`依赖安装失败 (code: ${code}): ${stderr}`));
+        }
+      });
+
+      proc.on('error', reject);
+    });
+  }
+
+  /**
+   * 使用插件独立虚拟环境启动 Python 进程
+   */
+  spawnPluginPython(
+    pluginId: string,
+    scriptPath: string,
+    args: string[] = [],
+    options: RunScriptOptions = {}
+  ): ChildProcess {
+    const pythonPath = this.getPluginPythonPath(pluginId);
+
+    // 如果插件没有独立环境，回退到全局环境
+    const actualPythonPath = fs.existsSync(pythonPath)
+      ? pythonPath
+      : this.getPythonPath();
+
+    const env = {
+      ...process.env,
+      ...options.env,
+      PYTHONIOENCODING: 'utf-8',
+      PYTHONUNBUFFERED: '1'
+    };
+
+    const proc = spawn(actualPythonPath, [scriptPath, ...args], {
+      cwd: options.cwd,
+      env,
+      windowsHide: true
+    });
+
+    logger.info(`启动插件 ${pluginId} Python 进程:`, scriptPath, 'PID:', proc.pid);
+
+    return proc;
+  }
+
+  /**
+   * 删除插件独立虚拟环境
+   */
+  async removePluginEnv(pluginId: string): Promise<void> {
+    const envDir = this.getPluginEnvDir(pluginId);
+
+    if (fs.existsSync(envDir)) {
+      logger.info(`删除插件 ${pluginId} 虚拟环境: ${envDir}`);
+      fs.rmSync(envDir, { recursive: true, force: true });
+    }
+  }
+
+  /**
+   * 列出所有插件虚拟环境
+   */
+  listPluginEnvs(): string[] {
+    if (!fs.existsSync(this.pluginEnvsDir)) {
+      return [];
+    }
+
+    return fs.readdirSync(this.pluginEnvsDir).filter(name => {
+      const envDir = path.join(this.pluginEnvsDir, name, '.venv');
+      return fs.existsSync(envDir);
+    });
+  }
+
+  /**
+   * 解析插件后端运行所需的 Python 环境（共享或独立）
+   */
+  async resolveBackendEnvironment(options: {
+    pluginId: string;
+    pluginPath: string;
+    requirementsPath?: string;
+  }): Promise<{ pythonPath: string; venvPath?: string; additionalPythonPaths: string[] }> {
+    const { pluginId, pluginPath, requirementsPath } = options;
+    let resolvedRequirements: string | undefined;
+    if (requirementsPath) {
+      resolvedRequirements = path.isAbsolute(requirementsPath)
+        ? requirementsPath
+        : path.join(pluginPath, requirementsPath);
+    }
+
+    if (resolvedRequirements && fs.existsSync(resolvedRequirements)) {
+      const venvPath = await this.ensurePluginEnv(pluginId, resolvedRequirements);
+      return {
+        pythonPath: this.getPluginPythonPath(pluginId),
+        venvPath,
+        additionalPythonPaths: []
+      };
+    }
+
+    await this.ensurePython();
+    const pluginPackagesDir = this.getPluginPackagesDir(pluginId);
+    fs.mkdirSync(pluginPackagesDir, { recursive: true });
+    return {
+      pythonPath: this.getPythonPath(),
+      venvPath: this.venvDir,
+      additionalPythonPaths: [pluginPackagesDir]
+    };
+  }
+
+  // ============================================================================
+  // SDK 路径管理
+  // ============================================================================
+
+  /**
+   * 获取 Python SDK 路径
+   */
+  getPythonSdkPath(): string {
+    const resourcesPath = app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources');
+    return path.join(resourcesPath, 'python-sdk');
   }
 }
 

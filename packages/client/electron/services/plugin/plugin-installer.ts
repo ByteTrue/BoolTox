@@ -251,8 +251,16 @@ export class PluginInstallerService {
       const content = await fs.readFile(manifestPath, 'utf-8');
       const manifest = JSON.parse(content);
 
-      if (!manifest.id || !manifest.version || !manifest.name || !manifest.main) {
-        throw new Error('manifest.json 缺少必需字段');
+      const hasWebEntry =
+        typeof manifest.main === 'string' ||
+        (manifest.runtime &&
+          manifest.runtime.type !== 'standalone' &&
+          typeof manifest.runtime?.ui?.entry === 'string');
+      const hasStandaloneEntry =
+        manifest.runtime?.type === 'standalone' && typeof manifest.runtime.entry === 'string';
+
+      if (!manifest.id || !manifest.version || !manifest.name || (!hasWebEntry && !hasStandaloneEntry)) {
+        throw new Error('manifest.json 缺少必需字段（需要 main 或 standalone entry）');
       }
 
       if (manifest.id !== expectedId) {

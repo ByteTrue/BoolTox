@@ -1,7 +1,8 @@
 import { app } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
-import { BOOLTOX_PROTOCOL_VERSION, PluginManifest, PluginRuntime } from '@booltox/shared';
+import fsSync from 'fs';
+import { BOOLTOX_PROTOCOL_VERSION, PluginManifest, PluginRuntime, PluginRuntimeConfig } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('PluginManager');
@@ -19,16 +20,11 @@ export class PluginManager {
     // 只在开发模式下加载开发目录的插件
     // 使用 app.isPackaged 判断更可靠,打包后为 true,开发时为 false
     if (!app.isPackaged) {
-      // Try to find the plugins directory relative to CWD or APP_ROOT
-      // In dev mode, CWD is usually packages/client
-      this.devPluginsDir = path.resolve(process.cwd(), 'plugins');
-      
-      // Fallback if not found
-      if (process.env.APP_ROOT) {
-         const altPath = path.join(process.env.APP_ROOT, 'plugins');
-         if (altPath !== this.devPluginsDir) {
-             // We'll check both or just prefer one. Let's stick to CWD for now as it's more reliable in dev
-         }
+      this.devPluginsDir = this.resolveDevPluginsDir();
+      if (this.devPluginsDir) {
+        logger.info(`[PluginManager] Dev plugins dir resolved: ${this.devPluginsDir}`);
+      } else {
+        logger.warn('[PluginManager] Dev plugins dir not found, will only load installed plugins');
       }
     }
   }
@@ -109,7 +105,8 @@ export class PluginManager {
         manifest,
         path: pluginPath,
         status: 'stopped',
-        isDev
+        isDev,
+        mode: manifest.runtime?.type === 'standalone' ? 'standalone' : 'webview'
       };
 
       this.plugins.set(manifest.id, runtime);
@@ -142,34 +139,22 @@ export class PluginManager {
       return null;
     }
 
-    const runtime =
-      manifest.runtime ??
-      (manifest.main
-        ? {
-            ui: {
-              type: 'webview' as const,
-              entry: manifest.main,
-            },
-          }
-        : undefined);
-
-    const entry = runtime?.ui?.entry ?? manifest.main;
-    if (!entry) {
-      logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing runtime.ui.entry or main`);
+    const runtime = this.resolveRuntimeConfig(manifest, pluginPath);
+    if (!runtime) {
       return null;
     }
+
+    const normalizedMain =
+      runtime.type === 'standalone'
+        ? manifest.main ?? runtime.entry
+        : runtime.ui.entry;
 
     return {
       ...manifest,
       permissions: normalizedPermissions,
       protocol: protocolRange,
-      main: entry,
-      runtime: runtime ?? {
-        ui: {
-          type: 'webview',
-          entry,
-        },
-      },
+      main: normalizedMain,
+      runtime,
     };
   }
 
@@ -221,6 +206,67 @@ export class PluginManager {
     }
 
     return compare(version, range) === 0;
+  }
+
+  private resolveRuntimeConfig(manifest: PluginManifest, pluginPath: string): PluginRuntimeConfig | null {
+    const runtime = manifest.runtime;
+
+    if (runtime && runtime.type === 'standalone') {
+      if (!runtime.entry) {
+        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: standalone runtime missing entry`);
+        return null;
+      }
+      return {
+        type: 'standalone',
+        entry: runtime.entry,
+        args: runtime.args,
+        env: runtime.env,
+        requirements: runtime.requirements,
+      };
+    }
+
+    const entry = runtime?.ui?.entry ?? manifest.main;
+    if (!entry) {
+      logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing runtime.ui.entry or main`);
+      return null;
+    }
+
+    return {
+      type: 'webview',
+      ui: {
+        type: runtime?.ui?.type ?? 'webview',
+        entry,
+        assetsDir: runtime?.ui?.assetsDir,
+      },
+      backend: runtime?.backend,
+    };
+  }
+
+  private resolveDevPluginsDir(): string | undefined {
+    if (app.isPackaged) {
+      return undefined;
+    }
+
+    const override = process.env.BOOLTOX_DEV_PLUGINS_DIR;
+    if (override && fsSync.existsSync(override)) {
+      return override;
+    }
+
+    const candidates = [
+      path.resolve(process.cwd(), 'plugins'),
+      path.resolve(process.cwd(), 'packages/client/plugins'),
+      path.resolve(app.getAppPath(), 'plugins'),
+      path.resolve(app.getAppPath(), '../plugins'),
+    ];
+
+    for (const dir of candidates) {
+      if (fsSync.existsSync(dir)) {
+        return dir;
+      }
+    }
+
+    // 最后兜底返回默认路径（即使不存在，也让 scanDir 尝试一次）
+    return candidates[0];
   }
 }
 

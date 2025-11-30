@@ -22,6 +22,18 @@
         "from": "resources/uv/darwin-${arch}",
         "to": "uv",
         "filter": ["**/*"]
+      },
+      // Node.js SDK (从根目录 resources)
+      {
+        "from": "../../resources/node-sdk",
+        "to": "node-sdk",
+        "filter": ["**/*"]
+      },
+      // Python SDK (从 packages/client/resources)
+      {
+        "from": "resources/python-sdk",
+        "to": "python-sdk",
+        "filter": ["**/*"]
       }
     ],
     "target": [
@@ -35,6 +47,18 @@
       {
         "from": "resources/uv/win-x64",
         "to": "uv",
+        "filter": ["**/*"]
+      },
+      // Node.js SDK (从根目录 resources)
+      {
+        "from": "../../resources/node-sdk",
+        "to": "node-sdk",
+        "filter": ["**/*"]
+      },
+      // Python SDK (从 packages/client/resources)
+      {
+        "from": "resources/python-sdk",
+        "to": "python-sdk",
         "filter": ["**/*"]
       }
     ],
@@ -60,6 +84,18 @@
       {
         "from": "resources/uv/linux-x64",
         "to": "uv",
+        "filter": ["**/*"]
+      },
+      // Node.js SDK (从根目录 resources)
+      {
+        "from": "../../resources/node-sdk",
+        "to": "node-sdk",
+        "filter": ["**/*"]
+      },
+      // Python SDK (从 packages/client/resources)
+      {
+        "from": "resources/python-sdk",
+        "to": "python-sdk",
         "filter": ["**/*"]
       }
     ],
