@@ -1,4 +1,4 @@
-export const BOOLTOX_PROTOCOL_VERSION = '1.0.0';
+export const BOOLTOX_PROTOCOL_VERSION = '2.0.0';
 
 export type BooltoxPermission =
   | 'window.hide'
@@ -189,6 +189,8 @@ export interface PluginBackendConfig {
   args?: string[];
   env?: Record<string, string>;
   keepAlive?: boolean;
+  /** Relative path to requirements.txt for Python backend */
+  requirements?: string;
 }
 
 export interface PluginUiRuntime {
@@ -197,7 +199,18 @@ export interface PluginUiRuntime {
   assetsDir?: string;
 }
 
-export interface PluginRuntimeConfig {
-  ui?: PluginUiRuntime;
+export interface PluginWebRuntimeConfig {
+  type?: 'webview';
+  ui: PluginUiRuntime;
   backend?: PluginBackendConfig;
 }
+
+export interface PluginStandaloneRuntimeConfig {
+  type: 'standalone';
+  entry: string;
+  args?: string[];
+  env?: Record<string, string>;
+  requirements?: string;
+}
+
+export type PluginRuntimeConfig = PluginWebRuntimeConfig | PluginStandaloneRuntimeConfig;

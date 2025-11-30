@@ -20,7 +20,7 @@ export interface PluginManifest {
   icon?: string;
   /** Requested permissions */
   permissions?: BooltoxPermission[];
-  /** Protocol version range, e.g. "^1.0.0" */
+  /** Protocol version range, e.g. "^2.0.0" */
   protocol?: string;
   /** Activation events */
   activation?: PluginActivationEvent[];
@@ -48,6 +48,7 @@ export interface PluginRuntime {
   /** Absolute path to the plugin directory on disk */
   path: string;
   status: 'stopped' | 'running' | 'loading' | 'error';
+  mode?: 'webview' | 'standalone';
   /** WebContents ID of the BrowserView (if running) */
   viewId?: number;
   /** BrowserWindow ID (when running in dedicated window mode) */
