@@ -56,6 +56,22 @@ export type ProgressCallback = (progress: {
   percent?: number;
 }) => void;
 
+type ProgressStage = Parameters<ProgressCallback>[0]['stage'];
+
+function emitProgressLog(
+  onProgress: ProgressCallback | undefined,
+  stage: ProgressStage,
+  chunk: Buffer | string
+) {
+  if (!onProgress) return;
+  const text = chunk.toString();
+  text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .forEach((line) => onProgress({ stage, message: line }));
+}
+
 /**
  * 脚本执行选项
  */
@@ -326,6 +342,7 @@ class PythonManager {
       proc.stdout.on('data', (data) => {
         const text = data.toString();
         logger.debug('[uv stdout]', text.trim());
+        emitProgressLog(onProgress, 'install', text);
         
         // 解析进度（uv 会输出下载进度）
         if (text.includes('Downloading')) {
@@ -347,6 +364,7 @@ class PythonManager {
         const text = data.toString();
         stderr += text;
         logger.debug('[uv stderr]', text.trim());
+        emitProgressLog(onProgress, 'install', text);
       });
 
       proc.on('close', (code) => {
@@ -402,6 +420,7 @@ class PythonManager {
 
       proc.stderr.on('data', (data) => {
         stderr += data.toString();
+        emitProgressLog(onProgress, 'venv', data);
       });
 
       proc.on('close', (code) => {
@@ -460,11 +479,13 @@ class PythonManager {
 
       proc.stdout.on('data', (data) => {
         logger.debug('[pip stdout]', data.toString().trim());
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.stderr.on('data', (data) => {
         stderr += data.toString();
         logger.debug('[pip stderr]', data.toString().trim());
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.on('close', (code) => {
@@ -527,10 +548,12 @@ class PythonManager {
 
       proc.stdout.on('data', (data) => {
         logger.debug('[pip stdout]', data.toString().trim());
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.stderr.on('data', (data) => {
         stderr += data.toString();
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.on('close', (code) => {
@@ -871,6 +894,31 @@ class PythonManager {
   }
 
   /**
+   * 判断插件是否需要重新安装 requirements（新建环境或依赖变更）
+   */
+  needsPluginRequirementsSetup(pluginId: string, requirementsPath?: string): boolean {
+    if (!requirementsPath || !fs.existsSync(requirementsPath)) {
+      return false;
+    }
+    const hasEnv = this.hasPluginEnv(pluginId);
+    if (!hasEnv) {
+      return true;
+    }
+    const metadata = this.readPluginEnvMetadata(pluginId);
+    if (!metadata) {
+      return true;
+    }
+    if (metadata.pythonVersion && metadata.pythonVersion !== PYTHON_VERSION) {
+      return true;
+    }
+    const requirementsHash = this.computeFileHash(requirementsPath);
+    if (!requirementsHash) {
+      return false;
+    }
+    return metadata.requirementsHash !== requirementsHash;
+  }
+
+  /**
    * 获取插件独立虚拟环境目录
    */
   getPluginEnvDir(pluginId: string): string {
@@ -920,7 +968,7 @@ class PythonManager {
 
     const requirementsHash = this.computeFileHash(resolvedRequirements);
     const metadata = this.readPluginEnvMetadata(pluginId);
-    const venvExists = fs.existsSync(pythonPath);
+    let venvExists = fs.existsSync(pythonPath);
     const versionMismatch = metadata?.pythonVersion && metadata.pythonVersion !== PYTHON_VERSION;
     let recreated = false;
 
@@ -987,6 +1035,17 @@ class PythonManager {
         !metadata ||
         metadata.requirementsHash !== requirementsHash ||
         metadata.pythonVersion !== PYTHON_VERSION;
+
+      if (needsInstall && venvExists && !recreated) {
+        logger.info(`插件 ${pluginId} 依赖发生变化，删除旧虚拟环境重新安装`);
+        try {
+          fs.rmSync(envDir, { recursive: true, force: true });
+        } catch (error) {
+          logger.warn(`删除插件 ${pluginId} 虚拟环境失败`, error);
+        }
+        return this.ensurePluginEnv(pluginId, resolvedRequirements, onProgress);
+      }
+
       if (needsInstall) {
         await this.installPluginEnvRequirements(pluginId, resolvedRequirements, onProgress);
       } else {

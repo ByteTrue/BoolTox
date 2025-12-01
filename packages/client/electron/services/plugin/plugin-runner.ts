@@ -210,35 +210,27 @@ export class PluginRunner {
           ? backendConfig.requirements
           : path.join(state.runtime.path, backendConfig.requirements);
 
-        // 检查 requirements.txt 是否存在
-        const fs = await import('node:fs');
-        if (fs.existsSync(requirementsPath)) {
-          // 检查虚拟环境是否已存在
-          const hasEnv = pythonManager.hasPluginEnv(pluginId);
+        const needsSetup = pythonManager.needsPluginRequirementsSetup(pluginId, requirementsPath);
+        if (needsSetup) {
+          logger.info(`插件 ${pluginId} 需要安装依赖，显示安装窗口`);
 
-          // 如果虚拟环境不存在，显示安装窗口
-          if (!hasEnv) {
-            logger.info(`插件 ${pluginId} 需要安装依赖，显示安装窗口`);
+          const { showPythonDepsInstaller } = await import('../../windows/python-deps-installer.js');
+          const result = await showPythonDepsInstaller({
+            pluginId: pluginId,
+            pluginName: state.runtime.manifest.name,
+            pluginPath: state.runtime.path,
+            requirementsPath,
+          });
 
-            const { showPythonDepsInstaller } = await import('../../windows/python-deps-installer.js');
-            const result = await showPythonDepsInstaller({
-              pluginId: pluginId,
-              pluginName: state.runtime.manifest.name,
-              pluginPath: state.runtime.path,
-              requirementsPath,
-            });
-
-            // 用户取消或安装失败
-            if (!result.success) {
-              const errorMsg = result.cancelled
-                ? '用户取消了依赖安装'
-                : '依赖安装失败';
-              logger.warn(`插件 ${pluginId}: ${errorMsg}`);
-              throw new Error(errorMsg);
-            }
-
-            logger.info(`插件 ${pluginId} 依赖安装成功`);
+          if (!result.success) {
+            const errorMsg = result.cancelled
+              ? '用户取消了依赖安装'
+              : '依赖安装失败';
+            logger.warn(`插件 ${pluginId}: ${errorMsg}`);
+            throw new Error(errorMsg);
           }
+
+          logger.info(`插件 ${pluginId} 依赖安装成功`);
         }
       }
 
@@ -338,35 +330,27 @@ export class PluginRunner {
           ? runtimeConfig.requirements
           : path.join(state.runtime.path, runtimeConfig.requirements);
 
-        // 检查 requirements.txt 是否存在
-        const fs = await import('node:fs');
-        if (fs.existsSync(requirementsPath)) {
-          // 检查虚拟环境是否已存在
-          const hasEnv = pythonManager.hasPluginEnv(pluginId);
+        const needsSetup = pythonManager.needsPluginRequirementsSetup(pluginId, requirementsPath);
+        if (needsSetup) {
+          logger.info(`插件 ${pluginId} 需要安装依赖，显示安装窗口`);
 
-          // 如果虚拟环境不存在，显示安装窗口
-          if (!hasEnv) {
-            logger.info(`插件 ${pluginId} 需要安装依赖，显示安装窗口`);
+          const { showPythonDepsInstaller } = await import('../../windows/python-deps-installer.js');
+          const result = await showPythonDepsInstaller({
+            pluginId: pluginId,
+            pluginName: state.runtime.manifest.name,
+            pluginPath: state.runtime.path,
+            requirementsPath,
+          });
 
-            const { showPythonDepsInstaller } = await import('../../windows/python-deps-installer.js');
-            const result = await showPythonDepsInstaller({
-              pluginId: pluginId,
-              pluginName: state.runtime.manifest.name,
-              pluginPath: state.runtime.path,
-              requirementsPath,
-            });
-
-            // 用户取消或安装失败
-            if (!result.success) {
-              const errorMsg = result.cancelled
-                ? '用户取消了依赖安装'
-                : '依赖安装失败';
-              logger.warn(`插件 ${pluginId}: ${errorMsg}`);
-              throw new Error(errorMsg);
-            }
-
-            logger.info(`插件 ${pluginId} 依赖安装成功`);
+          if (!result.success) {
+            const errorMsg = result.cancelled
+              ? '用户取消了依赖安装'
+              : '依赖安装失败';
+            logger.warn(`插件 ${pluginId}: ${errorMsg}`);
+            throw new Error(errorMsg);
           }
+
+          logger.info(`插件 ${pluginId} 依赖安装成功`);
         }
       }
 

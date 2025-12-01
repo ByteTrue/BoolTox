@@ -96,19 +96,6 @@ export async function showPythonDepsInstaller(
     // 处理用户操作
     let isInstalling = false;
 
-    function bindWindowControl(id, action) {
-      const button = document.getElementById(id);
-      if (!button) return;
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        ipcRenderer.invoke('window:control', action);
-      });
-    }
-
-    bindWindowControl('window-minimize', 'minimize');
-    bindWindowControl('window-maximize', 'toggle-maximize');
-    bindWindowControl('window-close', 'close');
-
     // 取消按钮
     ipcMain.once(`python-deps:cancel:${pluginId}`, () => {
       if (!isInstalling) {
@@ -752,6 +739,19 @@ function generateInstallerHTML(options: {
       installText.textContent = '安装失败';
       installSpinner.classList.add('hidden');
     });
+
+    function bindWindowControl(id, action) {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        ipcRenderer.invoke('window:control', action);
+      });
+    }
+
+    bindWindowControl('window-minimize', 'minimize');
+    bindWindowControl('window-maximize', 'toggle-maximize');
+    bindWindowControl('window-close', 'close');
   </script>
 </body>
 </html>

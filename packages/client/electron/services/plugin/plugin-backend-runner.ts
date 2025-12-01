@@ -126,11 +126,8 @@ export class PluginBackendRunner extends EventEmitter {
 
         // 检查 requirements.txt 是否存在
         if (fs.existsSync(requirementsPath)) {
-          // 检查虚拟环境是否已存在
-          const hasEnv = pythonManager.hasPluginEnv(plugin.id);
-
-          // 如果虚拟环境不存在，显示安装窗口
-          if (!hasEnv) {
+          const needsSetup = pythonManager.needsPluginRequirementsSetup(plugin.id, requirementsPath);
+          if (needsSetup) {
             logger.info(`插件 ${plugin.id} 需要安装依赖，显示安装窗口`);
 
             const { showPythonDepsInstaller } = await loadPythonDepsInstaller();
@@ -141,7 +138,6 @@ export class PluginBackendRunner extends EventEmitter {
               requirementsPath,
             });
 
-            // 用户取消或安装失败
             if (!result.success) {
               const errorMsg = result.cancelled
                 ? '用户取消了依赖安装'

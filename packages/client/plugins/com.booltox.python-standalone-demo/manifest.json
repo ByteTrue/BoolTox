@@ -1,8 +1,8 @@
 {
   "id": "com.booltox.python-standalone-demo",
-  "version": "0.1.0",
-  "name": "Python Standalone Demo",
-  "description": "纯 Python GUI 示例 (tkinter)",
+  "version": "2.0.0",
+  "name": "番茄钟计时器",
+  "description": "使用 PySide6 + QFluentWidgets 构建的现代番茄钟，支持统计与系统通知",
   "protocol": "^2.0.0",
   "runtime": {
     "type": "standalone",
@@ -11,9 +11,10 @@
   },
   "permissions": [],
   "window": {
-    "width": 640,
-    "height": 480
+    "width": 960,
+    "height": 640,
+    "resizable": true
   },
   "author": "BoolTox Team",
-  "keywords": ["python", "standalone", "gui"]
+  "keywords": ["python", "pomodoro", "standalone", "qfluentwidgets"]
 }
