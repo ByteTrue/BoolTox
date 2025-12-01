@@ -2,195 +2,117 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <title>Node Backend Demo</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <style>
-      :root {
-        color-scheme: dark;
-        font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      }
-      body {
-        margin: 0;
-        padding: 24px;
-        background: radial-gradient(circle at top, rgba(52, 211, 153, 0.14), transparent 45%) #0b1220;
-        color: #e2e8f0;
-      }
-      h1 {
-        margin: 0 0 4px;
-        font-size: 20px;
-      }
-      p {
-        margin: 0 0 16px;
-        color: #94a3b8;
-      }
-      button {
-        border: none;
-        border-radius: 8px;
-        padding: 10px 14px;
-        font-size: 14px;
-        cursor: pointer;
-        font-weight: 600;
-        background: linear-gradient(120deg, #22c55e, #14b8a6);
-        color: white;
-        margin-right: 8px;
-      }
-      button:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-      input, textarea {
-        width: 100%;
-        border-radius: 10px;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        background: rgba(15, 23, 42, 0.7);
-        color: #e2e8f0;
-        padding: 10px 12px;
-        font-size: 14px;
-        box-sizing: border-box;
-      }
-      textarea {
-        min-height: 100px;
-        resize: vertical;
-        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-      }
-      pre {
-        background: rgba(15, 23, 42, 0.65);
-        border-radius: 12px;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        padding: 12px;
-        max-height: 260px;
-        overflow: auto;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-      .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 12px;
-        font-size: 14px;
-      }
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 999px;
-        background: #f87171;
-      }
-      .dot.ready {
-        background: #34d399;
-        box-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
-      }
-    </style>
+    <title>正则表达式测试器 · BoolTox</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <h1>Node Backend Demo</h1>
-    <p>使用 <code>booltox-backend</code> SDK（JSON-RPC）启动 Node 后端并与前端通信。</p>
-    <div class="status">
-      <span id="status-dot" class="dot"></span>
-      <span id="status-label">后端未启动</span>
+    <header class="app-header">
+      <div>
+        <h1>正则表达式测试器</h1>
+        <p>Node.js 后端 + JSON-RPC · 超时保护 · 实时高亮</p>
+      </div>
+      <div class="status">
+        <span id="status-dot" class="status-dot"></span>
+        <span id="status-label">后端未连接</span>
+        <button id="restart-btn" class="ghost" style="margin-left: 12px;">重新连接</button>
+        <button id="stop-btn" class="ghost">断开</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="panel stack">
+        <div>
+          <h2>正则编辑器</h2>
+          <label for="pattern-input" style="display:block;margin-bottom:6px;color:var(--muted);">Pattern</label>
+          <textarea id="pattern-input" placeholder="请输入正则表达式，支持命名捕获"></textarea>
+          <div style="margin:12px 0; display:flex; justify-content:space-between; align-items:center;">
+            <div class="flag-group" id="flag-group">
+              <button type="button" class="flag-btn" data-flag="g">g</button>
+              <button type="button" class="flag-btn" data-flag="i">i</button>
+              <button type="button" class="flag-btn" data-flag="m">m</button>
+              <button type="button" class="flag-btn" data-flag="s">s</button>
+              <button type="button" class="flag-btn" data-flag="u">u</button>
+            </div>
+            <button id="validate-btn" class="secondary" style="min-width:120px;">语法校验</button>
+          </div>
+          <div id="validate-result" style="font-size:13px;color:var(--muted);"></div>
+        </div>
+
+        <div>
+          <h2>常用模式</h2>
+          <div class="template-list" id="pattern-list"></div>
+        </div>
+
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h2>历史记录</h2>
+            <button id="clear-history" class="ghost" style="padding:6px 10px;font-size:12px;">清空</button>
+          </div>
+          <div class="history-list" id="history-list"></div>
+        </div>
+      </section>
+
+      <section class="main-panel">
+        <div class="panel">
+          <h2>测试文本</h2>
+          <textarea id="test-text" placeholder="粘贴或输入要匹配的文本"></textarea>
+          <label for="replacement-input" style="display:block;margin:12px 0 6px;color:var(--muted);">替换模板（支持 $1、$<name>）</label>
+          <input id="replacement-input" placeholder="请输入替换字符串" />
+          <div class="actions" style="margin-top:16px;">
+            <button id="run-test">运行匹配</button>
+            <button id="run-replace" class="secondary">执行替换</button>
+          </div>
+          <div id="banner" class="banner"></div>
+        </div>
+
+        <div class="panel">
+          <h2>结果概览</h2>
+          <div class="summary-grid">
+            <div class="metric">
+              <span>匹配总数</span>
+              <strong id="summary-total">-</strong>
+            </div>
+            <div class="metric">
+              <span>唯一匹配</span>
+              <strong id="summary-unique">-</strong>
+            </div>
+            <div class="metric">
+              <span>耗时 (ms)</span>
+              <strong id="summary-time">-</strong>
+            </div>
+            <div class="metric">
+              <span>捕获组</span>
+              <strong id="summary-groups">-</strong>
+            </div>
+          </div>
+          <div style="margin-top:16px;">
+            <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px;" id="progress-label">等待任务</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>高亮预览</h2>
+          <div id="highlight-preview" class="highlight-preview">尚无匹配，点击“运行匹配”查看结果。</div>
+        </div>
+
+        <div class="panel">
+          <h2>匹配详情</h2>
+          <div class="matches" id="match-list"></div>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>替换预览</h2>
+            <button id="copy-replace" class="ghost" style="padding:6px 10px;font-size:12px;">复制预览</button>
+          </div>
+          <div id="replacement-meta" style="font-size:12px;color:var(--muted);margin:8px 0 12px;"></div>
+          <div class="replacement" id="replacement-preview">暂无替换输出</div>
+        </div>
+      </section>
     </div>
 
-    <div style="margin-bottom: 16px;">
-      <button id="start-btn">启动后端</button>
-      <button id="fetch-btn" disabled>call: getData</button>
-      <button id="notify-btn" disabled>notify: echo</button>
-      <button id="dispose-btn" disabled style="background: rgba(248, 113, 113, 0.25); color: #fecaca;">结束后端</button>
-    </div>
-
-    <label for="resource-id">资源 ID</label>
-    <input id="resource-id" value="demo" />
-
-    <h3>事件流</h3>
-    <pre id="log"></pre>
-
-    <script>
-      const logEl = document.getElementById('log');
-      const statusDot = document.getElementById('status-dot');
-      const statusLabel = document.getElementById('status-label');
-      const startBtn = document.getElementById('start-btn');
-      const fetchBtn = document.getElementById('fetch-btn');
-      const notifyBtn = document.getElementById('notify-btn');
-      const disposeBtn = document.getElementById('dispose-btn');
-      const resourceIdEl = document.getElementById('resource-id');
-
-      let channelId = null;
-      let removeProgressListener = null;
-
-      function appendLog(type, data) {
-        const ts = new Date().toLocaleTimeString();
-        const safe = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-        logEl.textContent += `[${ts}] ${type.toUpperCase()} → ${safe}\n`;
-        logEl.scrollTop = logEl.scrollHeight;
-      }
-
-      function setStatus(text, ready) {
-        statusLabel.textContent = text;
-        statusDot.classList.toggle('ready', ready);
-      }
-
-      async function ensureReady(id) {
-        await window.booltox.backend.waitForReady(id);
-        setStatus(`后端已就绪 (Channel ${id})`, true);
-      }
-
-      startBtn.addEventListener('click', async () => {
-        try {
-          setStatus('启动中...', false);
-          const handle = await window.booltox.backend.register();
-          channelId = handle.channelId;
-          appendLog('info', `backend channel ${channelId}, pid: ${handle.pid ?? 'unknown'}`);
-          await ensureReady(channelId);
-          fetchBtn.disabled = false;
-          notifyBtn.disabled = false;
-          disposeBtn.disabled = false;
-
-          removeProgressListener = window.booltox.backend.on(channelId, 'progress', (data) => {
-            appendLog('progress', data);
-          });
-        } catch (error) {
-          appendLog('error', error?.message ?? String(error));
-          setStatus('启动失败', false);
-        }
-      });
-
-      fetchBtn.addEventListener('click', async () => {
-        if (!channelId) return;
-        const id = resourceIdEl.value || 'demo';
-        try {
-          const result = await window.booltox.backend.call(channelId, 'getData', { id });
-          appendLog('result', result);
-        } catch (error) {
-          appendLog('error', error?.message ?? String(error));
-        }
-      });
-
-      notifyBtn.addEventListener('click', async () => {
-        if (!channelId) return;
-        await window.booltox.backend.notify(channelId, 'echo', { message: 'hello from frontend' });
-        appendLog('notify', { message: 'echo sent' });
-      });
-
-      disposeBtn.addEventListener('click', async () => {
-        if (!channelId) return;
-        await window.booltox.backend.dispose(channelId);
-        appendLog('info', '手动结束后端');
-        setStatus('后端已手动退出', false);
-        fetchBtn.disabled = true;
-        notifyBtn.disabled = true;
-        disposeBtn.disabled = true;
-        if (removeProgressListener) {
-          removeProgressListener();
-          removeProgressListener = null;
-        }
-        channelId = null;
-      });
-
-      window.addEventListener('beforeunload', () => {
-        if (channelId) {
-          window.booltox.backend.dispose(channelId);
-        }
-        if (removeProgressListener) removeProgressListener();
-      });
-    </script>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

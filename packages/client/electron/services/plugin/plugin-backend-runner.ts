@@ -15,7 +15,6 @@ import {
 } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import { pythonManager } from '../python-manager.service.js';
-import { showPythonDepsInstaller } from '../../windows/python-deps-installer.js';
 import type { ChildProcess } from 'node:child_process';
 
 const logger = createLogger('PluginBackendRunner');
@@ -85,6 +84,15 @@ function parseJsonRpcMessage(line: string): JsonRpcResponse | JsonRpcNotificatio
   }
 }
 
+let pythonDepsInstallerModule: Promise<typeof import('../../windows/python-deps-installer.js')> | null = null;
+
+function loadPythonDepsInstaller() {
+  if (!pythonDepsInstallerModule) {
+    pythonDepsInstallerModule = import('../../windows/python-deps-installer.js');
+  }
+  return pythonDepsInstallerModule;
+}
+
 
 // ============================================================================
 // PluginBackendRunner Class
@@ -125,6 +133,7 @@ export class PluginBackendRunner extends EventEmitter {
           if (!hasEnv) {
             logger.info(`插件 ${plugin.id} 需要安装依赖，显示安装窗口`);
 
+            const { showPythonDepsInstaller } = await loadPythonDepsInstaller();
             const result = await showPythonDepsInstaller({
               pluginId: plugin.id,
               pluginName: plugin.manifest.name,

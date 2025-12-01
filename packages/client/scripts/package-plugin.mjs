@@ -75,13 +75,27 @@ function createZip(pluginDir, outputPath, manifest) {
       }
     }
 
-    // 添加dist目录
+    // 添加 dist 目录
     const distDir = path.join(pluginDir, 'dist');
     if (fs.existsSync(distDir)) {
       archive.directory(distDir, 'dist');
     } else {
       console.warn('⚠️  警告: 未找到 dist 目录,请先运行 pnpm build');
     }
+
+    // 添加 backend 目录（若存在）
+    const backendDir = path.join(pluginDir, 'backend');
+    if (fs.existsSync(backendDir)) {
+      archive.directory(backendDir, 'backend');
+    }
+
+    // 附加 README、requirements 等单文件
+    ['README.md', 'requirements.txt'].forEach((file) => {
+      const filePath = path.join(pluginDir, file);
+      if (fs.existsSync(filePath)) {
+        archive.file(filePath, { name: file });
+      }
+    });
 
     archive.finalize();
   });
