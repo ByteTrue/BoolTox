@@ -15,6 +15,7 @@ import {
 } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import { pythonManager } from '../python-manager.service.js';
+import { showPythonDepsInstaller } from '../../windows/python-deps-installer.js';
 import type { ChildProcess } from 'node:child_process';
 
 const logger = createLogger('PluginBackendRunner');
@@ -109,6 +110,42 @@ export class PluginBackendRunner extends EventEmitter {
     let child: ChildProcess;
 
     if (config.type === 'python') {
+      // 检查是否需要显示依赖安装窗口
+      if (config.requirements) {
+        const requirementsPath = path.isAbsolute(config.requirements)
+          ? config.requirements
+          : path.join(plugin.path, config.requirements);
+
+        // 检查 requirements.txt 是否存在
+        if (fs.existsSync(requirementsPath)) {
+          // 检查虚拟环境是否已存在
+          const hasEnv = pythonManager.hasPluginEnv(plugin.id);
+
+          // 如果虚拟环境不存在，显示安装窗口
+          if (!hasEnv) {
+            logger.info(`插件 ${plugin.id} 需要安装依赖，显示安装窗口`);
+
+            const result = await showPythonDepsInstaller({
+              pluginId: plugin.id,
+              pluginName: plugin.manifest.name,
+              pluginPath: plugin.path,
+              requirementsPath,
+            });
+
+            // 用户取消或安装失败
+            if (!result.success) {
+              const errorMsg = result.cancelled
+                ? '用户取消了依赖安装'
+                : '依赖安装失败';
+              logger.warn(`插件 ${plugin.id}: ${errorMsg}`);
+              throw new Error(errorMsg);
+            }
+
+            logger.info(`插件 ${plugin.id} 依赖安装成功`);
+          }
+        }
+      }
+
       const sdkPath = pythonManager.getPythonSdkPath();
       const environment = await pythonManager.resolveBackendEnvironment({
         pluginId: plugin.id,

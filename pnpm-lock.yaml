@@ -188,6 +188,15 @@ importers:
         specifier: ^0.14.6
         version: 0.14.6
 
+  packages/client/plugins/com.booltox.backend-demo:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vite:
+        specifier: ^7.1.7
+        version: 7.2.0(@types/node@22.19.0)
+
   packages/client/plugins/com.booltox.frontend-only-demo:
     devDependencies:
       typescript:

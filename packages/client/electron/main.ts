@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'os';
 import { setupLogger, createLogger, openLogFolder, getLogPath } from './utils/logger.js';
+import { getPlatformWindowConfig } from './utils/window-platform-config.js';
 import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
 import { moduleStoreService } from './services/module-store.service.js';
 import { AutoUpdateService } from './services/auto-update.service.js';
@@ -67,36 +68,7 @@ function createWindow() {
   };
 
   // 平台特定优化
-  const platformConfig: Partial<BrowserWindowConstructorOptions> = (() => {
-    switch (process.platform) {
-      case 'win32':
-        // Windows 11 特定优化
-        return {
-          backgroundMaterial: 'mica', // Mica 材质（自动圆角）
-          titleBarStyle: 'hidden', // 隐藏标题栏但保留窗口控制
-        };
-      
-      case 'darwin':
-        // macOS 特定优化
-        return {
-          titleBarStyle: 'hiddenInset', // macOS 隐藏标题栏（保留红绿灯按钮）
-          trafficLightPosition: { x: 16, y: 16 }, // 红绿灯按钮位置
-          vibrancy: 'under-window', // macOS 毛玻璃效果
-          visualEffectState: 'active', // 始终激活视觉效果
-          transparent: false, // macOS 不需要透明窗口即可圆角
-        };
-      
-      case 'linux':
-        // Linux 特定优化
-        return {
-          transparent: false, // Linux 避免透明窗口问题
-          backgroundColor: '#1c1e23', // 深色背景（与应用主题一致）
-        };
-      
-      default:
-        return {};
-    }
-  })();
+  const platformConfig = getPlatformWindowConfig({ frameless: true });
 
   mainWindow = new BrowserWindow({
     ...baseConfig,
@@ -109,8 +81,8 @@ function createWindow() {
 
   // macOS 特定：设置窗口外观
   if (process.platform === 'darwin') {
-    // 自动跟随系统深色模式
-    mainWindow.setWindowButtonVisibility(true);
+    // 自定义标题栏场景下隐藏系统窗口按钮
+    mainWindow.setWindowButtonVisibility(false);
   }
 
   // 加载页面

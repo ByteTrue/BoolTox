@@ -1,17 +1,18 @@
 {
   "id": "com.booltox.backend-demo",
-  "version": "0.1.0",
-  "name": "Backend Bridge Demo",
-  "description": "示范如何使用 BoolTox VS Code 风格的 backend API 启动 Python 子进程并与之通信。",
+  "version": "2.0.0",
+  "name": "系统信息监控",
+  "description": "实时监控系统 CPU、内存、磁盘和进程信息，展示 Python 后端与前端通信",
   "protocol": "^2.0.0",
   "runtime": {
     "ui": {
       "type": "webview",
-      "entry": "index.html"
+      "entry": "dist/index.html"
     },
     "backend": {
       "type": "python",
-      "entry": "backend/server.py"
+      "entry": "backend/server.py",
+      "requirements": "requirements.txt"
     }
   },
   "permissions": [
@@ -22,12 +23,12 @@
     "window.setTitle"
   ],
   "window": {
-    "width": 900,
-    "height": 640,
-    "minWidth": 720,
-    "minHeight": 520,
+    "width": 1000,
+    "height": 720,
+    "minWidth": 800,
+    "minHeight": 600,
     "resizable": true
   },
   "author": "BoolTox Team",
-  "keywords": ["backend", "python", "bridge", "demo"]
+  "keywords": ["system", "monitor", "backend", "python", "psutil"]
 }

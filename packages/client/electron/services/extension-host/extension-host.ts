@@ -85,7 +85,23 @@ export class ExtensionHost {
     await fs.mkdir(pluginDir, { recursive: true });
 
     const sender = event.sender;
-    const window = BrowserWindow.fromWebContents(sender) ?? undefined;
+    if (sender.isDestroyed()) {
+      const error = new Error(`Access denied: plugin window already destroyed for ${plugin.id}`);
+      logger.warn(`[ExtensionHost] ${error.message}`);
+      throw error;
+    }
+
+    let window: BrowserWindow | undefined;
+    try {
+      window = BrowserWindow.fromWebContents(sender) ?? undefined;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Object has been destroyed')) {
+        const destroyedError = new Error(`Access denied: plugin window already destroyed for ${plugin.id}`);
+        logger.warn(`[ExtensionHost] ${destroyedError.message}`);
+        throw destroyedError;
+      }
+      throw error;
+    }
 
     return {
       plugin,

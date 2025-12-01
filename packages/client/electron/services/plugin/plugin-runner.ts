@@ -8,6 +8,7 @@ import { PluginRuntime } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import type { ChildProcess } from 'node:child_process';
 import { pythonManager } from '../python-manager.service.js';
+import { getPlatformWindowConfig } from '../../utils/window-platform-config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const logger = createLogger('PluginRunner');
@@ -202,32 +203,48 @@ export class PluginRunner {
   private async launchWebviewPlugin(state: PluginState): Promise<number> {
     const pluginId = state.runtime.id;
     try {
+      // 检查是否有 Python backend 需要依赖安装（在创建窗口之前）
+      const backendConfig = state.runtime.manifest.runtime?.backend;
+      if (backendConfig && backendConfig.type === 'python' && backendConfig.requirements) {
+        const requirementsPath = path.isAbsolute(backendConfig.requirements)
+          ? backendConfig.requirements
+          : path.join(state.runtime.path, backendConfig.requirements);
+
+        // 检查 requirements.txt 是否存在
+        const fs = await import('node:fs');
+        if (fs.existsSync(requirementsPath)) {
+          // 检查虚拟环境是否已存在
+          const hasEnv = pythonManager.hasPluginEnv(pluginId);
+
+          // 如果虚拟环境不存在，显示安装窗口
+          if (!hasEnv) {
+            logger.info(`插件 ${pluginId} 需要安装依赖，显示安装窗口`);
+
+            const { showPythonDepsInstaller } = await import('../../windows/python-deps-installer.js');
+            const result = await showPythonDepsInstaller({
+              pluginId: pluginId,
+              pluginName: state.runtime.manifest.name,
+              pluginPath: state.runtime.path,
+              requirementsPath,
+            });
+
+            // 用户取消或安装失败
+            if (!result.success) {
+              const errorMsg = result.cancelled
+                ? '用户取消了依赖安装'
+                : '依赖安装失败';
+              logger.warn(`插件 ${pluginId}: ${errorMsg}`);
+              throw new Error(errorMsg);
+            }
+
+            logger.info(`插件 ${pluginId} 依赖安装成功`);
+          }
+        }
+      }
+
       logger.info(`[PluginRunner] Creating window for ${pluginId}`);
 
-      const platformConfig: Partial<BrowserWindowConstructorOptions> = (() => {
-        switch (process.platform) {
-          case 'win32':
-            return {
-              backgroundMaterial: 'mica',
-              titleBarStyle: 'hidden',
-            };
-          case 'darwin':
-            return {
-              titleBarStyle: 'hiddenInset',
-              trafficLightPosition: { x: 16, y: 16 },
-              vibrancy: 'under-window',
-              visualEffectState: 'active',
-              transparent: false,
-            };
-          case 'linux':
-            return {
-              transparent: false,
-              backgroundColor: '#1c1e23',
-            };
-          default:
-            return {};
-        }
-      })();
+      const platformConfig = getPlatformWindowConfig({ frameless: true });
 
       const win = new BrowserWindow({
         width: 900,
@@ -255,7 +272,7 @@ export class PluginRunner {
       win.setMenu(null);
 
       if (process.platform === 'darwin') {
-        win.setWindowButtonVisibility(true);
+        win.setWindowButtonVisibility(false);
       }
 
       const entryFile = state.runtime.manifest.runtime?.type === 'standalone'
@@ -313,6 +330,44 @@ export class PluginRunner {
       const runtimeConfig = state.runtime.manifest.runtime;
       if (!runtimeConfig || runtimeConfig.type !== 'standalone') {
         throw new Error(`Plugin ${pluginId} runtime is not standalone`);
+      }
+
+      // 检查是否需要显示依赖安装窗口（Python 插件）
+      if (runtimeConfig.requirements) {
+        const requirementsPath = path.isAbsolute(runtimeConfig.requirements)
+          ? runtimeConfig.requirements
+          : path.join(state.runtime.path, runtimeConfig.requirements);
+
+        // 检查 requirements.txt 是否存在
+        const fs = await import('node:fs');
+        if (fs.existsSync(requirementsPath)) {
+          // 检查虚拟环境是否已存在
+          const hasEnv = pythonManager.hasPluginEnv(pluginId);
+
+          // 如果虚拟环境不存在，显示安装窗口
+          if (!hasEnv) {
+            logger.info(`插件 ${pluginId} 需要安装依赖，显示安装窗口`);
+
+            const { showPythonDepsInstaller } = await import('../../windows/python-deps-installer.js');
+            const result = await showPythonDepsInstaller({
+              pluginId: pluginId,
+              pluginName: state.runtime.manifest.name,
+              pluginPath: state.runtime.path,
+              requirementsPath,
+            });
+
+            // 用户取消或安装失败
+            if (!result.success) {
+              const errorMsg = result.cancelled
+                ? '用户取消了依赖安装'
+                : '依赖安装失败';
+              logger.warn(`插件 ${pluginId}: ${errorMsg}`);
+              throw new Error(errorMsg);
+            }
+
+            logger.info(`插件 ${pluginId} 依赖安装成功`);
+          }
+        }
       }
 
       const entryPath = path.isAbsolute(runtimeConfig.entry)
