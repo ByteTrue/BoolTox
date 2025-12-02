@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "BoolTox Monorepo - Client, Server and Shared packages",
+  "author": "ByteTrue",
+  "license": "CC-BY-NC-4.0",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
