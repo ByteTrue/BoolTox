@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 主题色系统
  * 统一管理整个应用的颜色
  */

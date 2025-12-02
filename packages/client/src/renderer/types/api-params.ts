@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * Host API 参数类型定义
  * 消除 any 类型，提供完整的类型安全喵～
  * 

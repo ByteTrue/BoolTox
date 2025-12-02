@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import readline from 'node:readline';

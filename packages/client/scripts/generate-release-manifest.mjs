@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';

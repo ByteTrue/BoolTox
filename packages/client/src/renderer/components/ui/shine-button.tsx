@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * ShineButton - 光泽扫过按钮组件
  * 
  * 实现 Apple 风格的按钮光泽扫过效果：

@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 细节打磨工具 - Task 2.6
  * 
  * 实现 Apple 风格的细节优化：

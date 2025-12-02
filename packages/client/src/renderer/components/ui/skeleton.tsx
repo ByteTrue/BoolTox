@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * Skeleton - 加载占位组件
  * 
  * Apple 风格的骨架屏加载效果

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 export const IPC_CHANNELS = {
   RENDERER_CONSOLE_LOG: 'renderer:console-log',
 } as const;

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { type ActivityFeedItem, sortByPriority } from '@/content/activity-feed';
 import { fetchAnnouncements, type Announcement } from '@/lib/announcements-service';

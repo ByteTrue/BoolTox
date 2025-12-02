@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import type { Announcement as GitOpsAnnouncement } from '../../../electron/services/git-ops.service';
 
 export type AnnouncementType = 'ANNOUNCEMENT' | 'UPDATE';

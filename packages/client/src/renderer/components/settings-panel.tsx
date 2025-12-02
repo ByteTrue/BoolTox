@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { useMemo, useState, useEffect } from 'react';
 import type { ElementType, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';

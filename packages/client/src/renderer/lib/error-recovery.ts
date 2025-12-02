@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 错误恢复和重试机制工具
  * 
  * 提供统一的错误处理、重试策略和降级方案

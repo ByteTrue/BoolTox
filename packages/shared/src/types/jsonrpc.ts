@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * JSON-RPC 2.0 Protocol Types for BoolTox Plugin Backend Communication
  *
  * @see https://www.jsonrpc.org/specification

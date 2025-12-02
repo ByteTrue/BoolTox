@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 触觉反馈模拟系统
  * 
  * 通过视觉动画模拟物理触觉反馈，增强交互体验

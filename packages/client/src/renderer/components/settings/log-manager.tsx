@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { FileText, FolderOpen, AlertCircle, CheckCircle } from 'lucide-react';

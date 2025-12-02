@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 export const BOOLTOX_PROTOCOL_VERSION = '2.0.0';
 
 export type BooltoxPermission =
@@ -154,6 +159,22 @@ export interface BooltoxBackendAPI {
   postMessage(channelId: string, payload: unknown): Promise<void>;
   dispose(channelId: string): Promise<void>;
   onMessage(listener: (message: BooltoxBackendMessage) => void): () => void;
+  call<TParams = unknown, TResult = unknown>(
+    channelId: string,
+    method: string,
+    params?: TParams,
+    timeoutMs?: number
+  ): Promise<TResult>;
+  notify<TParams = unknown>(
+    channelId: string,
+    method: string,
+    params?: TParams
+  ): Promise<void>;
+  on(channelId: string, event: string, listener: (data: unknown) => void): () => void;
+  once(channelId: string, event: string, listener: (data: unknown) => void): () => void;
+  off(channelId: string, event: string, listener?: (data: unknown) => void): void;
+  isReady(channelId: string): boolean;
+  waitForReady(channelId: string, timeoutMs?: number): Promise<void>;
 }
 
 export interface BooltoxTelemetryAPI {

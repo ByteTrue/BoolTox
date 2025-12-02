@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 /**
  * 自动更新索引文件工具
  * 扫描 resources/ 目录,生成索引文件

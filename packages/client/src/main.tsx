@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import './renderer/lib/setup-renderer-console-logging';
 import React from 'react';
 import ReactDOM from 'react-dom/client';

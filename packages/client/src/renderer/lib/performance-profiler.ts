@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 性能监控工具 - Performance Profiler
  * 用于测量和验证 Phase 1 优化效果
  */

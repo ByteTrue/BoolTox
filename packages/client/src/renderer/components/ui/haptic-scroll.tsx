@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 触觉滚动容器
  * 
  * 带有橡皮筋边界效果的滚动容器

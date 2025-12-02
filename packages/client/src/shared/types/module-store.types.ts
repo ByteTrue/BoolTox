@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 模块持久化存储类型定义
  * @description 用于 Electron Store 配置文件的类型定义
  */

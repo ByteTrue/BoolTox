@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 响应式缩放工具
  * 提供基于视口宽度的字体、间距动态缩放
  * 遵循 KISS & DRY 原则，使用 CSS clamp() 实现流畅缩放

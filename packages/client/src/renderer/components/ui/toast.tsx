@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * Toast 通知组件
  * 
  * Apple 风格的 Toast 通知，支持：

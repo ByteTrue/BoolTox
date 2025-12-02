@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 export { ModuleProvider, useModulePlatform } from "./module-context";
 export { SpotlightProvider, useSpotlight } from "./spotlight-context";
 export { ToastProvider, useToast } from "./toast-context";

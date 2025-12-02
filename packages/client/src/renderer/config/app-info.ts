@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 declare const __APP_VERSION__: string | undefined;
 
 const versionSource = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : undefined;

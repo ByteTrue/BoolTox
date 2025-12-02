@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 背景模糊增强工具
  * 
  * 提供统一的背景模糊效果，遵循 Apple 设计规范

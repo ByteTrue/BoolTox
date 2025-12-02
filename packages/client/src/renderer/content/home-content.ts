@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 // 极简概览配置（开源默认：少量指标 + Release Notes）
 export const overviewContent = {
   summary: {

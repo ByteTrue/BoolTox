@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { useMemo, useState, useCallback } from "react";
 import type { ModuleDefinition, ModuleInstance } from "@/types/module";
 

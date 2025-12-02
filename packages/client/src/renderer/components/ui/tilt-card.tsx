@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * TiltCard - 3D 倾斜卡片组件
  * 
  * 实现 Apple 风格的 3D 倾斜交互效果：

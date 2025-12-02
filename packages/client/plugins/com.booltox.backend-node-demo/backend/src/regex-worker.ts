@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { parentPort } from 'worker_threads';
 import type {
   MatchContext,
@@ -236,8 +241,13 @@ function handleMessage(message?: WorkerMessage) {
         parentPort?.postMessage({ type: 'result', result });
         return;
       }
-      default:
-        parentPort?.postMessage({ type: 'error', error: `未知任务: ${String(message.task)}` });
+      default: {
+        // 使用类型断言来处理未知的 task 类型
+        parentPort?.postMessage({
+          type: 'error',
+          error: `未知任务: ${String((message as { task: string }).task)}`
+        });
+      }
     }
   } catch (error) {
     parentPort?.postMessage({ type: 'error', error: (error as Error)?.message || String(error) });

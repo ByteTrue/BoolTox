@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 模块存储服务
  * @description 使用 electron-store 管理模块配置的持久化存储
  */

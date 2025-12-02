@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -316,6 +321,7 @@ export class PluginBackendRunner extends EventEmitter {
 
     if (isJsonRpcResponse(message)) {
       // This is a response to a request we sent
+      if (message.id === null) return;
       const pending = proc.pendingRequests.get(message.id);
       if (pending) {
         clearTimeout(pending.timeout);
@@ -381,7 +387,23 @@ export class PluginBackendRunner extends EventEmitter {
         } | undefined;
         if (logParams) {
           const level = logParams.level || 'info';
-          logger.log(level as 'debug' | 'info' | 'warn' | 'error', `[${channelId}] ${logParams.message}`);
+          const message = `[${channelId}] ${logParams.message}`;
+          switch (level) {
+            case 'debug':
+              logger.debug(message);
+              break;
+            case 'info':
+              logger.info(message);
+              break;
+            case 'warn':
+              logger.warn(message);
+              break;
+            case 'error':
+              logger.error(message);
+              break;
+            default:
+              logger.info(message);
+          }
         }
         break;
       }

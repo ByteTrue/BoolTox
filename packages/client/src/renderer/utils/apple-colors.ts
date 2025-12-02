@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * Apple 设计系统 - 色彩规范
  * 遵循 Apple Human Interface Guidelines
  * 

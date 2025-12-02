@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * Apple 风格微交互动画增强
  * 
  * 为常见 UI 组件提供精细的交互反馈动画

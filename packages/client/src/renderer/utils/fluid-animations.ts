@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 流体动画系统 - Task 2.5
  * 
  * 实现 Apple 风格的流畅动画效果：

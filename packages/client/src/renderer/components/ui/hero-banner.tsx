@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { motion } from 'framer-motion';
 import { buttonInteraction } from '@/utils/animation-presets';
 import type { ReactNode } from 'react';

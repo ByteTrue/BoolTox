@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 玻璃拟态按钮组件
  * 从 glassmorphism-demo 提取的可复用按钮样式
  * 

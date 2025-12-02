@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import type { SystemInfo } from '@/types/system';
 

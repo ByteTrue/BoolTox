@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "BoolTox CLI (create/dev/build/pack)",
+  "author": "ByteTrue",
+  "license": "CC-BY-NC-4.0",
   "bin": {
     "booltox": "./bin/booltox.js"
   },
