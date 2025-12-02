@@ -323,12 +323,14 @@ const focusModuleWindow = useCallback(
         }
 
         const restoredModules: ModuleInstance[] = [];
+        const orphanedIds: string[] = [];
 
         for (const stored of storedModules) {
           const definition = pluginDefinitions.find((definition) => definition.id === stored.id);
 
           if (!definition) {
-            console.warn(`[ModuleContext] 无法找到插件定义: ${stored.id}`);
+            console.warn(`[ModuleContext] 无法找到插件定义: ${stored.id}，将从存储中清理`);
+            orphanedIds.push(stored.id);
             continue;
           }
 
@@ -340,6 +342,12 @@ const focusModuleWindow = useCallback(
             favoriteOrder: stored.favoriteOrder ?? undefined,
             favoritedAt: stored.favoritedAt ?? undefined,
           });
+        }
+
+        // 清理孤立的插件记录
+        for (const id of orphanedIds) {
+          await window.moduleStore.remove(id);
+          console.info(`[ModuleContext] 已清理孤立插件记录: ${id}`);
         }
 
         setInstalledModules(restoredModules);
