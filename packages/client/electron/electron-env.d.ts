@@ -10,19 +10,25 @@ declare namespace NodeJS {
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types';
 import type { AutoUpdateStatus } from './services/auto-update.service';
 
-interface Window {
-  electron: {
-    window: {
-      minimize: () => Promise<void>;
-      toggleMaximize: () => Promise<void>;
-      close: () => Promise<void>;
+  interface Window {
+    electron: {
+      window: {
+        minimize: () => Promise<void>;
+        toggleMaximize: () => Promise<void>;
+        close: () => Promise<void>;
+      };
     };
-  };
-  moduleStore: {
-    getAll: () => Promise<StoredModuleInfo[]>;
-    get: (id: string) => Promise<StoredModuleInfo | null>;
-    add: (info: StoredModuleInfo) => Promise<{ success: boolean; error?: string }>;
-    update: (id: string, info: Partial<StoredModuleInfo>) => Promise<{ success: boolean; error?: string }>;
+    ipc: {
+      on: (channel: string, listener: (...args: unknown[]) => void) => void;
+      off: (channel: string, listener: (...args: unknown[]) => void) => void;
+      invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
+      send: (channel: string, ...args: unknown[]) => void;
+    };
+    moduleStore: {
+      getAll: () => Promise<StoredModuleInfo[]>;
+      get: (id: string) => Promise<StoredModuleInfo | null>;
+      add: (info: StoredModuleInfo) => Promise<{ success: boolean; error?: string }>;
+      update: (id: string, info: Partial<StoredModuleInfo>) => Promise<{ success: boolean; error?: string }>;
 
     remove: (id: string) => Promise<{ success: boolean; error?: string }>;
     getCachePath: (moduleId: string) => Promise<string | null>;

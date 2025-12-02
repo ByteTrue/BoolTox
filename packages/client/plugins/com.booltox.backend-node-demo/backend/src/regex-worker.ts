@@ -1,36 +1,20 @@
 import { parentPort } from 'worker_threads';
+import type {
+  MatchContext,
+  MatchGroup,
+  MatchRow,
+  ReplacePayload,
+  TestPayload,
+  ValidatePayload,
+} from '../../shared/regex-types';
 
 const SAFE_FLAGS = new Set(['g', 'i', 'm', 's', 'u', 'y']);
 const CONTEXT_WINDOW = 28;
 
-type WorkerTask = 'validate' | 'test' | 'replace';
-
-type WorkerMessage = {
-  task: WorkerTask;
-  payload: any;
-};
-
-type Context = {
-  before: string;
-  match: string;
-  after: string;
-};
-
-type MatchGroup = {
-  index?: number;
-  name?: string;
-  value: string | null;
-};
-
-type MatchRow = {
-  id: string;
-  value: string;
-  index: number;
-  end: number;
-  length: number;
-  groups: MatchGroup[];
-  context: Context;
-};
+type WorkerMessage =
+  | { task: 'validate'; payload?: ValidatePayload }
+  | { task: 'test'; payload?: TestPayload }
+  | { task: 'replace'; payload?: ReplacePayload };
 
 function normalizeFlags(flags = '') {
   const unique: string[] = [];
@@ -101,7 +85,7 @@ function formatGroups(match: RegExpExecArray): MatchGroup[] {
   return groups;
 }
 
-function createContext(text: string, start: number, end: number): Context {
+function createContext(text: string, start: number, end: number): MatchContext {
   const beforeStart = Math.max(0, start - CONTEXT_WINDOW);
   const afterEnd = Math.min(text.length, end + CONTEXT_WINDOW);
   return {
@@ -111,7 +95,7 @@ function createContext(text: string, start: number, end: number): Context {
   };
 }
 
-function runValidate(payload: { pattern: string; flags?: string }) {
+function runValidate(payload: ValidatePayload) {
   const { pattern, flags = '' } = payload;
   const regex = buildRegex(pattern, flags);
   return {
@@ -128,7 +112,7 @@ function runValidate(payload: { pattern: string; flags?: string }) {
   };
 }
 
-function runTest(payload: { pattern: string; flags?: string; text?: string; maxMatches?: number; requestId?: string }) {
+function runTest(payload: TestPayload) {
   const { pattern, flags = '', text = '', maxMatches = 500, requestId } = payload;
   const regex = buildRegex(pattern, flags, { forceGlobal: true });
   const matches: MatchRow[] = [];
@@ -196,7 +180,7 @@ function runTest(payload: { pattern: string; flags?: string; text?: string; maxM
   };
 }
 
-function runReplace(payload: { pattern: string; flags?: string; text?: string; replacement?: string; maxPreviewLength?: number }) {
+function runReplace(payload: ReplacePayload) {
   const { pattern, flags = '', text = '', replacement = '', maxPreviewLength = 5000 } = payload;
   const replaceRegex = buildRegex(pattern, flags);
   const counterRegex = new RegExp(pattern, replaceRegex.flags || '');
@@ -226,29 +210,35 @@ function runReplace(payload: { pattern: string; flags?: string; text?: string; r
   };
 }
 
-function handleMessage(message: WorkerMessage) {
+function handleMessage(message?: WorkerMessage) {
   try {
-    const { task, payload } = message || {};
-    if (!task) {
+    if (!message?.task) {
       parentPort?.postMessage({ type: 'error', error: '缺少任务类型' });
       return;
     }
-    if (task === 'validate') {
-      const result = runValidate(payload || {});
-      parentPort?.postMessage({ type: 'result', result });
-      return;
+
+    switch (message.task) {
+      case 'validate': {
+        const payload = message.payload ?? { pattern: '' };
+        const result = runValidate(payload);
+        parentPort?.postMessage({ type: 'result', result });
+        return;
+      }
+      case 'test': {
+        const payload = message.payload ?? { pattern: '', text: '' };
+        const result = runTest(payload);
+        parentPort?.postMessage({ type: 'result', result });
+        return;
+      }
+      case 'replace': {
+        const payload = message.payload ?? { pattern: '', text: '' };
+        const result = runReplace(payload);
+        parentPort?.postMessage({ type: 'result', result });
+        return;
+      }
+      default:
+        parentPort?.postMessage({ type: 'error', error: `未知任务: ${String(message.task)}` });
     }
-    if (task === 'test') {
-      const result = runTest(payload || {});
-      parentPort?.postMessage({ type: 'result', result });
-      return;
-    }
-    if (task === 'replace') {
-      const result = runReplace(payload || {});
-      parentPort?.postMessage({ type: 'result', result });
-      return;
-    }
-    parentPort?.postMessage({ type: 'error', error: `未知任务: ${task}` });
   } catch (error) {
     parentPort?.postMessage({ type: 'error', error: (error as Error)?.message || String(error) });
   }

@@ -25,10 +25,12 @@ import { pythonManager } from './services/python-manager.service.js';
 import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { PluginRegistryEntry } from '@booltox/shared';
+import { IPC_CHANNELS, type RendererConsolePayload } from '../src/shared/constants/ipc-channels.js';
 
 // 初始化日志系统 (必须在所有其他代码之前)
 setupLogger();
 const logger = createLogger('Main');
+const rendererConsoleLogger = createLogger('RendererConsole');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -44,6 +46,41 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let mainWindow: BrowserWindow | null = null;
+
+const processRendererConsoleLog = (payload?: RendererConsolePayload) => {
+  if (!payload || typeof payload !== 'object') return;
+  const { level, args } = payload;
+  const logArgs = Array.isArray(args) ? args : [];
+  const label = `console.${level ?? 'log'}`;
+
+  switch (level) {
+    case 'error':
+      rendererConsoleLogger.error(label, ...logArgs);
+      break;
+    case 'warn':
+      rendererConsoleLogger.warn(label, ...logArgs);
+      break;
+    case 'debug':
+      rendererConsoleLogger.debug(label, ...logArgs);
+      break;
+    case 'info':
+      rendererConsoleLogger.info(label, ...logArgs);
+      break;
+    case 'log':
+    default:
+      rendererConsoleLogger.info(label, ...logArgs);
+      break;
+  }
+};
+
+ipcMain.on(IPC_CHANNELS.RENDERER_CONSOLE_LOG, (_event, payload: RendererConsolePayload) => {
+  processRendererConsoleLog(payload);
+});
+
+ipcMain.handle(IPC_CHANNELS.RENDERER_CONSOLE_LOG, async (_event, payload: RendererConsolePayload) => {
+  processRendererConsoleLog(payload);
+  return { success: true };
+});
 
 /**
  * 创建主窗口

@@ -36,6 +36,9 @@ const ipcAPI = {
   off: (channel: string, listener: (...args: unknown[]) => void) => {
     ipcRenderer.removeListener(channel, listener);
   },
+  send: (channel: string, ...args: unknown[]) => {
+    ipcRenderer.send(channel, ...args);
+  },
 };
 
 /**

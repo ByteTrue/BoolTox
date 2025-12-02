@@ -16,13 +16,18 @@ import type {
 } from './types';
 import { formatBytes, getPercentColor, createCircularProgress } from './utils';
 
+type BackendCommandPayload = Record<string, unknown>;
+const logInfo = (...args: unknown[]): void => {
+  console.warn('[SystemMonitor]', ...args);
+};
+
 // 声明全局 booltox API
 declare global {
   interface Window {
     booltox: {
       backend: {
         register: () => Promise<BackendHandle>;
-        postMessage: (channelId: string, payload: any) => Promise<void>;
+        postMessage: (channelId: string, payload: BackendCommandPayload) => Promise<void>;
         dispose: (channelId: string) => Promise<void>;
         onMessage: (callback: (message: BackendMessage) => void) => () => void;
       };
@@ -51,7 +56,7 @@ const elements = {
 /**
  * 发送命令到后端
  */
-async function sendCommand(command: string, params: any = {}): Promise<void> {
+async function sendCommand(command: string, params: BackendCommandPayload = {}): Promise<void> {
   if (!backendChannel) {
     console.error('后端未启动');
     return;
@@ -305,40 +310,43 @@ function handleBackendMessage(message: BackendMessage): void {
   }
 
   const method = rpcMessage.method;
-  const params = (rpcMessage.params ?? {}) as Record<string, any>;
+  const params = (rpcMessage.params ?? {}) as Record<string, unknown>;
 
   switch (method) {
     case 'backend_ready':
-      console.log('后端就绪:', params.message);
+      logInfo('后端就绪:', params.message);
       sendCommand('get_system_info');
       sendCommand('get_disk_info');
       break;
 
     case 'system_info':
-      renderSystemInfo(params.data);
+      renderSystemInfo(params.data as SystemInfo);
       break;
 
     case 'cpu_info':
-      renderCPUInfo(params.data);
+      renderCPUInfo(params.data as CPUInfo);
       break;
 
     case 'memory_info':
-      renderMemoryInfo(params.data);
+      renderMemoryInfo(params.data as MemoryInfo);
       break;
 
     case 'disk_info':
-      renderDiskInfo(params.data);
+      renderDiskInfo(params.data as DiskInfo[]);
       break;
 
     case 'processes':
-      renderProcessList(params.data);
+      renderProcessList(params.data as ProcessInfo[]);
       break;
 
-    case 'monitor_data':
-      const data = params.data as MonitorData;
-      renderCPUInfo(data.cpu);
-      renderMemoryInfo(data.memory);
+    case 'monitor_data': {
+      const data = params.data as MonitorData | undefined;
+      if (data) {
+        renderCPUInfo(data.cpu);
+        renderMemoryInfo(data.memory);
+      }
       break;
+    }
 
     case 'monitor_started':
       elements.startBtn.disabled = true;
@@ -366,7 +374,7 @@ function handleBackendMessage(message: BackendMessage): void {
       break;
 
     default:
-      console.log('未知事件:', method, params);
+      logInfo('未知事件:', method, params);
   }
 }
 
@@ -382,7 +390,7 @@ async function startBackend(): Promise<void> {
     elements.startBtn.disabled = false;
     elements.stopBtn.disabled = true;
     elements.refreshBtn.disabled = false;
-    console.log('后端已启动:', handle);
+    logInfo('后端已启动:', handle);
   } catch (error) {
     console.error('启动后端失败:', error);
     updateStatus('启动失败', false);

@@ -139,6 +139,7 @@ async function handleCopy(): Promise<void> {
       elements.passwordText.classList.remove('copy-success');
     }, 1500);
   } catch (error) {
+    console.error('复制密码失败', error);
     alert('复制失败，请手动复制');
   }
 }

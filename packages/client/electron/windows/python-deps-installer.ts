@@ -7,15 +7,10 @@ import { BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import log from 'electron-log';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import { pythonManager } from '../services/python-manager.service.js';
 import { getPlatformWindowConfig } from '../utils/window-platform-config.js';
 
 const logger = log.scope('python-deps-installer');
-
-// ES Module 兼容：获取 __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export interface PythonDepsInstallerOptions {
   pluginId: string;

@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron';
-import type { BrowserWindowConstructorOptions, Rectangle } from 'electron';
+import type { Rectangle } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pluginManager } from './plugin-manager';

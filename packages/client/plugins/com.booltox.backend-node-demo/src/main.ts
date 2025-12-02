@@ -1,3 +1,5 @@
+import type { MatchRow, ReplaceResult, TestResult, ValidateResult } from '../shared/regex-types';
+
 type BooltoxBackendHandle = {
   channelId: string;
   pid?: number;
@@ -14,7 +16,7 @@ type ProgressEventPayload = {
 type BooltoxBackendAPI = {
   register: () => Promise<BooltoxBackendHandle>;
   waitForReady: (channelId: string) => Promise<void>;
-  call: (channelId: string, method: string, params?: Record<string, unknown>) => Promise<any>;
+  call: (channelId: string, method: string, params?: Record<string, unknown>) => Promise<unknown>;
   dispose: (channelId: string) => Promise<void>;
   on: (channelId: string, event: string, handler: (payload: ProgressEventPayload) => void) => () => void;
 };
@@ -42,33 +44,31 @@ type HistoryEntry = {
   createdAt: string;
 };
 
-type MatchContext = {
-  before: string;
-  match: string;
-  after: string;
-};
-
-type MatchGroup = {
-  index?: number;
-  name?: string;
-  value: string | null;
-};
-
-type MatchItem = {
-  id: string;
-  value: string;
-  index: number;
-  end: number;
-  length: number;
-  groups: MatchGroup[];
-  context: MatchContext;
-};
+type MatchItem = MatchRow;
 
 type Summary = {
   totalMatches: number;
   uniqueMatches: number;
   tookMs: number;
   capturingGroups: number;
+};
+
+type ValidateResponse = ValidateResult & { tookMs: number };
+type TestResponse = TestResult & {
+  requestId: string;
+  tookMs: number;
+  limits: {
+    maxTextLength: number;
+    maxMatches: number;
+  };
+};
+type ReplaceResponse = ReplaceResult & {
+  requestId: string;
+  tookMs: number;
+  limits: {
+    maxTextLength: number;
+    maxPreviewLength: number;
+  };
 };
 
 type AppState = {
@@ -253,16 +253,16 @@ function handleProgress(event: ProgressEventPayload) {
   DOM.progressLabel.textContent = event.complete ? '任务完成' : `处理中 (${Math.round(percent)}%)`;
 }
 
-async function callBackend(method: string, params?: Record<string, unknown>) {
+async function callBackend<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T> {
   if (!state.channelId) {
     throw new Error('后端尚未连接');
   }
-  return window.booltox.backend.call(state.channelId, method, params);
+  return window.booltox.backend.call(state.channelId, method, params) as Promise<T>;
 }
 
 async function fetchPatterns() {
   try {
-    const { items } = await callBackend('getPatterns');
+    const { items } = await callBackend<{ items: TemplateItem[]; timestamp: string }>('getPatterns');
     state.templates = (items as TemplateItem[]) || [];
     if (!DOM.patternInput.value && state.templates.length) {
       DOM.patternInput.value = state.templates[0].pattern;
@@ -378,7 +378,7 @@ function countGroups(pattern = '') {
   try {
     const regex = /(^|[^\\])\((?!\?[:=!<])/g;
     return (pattern.match(regex) || []).length;
-  } catch (_) {
+  } catch {
     return 0;
   }
 }
@@ -391,7 +391,7 @@ async function handleValidate() {
       DOM.validateResult.style.color = '#f87171';
       return;
     }
-    const result = await callBackend('validate', { pattern: payload.pattern, flags: payload.flags });
+    const result = await callBackend<ValidateResponse>('validate', { pattern: payload.pattern, flags: payload.flags });
     DOM.validateResult.textContent = `合法 · flags=${result.flags || '无'} · 捕获组 ${result.capturingGroups}`;
     DOM.validateResult.style.color = '#34d399';
   } catch (error) {
@@ -416,7 +416,7 @@ async function handleTest() {
   DOM.progressBar.style.width = '0%';
   DOM.progressLabel.textContent = '开始执行';
   try {
-    const result = await callBackend('test', payload);
+    const result = await callBackend<TestResponse>('test', payload);
     state.currentRequestId = result.requestId;
     state.activeRequestId = result.requestId;
     state.matches = result.matches || [];
@@ -449,7 +449,7 @@ async function handleReplace() {
   }
   setLoading('replace', true);
   try {
-    const result = await callBackend('replace', payload);
+    const result = await callBackend<ReplaceResponse>('replace', payload);
     DOM.replacementPreview.textContent = result.preview || '无替换结果';
     DOM.replacementMeta.textContent = `替换 ${result.replacementCount} 次 · ${result.truncated ? '显示前 ' + result.previewLength + ' 字符' : '完整输出'}`;
   } catch (error) {

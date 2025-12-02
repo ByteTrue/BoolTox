@@ -3,6 +3,17 @@ import { Worker } from 'worker_threads';
 import { randomUUID } from 'crypto';
 import { performance } from 'perf_hooks';
 import { BooltoxBackend } from 'booltox-backend';
+import type {
+  RegexTask,
+  RegexTaskPayload,
+  RegexTaskResult,
+  ReplacePayload,
+  ReplaceResult,
+  TestPayload,
+  TestResult,
+  ValidatePayload,
+  ValidateResult,
+} from '../../shared/regex-types';
 
 const backend = new BooltoxBackend();
 
@@ -12,46 +23,27 @@ const MAX_MATCHES = 500;
 const MAX_PREVIEW_LENGTH = 5_000;
 const workerPath = path.join(__dirname, 'regex-worker.cjs');
 
-type RegexTask = 'validate' | 'test' | 'replace';
-
-type ValidatePayload = {
-  pattern: string;
-  flags: string;
+type WorkerProgress = {
+  processed: number;
+  total: number;
+  percent: number;
+  batch: number;
+  complete?: boolean;
 };
 
-type TestPayload = {
-  pattern: string;
-  flags: string;
-  text: string;
-  maxMatches: number;
-};
-
-type ReplacePayload = {
-  pattern: string;
-  flags: string;
-  text: string;
-  replacement: string;
-  maxPreviewLength: number;
-};
-
-type RegexTaskPayload = ValidatePayload | TestPayload | ReplacePayload;
-
-type WorkerResult = {
-  type: 'result';
-  result: any;
-} | {
+type WorkerResult =
+  | {
+    type: 'result';
+    result: RegexTaskResult;
+  }
+  | {
   type: 'error';
   error?: string;
-} | {
-  type: 'progress';
-  data: {
-    processed: number;
-    total: number;
-    percent: number;
-    batch: number;
-    complete?: boolean;
+  }
+  | {
+    type: 'progress';
+    data: WorkerProgress;
   };
-};
 
 interface PatternTemplate {
   id: string;
@@ -139,8 +131,14 @@ function safeFlags(flags: unknown = '') {
   return typeof flags === 'string' ? flags : String(flags ?? '');
 }
 
-function runRegexTask(task: RegexTask, payload: RegexTaskPayload, { timeout = WORKER_TIMEOUT_MS, requestId }: { timeout?: number; requestId?: string } = {}) {
-  return new Promise<any>((resolve, reject) => {
+type RunTaskOptions = { timeout?: number; requestId?: string };
+
+function runRegexTask<T extends RegexTaskResult>(
+  task: RegexTask,
+  payload: RegexTaskPayload,
+  { timeout = WORKER_TIMEOUT_MS, requestId }: RunTaskOptions = {},
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
     const worker = new Worker(workerPath);
     let settled = false;
     const timer = setTimeout(() => {
@@ -161,7 +159,7 @@ function runRegexTask(task: RegexTask, payload: RegexTaskPayload, { timeout = WO
         settled = true;
         clearTimeout(timer);
         worker.terminate();
-        resolve(message.result);
+        resolve(message.result as T);
         return;
       }
       if (message.type === 'error') {
@@ -180,7 +178,8 @@ function runRegexTask(task: RegexTask, payload: RegexTaskPayload, { timeout = WO
       reject(err);
     });
 
-    worker.postMessage({ task, payload: { ...payload, requestId } });
+    const payloadWithRequest = requestId ? { ...payload, requestId } : payload;
+    worker.postMessage({ task, payload: payloadWithRequest });
   });
 }
 
@@ -193,7 +192,7 @@ backend.method('validate', async (params: Partial<ValidatePayload> = {}) => {
   const pattern = assertPattern(params.pattern);
   const flags = safeFlags(params.flags);
   const started = performance.now();
-  const result = await runRegexTask('validate', { pattern, flags });
+  const result = await runRegexTask<ValidateResult>('validate', { pattern, flags });
   return {
     ...result,
     tookMs: Number((performance.now() - started).toFixed(2))
@@ -206,7 +205,7 @@ backend.method('test', async (params: Partial<TestPayload> = {}) => {
   const text = normalizeText(params.text || '');
   const requestId = createRequestId('test');
   const started = performance.now();
-  const result = await runRegexTask('test', {
+  const result = await runRegexTask<TestResult>('test', {
     pattern,
     flags,
     text,
@@ -230,7 +229,7 @@ backend.method('replace', async (params: Partial<ReplacePayload> = {}) => {
   const replacement = typeof params.replacement === 'string' ? params.replacement : String(params.replacement ?? '');
   const requestId = createRequestId('replace');
   const started = performance.now();
-  const result = await runRegexTask('replace', {
+  const result = await runRegexTask<ReplaceResult>('replace', {
     pattern,
     flags,
     text,

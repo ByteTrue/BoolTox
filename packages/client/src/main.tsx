@@ -1,3 +1,4 @@
+import './renderer/lib/setup-renderer-console-logging';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
