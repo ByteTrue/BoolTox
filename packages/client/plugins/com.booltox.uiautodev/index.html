@@ -154,10 +154,13 @@
 
   <script>
     const UIAUTODEV_URL = 'http://127.0.0.1:20242';
-    
+
     let channelId = null;
     let serverReady = false;
-    
+    let isDisposed = false;  // 跟踪 backend/窗口是否已销毁
+    let statusCheckTimer = null;  // 状态检查定时器
+    let eventCleanups = [];  // 事件清理函数列表
+
     const loadingEl = document.getElementById('loading');
     const errorEl = document.getElementById('error');
     const errorMsgEl = document.getElementById('error-msg');
@@ -178,6 +181,39 @@
       logPanelEl.scrollTop = logPanelEl.scrollHeight;
       console.log(`[UIAutoDev] ${msg}`);
     }
+
+    // 安全的 backend 调用包装，避免在销毁后调用
+    async function safeBackendCall(method, params = {}) {
+      if (isDisposed || !channelId) {
+        log(`跳过 backend 调用 ${method}: 已销毁或未初始化`, 'warn');
+        return null;
+      }
+      try {
+        return await window.booltox.backend.call(channelId, method, params);
+      } catch (e) {
+        // 检查是否是 channel 已销毁的错误
+        if (e.message?.includes('not found') || e.message?.includes('destroyed')) {
+          log(`Backend channel 已失效: ${e.message}`, 'warn');
+          isDisposed = true;
+          return null;
+        }
+        throw e;
+      }
+    }
+
+    // 清理所有资源
+    function cleanup() {
+      isDisposed = true;
+      if (statusCheckTimer) {
+        clearTimeout(statusCheckTimer);
+        statusCheckTimer = null;
+      }
+      // 移除所有事件监听
+      eventCleanups.forEach(fn => {
+        try { fn(); } catch (e) { /* ignore */ }
+      });
+      eventCleanups = [];
+    }
     
     function showError(msg) {
       loadingEl.style.display = 'none';
@@ -196,45 +232,62 @@
     async function retryStart() {
       errorEl.style.display = 'none';
       loadingEl.style.display = 'flex';
-      
-      if (channelId) {
-        try {
-          const result = await window.booltox.backend.call(channelId, 'restartServer', {});
-          if (result.success) {
-            showApp(result.url);
-          } else {
-            showError('服务重启失败，请检查日志');
-          }
-        } catch (e) {
-          showError(`重启失败: ${e.message}`);
-        }
-      } else {
-        // 重新初始化
+
+      // 如果已销毁或没有 channelId，重新初始化
+      if (isDisposed || !channelId) {
+        isDisposed = false;
+        serverReady = false;
         init();
+        return;
+      }
+
+      try {
+        const result = await safeBackendCall('restartServer', {});
+        if (result === null) {
+          // backend 已失效，重新初始化
+          isDisposed = false;
+          serverReady = false;
+          init();
+        } else if (result.success) {
+          showApp(result.url);
+        } else {
+          showError('服务重启失败，请检查日志');
+        }
+      } catch (e) {
+        showError(`重启失败: ${e.message}`);
       }
     }
     
     async function init() {
       log('初始化插件...');
-      
+
       if (!window.booltox || !window.booltox.backend) {
         showError('BoolTox API 不可用，请确保在 BoolTox 客户端中运行');
         return;
       }
-      
+
+      // 清理之前的资源（如果有）
+      cleanup();
+      isDisposed = false;
+
       try {
         // 注册后端
         log('注册后端进程...');
         const handle = await window.booltox.backend.register();
         channelId = handle.channelId;
         log(`后端已注册: channelId=${channelId}, pid=${handle.pid}`);
-        
-        // 监听后端事件
-        window.booltox.backend.on(channelId, 'log', (data) => {
-          log(data.message, data.level);
-        });
-        
-        window.booltox.backend.on(channelId, 'serverReady', (data) => {
+
+        // 监听后端事件（带清理）
+        const logHandler = (data) => {
+          if (!isDisposed) {
+            log(data.message, data.level);
+          }
+        };
+        window.booltox.backend.on(channelId, 'log', logHandler);
+        eventCleanups.push(() => window.booltox.backend.off?.(channelId, 'log', logHandler));
+
+        const serverReadyHandler = (data) => {
+          if (isDisposed) return;
           log(`服务就绪事件: success=${data.success}, url=${data.url}`);
           serverReady = data.success;
           if (data.success && data.url) {
@@ -242,42 +295,61 @@
           } else {
             showError('uiautodev 服务启动失败，请检查是否已安装 uiautodev 包');
           }
-        });
-        
+        };
+        window.booltox.backend.on(channelId, 'serverReady', serverReadyHandler);
+        eventCleanups.push(() => window.booltox.backend.off?.(channelId, 'serverReady', serverReadyHandler));
+
+        // 监听 backend 销毁事件
+        const disposedHandler = () => {
+          log('Backend 已销毁', 'warn');
+          isDisposed = true;
+        };
+        window.booltox.backend.on(channelId, 'disposed', disposedHandler);
+        eventCleanups.push(() => window.booltox.backend.off?.(channelId, 'disposed', disposedHandler));
+
         // 等待后端就绪
         log('等待后端就绪...');
         await window.booltox.backend.waitForReady(channelId);
         log('后端已就绪');
-        
+
         // 如果 30 秒内没有收到 serverReady 事件，尝试主动获取状态
-        setTimeout(async () => {
-          if (!serverReady) {
+        statusCheckTimer = setTimeout(async () => {
+          if (!serverReady && !isDisposed) {
             log('超时未收到 serverReady，主动查询状态...');
             try {
-              const status = await window.booltox.backend.call(channelId, 'getServerStatus', {});
-              if (status.running) {
+              const status = await safeBackendCall('getServerStatus', {});
+              if (status === null) {
+                showError('Backend 已失效，请重试');
+              } else if (status.running) {
                 showApp(status.url);
               } else {
                 showError('服务启动超时，请重试');
               }
             } catch (e) {
-              showError(`获取状态失败: ${e.message}`);
+              if (!isDisposed) {
+                showError(`获取状态失败: ${e.message}`);
+              }
             }
           }
         }, 30000);
-        
+
       } catch (e) {
         log(`初始化失败: ${e.message}`, 'error');
-        showError(`初始化失败: ${e.message}`);
+        if (!isDisposed) {
+          showError(`初始化失败: ${e.message}`);
+        }
       }
     }
     
     // 页面卸载时清理
     window.addEventListener('beforeunload', () => {
-      if (channelId) {
+      const currentChannelId = channelId;
+      cleanup();  // 先标记为已销毁，防止其他回调继续执行
+      if (currentChannelId) {
         try {
-          window.booltox.backend.call(channelId, 'shutdown', {});
-          window.booltox.backend.dispose(channelId);
+          // 使用同步方式尝试关闭，不等待结果
+          window.booltox.backend.call(currentChannelId, 'shutdown', {}).catch(() => {});
+          window.booltox.backend.dispose(currentChannelId);
         } catch (e) {
           // ignore
         }

@@ -27,7 +27,6 @@ from uiautodev.provider import AndroidProvider, HarmonyProvider, IOSProvider, Mo
 from uiautodev.remote.scrcpy import ScrcpyServer
 from uiautodev.router.android import router as android_device_router
 from uiautodev.router.device import make_router
-from uiautodev.router.proxy import make_reverse_proxy
 from uiautodev.router.proxy import router as proxy_router
 from uiautodev.router.xml import router as xml_router
 from uiautodev.utils.envutils import Environment
@@ -137,16 +136,8 @@ def demo():
 
 @app.get("/redirect")
 def index_redirect():
-    """redirect to official homepage"""
-    url = get_webpage_url()
-    logger.debug("redirect to %s", url)
-    return RedirectResponse(url)
-
-
-@app.get("/api/auth/me")
-def mock_auth_me():
-    # 401 {"detail":"Authentication required"}
-    return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+    """本地服务，重定向到本地首页"""
+    return RedirectResponse("/")
 
 @app.websocket('/ws/android/scrcpy3/{serial}')
 async def handle_android_scrcpy3_ws(websocket: WebSocket, serial: str):
