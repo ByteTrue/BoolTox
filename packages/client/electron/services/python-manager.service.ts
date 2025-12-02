@@ -468,8 +468,9 @@ class PythonManager {
     };
 
     return new Promise((resolve, reject) => {
-      const args = ['pip', 'install', ...packages];
-      
+      // 添加 --verbose 确保在非 TTY 环境下也能输出详细进度
+      const args = ['pip', 'install', '--verbose', ...packages];
+
       const proc = spawn(this.uvPath, args, {
         env,
         windowsHide: true
@@ -537,8 +538,9 @@ class PythonManager {
     };
 
     return new Promise((resolve, reject) => {
-      const args = ['pip', 'install', '--target', targetDir, ...packages];
-      
+      // 添加 --verbose 确保在非 TTY 环境下也能输出详细进度
+      const args = ['pip', 'install', '--verbose', '--target', targetDir, ...packages];
+
       const proc = spawn(this.uvPath, args, {
         env,
         windowsHide: true
@@ -605,14 +607,27 @@ class PythonManager {
     };
 
     return new Promise((resolve, reject) => {
-      const args = ['pip', 'install', '--target', targetDir, '-r', requirementsPath];
-      
+      // 添加 --verbose 确保在非 TTY 环境下也能输出详细进度
+      const args = ['pip', 'install', '--verbose', '--target', targetDir, '-r', requirementsPath];
+
       const proc = spawn(this.uvPath, args, {
         env,
         windowsHide: true
       });
 
       let stderr = '';
+
+      proc.stdout.on('data', (data) => {
+        logger.debug('[pip stdout]', data.toString().trim());
+        emitProgressLog(onProgress, 'deps', data);
+      });
+
+      proc.stderr.on('data', (data) => {
+        const text = data.toString();
+        stderr += text;
+        logger.debug('[pip stderr]', text.trim());
+        emitProgressLog(onProgress, 'deps', data);
+      });
 
       proc.on('close', (code) => {
         if (code === 0) {
@@ -625,10 +640,6 @@ class PythonManager {
         } else {
           reject(new Error(`依赖安装失败 (code: ${code}): ${stderr}`));
         }
-      });
-
-      proc.stderr.on('data', (data) => {
-        stderr += data.toString();
       });
 
       proc.on('error', reject);
@@ -947,11 +958,16 @@ class PythonManager {
 
   /**
    * 为插件创建独立虚拟环境
+   * @param pluginId 插件 ID
+   * @param requirementsPath requirements.txt 路径
+   * @param onProgress 进度回调
+   * @param indexUrl PyPI 镜像源 URL（可选）
    */
   async ensurePluginEnv(
     pluginId: string,
     requirementsPath?: string,
-    onProgress?: ProgressCallback
+    onProgress?: ProgressCallback,
+    indexUrl?: string
   ): Promise<string> {
     if (!this.initialized) {
       await this.ensurePython(onProgress);
@@ -1043,11 +1059,11 @@ class PythonManager {
         } catch (error) {
           logger.warn(`删除插件 ${pluginId} 虚拟环境失败`, error);
         }
-        return this.ensurePluginEnv(pluginId, resolvedRequirements, onProgress);
+        return this.ensurePluginEnv(pluginId, resolvedRequirements, onProgress, indexUrl);
       }
 
       if (needsInstall) {
-        await this.installPluginEnvRequirements(pluginId, resolvedRequirements, onProgress);
+        await this.installPluginEnvRequirements(pluginId, resolvedRequirements, onProgress, indexUrl);
       } else {
         logger.info(`插件 ${pluginId} requirements 未变化，跳过安装`);
       }
@@ -1090,7 +1106,8 @@ class PythonManager {
     };
 
     return new Promise((resolve, reject) => {
-      const args = ['pip', 'install', ...packages];
+      // 添加 --verbose 确保在非 TTY 环境下也能输出详细进度
+      const args = ['pip', 'install', '--verbose', ...packages];
 
       const proc = spawn(this.uvPath, args, {
         env,
@@ -1101,11 +1118,14 @@ class PythonManager {
 
       proc.stdout.on('data', (data) => {
         logger.debug('[pip stdout]', data.toString().trim());
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.stderr.on('data', (data) => {
-        stderr += data.toString();
-        logger.debug('[pip stderr]', data.toString().trim());
+        const text = data.toString();
+        stderr += text;
+        logger.debug('[pip stderr]', text.trim());
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.on('close', (code) => {
@@ -1130,11 +1150,16 @@ class PythonManager {
 
   /**
    * 从 requirements.txt 安装依赖到插件独立虚拟环境
+   * @param pluginId 插件 ID
+   * @param requirementsPath requirements.txt 路径
+   * @param onProgress 进度回调
+   * @param indexUrl PyPI 镜像源 URL（可选）
    */
   async installPluginEnvRequirements(
     pluginId: string,
     requirementsPath: string,
-    onProgress?: ProgressCallback
+    onProgress?: ProgressCallback,
+    indexUrl?: string
   ): Promise<void> {
     const venvPath = path.join(this.getPluginEnvDir(pluginId), '.venv');
 
@@ -1143,6 +1168,9 @@ class PythonManager {
     }
 
     logger.info(`从 ${requirementsPath} 安装依赖到插件 ${pluginId} 虚拟环境`);
+    if (indexUrl) {
+      logger.info(`使用镜像源: ${indexUrl}`);
+    }
 
     onProgress?.({
       stage: 'deps',
@@ -1156,7 +1184,12 @@ class PythonManager {
     };
 
     return new Promise((resolve, reject) => {
-      const args = ['pip', 'install', '-r', requirementsPath];
+      // 添加 --verbose 确保在非 TTY 环境下也能输出详细进度
+      const args = ['pip', 'install', '--verbose', '-r', requirementsPath];
+      // 如果指定了镜像源，添加 --index-url 参数
+      if (indexUrl) {
+        args.push('--index-url', indexUrl);
+      }
 
       const proc = spawn(this.uvPath, args, {
         env,
@@ -1167,10 +1200,14 @@ class PythonManager {
 
       proc.stdout.on('data', (data) => {
         logger.debug('[pip stdout]', data.toString().trim());
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.stderr.on('data', (data) => {
-        stderr += data.toString();
+        const text = data.toString();
+        stderr += text;
+        logger.debug('[pip stderr]', text.trim());
+        emitProgressLog(onProgress, 'deps', data);
       });
 
       proc.on('close', (code) => {

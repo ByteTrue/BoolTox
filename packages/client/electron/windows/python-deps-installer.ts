@@ -90,26 +90,55 @@ export async function showPythonDepsInstaller(
 
     // 处理用户操作
     let isInstalling = false;
+    let isWindowDestroyed = false;
+    let isResolved = false;
+
+    // 安全的 resolve 包装，防止多次调用
+    const safeResolve = (result: InstallResult) => {
+      if (isResolved) return;
+      isResolved = true;
+      resolve(result);
+    };
+
+    // 安全发送消息到窗口，检查窗口是否已销毁
+    const safeSend = (channel: string, data: unknown) => {
+      if (isWindowDestroyed || win.isDestroyed()) {
+        return false;
+      }
+      try {
+        win.webContents.send(channel, data);
+        return true;
+      } catch (e) {
+        logger.warn('发送消息到窗口失败:', e);
+        return false;
+      }
+    };
 
     // 取消按钮
     ipcMain.once(`python-deps:cancel:${pluginId}`, () => {
       if (!isInstalling) {
-        win.close();
-        resolve({ success: false, cancelled: true });
+        if (!win.isDestroyed()) {
+          win.close();
+        }
+        safeResolve({ success: false, cancelled: true });
       }
     });
 
     // 开始安装
-    ipcMain.once(`python-deps:install:${pluginId}`, async () => {
+    ipcMain.once(`python-deps:install:${pluginId}`, async (_event, data?: { indexUrl?: string }) => {
       isInstalling = true;
+      const indexUrl = data?.indexUrl || '';
 
       try {
         // 发送日志到窗口
         const sendLog = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
-          win.webContents.send(`python-deps:log:${pluginId}`, { message, type });
+          safeSend(`python-deps:log:${pluginId}`, { message, type });
         };
 
         sendLog('🔧 开始准备 Python 环境...', 'info');
+        if (indexUrl) {
+          sendLog(`🌐 使用镜像源: ${indexUrl}`, 'info');
+        }
 
         // 确保 Python 环境
         await pythonManager.ensurePython((progress) => {
@@ -119,13 +148,14 @@ export async function showPythonDepsInstaller(
         sendLog('✅ Python 环境就绪', 'success');
         sendLog('📦 开始安装依赖...', 'info');
 
-        // 安装依赖
+        // 安装依赖（传递镜像源）
         await pythonManager.ensurePluginEnv(
           pluginId,
           fullRequirementsPath,
           (progress) => {
             sendLog(`[${progress.stage}] ${progress.message}`, 'info');
-          }
+          },
+          indexUrl || undefined
         );
 
         sendLog('✅ 依赖安装完成！', 'success');
@@ -134,38 +164,46 @@ export async function showPythonDepsInstaller(
         // 等待一下让用户看到成功消息
         await new Promise((r) => setTimeout(r, 1500));
 
-        win.close();
-        resolve({ success: true, cancelled: false });
+        if (!win.isDestroyed()) {
+          win.close();
+        }
+        safeResolve({ success: true, cancelled: false });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('依赖安装失败:', error);
 
-        win.webContents.send(`python-deps:log:${pluginId}`, {
+        // 尝试发送错误消息，如果窗口已销毁则直接 resolve
+        const sent = safeSend(`python-deps:log:${pluginId}`, {
           message: `❌ 安装失败: ${errorMessage}`,
           type: 'error',
         });
 
-        win.webContents.send(`python-deps:log:${pluginId}`, {
-          message: '\n请检查网络连接或查看完整日志',
-          type: 'error',
-        });
+        if (sent) {
+          safeSend(`python-deps:log:${pluginId}`, {
+            message: '\n请检查网络连接或查看完整日志',
+            type: 'error',
+          });
 
-        // 启用关闭按钮
-        win.webContents.send(`python-deps:install-failed:${pluginId}`);
-
-        // 等待用户关闭窗口
-        win.once('closed', () => {
-          resolve({ success: false, cancelled: false });
-        });
+          // 启用关闭按钮
+          safeSend(`python-deps:install-failed:${pluginId}`, {});
+        } else {
+          // 窗口已销毁，直接返回失败
+          safeResolve({ success: false, cancelled: false });
+        }
       }
     });
 
     // 窗口关闭
     win.once('closed', () => {
+      isWindowDestroyed = true;
       ipcMain.removeAllListeners(`python-deps:cancel:${pluginId}`);
       ipcMain.removeAllListeners(`python-deps:install:${pluginId}`);
+      // 无论什么状态，窗口关闭都应该 resolve
       if (!isInstalling) {
-        resolve({ success: false, cancelled: true });
+        safeResolve({ success: false, cancelled: true });
+      } else {
+        // 安装过程中窗口被关闭，视为取消
+        safeResolve({ success: false, cancelled: true });
       }
     });
   });
@@ -396,6 +434,39 @@ function generateInstallerHTML(options: {
       background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
       color: #92400e;
       border: 1px solid rgba(217, 119, 6, 0.2);
+    }
+
+    /* 镜像源选择器 */
+    .mirror-select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    .mirror-select:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    .mirror-select:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.8);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .mirror-select:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     /* 环境路径 */
@@ -655,6 +726,20 @@ function generateInstallerHTML(options: {
           <div class="env-path">${envPath}</div>
         </div>
 
+        <!-- 镜像源选择 -->
+        <div class="section">
+          <div class="section-title">🌐 PyPI 镜像源</div>
+          <select id="mirror-select" class="mirror-select">
+            <option value="">默认 (PyPI 官方)</option>
+            <option value="https://pypi.tuna.tsinghua.edu.cn/simple">清华大学</option>
+            <option value="https://mirrors.aliyun.com/pypi/simple">阿里云</option>
+            <option value="https://pypi.mirrors.ustc.edu.cn/simple">中科大</option>
+            <option value="https://mirrors.cloud.tencent.com/pypi/simple">腾讯云</option>
+            <option value="https://repo.huaweicloud.com/repository/pypi/simple">华为云</option>
+            <option value="https://mirrors.163.com/pypi/simple">网易</option>
+          </select>
+        </div>
+
         <!-- Requirements -->
         <div class="section" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
           <div class="section-title">📋 依赖列表</div>
@@ -693,6 +778,7 @@ function generateInstallerHTML(options: {
     const cancelBtn = document.getElementById('cancel-btn');
     const installText = document.getElementById('install-text');
     const installSpinner = document.getElementById('install-spinner');
+    const mirrorSelect = document.getElementById('mirror-select');
 
     let isInstalling = false;
 
@@ -710,11 +796,14 @@ function generateInstallerHTML(options: {
       isInstalling = true;
       installBtn.disabled = true;
       cancelBtn.disabled = true;
+      mirrorSelect.disabled = true;
       installText.textContent = '安装中...';
       installSpinner.classList.remove('hidden');
 
       logContainer.innerHTML = '';
-      ipcRenderer.send('python-deps:install:' + pluginId);
+      // 传递选择的镜像源
+      const indexUrl = mirrorSelect.value || '';
+      ipcRenderer.send('python-deps:install:' + pluginId, { indexUrl });
     });
 
     // 接收日志
