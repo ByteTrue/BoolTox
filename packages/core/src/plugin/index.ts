@@ -17,3 +17,6 @@ export type {
   PluginRegistryEntry,
   PluginInstallOptions,
 } from './plugin-installer.js';
+
+export { PluginRunner, getPluginRunner } from './plugin-runner.js';
+export type { PluginState } from './plugin-runner.js';

@@ -13,6 +13,5 @@ export type {
   PythonManagerConfig,
 } from './python-manager.js';
 
-// TODO: 实现更多运行时功能
-// export { NodeRunner } from './node-runner.js';
-// export { ProcessPool } from './process-pool.js';
+export { BackendRunner, getBackendRunner } from './backend-runner.js';
+export type { BackendEvent } from './backend-runner.js';

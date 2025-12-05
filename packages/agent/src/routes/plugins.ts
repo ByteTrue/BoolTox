@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { getPluginManager, getPluginInstaller } from '@booltox/core/plugin';
+import { getPluginManager, getPluginInstaller, getPluginRunner } from '@booltox/core/plugin';
 
 export async function pluginsRoutes(server: FastifyInstance) {
   const pluginManager = getPluginManager();
   const pluginInstaller = getPluginInstaller();
+  const pluginRunner = getPluginRunner();
 
   // 初始化
   await pluginInstaller.init();
@@ -89,6 +90,10 @@ export async function pluginsRoutes(server: FastifyInstance) {
     const { id } = request.params;
 
     try {
+      // 先停止插件
+      await pluginRunner.stopPlugin(id);
+
+      // 卸载插件
       await pluginInstaller.uninstallPlugin(id);
       await pluginManager.reloadPlugins();
 
@@ -109,19 +114,72 @@ export async function pluginsRoutes(server: FastifyInstance) {
   server.post<{ Params: { id: string } }>('/plugins/:id/start', async (request, reply) => {
     const { id } = request.params;
 
-    // TODO: 实现插件启动逻辑
-    reply.code(501);
-    return { error: 'Not implemented yet' };
+    try {
+      const plugin = pluginManager.getPlugin(id);
+      if (!plugin) {
+        reply.code(404);
+        return { error: 'Plugin not found' };
+      }
+
+      const result = await pluginRunner.startPlugin(plugin);
+
+      return {
+        success: true,
+        channelId: result.channelId,
+        pid: result.pid,
+        message: '插件启动成功',
+      };
+    } catch (error) {
+      reply.code(500);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   });
 
   // 停止插件
   server.post<{ Params: { id: string } }>('/plugins/:id/stop', async (request, reply) => {
     const { id } = request.params;
 
-    // TODO: 实现插件停止逻辑
-    reply.code(501);
-    return { error: 'Not implemented yet' };
+    try {
+      await pluginRunner.stopPlugin(id);
+
+      return {
+        success: true,
+        message: '插件停止成功',
+      };
+    } catch (error) {
+      reply.code(500);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   });
+
+  // 调用插件后端方法
+  server.post<{ Params: { id: string }; Body: { method: string; params?: any } }>(
+    '/plugins/:id/call',
+    async (request, reply) => {
+      const { id } = request.params;
+      const { method, params } = request.body;
+
+      try {
+        const result = await pluginRunner.callBackend(id, method, params);
+        return {
+          success: true,
+          result,
+        };
+      } catch (error) {
+        reply.code(500);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }
+  );
 
   // 获取插件日志
   server.get<{ Params: { id: string }; Querystring: { limit?: string } }>(
@@ -142,3 +200,4 @@ export async function pluginsRoutes(server: FastifyInstance) {
     return { success: true };
   });
 }
+
