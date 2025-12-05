@@ -1,13 +1,18 @@
+import { config } from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import staticPlugin from '@fastify/static';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { healthRoutes } from './routes/health.js';
 import { pluginsRoutes } from './routes/plugins.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 加载根目录的 .env 文件
+config({ path: path.resolve(__dirname, '../../../.env') });
 
 const server = Fastify({
   logger: {

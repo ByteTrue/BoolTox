@@ -64,13 +64,19 @@ export class PluginManager extends EventEmitter {
     // 确保插件目录存在
     await fs.mkdir(this.pluginsDir, { recursive: true });
 
+    console.log(`[PluginManager] Scanning user plugins: ${this.pluginsDir}`);
     // 扫描用户安装插件
     await this.scanPluginDir(this.pluginsDir, false);
 
     // 扫描开发插件
     if (this.devPluginsDir && existsSync(this.devPluginsDir)) {
+      console.log(`[PluginManager] Scanning dev plugins: ${this.devPluginsDir}`);
       await this.scanPluginDir(this.devPluginsDir, true);
+    } else {
+      console.log(`[PluginManager] No dev plugins directory configured or not found`);
     }
+
+    console.log(`[PluginManager] Loaded ${this.plugins.size} plugins`);
 
     this.emit('initialized', {
       totalPlugins: this.plugins.size,
@@ -80,16 +86,31 @@ export class PluginManager extends EventEmitter {
   }
 
   /**
-   * 扫描插件目录
+   * 扫描插件目录（支持嵌套）
    */
-  private async scanPluginDir(dir: string, isDev: boolean): Promise<void> {
+  private async scanPluginDir(dir: string, isDev: boolean, depth: number = 0): Promise<void> {
     try {
+      console.log(`[PluginManager] Scanning directory (depth=${depth}): ${dir}`);
       const entries = await fs.readdir(dir, { withFileTypes: true });
 
+      console.log(`[PluginManager] Found ${entries.length} entries in ${dir}`);
+
       for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const pluginPath = path.join(dir, entry.name);
-          await this.loadPluginFromPath(pluginPath, isDev);
+        if (!entry.isDirectory()) {
+          continue;
+        }
+
+        const fullPath = path.join(dir, entry.name);
+
+        // 检查是否是插件目录（包含 manifest.json）
+        const manifestPath = path.join(fullPath, 'manifest.json');
+        if (existsSync(manifestPath)) {
+          console.log(`[PluginManager] Found plugin manifest: ${manifestPath}`);
+          await this.loadPluginFromPath(fullPath, isDev);
+        } else if (depth < 2) {
+          // 如果不是插件目录，继续递归扫描（最多 2 层）
+          console.log(`[PluginManager] Recursing into: ${fullPath}`);
+          await this.scanPluginDir(fullPath, isDev, depth + 1);
         }
       }
     } catch (error) {
