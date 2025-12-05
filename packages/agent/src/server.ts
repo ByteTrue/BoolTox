@@ -4,6 +4,7 @@ import websocket from '@fastify/websocket';
 import staticPlugin from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { healthRoutes } from './routes/health.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,22 +32,16 @@ await server.register(cors, {
 
 await server.register(websocket);
 
+// 注册路由
+await server.register(healthRoutes, { prefix: '/api' });
+
 // TODO: 注册静态文件服务（插件市场前端）
 // await server.register(staticPlugin, {
 //   root: path.join(__dirname, '../public'),
 //   prefix: '/marketplace/',
 // });
 
-// 健康检查端点
-server.get('/api/health', async () => {
-  return {
-    status: 'ok',
-    version: '0.1.0',
-    timestamp: new Date().toISOString(),
-  };
-});
-
-// TODO: 注册路由
+// TODO: 注册其他路由
 // import { pluginsRoutes } from './routes/plugins.js';
 // await server.register(pluginsRoutes, { prefix: '/api' });
 
@@ -75,3 +70,4 @@ process.on('SIGINT', async () => {
   await server.close();
   process.exit(0);
 });
+
