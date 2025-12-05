@@ -64,6 +64,9 @@ env/
 # GitHub 配置
 .github/
 
+# 独立插件仓库（单独维护）
+booltox-plugins/
+
 # 其他
 *.bak
 *.tmp
