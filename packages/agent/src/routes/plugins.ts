@@ -1,10 +1,12 @@
 import type { FastifyInstance } from 'fastify';
-import { getPluginManager } from '@booltox/core/plugin';
+import { getPluginManager, getPluginInstaller } from '@booltox/core/plugin';
 
 export async function pluginsRoutes(server: FastifyInstance) {
   const pluginManager = getPluginManager();
+  const pluginInstaller = getPluginInstaller();
 
-  // 初始化插件管理器
+  // 初始化
+  await pluginInstaller.init();
   await pluginManager.initialize();
 
   // 获取所有插件
@@ -53,9 +55,32 @@ export async function pluginsRoutes(server: FastifyInstance) {
     async (request, reply) => {
       const { source, type, hash } = request.body;
 
-      // TODO: 实现插件安装逻辑
-      reply.code(501);
-      return { error: 'Not implemented yet' };
+      try {
+        const pluginId = await pluginInstaller.installPlugin({
+          source,
+          type: type as 'url' | 'local',
+          hash,
+          onProgress: (progress) => {
+            // TODO: 通过 WebSocket 推送进度
+            server.log.info(`Install progress: ${progress.message} (${progress.percent}%)`);
+          },
+        });
+
+        // 重新加载插件列表
+        await pluginManager.reloadPlugins();
+
+        return {
+          success: true,
+          pluginId,
+          message: '插件安装成功',
+        };
+      } catch (error) {
+        reply.code(500);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
     }
   );
 
@@ -63,9 +88,21 @@ export async function pluginsRoutes(server: FastifyInstance) {
   server.delete<{ Params: { id: string } }>('/plugins/:id', async (request, reply) => {
     const { id } = request.params;
 
-    // TODO: 实现插件卸载逻辑
-    reply.code(501);
-    return { error: 'Not implemented yet' };
+    try {
+      await pluginInstaller.uninstallPlugin(id);
+      await pluginManager.reloadPlugins();
+
+      return {
+        success: true,
+        message: '插件卸载成功',
+      };
+    } catch (error) {
+      reply.code(500);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   });
 
   // 启动插件

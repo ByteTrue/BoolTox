@@ -11,6 +11,9 @@ export type {
   PluginManagerConfig,
 } from './plugin-manager.js';
 
-// TODO: 实现更多插件相关功能
-// export { PluginInstaller } from './plugin-installer.js';
-// export { PluginLifecycle } from './plugin-lifecycle.js';
+export { PluginInstaller, getPluginInstaller } from './plugin-installer.js';
+export type {
+  PluginInstallProgress,
+  PluginRegistryEntry,
+  PluginInstallOptions,
+} from './plugin-installer.js';
