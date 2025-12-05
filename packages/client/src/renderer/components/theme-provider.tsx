@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react"; // 统一 React 导入

@@ -1,5 +1,9 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { exec } from 'node:child_process';
-import type { BufferEncoding } from 'node:buffer';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import util from 'node:util';

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import React, { useEffect } from "react"; // 添加 React 导入
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/Toaster"; // 导入 Toaster

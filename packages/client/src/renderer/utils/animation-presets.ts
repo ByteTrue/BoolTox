@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 动画预设组合 - 开箱即用的动画配置
  * 
  * 使用方式:

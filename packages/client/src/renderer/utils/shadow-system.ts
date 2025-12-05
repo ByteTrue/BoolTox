@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 统一阴影系统
  * 所有阴影统一为右下角柔和阴影风格
  */

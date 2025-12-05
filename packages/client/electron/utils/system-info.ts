@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';

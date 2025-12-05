@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 统一的错误处理工具
  * 提供标准化的错误格式化、日志记录和用户提示 (遵循 DRY 原则)
  */

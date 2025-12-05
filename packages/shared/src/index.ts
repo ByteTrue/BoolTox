@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 // Export all types
 export * from './types/api.types.js';
 export * from './types/release.types.js';

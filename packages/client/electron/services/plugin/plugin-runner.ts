@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { BrowserWindow } from 'electron';
 import type { Rectangle } from 'electron';
 import path from 'path';
@@ -204,7 +209,8 @@ export class PluginRunner {
     const pluginId = state.runtime.id;
     try {
       // 检查是否有 Python backend 需要依赖安装（在创建窗口之前）
-      const backendConfig = state.runtime.manifest.runtime?.backend;
+      const runtimeConfig = state.runtime.manifest.runtime;
+      const backendConfig = runtimeConfig && 'backend' in runtimeConfig ? runtimeConfig.backend : undefined;
       if (backendConfig && backendConfig.type === 'python' && backendConfig.requirements) {
         const requirementsPath = path.isAbsolute(backendConfig.requirements)
           ? backendConfig.requirements

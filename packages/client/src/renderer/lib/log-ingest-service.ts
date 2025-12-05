@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { APP_VERSION } from "@/config/app-info";
 import { CLIENT_IDENTIFIER, INGEST_SHARED_SECRET } from "@/config/api";
 import { apiFetch } from "@/lib/backend-client";

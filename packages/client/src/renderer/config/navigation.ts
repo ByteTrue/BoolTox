@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 // 导航配置服务：支持按部署和环境变量裁剪入口
 // 可扩展：接入远程配置 / A/B / 租户差异
 

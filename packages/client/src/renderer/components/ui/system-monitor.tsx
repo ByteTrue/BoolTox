@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { motion } from 'framer-motion';
 import { useTheme } from '../theme-provider';
 import { useSystemInfo, formatUptime, getOSIcon } from '@/hooks/use-system-info';

@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * download-uv.mjs
  * 下载各平台 uv 二进制文件到 resources/uv/ 目录
  * 

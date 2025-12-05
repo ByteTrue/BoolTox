@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 // 模块事件日志管理器
 // 用于记录模块的安装、卸载、启用、停用等操作，存储到 localStorage
 

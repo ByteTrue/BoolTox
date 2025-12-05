@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen } from "lucide-react";
 import { EmptyState } from "../ui/empty-state";

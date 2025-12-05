@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import type { MatchRow, ReplaceResult, TestResult, ValidateResult } from '../shared/regex-types';
 
 type BooltoxBackendHandle = {

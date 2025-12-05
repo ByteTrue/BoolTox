@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import path from 'path';
 import { Worker } from 'worker_threads';
 import { randomUUID } from 'crypto';

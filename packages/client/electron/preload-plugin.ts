@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { contextBridge, ipcRenderer } from 'electron';
 import type { BooltoxAPI, BooltoxBackendMessage, BooltoxEncoding, PluginBackendConfig } from '@booltox/shared';
 

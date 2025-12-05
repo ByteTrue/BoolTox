@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * Dropdown 下拉菜单组件
  * 
  * Apple 风格的下拉菜单，支持：

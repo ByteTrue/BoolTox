@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 全局错误边界 - React Error Boundary
  * 捕获组件树中的 JavaScript 错误，防止整个应用崩溃
  * 提供 Apple 风格的错误回退 UI

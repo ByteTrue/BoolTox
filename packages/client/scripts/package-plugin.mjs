@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 插件打包脚本
  * 用途: 将插件打包成可分发的ZIP文件,计算哈希值
  * 

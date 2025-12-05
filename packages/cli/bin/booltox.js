@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { Command } from 'commander';
 import path from 'path';
 import fs from 'fs-extra';

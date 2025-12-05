@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 /* eslint-disable no-console */
 import { IPC_CHANNELS, type RendererConsoleLevel, type RendererConsolePayload } from '@shared/constants/ipc-channels';
 

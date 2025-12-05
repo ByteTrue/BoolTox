@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * Python 依赖安装窗口
  * 在启动 Python 插件前显示，让用户确认并查看依赖安装过程
  */

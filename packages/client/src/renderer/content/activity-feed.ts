@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 export interface ActivityFeedItem {
   id: string;
   type: 'announcement' | 'update';

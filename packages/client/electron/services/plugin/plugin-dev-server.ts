@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
@@ -30,7 +35,7 @@ export class PluginDevServer {
     this.watcher = chokidar.watch(path.join(options.pluginPath, options.backend.entry), {
       ignoreInitial: true,
     });
-    this.watcher.on('all', async (event, filePath) => {
+    this.watcher.on('all', async (event: string, filePath: string) => {
       logger.info(`[DevServer] 检测到变更 (${event}): ${filePath}`);
       await this.restart('file-changed');
     });

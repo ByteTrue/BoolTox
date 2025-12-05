@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * LoadingSpinner - 加载动画组件
  * 
  * Apple 风格的加载指示器

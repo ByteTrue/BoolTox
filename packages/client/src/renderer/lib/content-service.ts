@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 // 内容服务封装：当前直接返回本地静态配置；后续可替换为远程 CMS / API。
 // 设计目标：统一访问层 + 轻量缓存 + 失败回退（fallback to static）。
 

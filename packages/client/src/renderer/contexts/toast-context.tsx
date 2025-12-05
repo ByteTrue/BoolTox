@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 export enum RoleSlug {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',

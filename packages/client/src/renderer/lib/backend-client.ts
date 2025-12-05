@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { ADMIN_API_BASE, CLIENT_API_TOKEN } from "@/config/api";
 
 type RequestOptions = {

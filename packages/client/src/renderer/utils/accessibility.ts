@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 可访问性工具函数
  * 提供 ARIA 属性生成、键盘导航、焦点管理、屏幕阅读器支持
  * 遵循 WAI-ARIA 1.2 规范和 WCAG 2.1 AA 标准
