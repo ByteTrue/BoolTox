@@ -5,6 +5,7 @@ import staticPlugin from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { healthRoutes } from './routes/health.js';
+import { pluginsRoutes } from './routes/plugins.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,16 +35,13 @@ await server.register(websocket);
 
 // 注册路由
 await server.register(healthRoutes, { prefix: '/api' });
+await server.register(pluginsRoutes, { prefix: '/api' });
 
 // TODO: 注册静态文件服务（插件市场前端）
 // await server.register(staticPlugin, {
 //   root: path.join(__dirname, '../public'),
 //   prefix: '/marketplace/',
 // });
-
-// TODO: 注册其他路由
-// import { pluginsRoutes } from './routes/plugins.js';
-// await server.register(pluginsRoutes, { prefix: '/api' });
 
 // 启动服务器
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 9527;
@@ -53,6 +51,7 @@ try {
   await server.listen({ port: PORT, host: HOST });
   server.log.info(`🚀 BoolTox Agent 运行在 http://localhost:${PORT}`);
   server.log.info(`📦 插件市场: http://localhost:${PORT}/marketplace`);
+  server.log.info(`📊 API 文档: http://localhost:${PORT}/api/health`);
 } catch (err) {
   server.log.error(err);
   process.exit(1);

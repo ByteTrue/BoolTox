@@ -9,9 +9,22 @@
 export type * from '@booltox/shared/types';
 
 // 导出 API 模块
-export * from './api.js';
-export * from './backend.js';
-export * from './hooks.js';
+export {
+  isBooltoxAvailable,
+  getBooltoxAPI,
+  BooltoxClient,
+  getBooltoxClient,
+  booltox,
+} from './api.js';
 
-// TODO: 实现完整的 SDK
+export { BackendClient, createBackendClient } from './backend.js';
+
+export {
+  useStorage,
+  useBackend,
+  useBackendEvent,
+  useBackendCall,
+  useWindowTitle,
+} from './hooks.js';
+
 export const PLUGIN_SDK_VERSION = '2.0.0';

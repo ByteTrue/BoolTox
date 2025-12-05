@@ -15,7 +15,6 @@
     "declarationMap": true,
     "noEmit": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "paths": {
       "@booltox/shared": ["../shared/src"]
     }

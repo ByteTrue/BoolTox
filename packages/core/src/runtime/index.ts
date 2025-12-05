@@ -5,9 +5,14 @@
  * Python/Node.js 环境管理、进程调度
  */
 
-// TODO: 实现运行时管理
-// export { PythonManager } from './python-manager.js';
+export { PythonManager, getPythonManager } from './python-manager.js';
+export type {
+  PythonStatus,
+  RunScriptOptions,
+  RunScriptResult,
+  PythonManagerConfig,
+} from './python-manager.js';
+
+// TODO: 实现更多运行时功能
 // export { NodeRunner } from './node-runner.js';
 // export { ProcessPool } from './process-pool.js';
-
-export const RUNTIME_MODULE_PLACEHOLDER = 'Runtime module will be implemented here';
