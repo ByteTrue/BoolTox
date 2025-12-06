@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Shield, Boxes, Sparkles } from 'lucide-react';
-import { staggerContainer, staggerItem, buttonAnimation } from '@/lib/animation-config';
+import { staggerContainer, staggerItem } from '@/lib/animation-config';
 
 export default function HomePage() {
   return (
@@ -65,24 +65,24 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
           >
-            <motion.div {...buttonAnimation}>
+            <div>
               <Link
                 href="/tools"
-                className="group inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold bg-primary-500 text-white hover:bg-primary-600 shadow-soft hover:shadow-soft-lg transition-all duration-200"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold bg-primary-500 text-white hover:bg-primary-600 shadow-soft hover:shadow-soft-lg transition-all duration-200 active:scale-95"
               >
                 <span>探索工具箱</span>
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-            </motion.div>
+            </div>
 
-            <motion.div {...buttonAnimation}>
+            <div>
               <Link
                 href="/tools/market"
-                className="inline-flex items-center justify-center rounded-xl px-8 py-4 text-base font-semibold border-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-xl px-8 py-4 text-base font-semibold border-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200 active:scale-95"
               >
                 浏览插件
               </Link>
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* 特性卡片 */}

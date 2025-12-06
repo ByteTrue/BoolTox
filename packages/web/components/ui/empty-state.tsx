@@ -9,7 +9,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
-import { fadeIn, staggerContainer, staggerItem, buttonAnimation } from '@/lib/animation-config';
+import { fadeIn, staggerContainer, staggerItem } from '@/lib/animation-config';
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -89,43 +89,43 @@ export function EmptyState({
           className="flex flex-col sm:flex-row gap-3 mt-8"
         >
           {action && (
-            <motion.div {...buttonAnimation}>
+            <div>
               {action.href ? (
                 <Link
                   href={action.href}
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-600 shadow-soft hover:shadow-soft-lg transition-all"
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-600 shadow-soft hover:shadow-soft-lg transition-all active:scale-95"
                 >
                   {action.label}
                 </Link>
               ) : (
                 <button
                   onClick={action.onClick}
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-600 shadow-soft hover:shadow-soft-lg transition-all"
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-600 shadow-soft hover:shadow-soft-lg transition-all active:scale-95"
                 >
                   {action.label}
                 </button>
               )}
-            </motion.div>
+            </div>
           )}
 
           {secondaryAction && (
-            <motion.div {...buttonAnimation}>
+            <div>
               {secondaryAction.href ? (
                 <Link
                   href={secondaryAction.href}
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all"
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all active:scale-95"
                 >
                   {secondaryAction.label}
                 </Link>
               ) : (
                 <button
                   onClick={secondaryAction.onClick}
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all"
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all active:scale-95"
                 >
                   {secondaryAction.label}
                 </button>
               )}
-            </motion.div>
+            </div>
           )}
         </motion.div>
       )}

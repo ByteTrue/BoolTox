@@ -1,102 +1,108 @@
 'use client';
 
 import React from 'react';
+import useSWR, { mutate } from 'swr';
 import { useAgent } from '@/hooks/use-agent';
 import type { PluginInfo } from '@booltox/sdk';
 
+const SWR_KEY = 'plugins-list';
+
 export function usePlugins() {
   const { client, isAvailable } = useAgent();
-  const [plugins, setPlugins] = React.useState<PluginInfo[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
 
-  // 加载插件列表
-  const loadPlugins = React.useCallback(async () => {
-    if (!client) {
-      setPlugins([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await client.getPlugins();
-      setPlugins(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load plugins');
-      setPlugins([]);
-    } finally {
-      setIsLoading(false);
-    }
+  // SWR Fetcher
+  const fetcher = React.useCallback(async () => {
+    if (!client) return [];
+    return client.getPlugins();
   }, [client]);
 
-  // 安装插件
+  // Use SWR for auto-caching and revalidation
+  // keepPreviousData: true -> prevents flashing empty list during reloads
+  const { data: plugins = [], isLoading, error } = useSWR(
+    isAvailable ? SWR_KEY : null, 
+    fetcher,
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: true,
+      dedupingInterval: 2000,
+    }
+  );
+
+  // Install Plugin
   const installPlugin = React.useCallback(
     async (source: string, type: 'url' | 'local', hash?: string) => {
-      if (!client) {
-        throw new Error('Agent not connected');
-      }
-
+      if (!client) throw new Error('Agent not connected');
+      // No optimistic update for install as we don't know the result yet
       await client.installPlugin({ source, type, hash });
-      await loadPlugins();
+      mutate(SWR_KEY);
     },
-    [client, loadPlugins]
+    [client]
   );
 
-  // 卸载插件
+  // Uninstall Plugin
   const uninstallPlugin = React.useCallback(
     async (pluginId: string) => {
-      if (!client) {
-        throw new Error('Agent not connected');
-      }
+      if (!client) throw new Error('Agent not connected');
+
+      // Optimistic update: Remove from list immediately
+      mutate(
+        SWR_KEY,
+        (current: PluginInfo[] = []) => current.filter(p => p.id !== pluginId),
+        false
+      );
 
       await client.uninstallPlugin(pluginId);
-      await loadPlugins();
+      mutate(SWR_KEY); // Revalidate to be sure
     },
-    [client, loadPlugins]
+    [client]
   );
 
-  // 启动插件
+  // Start Plugin
   const startPlugin = React.useCallback(
     async (pluginId: string) => {
-      if (!client) {
-        throw new Error('Agent not connected');
-      }
+      if (!client) throw new Error('Agent not connected');
+
+      // Optimistic update: Mark as running immediately
+      mutate(
+        SWR_KEY,
+        (current: PluginInfo[] = []) => 
+          current.map(p => p.id === pluginId ? { ...p, status: 'running' } : p),
+        false
+      );
 
       await client.startPlugin(pluginId);
-      await loadPlugins();
+      mutate(SWR_KEY);
     },
-    [client, loadPlugins]
+    [client]
   );
 
-  // 停止插件
+  // Stop Plugin
   const stopPlugin = React.useCallback(
     async (pluginId: string) => {
-      if (!client) {
-        throw new Error('Agent not connected');
-      }
+      if (!client) throw new Error('Agent not connected');
+
+      // Optimistic update: Mark as stopped immediately
+      mutate(
+        SWR_KEY,
+        (current: PluginInfo[] = []) => 
+          current.map(p => p.id === pluginId ? { ...p, status: 'stopped' } : p),
+        false
+      );
 
       await client.stopPlugin(pluginId);
-      await loadPlugins();
+      mutate(SWR_KEY);
     },
-    [client, loadPlugins]
+    [client]
   );
-
-  // 初始加载
-  React.useEffect(() => {
-    loadPlugins();
-  }, [loadPlugins]);
 
   return {
     plugins,
     isLoading,
     error,
-    loadPlugins,
     installPlugin,
     uninstallPlugin,
     startPlugin,
     stopPlugin,
+    reload: () => mutate(SWR_KEY),
   };
 }

@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
+import useSWR from 'swr';
 
 /**
- * 远程插件信息（从插件市场）
+ * Remote Plugin Info
  */
 export interface RemotePlugin {
   id: string;
@@ -37,7 +38,7 @@ export interface RemotePlugin {
 }
 
 /**
- * 插件注册表响应
+ * Registry Response
  */
 interface PluginRegistry {
   version: string;
@@ -51,61 +52,36 @@ interface PluginRegistry {
   }>;
 }
 
-/**
- * useRemotePlugins Hook
- * 从 GitHub 获取远程插件列表
- */
+const REGISTRY_URL = process.env.NODE_ENV === 'development'
+  ? 'http://localhost:9527/dev/plugins/index.json'
+  : 'https://raw.githubusercontent.com/ByteTrue/booltox-plugins/main/plugins/index.json';
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url, {
+    cache: 'no-cache',
+    headers: { 'Accept': 'application/json' },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch plugins: ${res.status}`);
+  return res.json() as Promise<PluginRegistry>;
+};
+
 export function useRemotePlugins() {
-  const [plugins, setPlugins] = React.useState<RemotePlugin[]>([]);
-  const [categories, setCategories] = React.useState<PluginRegistry['categories']>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  // 插件注册表 URL（开发环境使用本地文件）
-  const REGISTRY_URL = process.env.NODE_ENV === 'development'
-    ? 'http://localhost:9527/dev/plugins/index.json' // 开发环境：通过 Agent 提供
-    : 'https://raw.githubusercontent.com/ByteTrue/booltox-plugins/main/plugins/index.json'; // 生产环境：GitHub Raw
-
-  // 加载远程插件列表
-  const loadPlugins = React.useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(REGISTRY_URL, {
-        cache: 'no-cache',
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch plugins: ${response.status}`);
-      }
-
-      const data: PluginRegistry = await response.json();
-      setPlugins(data.plugins || []);
-      setCategories(data.categories || []);
-    } catch (err) {
-      console.error('[useRemotePlugins] Load failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load plugins');
-      setPlugins([]);
-      setCategories([]);
-    } finally {
-      setIsLoading(false);
+  const { data, error, isLoading, mutate } = useSWR<PluginRegistry>(
+    REGISTRY_URL,
+    fetcher,
+    {
+      revalidateOnFocus: false, // Don't spam GitHub/Localhost
+      revalidateOnReconnect: false,
+      keepPreviousData: true, // Key for UX
+      dedupingInterval: 60000, // Cache for 1 minute
     }
-  }, [REGISTRY_URL]);
-
-  // 初始加载
-  React.useEffect(() => {
-    loadPlugins();
-  }, [loadPlugins]);
+  );
 
   return {
-    plugins,
-    categories,
+    plugins: data?.plugins || [],
+    categories: data?.categories || [],
     isLoading,
-    error,
-    reload: loadPlugins,
+    error: error instanceof Error ? error.message : error ? String(error) : null,
+    reload: () => mutate(),
   };
 }

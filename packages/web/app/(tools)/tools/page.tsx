@@ -6,14 +6,14 @@ import { useAgent } from '@/hooks/use-agent';
 import { usePlugins } from '@/hooks/use-plugins';
 import { AgentStatus } from '@/components/tools/agent-status';
 import { AgentInstaller } from '@/components/tools/agent-installer';
-import { Package, Box, Settings, ArrowRight, PlayCircle } from 'lucide-react';
-import { cardAnimation, staggerContainer, staggerItem } from '@/lib/animation-config';
+import { PluginCard } from '@/components/tools/plugin-card';
+import { Package, Box, Settings, ArrowRight, Activity, Zap } from 'lucide-react';
+import { staggerContainer, staggerItem } from '@/lib/animation-config';
 
 export default function ToolsPage() {
   const { isAvailable, isDetecting } = useAgent();
-  const { plugins, isLoading } = usePlugins();
+  const { plugins, isLoading, startPlugin, stopPlugin, uninstallPlugin } = usePlugins();
 
-  // 统计信息
   const stats = {
     total: plugins.length,
     running: plugins.filter(p => p.status === 'running').length,
@@ -21,158 +21,136 @@ export default function ToolsPage() {
 
   const runningPlugins = plugins.filter(p => p.status === 'running');
 
-  // 数据未准备好：返回 null，避免闪烁
-  if (isDetecting || isLoading) {
-    return null;
+  // Loading State - Minimal
+  if (isDetecting || (isLoading && plugins.length === 0)) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center text-neutral-400">
+        Loading toolbox...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {/* 页头 */}
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">工具箱</h1>
-        <div className="flex items-center gap-4 mt-3">
-          <p className="text-neutral-600 dark:text-neutral-400">探索强大的效率工具插件</p>
-          {isAvailable && (
-            <>
-              <span className="text-neutral-300 dark:text-neutral-700">•</span>
-              <AgentStatus />
-            </>
-          )}
+    <div className="max-w-6xl mx-auto space-y-10 pb-20">
+      
+      {/* Header */}
+      <header className="flex items-end justify-between border-b border-neutral-200 dark:border-neutral-800 pb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+            Toolbox
+          </h1>
+          <p className="text-neutral-500 mt-1">
+            Manage your local development tools and plugins.
+          </p>
         </div>
-      </div>
+        <div className="flex items-center gap-3">
+           {isAvailable && <AgentStatus />}
+        </div>
+      </header>
 
-      {/* Agent 未安装 */}
+      {/* Agent Installer */}
       {!isAvailable && <AgentInstaller />}
 
-      {/* Agent 已安装 */}
       {isAvailable && (
-        <>
-          {/* 正在运行的插件 */}
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="space-y-10"
+        >
+          
+          {/* Quick Access / Stats */}
+          <section>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link href="/tools/market" className="group block p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <Package className="text-neutral-500 group-hover:text-blue-500 transition-colors" size={24} />
+                  <ArrowRight size={16} className="text-neutral-300 group-hover:text-neutral-500" />
+                </div>
+                <div className="font-semibold text-neutral-900 dark:text-neutral-100">Marketplace</div>
+                <div className="text-sm text-neutral-500">Discover new tools</div>
+              </Link>
+
+              <Link href="/tools/installed" className="group block p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <Box className="text-neutral-500 group-hover:text-purple-500 transition-colors" size={24} />
+                  <div className="text-xs font-mono bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded text-neutral-600 dark:text-neutral-400">
+                    {stats.total} Installed
+                  </div>
+                </div>
+                <div className="font-semibold text-neutral-900 dark:text-neutral-100">My Plugins</div>
+                <div className="text-sm text-neutral-500">Manage installed tools</div>
+              </Link>
+
+              <div className="block p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+                <div className="flex items-center justify-between mb-2">
+                  <Activity className="text-neutral-400" size={24} />
+                </div>
+                <div className="font-semibold text-neutral-900 dark:text-neutral-100">System Status</div>
+                <div className="text-sm text-neutral-500">All systems operational</div>
+              </div>
+            </div>
+          </section>
+
+          {/* Running Plugins */}
           {runningPlugins.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
-                <PlayCircle size={24} className="text-primary-500 dark:text-primary-400" />
-                正在运行 ({runningPlugins.length})
+            <section>
+              <h2 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Zap size={14} /> Active Sessions
               </h2>
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-              >
-                {runningPlugins.map((plugin) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {runningPlugins.map(plugin => (
                   <motion.div key={plugin.id} variants={staggerItem}>
-                    <Link
-                      href={`/plugin/${plugin.id}`}
-                      className="block p-4 border border-primary-200 dark:border-primary-800/50 rounded-xl bg-primary-50/50 dark:bg-primary-900/20 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all duration-200 group"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
-                          {plugin.manifest.name}
-                        </h3>
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                      </div>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-                        {plugin.manifest.description || '正在运行中...'}
-                      </p>
-                      <span className="text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:underline">
-                        打开插件 →
-                      </span>
-                    </Link>
+                    <PluginCard 
+                      plugin={plugin} 
+                      onStart={startPlugin}
+                      onStop={stopPlugin}
+                      onUninstall={uninstallPlugin}
+                    />
                   </motion.div>
                 ))}
-              </motion.div>
-            </div>
-          )}
-
-          {/* 快速访问 */}
-          <div>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
-              快速访问
-            </h2>
-            <motion.div
-              variants={staggerContainer}
-              initial="initial"
-              animate="animate"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-            >
-              {/* 我的插件 */}
-              <motion.div variants={staggerItem}>
-                <Link
-                  href="/tools/installed"
-                  className="block p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
-                >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-500 dark:text-primary-400">
-                    <Box size={24} />
-                  </div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">我的插件</h3>
-                </div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                  管理已安装的插件 · {stats.total} 个插件
-                  {stats.running > 0 && `, ${stats.running} 个运行中`}
-                </p>
-                <div className="flex items-center gap-1 text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:gap-2 transition-all">
-                  <span>查看详情</span>
-                  <ArrowRight size={16} />
-                </div>
-              </Link>
-              </motion.div>
-
-              {/* 插件市场 */}
-              <motion.div variants={staggerItem}>
-              <Link
-                href="/tools/market"
-                className="block p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-500 dark:text-primary-400">
-                    <Package size={24} />
-                  </div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">插件市场</h3>
-                </div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                  浏览和安装社区插件
-                </p>
-                <div className="flex items-center gap-1 text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:gap-2 transition-all">
-                  <span>前往市场</span>
-                  <ArrowRight size={16} />
-                </div>
-              </Link>
-              </motion.div>
-
-              {/* 设置 */}
-              <motion.div variants={staggerItem}>
-              <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 opacity-50">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-400">
-                    <Settings size={24} />
-                  </div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">设置</h3>
-                </div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                  配置和偏好设置
-                </p>
-                <span className="text-neutral-400 text-sm">即将推出</span>
               </div>
-              </motion.div>
-            </motion.div>
-          </div>
+            </section>
+          )}
 
-          {/* 空状态提示 */}
-          {stats.total === 0 && (
-            <div className="mt-8 p-8 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl bg-neutral-50/50 dark:bg-neutral-900/50 text-center">
-              <div className="text-5xl mb-4">📦</div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-                还没有安装任何插件
-              </h3>
-              <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-                去插件市场看看吧
+          {/* All Plugins (if any installed but not running) */}
+          {plugins.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-4">
+                All Tools
+              </h2>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {plugins.map(plugin => (
+                  <motion.div key={plugin.id} variants={staggerItem}>
+                    <PluginCard 
+                      plugin={plugin} 
+                      onStart={startPlugin}
+                      onStop={stopPlugin}
+                      onUninstall={uninstallPlugin}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
+
+           {/* Empty State */}
+          {plugins.length === 0 && (
+            <div className="text-center py-20 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400 mb-4">
+                <Package size={24} />
+              </div>
+              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">No plugins installed</h3>
+              <p className="text-neutral-500 mb-6 max-w-sm mx-auto">
+                Get started by exploring the marketplace to find tools that boost your productivity.
               </p>
+              <Link href="/tools/market" className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-black font-medium hover:opacity-90 transition-opacity">
+                Browse Marketplace
+              </Link>
             </div>
           )}
-        </>
+
+        </motion.div>
       )}
     </div>
   );

@@ -1,27 +1,26 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAgent } from '@/hooks/use-agent';
 import { usePlugins } from '@/hooks/use-plugins';
 import { useRemotePlugins } from '@/hooks/use-remote-plugins';
 import { useToast } from '@/components/toast';
 import { AgentInstaller } from '@/components/tools/agent-installer';
-import { PluginListSkeleton } from '@/components/ui/skeleton';
-import { Download, CheckCircle, RefreshCw, Search } from 'lucide-react';
-import { staggerContainer, staggerItem, cardAnimation } from '@/lib/animation-config';
+import { Download, CheckCircle, RefreshCw, Search, Box } from 'lucide-react';
+import { staggerContainer, staggerItem } from '@/lib/animation-config';
+import Link from 'next/link';
 
 export default function PluginMarketPage() {
   const { isAvailable, isDetecting } = useAgent();
-  const { plugins: installedPlugins, installPlugin, loadPlugins } = usePlugins();
-  const { plugins: remotePlugins, categories, isLoading, error, reload } = useRemotePlugins();
+  const { plugins: installedPlugins, installPlugin, reload: reloadLocal } = usePlugins();
+  const { plugins: remotePlugins, categories, isLoading, error, reload: reloadRemote } = useRemotePlugins();
   const { showToast } = useToast();
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [installingPlugin, setInstallingPlugin] = React.useState<string | null>(null);
 
-  // 合并远程和本地插件数据
+  // Merge Data
   const mergedPlugins = React.useMemo(() => {
     return remotePlugins.map(remote => {
       const installed = installedPlugins.find(local => local.id === remote.id);
@@ -34,16 +33,12 @@ export default function PluginMarketPage() {
     });
   }, [remotePlugins, installedPlugins]);
 
-  // 筛选插件
+  // Filter
   const filteredPlugins = React.useMemo(() => {
     let result = mergedPlugins;
-
-    // 分类筛选
     if (selectedCategory !== 'all') {
       result = result.filter(p => p.category === selectedCategory);
     }
-
-    // 搜索筛选
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(p =>
@@ -52,225 +47,175 @@ export default function PluginMarketPage() {
         p.keywords.some(k => k.toLowerCase().includes(query))
       );
     }
-
     return result;
   }, [mergedPlugins, selectedCategory, searchQuery]);
 
-  // 处理安装
+  // Install Handler
   const handleInstall = async (plugin: typeof mergedPlugins[0]) => {
-    if (!installPlugin) return;
-
     setInstallingPlugin(plugin.id);
     try {
       await installPlugin(plugin.downloadUrl, 'url', plugin.sha256 || undefined);
-      await loadPlugins();
-      showToast(`${plugin.name} 安装成功！`, 'success');
+      // SWR will handle reload, but we can force it too
+      await reloadLocal();
+      showToast(`${plugin.name} installed successfully`, 'success');
     } catch (err) {
-      console.error('Install failed:', err);
-      showToast(err instanceof Error ? err.message : '安装失败', 'error');
+      showToast(err instanceof Error ? err.message : 'Install failed', 'error');
     } finally {
       setInstallingPlugin(null);
     }
   };
 
-  // 检测中：在所有 Hooks 之后返回
-  if (isDetecting) {
-    return null;
-  }
+  if (isDetecting) return null;
 
-  // Agent 未安装
   if (!isAvailable) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">插件市场</h1>
-          <p className="text-neutral-600 dark:text-neutral-400">发现更多强大的工具插件</p>
-        </div>
+         <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Plugin Market</h1>
         <AgentInstaller />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* 标题 */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-6xl mx-auto pb-20">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">插件市场</h1>
-          <p className="text-neutral-600 dark:text-neutral-400">
-            发现更多强大的工具插件 · {filteredPlugins.length} 个插件
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Plugin Market</h1>
+          <p className="text-neutral-500 mt-1">
+            Discover tools from the community.
           </p>
         </div>
-
-        {/* 刷新按钮 */}
-        <button
-          onClick={reload}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all disabled:opacity-50"
-        >
-          <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-          <span>刷新</span>
-        </button>
+        
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-grow md:flex-grow-0">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+             <input 
+               type="text" 
+               placeholder="Search..." 
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className="w-full md:w-64 pl-9 pr-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100"
+             />
+          </div>
+          <button
+            onClick={() => reloadRemote()}
+            className="p-2 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
-      {/* 搜索栏 */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" size={20} />
-        <input
-          type="text"
-          placeholder="搜索插件..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-        />
-      </div>
-
-      {/* 分类标签 */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      {/* Categories */}
+      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
         <button
           onClick={() => setSelectedCategory('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
             selectedCategory === 'all'
-              ? 'bg-primary-500 text-white'
-              : 'border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+              ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
+              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
           }`}
         >
-          全部 ({mergedPlugins.length})
+          All
         </button>
-        {categories.map(category => {
-          const count = mergedPlugins.filter(p => p.category === category.id).length;
-          return (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                selectedCategory === category.id
-                  ? 'bg-primary-500 text-white'
-                  : 'border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
-              }`}
-            >
-              {category.icon} {category.name} ({count})
-            </button>
-          );
-        })}
+        {categories.map(category => (
+          <button
+            key={category.id}
+            onClick={() => setSelectedCategory(category.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              selectedCategory === category.id
+                ? 'bg-neutral-900 dark:bg-white text-white dark:text-black'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            {category.name}
+          </button>
+        ))}
       </div>
 
-      {/* 错误提示 */}
       {error && (
-        <div className="p-4 border border-error-200 dark:border-error-800/50 rounded-xl bg-error-50 dark:bg-error-900/20 text-error-700 dark:text-error-400">
-          <p className="font-semibold mb-1">加载失败</p>
-          <p className="text-sm">{error}</p>
+        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+          {error}
         </div>
       )}
 
-      {/* 加载中 */}
-      {isLoading && (
-        <PluginListSkeleton count={6} />
-      )}
-
-      {/* 空状态 */}
-      {!isLoading && filteredPlugins.length === 0 && (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">📦</div>
-          <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-            {searchQuery ? '未找到匹配的插件' : '暂无插件'}
-          </h3>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            {searchQuery ? '尝试使用其他关键词搜索' : '插件市场正在建设中'}
-          </p>
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="px-6 py-3 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600"
-            >
-              清除搜索
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* 插件列表 */}
-      {!isLoading && filteredPlugins.length > 0 && (
-        <motion.div
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {filteredPlugins.map((plugin) => (
-            <motion.div
-              key={plugin.id}
-              variants={staggerItem}
-              {...cardAnimation}
-              className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-shadow"
-            >
-              {/* 插件图标和名称 */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center text-2xl">
-                    🍅
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{plugin.name}</h3>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">v{plugin.version}</p>
-                  </div>
+      {/* Grid */}
+      <motion.div
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
+        {filteredPlugins.map((plugin) => (
+          <motion.div
+            key={plugin.id}
+            variants={staggerItem}
+            className="group relative flex flex-col p-5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-500">
+                  <Box size={20} />
                 </div>
-                {plugin.verified && (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-400">
-                    <CheckCircle size={12} />
-                    <span className="text-xs font-medium">官方</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 描述 */}
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4 line-clamp-2">
-                {plugin.description}
-              </p>
-
-              {/* 统计信息 */}
-              <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                <span>⭐ {plugin.stats.rating.toFixed(1)}</span>
-                <span>📦 {plugin.stats.downloads > 1000 ? `${(plugin.stats.downloads / 1000).toFixed(1)}k` : plugin.stats.downloads} 下载</span>
-              </div>
-
-              {/* 操作按钮 */}
-              <div className="flex gap-2">
-                {plugin.installed ? (
-                  <div className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-sm font-medium">
-                    <CheckCircle size={16} />
-                    <span>已安装</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleInstall(plugin)}
-                    disabled={installingPlugin === plugin.id}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
-                  >
-                    {installingPlugin === plugin.id ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>安装中...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download size={16} />
-                        <span>安装</span>
-                      </>
+                <div>
+                   <h3 className="font-medium text-neutral-900 dark:text-neutral-100 leading-tight">
+                    {plugin.name}
+                  </h3>
+                   <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-neutral-500">v{plugin.version}</span>
+                    {plugin.verified && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">Verified</span>
                     )}
-                  </button>
-                )}
-                <Link
-                  href={`/tools/market/${plugin.id}`}
-                  className="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  详情
-                </Link>
+                   </div>
+                </div>
               </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
+            </div>
+
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-grow line-clamp-2">
+              {plugin.description}
+            </p>
+
+            <div className="flex items-center gap-2 mt-auto">
+               {plugin.installed ? (
+                 <div className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 text-sm font-medium cursor-default">
+                   <CheckCircle size={14} />
+                   <span>Installed</span>
+                 </div>
+               ) : (
+                 <button
+                   onClick={() => handleInstall(plugin)}
+                   disabled={installingPlugin === plugin.id}
+                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                 >
+                   {installingPlugin === plugin.id ? (
+                     <span>Installing...</span>
+                   ) : (
+                     <>
+                      <Download size={14} />
+                      <span>Install</span>
+                     </>
+                   )}
+                 </button>
+               )}
+               <Link
+                 href={`/tools/market/${plugin.id}`}
+                 className="p-2 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+               >
+                 <Box size={16} />
+               </Link>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+       {!isLoading && filteredPlugins.length === 0 && (
+         <div className="py-20 text-center text-neutral-500">
+           No plugins found.
+         </div>
+       )}
+
     </div>
   );
 }
