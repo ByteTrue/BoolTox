@@ -7,9 +7,9 @@ export function AgentInstaller() {
   const [copied, setCopied] = useState(false);
 
   const installScripts = {
-    macos: `curl -fsSL https://raw.githubusercontent.com/ByteTrue/BoolTox/main/install/macos.sh | bash`,
-    windows: `irm https://raw.githubusercontent.com/ByteTrue/BoolTox/main/install/windows.ps1 | iex`,
-    linux: `curl -fsSL https://raw.githubusercontent.com/ByteTrue/BoolTox/main/install/linux.sh | bash`,
+    macos: `curl -fsSL https://raw.githubusercontent.com/ByteTrue/BoolTox/main/packages/agent/install/macos.sh | bash`,
+    windows: `irm https://raw.githubusercontent.com/ByteTrue/BoolTox/main/packages/agent/install/windows.ps1 | iex`,
+    linux: `curl -fsSL https://raw.githubusercontent.com/ByteTrue/BoolTox/main/packages/agent/install/linux.sh | bash`,
   };
 
   const copyScript = async () => {
@@ -19,11 +19,11 @@ export function AgentInstaller() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 border border-warning-200 rounded-2xl bg-warning-50">
+    <div className="max-w-2xl mx-auto p-6 border border-warning-200 dark:border-warning-800/50 rounded-2xl bg-warning-50 dark:bg-warning-900/20">
       <div className="flex items-start gap-4 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-warning-100 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-warning-100 dark:bg-warning-900/50 flex items-center justify-center">
           <svg
-            className="w-6 h-6 text-warning-600"
+            className="w-6 h-6 text-warning-600 dark:text-warning-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -38,10 +38,10 @@ export function AgentInstaller() {
         </div>
 
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
             需要安装 BoolTox Agent
           </h3>
-          <p className="text-sm text-neutral-600 mb-4">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
             此功能需要本地 Agent 提供系统权限支持。安装只需 30 秒，完全开源免费。
           </p>
 
@@ -54,7 +54,7 @@ export function AgentInstaller() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   platform === p
                     ? 'bg-primary-500 text-white'
-                    : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+                    : 'bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
                 }`}
               >
                 {p === 'macos' ? 'macOS' : p === 'windows' ? 'Windows' : 'Linux'}
@@ -64,7 +64,7 @@ export function AgentInstaller() {
 
           {/* 安装脚本 */}
           <div className="relative">
-            <pre className="p-4 rounded-lg bg-neutral-900 text-neutral-100 text-sm overflow-x-auto font-mono">
+            <pre className="p-4 rounded-lg bg-neutral-900 dark:bg-neutral-950 text-neutral-100 dark:text-neutral-300 text-sm overflow-x-auto font-mono border border-neutral-800 dark:border-neutral-800">
               <code>{installScripts[platform]}</code>
             </pre>
             <button

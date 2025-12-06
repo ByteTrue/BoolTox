@@ -1,71 +1,154 @@
 'use client';
 
+import Link from 'next/link';
 import { useAgent } from '@/hooks/use-agent';
+import { usePlugins } from '@/hooks/use-plugins';
 import { AgentStatus } from '@/components/tools/agent-status';
 import { AgentInstaller } from '@/components/tools/agent-installer';
+import { Package, Box, Settings, ArrowRight, PlayCircle } from 'lucide-react';
 
 export default function ToolsPage() {
   const { isAvailable } = useAgent();
+  const { plugins } = usePlugins();
+
+  // 统计信息
+  const stats = {
+    total: plugins.length,
+    running: plugins.filter(p => p.status === 'running').length,
+  };
+
+  const runningPlugins = plugins.filter(p => p.status === 'running');
 
   return (
     <div className="space-y-6">
+      {/* 页头 */}
       <div>
-        <h1 className="text-3xl font-bold text-neutral-900 mb-2">工具箱</h1>
-        <p className="text-neutral-600">探索强大的效率工具插件</p>
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">工具箱</h1>
+        <div className="flex items-center gap-4 mt-3">
+          <p className="text-neutral-600 dark:text-neutral-400">探索强大的效率工具插件</p>
+          {isAvailable && (
+            <>
+              <span className="text-neutral-300 dark:text-neutral-700">•</span>
+              <AgentStatus />
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Agent 状态指示器 */}
-      <div className="flex items-center gap-4">
-        <AgentStatus />
-        {isAvailable && (
-          <p className="text-sm text-neutral-500">
-            已连接到本地 Agent，可以使用所有功能
-          </p>
-        )}
-      </div>
+      {/* Agent 未安装 */}
+      {!isAvailable && <AgentInstaller />}
 
-      {/* Agent 未安装时显示安装引导 */}
-      {!isAvailable && (
-        <AgentInstaller />
-      )}
-
-      {/* 工具列表 */}
+      {/* Agent 已安装 */}
       {isAvailable && (
-        <div>
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">
-            快速访问
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <a
-              href="/tools/market"
-              className="p-6 border border-neutral-200 rounded-2xl bg-white shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple"
-            >
-              <h3 className="font-semibold text-neutral-900 mb-2">插件市场</h3>
-              <p className="text-sm text-neutral-600 mb-4">
-                浏览和安装社区插件
-              </p>
-              <span className="text-primary-500 text-sm font-medium">
-                前往市场 →
-              </span>
-            </a>
-
-            <div className="p-6 border border-neutral-200 rounded-2xl bg-white opacity-50">
-              <h3 className="font-semibold text-neutral-900 mb-2">已安装插件</h3>
-              <p className="text-sm text-neutral-600 mb-4">
-                管理你的插件
-              </p>
-              <span className="text-neutral-400 text-sm">即将推出</span>
+        <>
+          {/* 正在运行的插件 */}
+          {runningPlugins.length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
+                <PlayCircle size={24} className="text-primary-500 dark:text-primary-400" />
+                正在运行 ({runningPlugins.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {runningPlugins.map((plugin) => (
+                  <Link
+                    key={plugin.id}
+                    href={`/plugin/${plugin.id}`}
+                    className="p-4 border border-primary-200 dark:border-primary-800/50 rounded-xl bg-primary-50/50 dark:bg-primary-900/20 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all duration-200 group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
+                        {plugin.manifest.name}
+                      </h3>
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                    </div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                      {plugin.manifest.description || '正在运行中...'}
+                    </p>
+                    <span className="text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:underline">
+                      打开插件 →
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
+          )}
 
-            <div className="p-6 border border-neutral-200 rounded-2xl bg-white opacity-50">
-              <h3 className="font-semibold text-neutral-900 mb-2">设置</h3>
-              <p className="text-sm text-neutral-600 mb-4">
-                配置和偏好设置
-              </p>
-              <span className="text-neutral-400 text-sm">即将推出</span>
+          {/* 快速访问 */}
+          <div>
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+              快速访问
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* 我的插件 */}
+              <Link
+                href="/tools/installed"
+                className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-500 dark:text-primary-400">
+                    <Box size={24} />
+                  </div>
+                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">我的插件</h3>
+                </div>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                  管理已安装的插件 · {stats.total} 个插件
+                  {stats.running > 0 && `, ${stats.running} 个运行中`}
+                </p>
+                <div className="flex items-center gap-1 text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:gap-2 transition-all">
+                  <span>查看详情</span>
+                  <ArrowRight size={16} />
+                </div>
+              </Link>
+
+              {/* 插件市场 */}
+              <Link
+                href="/tools/market"
+                className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-500 dark:text-primary-400">
+                    <Package size={24} />
+                  </div>
+                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">插件市场</h3>
+                </div>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                  浏览和安装社区插件
+                </p>
+                <div className="flex items-center gap-1 text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:gap-2 transition-all">
+                  <span>前往市场</span>
+                  <ArrowRight size={16} />
+                </div>
+              </Link>
+
+              {/* 设置 */}
+              <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 opacity-50">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-400">
+                    <Settings size={24} />
+                  </div>
+                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">设置</h3>
+                </div>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                  配置和偏好设置
+                </p>
+                <span className="text-neutral-400 text-sm">即将推出</span>
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* 空状态提示 */}
+          {stats.total === 0 && (
+            <div className="mt-8 p-8 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl bg-neutral-50/50 dark:bg-neutral-900/50 text-center">
+              <div className="text-5xl mb-4">📦</div>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
+                还没有安装任何插件
+              </h3>
+              <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+                去插件市场看看吧
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
