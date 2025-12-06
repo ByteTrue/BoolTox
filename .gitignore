@@ -19,6 +19,8 @@ coverage/
 .turbo/
 .vite/
 .cache/
+.next/
+*/.next/
 cache/
 *.log
 *.log.*
