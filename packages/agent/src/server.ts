@@ -7,6 +7,8 @@ import websocket from '@fastify/websocket';
 import staticPlugin from '@fastify/static';
 import { healthRoutes } from './routes/health.js';
 import { pluginsRoutes } from './routes/plugins.js';
+import { staticRoutes } from './routes/static.js';
+import { websocketRoutes } from './routes/websocket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +33,7 @@ const server = Fastify({
 await server.register(cors, {
   origin: [
     'http://localhost:3000', // Next.js dev
+    'http://localhost:3001', // Next.js dev (备用端口)
     'http://localhost:9527', // Agent 本身
   ],
   credentials: true,
@@ -41,6 +44,8 @@ await server.register(websocket);
 // 注册路由
 await server.register(healthRoutes, { prefix: '/api' });
 await server.register(pluginsRoutes, { prefix: '/api' });
+await server.register(staticRoutes);
+await server.register(websocketRoutes);
 
 // TODO: 注册静态文件服务（插件市场前端）
 // await server.register(staticPlugin, {

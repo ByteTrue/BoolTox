@@ -16,15 +16,12 @@ export async function pluginsRoutes(server: FastifyInstance) {
     return {
       plugins: plugins.map(p => ({
         id: p.id,
-        name: p.manifest.name,
-        version: p.manifest.version,
-        description: p.manifest.description,
+        manifest: p.manifest,
         status: p.status,
+        installed: true,
+        version: p.manifest.version,
         mode: p.mode,
         isDev: p.isDev,
-        icon: p.manifest.icon,
-        author: p.manifest.author,
-        permissions: p.manifest.permissions,
       })),
       total: plugins.length,
     };
