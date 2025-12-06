@@ -34,6 +34,8 @@ export interface PluginInfo {
   status: 'stopped' | 'running' | 'loading' | 'error';
   installed: boolean;
   version: string;
+  mode?: 'webview' | 'standalone';
+  isDev?: boolean;
 }
 
 /**
@@ -120,7 +122,11 @@ export class AgentClient {
    * 获取所有插件列表
    */
   async getPlugins(): Promise<PluginInfo[]> {
-    return this.client.get('api/plugins').json();
+    const response = await this.client.get('api/plugins').json<{
+      plugins: PluginInfo[];
+      total: number;
+    }>();
+    return response.plugins;
   }
 
   /**
@@ -160,9 +166,11 @@ export class AgentClient {
    */
   async startPlugin(pluginId: string): Promise<{
     success: boolean;
+    channelId?: string;
+    pid?: number;
     message?: string;
   }> {
-    return this.client.post(`api/plugins/${pluginId}/start`).json();
+    return this.client.post(`api/plugins/${pluginId}/start`, { json: {} }).json();
   }
 
   /**
@@ -172,7 +180,26 @@ export class AgentClient {
     success: boolean;
     message?: string;
   }> {
-    return this.client.post(`api/plugins/${pluginId}/stop`).json();
+    return this.client.post(`api/plugins/${pluginId}/stop`, { json: {} }).json();
+  }
+
+  /**
+   * 调用插件后端方法
+   */
+  async callBackend(
+    pluginId: string,
+    method: string,
+    params?: any
+  ): Promise<{
+    success: boolean;
+    result?: any;
+    error?: string;
+  }> {
+    return this.client
+      .post(`api/plugins/${pluginId}/call`, {
+        json: { method, params },
+      })
+      .json();
   }
 
   /**
