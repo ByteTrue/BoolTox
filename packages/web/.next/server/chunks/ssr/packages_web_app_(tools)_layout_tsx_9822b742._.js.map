@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/byte/projects/TS/BoolTox/packages/web/app/%28tools%29/layout.tsx"],"sourcesContent":["export default function ToolsLayout({\r\n  children,\r\n}: {\r\n  children: React.ReactNode;\r\n}) {\r\n  return (\r\n    <div className=\"min-h-screen bg-neutral-50\">\r\n      {/* 导航栏 TODO */}\r\n\r\n      <div className=\"container mx-auto px-6 py-8\">\r\n        <div className=\"flex gap-6\">\r\n          {/* 侧边栏 TODO */}\r\n\r\n          {/* 主内容区 */}\r\n          <main className=\"flex-1 min-w-0\">{children}</main>\r\n        </div>\r\n      </div>\r\n    </div>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS,YAAY,EAClC,QAAQ,EAGT;IACC,qBACE,mVAAC;QAAI,WAAU;kBAGb,cAAA,mVAAC;YAAI,WAAU;sBACb,cAAA,mVAAC;gBAAI,WAAU;0BAIb,cAAA,mVAAC;oBAAK,WAAU;8BAAkB;;;;;;;;;;;;;;;;;;;;;AAK5C","debugId":null}}]
-}
