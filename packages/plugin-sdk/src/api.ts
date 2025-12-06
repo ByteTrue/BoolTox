@@ -19,7 +19,7 @@ import type {
   BooltoxProcessHandle,
   BooltoxPythonExecutionResult,
   BooltoxPythonStatus,
-} from '@booltox/shared/types';
+} from '@booltox/shared';
 
 // 声明全局类型
 declare global {

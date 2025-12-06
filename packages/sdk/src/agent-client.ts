@@ -4,7 +4,7 @@
  */
 
 import ky, { type KyInstance, type Options } from 'ky';
-import type { PluginManifest } from '@booltox/shared/types';
+import type { PluginManifest } from '@booltox/shared';
 
 export interface AgentClientOptions {
   /**

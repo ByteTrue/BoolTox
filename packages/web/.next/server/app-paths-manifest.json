@@ -1,1 +1,4 @@
-{}
+{
+  "/(tools)/tools/market/page": "app/(tools)/tools/market/page.js",
+  "/page": "app/page.js"
+}

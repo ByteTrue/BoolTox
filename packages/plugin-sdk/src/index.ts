@@ -6,7 +6,7 @@
  */
 
 // 重导出类型
-export type * from '@booltox/shared/types';
+export type * from '@booltox/shared';
 
 // 导出 API 模块
 export {

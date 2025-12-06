@@ -16,7 +16,6 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src",
     "paths": {
       "@booltox/shared": ["../shared/src"]
     }

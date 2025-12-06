@@ -8,7 +8,7 @@ import type {
   BooltoxBackendRegistration,
   BooltoxProcessHandle,
   BooltoxBackendMessage,
-} from '@booltox/shared/types';
+} from '@booltox/shared';
 import { getBooltoxAPI } from './api.js';
 
 /**
