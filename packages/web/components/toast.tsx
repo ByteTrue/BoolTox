@@ -81,30 +81,61 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
   };
 
   const colors = {
-    success: 'bg-success-50 border-success-200 text-success-700',
-    error: 'bg-error-50 border-error-200 text-error-700',
-    warning: 'bg-warning-50 border-warning-200 text-warning-700',
-    info: 'bg-primary-50 border-primary-200 text-primary-700',
+    success: 'bg-success-50 dark:bg-success-900/30 border-success-200 dark:border-success-800/50 text-success-700 dark:text-success-400',
+    error: 'bg-error-50 dark:bg-error-900/30 border-error-200 dark:border-error-800/50 text-error-700 dark:text-error-400',
+    warning: 'bg-warning-50 dark:bg-warning-900/30 border-warning-200 dark:border-warning-800/50 text-warning-700 dark:text-warning-400',
+    info: 'bg-primary-50 dark:bg-primary-900/30 border-primary-200 dark:border-primary-800/50 text-primary-700 dark:text-primary-400',
+  };
+
+  const progressColors = {
+    success: 'bg-success-500',
+    error: 'bg-error-500',
+    warning: 'bg-warning-500',
+    info: 'bg-primary-500',
   };
 
   const Icon = icons[toast.type];
 
+  // 图标动画
+  const iconAnimation = {
+    initial: { scale: 0, rotate: -180 },
+    animate: { scale: 1, rotate: 0 },
+    transition: { type: 'spring' as const, stiffness: 400, damping: 20, delay: 0.1 }
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{ duration: 0.2, ease: [0.4, 0.0, 0.2, 1] }}
-      className={`flex items-center gap-3 min-w-[320px] max-w-md p-4 rounded-xl border-2 shadow-soft-lg backdrop-blur-sm pointer-events-auto ${colors[toast.type]}`}
+      initial={{ opacity: 0, y: 20, scale: 0.95, x: 100 }}
+      animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95, x: 100 }}
+      transition={{ duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }}
+      className="relative pointer-events-auto"
     >
-      <Icon size={20} className="flex-shrink-0" />
-      <p className="flex-1 text-sm font-medium">{toast.message}</p>
-      <button
-        onClick={() => onClose(toast.id)}
-        className="flex-shrink-0 p-1 rounded-lg hover:bg-black/10 transition-colors"
-      >
-        <X size={16} />
-      </button>
+      <div className={`flex items-center gap-3 min-w-[320px] max-w-md p-4 rounded-xl border-2 shadow-soft-lg backdrop-blur-sm ${colors[toast.type]}`}>
+        <motion.div {...iconAnimation}>
+          <Icon size={20} className="flex-shrink-0" />
+        </motion.div>
+        <p className="flex-1 text-sm font-medium">{toast.message}</p>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => onClose(toast.id)}
+          className="flex-shrink-0 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+          aria-label="关闭"
+        >
+          <X size={16} />
+        </motion.button>
+      </div>
+
+      {/* 进度条（倒计时） */}
+      {toast.duration && toast.duration > 0 && (
+        <motion.div
+          initial={{ width: '100%' }}
+          animate={{ width: '0%' }}
+          transition={{ duration: toast.duration / 1000, ease: 'linear' }}
+          className={`absolute bottom-0 left-0 h-1 rounded-b-xl ${progressColors[toast.type]}`}
+        />
+      )}
     </motion.div>
   );
 }

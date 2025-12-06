@@ -6,19 +6,25 @@ import Link from 'next/link';
 import { usePlugins } from '@/hooks/use-plugins';
 import { useRemotePlugins } from '@/hooks/use-remote-plugins';
 import { useToast } from '@/components/toast';
+import { PageLoading } from '@/components/ui/loading';
 import { ArrowLeft, Download, CheckCircle, ExternalLink, Github, Home } from 'lucide-react';
 
 export default function PluginDetailPage({ params }: { params: Promise<{ pluginId: string }> }) {
   const { pluginId } = use(params);
   const router = useRouter();
   const { plugins: installedPlugins, installPlugin, uninstallPlugin, loadPlugins } = usePlugins();
-  const { plugins: remotePlugins } = useRemotePlugins();
+  const { plugins: remotePlugins, isLoading } = useRemotePlugins();
   const { showToast } = useToast();
   const [isInstalling, setIsInstalling] = React.useState(false);
 
   // 查找插件
   const plugin = remotePlugins.find(p => p.id === pluginId);
   const installed = installedPlugins.find(p => p.id === pluginId);
+
+  // 加载中显示 Skeleton
+  if (isLoading) {
+    return <PageLoading text="加载插件详情..." />;
+  }
 
   // 处理安装
   const handleInstall = async () => {
@@ -63,11 +69,11 @@ export default function PluginDetailPage({ params }: { params: Promise<{ pluginI
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">😕</div>
-          <h2 className="text-xl font-semibold text-neutral-900 mb-2">插件未找到</h2>
-          <p className="text-neutral-600 mb-6">请检查插件 ID 是否正确</p>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">插件未找到</h2>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6">请检查插件 ID 是否正确</p>
           <button
             onClick={() => router.back()}
-            className="px-6 py-3 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600"
+            className="px-6 py-3 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600 transition-colors"
           >
             返回
           </button>
@@ -175,43 +181,43 @@ export default function PluginDetailPage({ params }: { params: Promise<{ pluginI
       </div>
 
       {/* 详细描述 */}
-      <div className="p-6 border border-neutral-200 rounded-2xl bg-white">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">详细介绍</h2>
-        <div className="prose prose-neutral max-w-none">
-          <p className="text-neutral-700 whitespace-pre-line">{plugin.description}</p>
+      <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">详细介绍</h2>
+        <div className="prose prose-neutral dark:prose-invert max-w-none">
+          <p className="text-neutral-700 dark:text-neutral-300 whitespace-pre-line">{plugin.description}</p>
         </div>
       </div>
 
       {/* 功能特性 */}
-      <div className="p-6 border border-neutral-200 rounded-2xl bg-white">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">功能特性</h2>
+      <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">功能特性</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
             <div className="text-2xl">⏱️</div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-1">专注计时</h3>
-              <p className="text-sm text-neutral-600">25分钟专注时段，帮助保持高效工作状态</p>
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-1">专注计时</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">25分钟专注时段，帮助保持高效工作状态</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
             <div className="text-2xl">🔔</div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-1">系统通知</h3>
-              <p className="text-sm text-neutral-600">时间到达时自动发送系统通知提醒</p>
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-1">系统通知</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">时间到达时自动发送系统通知提醒</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
             <div className="text-2xl">⏸️</div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-1">灵活控制</h3>
-              <p className="text-sm text-neutral-600">支持暂停、继续和重置操作</p>
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-1">灵活控制</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">支持暂停、继续和重置操作</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
             <div className="text-2xl">🎨</div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-1">美观界面</h3>
-              <p className="text-sm text-neutral-600">简洁现代的设计，流畅的动画效果</p>
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-1">美观界面</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">简洁现代的设计，流畅的动画效果</p>
             </div>
           </div>
         </div>
@@ -220,26 +226,26 @@ export default function PluginDetailPage({ params }: { params: Promise<{ pluginI
       {/* 技术信息 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 基本信息 */}
-        <div className="p-6 border border-neutral-200 rounded-2xl bg-white">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">基本信息</h2>
+        <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">基本信息</h2>
           <dl className="space-y-3">
             <div>
-              <dt className="text-sm text-neutral-500">版本</dt>
-              <dd className="text-sm font-medium text-neutral-900">{plugin.version}</dd>
+              <dt className="text-sm text-neutral-500 dark:text-neutral-400">版本</dt>
+              <dd className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{plugin.version}</dd>
             </div>
             <div>
-              <dt className="text-sm text-neutral-500">分类</dt>
-              <dd className="text-sm font-medium text-neutral-900">
+              <dt className="text-sm text-neutral-500 dark:text-neutral-400">分类</dt>
+              <dd className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                 {plugin.category === 'productivity' ? '生产力' : plugin.category}
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-neutral-500">作者</dt>
-              <dd className="text-sm font-medium text-neutral-900">{plugin.author}</dd>
+              <dt className="text-sm text-neutral-500 dark:text-neutral-400">作者</dt>
+              <dd className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{plugin.author}</dd>
             </div>
             <div>
-              <dt className="text-sm text-neutral-500">最后更新</dt>
-              <dd className="text-sm font-medium text-neutral-900">
+              <dt className="text-sm text-neutral-500 dark:text-neutral-400">最后更新</dt>
+              <dd className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                 {new Date(plugin.updatedAt).toLocaleDateString('zh-CN')}
               </dd>
             </div>
@@ -247,8 +253,8 @@ export default function PluginDetailPage({ params }: { params: Promise<{ pluginI
         </div>
 
         {/* 链接 */}
-        <div className="p-6 border border-neutral-200 rounded-2xl bg-white">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">相关链接</h2>
+        <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">相关链接</h2>
           <div className="space-y-3">
             {plugin.homepage && (
               <a
@@ -280,13 +286,13 @@ export default function PluginDetailPage({ params }: { params: Promise<{ pluginI
 
       {/* 关键词 */}
       {plugin.keywords && plugin.keywords.length > 0 && (
-        <div className="p-6 border border-neutral-200 rounded-2xl bg-white">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">标签</h2>
+        <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">标签</h2>
           <div className="flex flex-wrap gap-2">
             {plugin.keywords.map(keyword => (
               <span
                 key={keyword}
-                className="px-3 py-1 rounded-lg bg-neutral-100 text-neutral-700 text-sm"
+                className="px-3 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-sm"
               >
                 {keyword}
               </span>

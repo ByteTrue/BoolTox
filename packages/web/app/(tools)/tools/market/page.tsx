@@ -2,15 +2,18 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useAgent } from '@/hooks/use-agent';
 import { usePlugins } from '@/hooks/use-plugins';
 import { useRemotePlugins } from '@/hooks/use-remote-plugins';
 import { useToast } from '@/components/toast';
 import { AgentInstaller } from '@/components/tools/agent-installer';
+import { PluginListSkeleton } from '@/components/ui/skeleton';
 import { Download, CheckCircle, RefreshCw, Search } from 'lucide-react';
+import { staggerContainer, staggerItem, cardAnimation } from '@/lib/animation-config';
 
 export default function PluginMarketPage() {
-  const { isAvailable } = useAgent();
+  const { isAvailable, isDetecting } = useAgent();
   const { plugins: installedPlugins, installPlugin, loadPlugins } = usePlugins();
   const { plugins: remotePlugins, categories, isLoading, error, reload } = useRemotePlugins();
   const { showToast } = useToast();
@@ -69,6 +72,11 @@ export default function PluginMarketPage() {
       setInstallingPlugin(null);
     }
   };
+
+  // 检测中：在所有 Hooks 之后返回
+  if (isDetecting) {
+    return null;
+  }
 
   // Agent 未安装
   if (!isAvailable) {
@@ -157,10 +165,7 @@ export default function PluginMarketPage() {
 
       {/* 加载中 */}
       {isLoading && (
-        <div className="text-center py-12">
-          <div className="inline-block w-8 h-8 border-4 border-primary-200 dark:border-primary-800 border-t-primary-500 rounded-full animate-spin mb-4" />
-          <p className="text-neutral-600 dark:text-neutral-400">加载插件列表...</p>
-        </div>
+        <PluginListSkeleton count={6} />
       )}
 
       {/* 空状态 */}
@@ -186,11 +191,18 @@ export default function PluginMarketPage() {
 
       {/* 插件列表 */}
       {!isLoading && filteredPlugins.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
           {filteredPlugins.map((plugin) => (
-            <div
+            <motion.div
               key={plugin.id}
-              className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 hover:shadow-soft-lg transition-all duration-200"
+              variants={staggerItem}
+              {...cardAnimation}
+              className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-shadow"
             >
               {/* 插件图标和名称 */}
               <div className="flex items-start justify-between mb-3">
@@ -255,9 +267,9 @@ export default function PluginMarketPage() {
                   详情
                 </Link>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );

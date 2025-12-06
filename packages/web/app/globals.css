@@ -26,6 +26,37 @@
     --radius: 16px;
   }
 
+  /* 主题色定制 - 蓝色（默认）*/
+  :root,
+  [data-accent-color="blue"] {
+    --primary: 217 91% 60%;
+    --ring: 217 91% 60%;
+  }
+
+  /* 主题色定制 - 紫色 */
+  [data-accent-color="purple"] {
+    --primary: 270 80% 60%;
+    --ring: 270 80% 60%;
+  }
+
+  /* 主题色定制 - 绿色 */
+  [data-accent-color="green"] {
+    --primary: 142 76% 45%;
+    --ring: 142 76% 45%;
+  }
+
+  /* 主题色定制 - 橙色 */
+  [data-accent-color="orange"] {
+    --primary: 25 95% 53%;
+    --ring: 25 95% 53%;
+  }
+
+  /* 主题色定制 - 粉色 */
+  [data-accent-color="pink"] {
+    --primary: 330 81% 60%;
+    --ring: 330 81% 60%;
+  }
+
   .dark {
     --background: 0 0% 6%;
     --foreground: 0 0% 98%;
@@ -33,7 +64,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 98%;
-    --primary: 217 91% 60%;
+    /* 删除 --primary 和 --ring，让 [data-accent-color] 规则继续生效 */
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
@@ -45,7 +76,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 15%;
     --input: 0 0% 15%;
-    --ring: 217 91% 60%;
+    /* 删除 --ring，让主题色规则生效 */
   }
 }
 
@@ -57,6 +88,34 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* 优雅的焦点样式（Apple 风格） */
+  *:focus {
+    @apply outline-none;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-neutral-950 transition-all duration-200;
+  }
+
+  /* 按钮焦点优化 */
+  button:focus-visible,
+  a:focus-visible {
+    @apply ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  /* 输入框焦点 */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply ring-2 ring-primary-500 border-primary-500;
+  }
+
+  /* 跳过导航链接（可访问性） */
+  .skip-to-content {
+    @apply absolute -top-96 left-0 z-50 px-6 py-3 bg-primary-500 text-white font-medium rounded-lg;
+    @apply focus:top-4 focus:left-4 transition-all;
   }
 }
 

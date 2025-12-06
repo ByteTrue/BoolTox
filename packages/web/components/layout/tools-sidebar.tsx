@@ -34,29 +34,21 @@ function SidebarItem({ icon, href, exact = false, children }: SidebarItemProps) 
 
 export function ToolsSidebar() {
   return (
-    <aside className="sticky top-16 w-60 h-[calc(100vh-4rem)] border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 transition-colors overflow-y-auto pt-4">
-      <div className="px-4">
-        {/* 分组标题 */}
-        <div className="mb-3 px-3 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
-          工具箱
-        </div>
-
-        {/* 导航项 */}
-        <nav className="space-y-1">
-          <SidebarItem icon={<Home size={18} />} href="/tools" exact>
-            概览
-          </SidebarItem>
-          <SidebarItem icon={<Box size={18} />} href="/tools/installed">
-            我的插件
-          </SidebarItem>
-          <SidebarItem icon={<Package size={18} />} href="/tools/market">
-            插件市场
-          </SidebarItem>
-          <SidebarItem icon={<Settings size={18} />} href="/tools/settings">
-            设置
-          </SidebarItem>
-        </nav>
-      </div>
+    <aside className="w-60 h-full border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 transition-colors overflow-y-auto flex-shrink-0">
+      <nav className="px-4 pt-4 pb-6 space-y-1" aria-label="工具箱导航">
+        <SidebarItem icon={<Home size={18} />} href="/tools" exact>
+          概览
+        </SidebarItem>
+        <SidebarItem icon={<Box size={18} />} href="/tools/installed">
+          我的插件
+        </SidebarItem>
+        <SidebarItem icon={<Package size={18} />} href="/tools/market">
+          插件市场
+        </SidebarItem>
+        <SidebarItem icon={<Settings size={18} />} href="/tools/settings">
+          设置
+        </SidebarItem>
+      </nav>
     </aside>
   );
 }

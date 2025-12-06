@@ -43,7 +43,8 @@ export default function PluginRunPage({ params }: { params: Promise<{ pluginId: 
         setPluginInfo(plugin);
 
         // 2. 启动插件后端（如果有）
-        if (plugin.manifest.runtime?.backend) {
+        const runtime = plugin.manifest.runtime;
+        if (runtime && 'backend' in runtime && runtime.backend) {
           console.log('[PluginRunPage] 启动插件后端');
           await client.startPlugin(pluginId);
         }

@@ -30,7 +30,10 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 h-16 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl transition-colors">
+      <nav
+        className="sticky top-0 z-50 h-16 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl transition-colors"
+        aria-label="主导航"
+      >
         <div className="container mx-auto px-6 h-full flex items-center justify-between">
           {/* 左侧：Logo + 导航链接 */}
           <div className="flex items-center gap-8">
@@ -38,13 +41,15 @@ export function Navbar() {
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="md:hidden p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              aria-label="打开菜单"
+              aria-label="打开导航菜单"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
             >
               <Menu size={20} className="text-neutral-700 dark:text-neutral-300" />
             </button>
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link href="/" className="flex items-center gap-2 group" aria-label="返回首页">
               <Logo className="h-8 w-8 transition-transform group-hover:scale-110" />
               <span className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
                 BoolTox
@@ -63,6 +68,7 @@ export function Navbar() {
                       ? "text-primary-600 dark:text-primary-400"
                       : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                   )}
+                  aria-current={isActive(item.href, item.exact) ? 'page' : undefined}
                 >
                   {item.label}
                   {/* 活动指示器 */}

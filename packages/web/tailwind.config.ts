@@ -17,19 +17,19 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // 品牌色（保留现有系统蓝，致敬 Apple）
+        // 品牌色（使用 CSS 变量，支持主题定制）
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6', // 主品牌色
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+          50: 'hsl(var(--primary) / 0.05)',
+          100: 'hsl(var(--primary) / 0.1)',
+          200: 'hsl(var(--primary) / 0.2)',
+          300: 'hsl(var(--primary) / 0.3)',
+          400: 'hsl(var(--primary) / 0.6)',
+          500: 'hsl(var(--primary))',  // 主品牌色
+          600: 'hsl(var(--primary) / 0.9)',
+          700: 'hsl(var(--primary) / 0.8)',
+          800: 'hsl(var(--primary) / 0.7)',
+          900: 'hsl(var(--primary) / 0.6)',
+          950: 'hsl(var(--primary) / 0.4)',
         },
 
         // 中性色（现代简约风格）

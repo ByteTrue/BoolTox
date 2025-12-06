@@ -1,8 +1,11 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import type { PluginInfo } from '@booltox/sdk';
-import { Play, Square, Trash2, Download } from 'lucide-react';
+import { Play, Square, Trash2, Download, ExternalLink } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { cardAnimation } from '@/lib/animation-config';
 
 interface PluginCardProps {
   plugin: PluginInfo;
@@ -22,13 +25,34 @@ export function PluginCard({
   const isRunning = plugin.status === 'running';
   const isOfficial = plugin.manifest.id.startsWith('com.booltox.');
 
+  // 简化：使用固定的深色渐变（在浅色和深色模式下都清晰）
+  const gradients = [
+    'from-blue-500 to-blue-700',
+    'from-purple-500 to-purple-700',
+    'from-pink-500 to-pink-700',
+    'from-green-500 to-green-700',
+    'from-orange-500 to-orange-700',
+    'from-cyan-500 to-cyan-700',
+    'from-emerald-500 to-emerald-700',
+    'from-indigo-500 to-indigo-700',
+    'from-rose-500 to-rose-700',
+    'from-lime-500 to-lime-700',
+  ];
+
+  // 使用插件 ID 哈希选择颜色
+  const hash = plugin.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const gradient = gradients[hash % gradients.length];
+
   return (
-    <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple">
+    <motion.div
+      {...cardAnimation}
+      className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-shadow duration-200"
+    >
       {/* 头部 */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex gap-3">
           {/* 图标 */}
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xl font-bold">
+          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-xl font-bold shadow-sm`}>
             {plugin.manifest.name[0]}
           </div>
 
@@ -68,7 +92,7 @@ export function PluginCard({
         <span>{plugin.manifest.author}</span>
         <span>•</span>
         <span>{plugin.mode === 'webview' ? 'Web' : '独立应用'}</span>
-        {plugin.manifest.runtime?.backend && (
+        {plugin.manifest.runtime && 'backend' in plugin.manifest.runtime && plugin.manifest.runtime.backend && (
           <>
             <span>•</span>
             <span className="capitalize">{plugin.manifest.runtime.backend.type}</span>
@@ -106,9 +130,19 @@ export function PluginCard({
               onClick={() => onUninstall?.(plugin.id)}
               disabled={isLoading || isRunning}
               className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all disabled:opacity-50"
+              title="卸载插件"
             >
               <Trash2 size={16} />
             </button>
+
+            {/* 详情按钮 */}
+            <Link
+              href={`/tools/installed/${plugin.id}`}
+              className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all flex items-center justify-center"
+              title="查看详情"
+            >
+              <ExternalLink size={16} />
+            </Link>
           </>
         ) : (
           <button
@@ -120,6 +154,6 @@ export function PluginCard({
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

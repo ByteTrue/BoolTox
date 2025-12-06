@@ -1,16 +1,18 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useAgent } from '@/hooks/use-agent';
 import { usePlugins } from '@/hooks/use-plugins';
 import { useToast } from '@/components/toast';
 import { AgentInstaller } from '@/components/tools/agent-installer';
 import { PluginCard } from '@/components/tools/plugin-card';
-import { RefreshCw } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { RefreshCw, Package, Box } from 'lucide-react';
+import { staggerContainer, staggerItem } from '@/lib/animation-config';
 
 export default function InstalledPluginsPage() {
-  const { isAvailable } = useAgent();
+  const { isAvailable, isDetecting } = useAgent();
   const {
     plugins,
     isLoading,
@@ -43,7 +45,7 @@ export default function InstalledPluginsPage() {
   }, [plugins]);
 
   // 处理启动
-  const handleStart = async (pluginId: string) => {
+  const handleStart = React.useCallback(async (pluginId: string) => {
     setActionLoading(pluginId);
     try {
       await startPlugin(pluginId);
@@ -54,10 +56,10 @@ export default function InstalledPluginsPage() {
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [startPlugin, showToast]);
 
   // 处理停止
-  const handleStop = async (pluginId: string) => {
+  const handleStop = React.useCallback(async (pluginId: string) => {
     setActionLoading(pluginId);
     try {
       await stopPlugin(pluginId);
@@ -68,25 +70,33 @@ export default function InstalledPluginsPage() {
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [stopPlugin, showToast]);
 
   // 处理卸载
-  const handleUninstall = async (pluginId: string) => {
-    if (!confirm('确定要卸载此插件吗？所有相关数据将被删除。')) {
+  const handleUninstall = React.useCallback(async (pluginId: string) => {
+    const pluginName = plugins.find((p) => p.id === pluginId)?.manifest.name || '此插件';
+
+    if (!confirm(`确定要卸载 ${pluginName} 吗？所有相关数据将被删除。`)) {
       return;
     }
 
     setActionLoading(pluginId);
     try {
       await uninstallPlugin(pluginId);
-      showToast('插件卸载成功', 'success');
+      await loadPlugins();
+      showToast('卸载成功！', 'success');
     } catch (err) {
       console.error('Uninstall failed:', err);
       showToast(err instanceof Error ? err.message : '卸载失败', 'error');
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [plugins, uninstallPlugin, loadPlugins, showToast]);
+
+  // 数据未准备好：在所有 Hooks 调用之后再返回，避免闪烁
+  if (isDetecting || isLoading) {
+    return null;
+  }
 
   // Agent 未安装
   if (!isAvailable) {
@@ -174,17 +184,27 @@ export default function InstalledPluginsPage() {
 
       {/* 空状态 */}
       {!isLoading && plugins.length === 0 && (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">📦</div>
-          <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">还没有安装任何插件</h3>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">去插件市场看看吧</p>
-          <Link
-            href="/tools/market"
-            className="inline-flex items-center px-6 py-3 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600 transition-colors"
-          >
-            浏览插件市场
-          </Link>
-        </div>
+        <EmptyState
+          emoji="📦"
+          title="还没有安装任何插件"
+          description="从插件市场选择你需要的工具，一键安装即可使用"
+          action={{
+            label: "浏览插件市场",
+            href: "/tools/market",
+          }}
+          suggestions={[
+            {
+              icon: <Package size={20} />,
+              label: "探索官方插件",
+              href: "/tools/market?category=official",
+            },
+            {
+              icon: <Box size={20} />,
+              label: "查看热门插件",
+              href: "/tools/market?sort=downloads",
+            },
+          ]}
+        />
       )}
 
       {/* 无筛选结果 */}
@@ -202,18 +222,24 @@ export default function InstalledPluginsPage() {
 
       {/* 插件列表 */}
       {filteredPlugins.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
           {filteredPlugins.map((plugin) => (
-            <PluginCard
-              key={plugin.id}
-              plugin={plugin}
-              onStart={handleStart}
-              onStop={handleStop}
-              onUninstall={handleUninstall}
-              isLoading={actionLoading === plugin.id}
-            />
+            <motion.div key={plugin.id} variants={staggerItem}>
+              <PluginCard
+                plugin={plugin}
+                onStart={handleStart}
+                onStop={handleStop}
+                onUninstall={handleUninstall}
+                isLoading={actionLoading === plugin.id}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );

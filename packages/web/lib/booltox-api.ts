@@ -71,7 +71,7 @@ export function createBooltoxAPI(
           });
 
           // 建立 WebSocket 连接接收后端事件
-          const wsUrl = agentClient.baseUrl.replace('http', 'ws');
+          const wsUrl = 'ws://localhost:9527'; // 固定 WebSocket URL
           ws = new WebSocket(`${wsUrl}/plugins/${pluginId}/events`);
 
           ws.onmessage = (event) => {

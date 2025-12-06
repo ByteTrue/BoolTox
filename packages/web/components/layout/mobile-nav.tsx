@@ -3,8 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Home, Box, Package, Settings, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { drawerAnimation, modalBackdrop } from '@/lib/animation-config';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -13,6 +16,7 @@ interface MobileNavProps {
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const pathname = usePathname();
+  const containerRef = useFocusTrap({ isActive: isOpen });
 
   // 阻止背景滚动
   React.useEffect(() => {
@@ -25,6 +29,18 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
+
+  // ESC 键关闭
+  React.useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
   const globalNavItems = [
     { href: '/', label: '首页', icon: <Home size={20} /> },
@@ -44,23 +60,34 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   };
 
   return (
-    <>
-      {/* 背景遮罩 */}
-      <div
-        className={cn(
-          "fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* 背景遮罩 */}
+          <motion.div
+            variants={modalBackdrop}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            onClick={onClose}
+            aria-hidden="true"
+          />
 
-      {/* 侧边栏 */}
-      <div
-        className={cn(
-          "fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white dark:bg-neutral-900 z-50 transition-transform duration-300 ease-apple overflow-y-auto",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
+          {/* 侧边栏 */}
+          <motion.div
+            ref={containerRef}
+            variants={drawerAnimation}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }}
+            className="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white dark:bg-neutral-900 z-50 overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-label="移动端导航菜单"
+          >
         {/* 头部 */}
         <div className="sticky top-0 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-4 flex items-center justify-between">
           <span className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
@@ -69,6 +96,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            aria-label="关闭菜单"
           >
             <X size={20} className="text-neutral-700 dark:text-neutral-300" />
           </button>
@@ -125,7 +153,9 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             </nav>
           </div>
         )}
-      </div>
-    </>
+      </motion.div>
+      </>
+    )}
+    </AnimatePresence>
   );
 }

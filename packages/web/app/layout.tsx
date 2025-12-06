@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Navbar } from '@/components/layout/navbar';
 import { Providers } from '@/components/providers';
+import { WebVitals } from '@/components/web-vitals';
 import './globals.css';
 
 const inter = Inter({
@@ -25,6 +26,7 @@ export default function RootLayout({
     <html lang="zh-CN" className={inter.variable} suppressHydrationWarning>
       <body className="antialiased font-sans">
         <Providers>
+          <WebVitals />
           <Navbar />
           {children}
         </Providers>

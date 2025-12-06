@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   AgentDetector,
   AgentClient,
@@ -18,6 +18,40 @@ export function useAgent() {
   });
   const [client, setClient] = useState<AgentClient | null>(null);
   const [isDetecting, setIsDetecting] = useState(true);
+  const clientUrlRef = useRef<string | null>(null);
+
+  const updateStateFromInfo = useCallback((info: AgentInfo) => {
+    setIsDetecting(false);
+
+    setAgentInfo((prev) => {
+      if (
+        prev.available === info.available &&
+        prev.url === info.url &&
+        prev.version === info.version &&
+        prev.protocol === info.protocol
+      ) {
+        return prev;
+      }
+      return info;
+    });
+
+    setClient((prev) => {
+      if (!info.available) {
+        if (prev === null && clientUrlRef.current === null) {
+          return prev;
+        }
+        clientUrlRef.current = null;
+        return null;
+      }
+
+      if (clientUrlRef.current === info.url && prev) {
+        return prev;
+      }
+
+      clientUrlRef.current = info.url;
+      return new AgentClient({ baseUrl: info.url });
+    });
+  }, []);
 
   useEffect(() => {
     // 创建探测器
@@ -31,39 +65,31 @@ export function useAgent() {
     });
 
     // 监听状态变化
-    detector.on((info) => {
-      setAgentInfo(info);
-      setIsDetecting(false);
-
-      // 创建或销毁客户端
-      if (info.available && !client) {
-        setClient(new AgentClient({ baseUrl: info.url }));
-      } else if (!info.available && client) {
-        setClient(null);
-      }
-    });
+    const unsubscribe = detector.on(updateStateFromInfo);
 
     // 启动自动检测
     detector.startAutoDetect();
 
     // 清理
     return () => {
+      unsubscribe();
       detector.destroy();
     };
-  }, []);
+  }, [updateStateFromInfo]);
 
   // 手动重新检测
   const redetect = useCallback(async () => {
     setIsDetecting(true);
-    const detector = new AgentDetector({ autoRetry: false });
+    const detector = new AgentDetector({
+      urls: [
+        process.env.NEXT_PUBLIC_AGENT_URL || 'http://localhost:9527',
+      ],
+      timeout: 3000,
+      autoRetry: false,
+    });
     const info = await detector.detect();
-    setAgentInfo(info);
-    setIsDetecting(false);
-
-    if (info.available) {
-      setClient(new AgentClient({ baseUrl: info.url }));
-    }
-  }, []);
+    updateStateFromInfo(info);
+  }, [updateStateFromInfo]);
 
   return {
     /** Agent 信息 */

@@ -91,7 +91,8 @@ export function createPostMessageBridge(
 
         // 建立 WebSocket 连接接收事件
         try {
-          const wsUrl = agentClient.baseUrl.replace('http', 'ws');
+          // 使用固定的 WebSocket URL（与 Agent 地址一致）
+          const wsUrl = 'ws://localhost:9527';
           console.log('[PostMessageBridge] 建立 WebSocket 连接:', `${wsUrl}/plugins/${pluginId}/events`);
 
           ws = new WebSocket(`${wsUrl}/plugins/${pluginId}/events`);

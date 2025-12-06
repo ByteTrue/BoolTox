@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useAgent } from '@/hooks/use-agent';
 import { usePlugins } from '@/hooks/use-plugins';
 import { AgentStatus } from '@/components/tools/agent-status';
 import { AgentInstaller } from '@/components/tools/agent-installer';
 import { Package, Box, Settings, ArrowRight, PlayCircle } from 'lucide-react';
+import { cardAnimation, staggerContainer, staggerItem } from '@/lib/animation-config';
 
 export default function ToolsPage() {
-  const { isAvailable } = useAgent();
-  const { plugins } = usePlugins();
+  const { isAvailable, isDetecting } = useAgent();
+  const { plugins, isLoading } = usePlugins();
 
   // 统计信息
   const stats = {
@@ -18,6 +20,11 @@ export default function ToolsPage() {
   };
 
   const runningPlugins = plugins.filter(p => p.status === 'running');
+
+  // 数据未准备好：返回 null，避免闪烁
+  if (isDetecting || isLoading) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -48,28 +55,34 @@ export default function ToolsPage() {
                 <PlayCircle size={24} className="text-primary-500 dark:text-primary-400" />
                 正在运行 ({runningPlugins.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
                 {runningPlugins.map((plugin) => (
-                  <Link
-                    key={plugin.id}
-                    href={`/plugin/${plugin.id}`}
-                    className="p-4 border border-primary-200 dark:border-primary-800/50 rounded-xl bg-primary-50/50 dark:bg-primary-900/20 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all duration-200 group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
-                        {plugin.manifest.name}
-                      </h3>
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                    </div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-                      {plugin.manifest.description || '正在运行中...'}
-                    </p>
-                    <span className="text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:underline">
-                      打开插件 →
-                    </span>
-                  </Link>
+                  <motion.div key={plugin.id} variants={staggerItem}>
+                    <Link
+                      href={`/plugin/${plugin.id}`}
+                      className="block p-4 border border-primary-200 dark:border-primary-800/50 rounded-xl bg-primary-50/50 dark:bg-primary-900/20 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all duration-200 group"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
+                          {plugin.manifest.name}
+                        </h3>
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                      </div>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                        {plugin.manifest.description || '正在运行中...'}
+                      </p>
+                      <span className="text-primary-500 dark:text-primary-400 text-sm font-medium group-hover:underline">
+                        打开插件 →
+                      </span>
+                    </Link>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </div>
           )}
 
@@ -78,12 +91,18 @@ export default function ToolsPage() {
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
               快速访问
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <motion.div
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
               {/* 我的插件 */}
-              <Link
-                href="/tools/installed"
-                className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
-              >
+              <motion.div variants={staggerItem}>
+                <Link
+                  href="/tools/installed"
+                  className="block p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
+                >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-500 dark:text-primary-400">
                     <Box size={24} />
@@ -99,11 +118,13 @@ export default function ToolsPage() {
                   <ArrowRight size={16} />
                 </div>
               </Link>
+              </motion.div>
 
               {/* 插件市场 */}
+              <motion.div variants={staggerItem}>
               <Link
                 href="/tools/market"
-                className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
+                className="block p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 shadow-soft hover:shadow-soft-lg transition-all duration-200 ease-apple group"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-500 dark:text-primary-400">
@@ -119,8 +140,10 @@ export default function ToolsPage() {
                   <ArrowRight size={16} />
                 </div>
               </Link>
+              </motion.div>
 
               {/* 设置 */}
+              <motion.div variants={staggerItem}>
               <div className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900 opacity-50">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-400">
@@ -133,7 +156,8 @@ export default function ToolsPage() {
                 </p>
                 <span className="text-neutral-400 text-sm">即将推出</span>
               </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
 
           {/* 空状态提示 */}
