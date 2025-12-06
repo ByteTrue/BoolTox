@@ -129,6 +129,8 @@ export class BackendRunner extends EventEmitter {
 
       // Spawn Python 进程
       child = this.pythonManager.spawnPython(entryPath, args, {
+        pythonPath: pythonEnv.pythonPath,
+        venvPath: pythonEnv.venvPath,
         cwd: pluginPath,
         env: {
           ...env,
@@ -231,6 +233,8 @@ export class BackendRunner extends EventEmitter {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
+      console.log(`[${backendProcess.pluginId}] stdout:`, trimmed);
+
       try {
         const message: JsonRpcMessage = JSON.parse(trimmed);
 
@@ -245,6 +249,7 @@ export class BackendRunner extends EventEmitter {
         }
         // 处理通知
         else if (message.method) {
+          console.log(`[${backendProcess.pluginId}] 收到通知:`, message.method, message.params);
           this.handleNotification(channelId, message);
         }
       } catch (error) {
@@ -293,23 +298,28 @@ export class BackendRunner extends EventEmitter {
       backendProcess.ready = true;
       backendProcess.methods = params.methods || [];
       console.log(`[${backendProcess.pluginId}] Backend ready, methods:`, backendProcess.methods);
-      this.emit('message', {
+      const event: BackendEvent = {
         channelId,
         type: 'ready',
         data: params,
-      } as BackendEvent);
+      };
+      console.log(`[BackendRunner] 触发 message 事件:`, event);
+      this.emit('message', event);
     } else if (method === '$event') {
-      this.emit('message', {
+      const event: BackendEvent = {
         channelId,
         type: 'event',
         data: params,
-      } as BackendEvent);
+      };
+      console.log(`[BackendRunner] 触发 message 事件 ($event):`, event);
+      this.emit('message', event);
     } else if (method === '$log') {
-      this.emit('message', {
+      const event: BackendEvent = {
         channelId,
         type: 'log',
         data: params,
-      } as BackendEvent);
+      };
+      this.emit('message', event);
     }
   }
 

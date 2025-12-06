@@ -396,15 +396,13 @@ export class PythonManager extends EventEmitter {
   }> {
     const pluginVenvPath = path.join(this.pluginEnvsDir, config.pluginId);
 
-    // 如果插件有依赖且需要安装
-    if (config.requirementsPath) {
-      const needsSetup = await this.needsPluginRequirementsSetup(
-        config.pluginId,
-        config.requirementsPath
-      );
-      if (needsSetup) {
-        throw new Error('Plugin requirements not installed. Call installPluginRequirements first.');
-      }
+    // 确保虚拟环境存在
+    if (!existsSync(pluginVenvPath)) {
+      // 创建虚拟环境
+      console.log(`[PythonManager] Creating venv for ${config.pluginId}`);
+      execSync(`"${this.uvPath}" venv "${pluginVenvPath}"`, {
+        stdio: 'inherit',
+      });
     }
 
     return {
