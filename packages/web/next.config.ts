@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   // 严格模式
   reactStrictMode: true,
 
+  // Transpile workspace packages
+  transpilePackages: ['@booltox/sdk', '@booltox/shared'],
+
   // 实验性功能
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],

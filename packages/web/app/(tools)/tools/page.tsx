@@ -5,7 +5,7 @@ import { AgentStatus } from '@/components/tools/agent-status';
 import { AgentInstaller } from '@/components/tools/agent-installer';
 
 export default function ToolsPage() {
-  const { isAvailable, client } = useAgent();
+  const { isAvailable } = useAgent();
 
   return (
     <div className="space-y-6">
