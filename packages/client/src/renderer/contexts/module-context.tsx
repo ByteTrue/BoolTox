@@ -352,7 +352,7 @@ const focusModuleWindow = useCallback(
         // 清理孤立的插件记录
         for (const id of orphanedIds) {
           await window.moduleStore.remove(id);
-          console.info(`[ModuleContext] 已清理孤立插件记录: ${id}`);
+          logger.info(`[ModuleContext] 已清理孤立插件记录: ${id}`);
         }
 
         setInstalledModules(restoredModules);
