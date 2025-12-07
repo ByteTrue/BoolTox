@@ -79,7 +79,13 @@ export function useAgent() {
       startDetectOnce();
       return () => listeners.delete(listener);
     },
-    () => state
+    () => state,
+    // getServerSnapshot - SSR 时返回完整的初始状态
+    () => ({
+      isDetecting: true,
+      info: { available: false, version: null, error: null },
+      client: null,
+    })
   );
 
   const redetect = useCallback(async () => {
