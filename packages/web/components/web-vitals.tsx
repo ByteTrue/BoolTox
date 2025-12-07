@@ -53,6 +53,8 @@ const THRESHOLDS = {
   },
 };
 
+const ANALYTICS_ENDPOINT = process.env.NEXT_PUBLIC_ANALYTICS_URL;
+
 /**
  * 获取性能评级
  */
@@ -87,6 +89,33 @@ function reportMetric(metric: Metric) {
         metric_rating: metric.rating,
         metric_delta: Math.round(metric.delta),
       });
+    }
+
+    // 可选：上报到自定义端点，避免无数据闭环
+    if (ANALYTICS_ENDPOINT) {
+      try {
+        const body = JSON.stringify({
+          name: metric.name,
+          value: metric.value,
+          rating: metric.rating,
+          delta: metric.delta,
+          id: metric.id,
+          path: window.location.pathname,
+          ts: Date.now(),
+        });
+        if (!navigator.sendBeacon(ANALYTICS_ENDPOINT, body)) {
+          fetch(ANALYTICS_ENDPOINT, {
+            method: 'POST',
+            body,
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
+          }).catch(() => {
+            // 忽略采样上报失败，避免影响用户交互
+          });
+        }
+      } catch {
+        // 静默失败
+      }
     }
   }
 }
