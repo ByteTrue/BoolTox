@@ -6,7 +6,6 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Info, CheckCircle, AlertCircle, XCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -77,13 +76,9 @@ export function Alert({
   const Icon = config.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2 }}
+    <div
       className={cn(
-        "rounded-xl border-l-4 p-4",
+        "rounded-xl border-l-4 p-4 transition-all duration-200",
         config.bgColor,
         config.borderColor,
         className
@@ -107,37 +102,33 @@ export function Alert({
 
           {/* 操作按钮 */}
           {action && (
-            <motion.button
+            <button
               onClick={action.onClick}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               className={cn(
-                "mt-3 text-sm font-medium underline transition-colors",
+                "mt-3 text-sm font-medium underline transition-colors hover:opacity-80 active:scale-95",
                 config.buttonColor
               )}
             >
               {action.label}
-            </motion.button>
+            </button>
           )}
         </div>
 
         {/* 关闭按钮 */}
         {closable && onClose && (
-          <motion.button
+          <button
             onClick={onClose}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
             className={cn(
-              "flex-shrink-0 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors",
+              "flex-shrink-0 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors active:scale-95",
               config.iconColor
             )}
             aria-label="关闭"
           >
             <X size={16} />
-          </motion.button>
+          </button>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 

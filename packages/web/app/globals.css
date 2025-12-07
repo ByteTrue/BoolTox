@@ -88,6 +88,10 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    /* 性能优化 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* 优雅的焦点样式（Apple 风格） */
@@ -122,5 +126,40 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  @keyframes loading-bar {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(400%);
+    }
+  }
+
+  .animate-loading-bar {
+    animation: loading-bar 1.5s linear infinite;
+  }
+
+  /* 性能优化工具类 */
+  .gpu-accelerate {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .optimize-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* 禁用不必要的 will-change */
+  * {
+    will-change: auto !important;
+  }
+
+  /* 只在需要时启用 */
+  .enable-will-change {
+    will-change: transform !important;
   }
 }

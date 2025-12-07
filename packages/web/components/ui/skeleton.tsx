@@ -3,9 +3,6 @@
  * 用于在数据加载时提供优雅的占位效果
  */
 
-import { motion } from 'framer-motion';
-import { skeletonPulse } from '@/lib/animation-config';
-
 interface SkeletonProps {
   className?: string;
 }
@@ -15,9 +12,8 @@ interface SkeletonProps {
  */
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
-    <motion.div
-      {...skeletonPulse}
-      className={`bg-neutral-200 dark:bg-neutral-800 rounded ${className}`}
+    <div
+      className={`bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse ${className}`}
       aria-hidden="true"
     />
   );

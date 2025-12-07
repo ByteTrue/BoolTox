@@ -7,9 +7,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
-import { fadeIn, staggerContainer, staggerItem } from '@/lib/animation-config';
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -43,19 +41,9 @@ export function EmptyState({
   suggestions,
 }: EmptyStateProps) {
   return (
-    <motion.div
-      variants={fadeIn}
-      initial="initial"
-      animate="animate"
-      className="flex flex-col items-center justify-center py-16 px-6 text-center"
-    >
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       {/* 图标或 Emoji */}
-      <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 20, delay: 0.1 }}
-        className="mb-6"
-      >
+      <div className="mb-6 transition-transform duration-200">
         {emoji ? (
           <div className="text-6xl md:text-7xl">{emoji}</div>
         ) : icon ? (
@@ -63,31 +51,21 @@ export function EmptyState({
             {icon}
           </div>
         ) : null}
-      </motion.div>
+      </div>
 
       {/* 文本 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="max-w-md space-y-2"
-      >
+      <div className="max-w-md space-y-2">
         <h3 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-neutral-100">
           {title}
         </h3>
         <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
           {description}
         </p>
-      </motion.div>
+      </div>
 
       {/* 操作按钮 */}
       {(action || secondaryAction) && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 mt-8"
-        >
+        <div className="flex flex-col sm:flex-row gap-3 mt-8">
           {action && (
             <div>
               {action.href ? (
@@ -127,23 +105,18 @@ export function EmptyState({
               )}
             </div>
           )}
-        </motion.div>
+        </div>
       )}
 
       {/* 建议 */}
       {suggestions && suggestions.length > 0 && (
-        <motion.div
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-          className="w-full max-w-xl mt-12"
-        >
+        <div className="w-full max-w-xl mt-12">
           <p className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 mb-4">
             或者尝试：
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {suggestions.map((suggestion, index) => (
-              <motion.div key={index} variants={staggerItem}>
+              <div key={index}>
                 <Link
                   href={suggestion.href}
                   className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-soft transition-all group"
@@ -155,12 +128,12 @@ export function EmptyState({
                     {suggestion.label}
                   </span>
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 

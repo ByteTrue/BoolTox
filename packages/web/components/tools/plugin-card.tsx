@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import type { PluginInfo } from '@booltox/sdk';
 import { Play, Square, Trash2, Download, ExternalLink, Box } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 interface PluginCardProps {
   plugin: PluginInfo;
@@ -14,7 +13,7 @@ interface PluginCardProps {
   isLoading?: boolean;
 }
 
-export function PluginCard({
+export const PluginCard = React.memo(function PluginCard({
   plugin,
   onStart,
   onStop,
@@ -105,4 +104,4 @@ export function PluginCard({
       </div>
     </div>
   );
-}
+});

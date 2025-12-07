@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
 
   // 实验性功能
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: ['lucide-react'],
   },
 
   // 图片优化

@@ -1,10 +1,21 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { ThemeProvider } from 'next-themes';
 import { ToastProvider } from '@/components/toast';
-import { CommandPalette } from '@/components/ui/command-palette';
-import { KeyboardShortcutsPanel } from '@/components/ui/keyboard-shortcuts-panel';
-import { ThemeCustomizer } from '@/components/ui/theme-customizer';
+
+const CommandPalette = dynamic(
+  () => import('@/components/ui/command-palette').then((mod) => mod.CommandPalette),
+  { ssr: false }
+);
+const KeyboardShortcutsPanel = dynamic(
+  () => import('@/components/ui/keyboard-shortcuts-panel').then((mod) => mod.KeyboardShortcutsPanel),
+  { ssr: false }
+);
+const ThemeCustomizer = dynamic(
+  () => import('@/components/ui/theme-customizer').then((mod) => mod.ThemeCustomizer),
+  { ssr: false }
+);
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

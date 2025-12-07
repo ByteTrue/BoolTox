@@ -3,7 +3,6 @@
  * 提供多种加载指示器，满足不同场景需求
  */
 
-import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 interface LoadingProps {
@@ -22,14 +21,8 @@ export function Spinner({ size = 'md', className = '' }: LoadingProps) {
   };
 
   return (
-    <motion.div
-      animate={{ rotate: 360 }}
-      transition={{
-        duration: 1,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
-      className={`${sizeClasses[size]} border-4 border-neutral-200 dark:border-neutral-700 border-t-primary-500 rounded-full ${className}`}
+    <div
+      className={`${sizeClasses[size]} border-4 border-neutral-200 dark:border-neutral-700 border-t-primary-500 rounded-full animate-spin ${className}`}
       aria-label="加载中"
     />
   );
@@ -66,25 +59,17 @@ export function LoadingDots({ size = 'md', className = '' }: LoadingProps) {
 
   const dotVariants = {
     animate: (i: number) => ({
-      y: [-8, 0, -8],
-      transition: {
-        duration: 0.6,
-        repeat: Infinity,
-        delay: i * 0.1,
-        ease: 'easeInOut' as const,
-      },
+      delay: i * 0.1,
     }),
   };
 
   return (
     <div className={`flex items-center gap-2 ${className}`} aria-label="加载中">
       {[0, 1, 2].map((i) => (
-        <motion.div
+        <div
           key={i}
-          custom={i}
-          variants={dotVariants}
-          animate="animate"
-          className={`${sizeClasses[size]} rounded-full bg-primary-500`}
+          className={`${sizeClasses[size]} rounded-full bg-primary-500 animate-bounce`}
+          style={{ animationDelay: `${dotVariants.animate(i).delay}s` }}
         />
       ))}
     </div>
@@ -102,17 +87,8 @@ export function LoadingPulse({ size = 'md', className = '' }: LoadingProps) {
   };
 
   return (
-    <motion.div
-      animate={{
-        scale: [1, 1.2, 1],
-        opacity: [0.5, 1, 0.5],
-      }}
-      transition={{
-        duration: 1.5,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-      className={`${sizeClasses[size]} rounded-full bg-primary-500 ${className}`}
+    <div
+      className={`${sizeClasses[size]} rounded-full bg-primary-500 animate-pulse ${className}`}
       aria-label="加载中"
     />
   );
@@ -124,16 +100,8 @@ export function LoadingPulse({ size = 'md', className = '' }: LoadingProps) {
 export function LoadingBar({ className = '' }: { className?: string }) {
   return (
     <div className={`w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden ${className}`}>
-      <motion.div
-        animate={{
-          x: ['-100%', '400%'],
-        }}
-        transition={{
-          duration: 1.5,
-          repeat: Infinity,
-          ease: 'linear',
-        }}
-        className="h-full w-1/3 bg-primary-500 rounded-full"
+      <div
+        className="h-full w-1/3 bg-primary-500 rounded-full animate-loading-bar"
         aria-label="加载中"
       />
     </div>
@@ -162,15 +130,10 @@ export function InlineLoading({ text = '加载中...', size = 'md' }: InlineLoad
  */
 export function LoadingOverlay({ text = '加载中...' }: { text?: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm"
-    >
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-neutral-950/80 transition-opacity">
       <Spinner size="lg" className="mb-4" />
       <p className="text-neutral-700 dark:text-neutral-300 font-medium">{text}</p>
-    </motion.div>
+    </div>
   );
 }
 
@@ -204,11 +167,7 @@ export function PageLoading({ text = '加载中...' }: { text?: string }) {
 export function ButtonLoading({ text = '处理中...' }: { text?: string }) {
   return (
     <div className="flex items-center gap-2">
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-      />
+      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
       <span>{text}</span>
     </div>
   );

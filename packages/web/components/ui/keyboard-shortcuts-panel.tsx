@@ -6,12 +6,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Keyboard, X } from 'lucide-react';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { HotkeyBadge } from '@/components/ui/hotkey-badge';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { modalBackdrop, modalContent } from '@/lib/animation-config';
 
 interface ShortcutItem {
   keys: string;
@@ -70,28 +68,20 @@ export function KeyboardShortcutsPanel() {
   }, {} as Record<string, ShortcutItem[]>);
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
         <>
           {/* 背景遮罩 */}
-          <motion.div
-            variants={modalBackdrop}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
             onClick={() => setIsOpen(false)}
+            aria-hidden="true"
           />
 
           {/* 面板 */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
+            <div
               ref={containerRef}
-              variants={modalContent}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               className="w-full max-w-3xl bg-white dark:bg-neutral-900 rounded-2xl shadow-soft-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden"
               role="dialog"
               aria-modal="true"
@@ -107,15 +97,13 @@ export function KeyboardShortcutsPanel() {
                     键盘快捷键
                   </h2>
                 </div>
-                <motion.button
+                <button
                   onClick={() => setIsOpen(false)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors active:scale-95"
                   aria-label="关闭"
                 >
                   <X size={20} className="text-neutral-600 dark:text-neutral-400" />
-                </motion.button>
+                </button>
               </div>
 
               {/* 快捷键列表 */}
@@ -150,10 +138,10 @@ export function KeyboardShortcutsPanel() {
                   提示：按 <HotkeyBadge keys="mod+k" /> 打开命令面板，快速执行操作
                 </p>
               </div>
-            </motion.div>
+            </div>
           </div>
         </>
       )}
-    </AnimatePresence>
+    </>
   );
 }

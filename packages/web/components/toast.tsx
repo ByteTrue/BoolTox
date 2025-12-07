@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
 
 export interface Toast {
@@ -63,11 +62,9 @@ export function useToast() {
 function ToastContainer({ toasts, onClose }: { toasts: Toast[]; onClose: (id: string) => void }) {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
-      <AnimatePresence>
-        {toasts.map(toast => (
-          <ToastItem key={toast.id} toast={toast} onClose={onClose} />
-        ))}
-      </AnimatePresence>
+      {toasts.map((toast) => (
+        <ToastItem key={toast.id} toast={toast} onClose={onClose} />
+      ))}
     </div>
   );
 }
@@ -96,46 +93,56 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
 
   const Icon = icons[toast.type];
 
-  // 图标动画
-  const iconAnimation = {
-    initial: { scale: 0, rotate: -180 },
-    animate: { scale: 1, rotate: 0 },
-    transition: { type: 'spring' as const, stiffness: 400, damping: 20, delay: 0.1 }
-  };
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [shrinkProgress, setShrinkProgress] = React.useState(false);
+
+  React.useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setIsVisible(true);
+      if (toast.duration && toast.duration > 0) {
+        setShrinkProgress(true);
+      }
+    });
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (toast.duration && toast.duration > 0) {
+      timer = setTimeout(() => onClose(toast.id), toast.duration);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+    };
+  }, [toast.duration, toast.id, onClose]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95, x: 100 }}
-      animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95, x: 100 }}
-      transition={{ duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }}
-      className="relative pointer-events-auto"
+    <div
+      className={`relative pointer-events-auto transition-all duration-200 ${
+        isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'
+      }`}
     >
-      <div className={`flex items-center gap-3 min-w-[320px] max-w-md p-4 rounded-xl border-2 shadow-soft-lg backdrop-blur-sm ${colors[toast.type]}`}>
-        <motion.div {...iconAnimation}>
-          <Icon size={20} className="flex-shrink-0" />
-        </motion.div>
+      <div className={`flex items-center gap-3 min-w-[320px] max-w-md p-4 rounded-xl border-2 shadow-soft-lg ${colors[toast.type]}`}>
+        <Icon size={20} className="flex-shrink-0" />
         <p className="flex-1 text-sm font-medium">{toast.message}</p>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+        <button
           onClick={() => onClose(toast.id)}
-          className="flex-shrink-0 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+          className="flex-shrink-0 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors active:scale-95"
           aria-label="关闭"
         >
           <X size={16} />
-        </motion.button>
+        </button>
       </div>
 
       {/* 进度条（倒计时） */}
       {toast.duration && toast.duration > 0 && (
-        <motion.div
-          initial={{ width: '100%' }}
-          animate={{ width: '0%' }}
-          transition={{ duration: toast.duration / 1000, ease: 'linear' }}
-          className={`absolute bottom-0 left-0 h-1 rounded-b-xl ${progressColors[toast.type]}`}
+        <div
+          className={`absolute bottom-0 left-0 h-1 rounded-b-xl transition-[width] ease-linear ${progressColors[toast.type]}`}
+          style={{
+            width: shrinkProgress ? '0%' : '100%',
+            transitionDuration: `${toast.duration}ms`,
+          }}
         />
       )}
-    </motion.div>
+    </div>
   );
 }

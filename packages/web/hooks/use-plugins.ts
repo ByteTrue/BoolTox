@@ -23,8 +23,8 @@ export function usePlugins() {
     fetcher,
     {
       keepPreviousData: true,
-      revalidateOnFocus: true,
-      dedupingInterval: 2000,
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
     }
   );
 

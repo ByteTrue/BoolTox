@@ -3,11 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Home, Box, Package, Settings, FileText } from 'lucide-react';
+import { X, Home, Box, Package, Settings, FileText, Compass, BookOpen, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { drawerAnimation, modalBackdrop } from '@/lib/animation-config';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -43,9 +41,10 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   }, [isOpen, onClose]);
 
   const globalNavItems = [
-    { href: '/', label: '首页', icon: <Home size={20} /> },
+    { href: '/resources', label: '资源导航', icon: <Compass size={20} /> },
     { href: '/tools', label: '工具箱', icon: <Box size={20} /> },
-    { href: '/docs', label: '文档', icon: <FileText size={20} /> },
+    { href: 'https://blog.booltox.dev', label: '博客', icon: <BookOpen size={20} />, external: true },
+    { href: 'https://forum.booltox.dev', label: '论坛', icon: <MessageCircle size={20} />, external: true },
   ];
 
   const toolsNavItems = [
@@ -59,35 +58,25 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
     return pathname === href || pathname.startsWith(href + '/');
   };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* 背景遮罩 */}
-          <motion.div
-            variants={modalBackdrop}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-            onClick={onClose}
-            aria-hidden="true"
-          />
+  if (!isOpen) return null;
 
-          {/* 侧边栏 */}
-          <motion.div
-            ref={containerRef}
-            variants={drawerAnimation}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }}
-            className="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white dark:bg-neutral-900 z-50 overflow-y-auto"
-            role="dialog"
-            aria-modal="true"
-            aria-label="移动端导航菜单"
-          >
+  return (
+    <>
+      {/* 背景遮罩 */}
+      <div
+        className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* 侧边栏 */}
+      <div
+        ref={containerRef}
+        className="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white dark:bg-neutral-900 z-50 overflow-y-auto transition-transform duration-200"
+        role="dialog"
+        aria-modal="true"
+        aria-label="移动端导航菜单"
+      >
         {/* 头部 */}
         <div className="sticky top-0 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-4 flex items-center justify-between">
           <span className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
@@ -108,22 +97,42 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             主要功能
           </div>
           <nav className="space-y-1">
-            {globalNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all",
-                  isActive(item.href)
-                    ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
-                    : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                )}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </Link>
-            ))}
+            {globalNavItems.map((item) => {
+              const isExternal = 'external' in item && item.external;
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onClose}
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all",
+                    isActive(item.href)
+                      ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  )}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
@@ -153,9 +162,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             </nav>
           </div>
         )}
-      </motion.div>
-      </>
-    )}
-    </AnimatePresence>
+      </div>
+    </>
   );
 }

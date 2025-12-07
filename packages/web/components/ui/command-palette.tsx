@@ -7,7 +7,6 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   Home,
@@ -24,8 +23,6 @@ import {
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { usePlugins } from '@/hooks/use-plugins';
-import { useRemotePlugins } from '@/hooks/use-remote-plugins';
-import { modalBackdrop, modalContent } from '@/lib/animation-config';
 import { cn } from '@/lib/utils';
 
 interface CommandItem {
@@ -41,7 +38,6 @@ interface CommandItem {
 export function CommandPalette() {
   const router = useRouter();
   const { plugins, startPlugin, stopPlugin } = usePlugins();
-  const { plugins: remotePlugins } = useRemotePlugins();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -264,152 +260,138 @@ export function CommandPalette() {
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* 背景遮罩 */}
-          <motion.div
-            variants={modalBackdrop}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            onClick={closePalette}
-          />
+    <>
+      {/* 背景遮罩 */}
+      <div
+        className="fixed inset-0 bg-black/50 z-50"
+        onClick={closePalette}
+        aria-hidden="true"
+      />
 
-          {/* 命令面板 */}
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4">
-            <motion.div
-              ref={containerRef}
-              variants={modalContent}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl shadow-soft-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden"
-              role="dialog"
-              aria-modal="true"
-              aria-label="命令面板"
-            >
-              {/* 搜索框 */}
-              <div className="flex items-center gap-3 p-4 border-b border-neutral-200 dark:border-neutral-800">
-                <Search size={20} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜索插件、导航或操作..."
-                  className="flex-1 bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 outline-none"
-                  autoFocus
-                  aria-label="搜索命令"
-                />
-                <kbd className="hidden sm:inline-block px-2 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs font-medium text-neutral-600 dark:text-neutral-400 font-mono">
+      {/* 命令面板 */}
+      <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4">
+        <div
+          ref={containerRef}
+          className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl shadow-soft-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden transition-transform duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-label="命令面板"
+        >
+          {/* 搜索框 */}
+          <div className="flex items-center gap-3 p-4 border-b border-neutral-200 dark:border-neutral-800">
+            <Search size={20} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="搜索插件、导航或操作..."
+              className="flex-1 bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 outline-none"
+              autoFocus
+              aria-label="搜索命令"
+            />
+            <kbd className="hidden sm:inline-block px-2 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs font-medium text-neutral-600 dark:text-neutral-400 font-mono">
+              ESC
+            </kbd>
+          </div>
+
+          {/* 命令列表 */}
+          <div className="max-h-[60vh] overflow-y-auto p-2">
+            {filteredCommands.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-neutral-500 dark:text-neutral-400">未找到匹配的命令</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(groupedCommands).map(([category, items]) => {
+                  if (items.length === 0) return null;
+
+                  return (
+                    <div key={category}>
+                      {/* 分类标题 */}
+                      <div className="px-3 py-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+                        {categoryIcons[category as keyof typeof categoryIcons]}{' '}
+                        {categoryLabels[category as keyof typeof categoryLabels]}
+                      </div>
+
+                      {/* 命令项 */}
+                      {items.map((cmd) => {
+                        const globalIndex = filteredCommands.findIndex((c) => c.id === cmd.id);
+                        const isSelected = globalIndex === selectedIndex;
+
+                        return (
+                          <button
+                            key={cmd.id}
+                            onClick={cmd.action}
+                            onMouseEnter={() => setSelectedIndex(globalIndex)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors",
+                              isSelected
+                                ? "bg-primary-50 dark:bg-primary-900/20"
+                                : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                            )}
+                          >
+                            <div className={cn(
+                              "flex-shrink-0",
+                              isSelected ? "text-primary-600 dark:text-primary-400" : "text-neutral-600 dark:text-neutral-400"
+                            )}>
+                              {cmd.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className={cn(
+                                "text-sm font-medium",
+                                isSelected ? "text-primary-900 dark:text-primary-100" : "text-neutral-900 dark:text-neutral-100"
+                              )}>
+                                {cmd.label}
+                              </div>
+                              {cmd.description && (
+                                <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                                  {cmd.description}
+                                </div>
+                              )}
+                            </div>
+                            {isSelected && (
+                              <kbd className="flex-shrink-0 px-2 py-1 rounded-md bg-primary-100 dark:bg-primary-900/30 text-xs font-medium text-primary-700 dark:text-primary-300 font-mono">
+                                ↵
+                              </kbd>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 底部提示 */}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/50">
+            <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 font-mono">
+                  ↑↓
+                </kbd>
+                导航
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 font-mono">
+                  ↵
+                </kbd>
+                选择
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 font-mono">
                   ESC
                 </kbd>
-              </div>
-
-              {/* 命令列表 */}
-              <div className="max-h-[60vh] overflow-y-auto p-2">
-                {filteredCommands.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <p className="text-neutral-500 dark:text-neutral-400">未找到匹配的命令</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {Object.entries(groupedCommands).map(([category, items]) => {
-                      if (items.length === 0) return null;
-
-                      return (
-                        <div key={category}>
-                          {/* 分类标题 */}
-                          <div className="px-3 py-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
-                            {categoryIcons[category as keyof typeof categoryIcons]}{' '}
-                            {categoryLabels[category as keyof typeof categoryLabels]}
-                          </div>
-
-                          {/* 命令项 */}
-                          {items.map((cmd, index) => {
-                            const globalIndex = filteredCommands.findIndex((c) => c.id === cmd.id);
-                            const isSelected = globalIndex === selectedIndex;
-
-                            return (
-                              <motion.button
-                                key={cmd.id}
-                                onClick={cmd.action}
-                                onMouseEnter={() => setSelectedIndex(globalIndex)}
-                                className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors",
-                                  isSelected
-                                    ? "bg-primary-50 dark:bg-primary-900/20"
-                                    : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                                )}
-                                whileHover={{ scale: isSelected ? 1 : 1.01 }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <div className={cn(
-                                  "flex-shrink-0",
-                                  isSelected ? "text-primary-600 dark:text-primary-400" : "text-neutral-600 dark:text-neutral-400"
-                                )}>
-                                  {cmd.icon}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className={cn(
-                                    "text-sm font-medium",
-                                    isSelected ? "text-primary-900 dark:text-primary-100" : "text-neutral-900 dark:text-neutral-100"
-                                  )}>
-                                    {cmd.label}
-                                  </div>
-                                  {cmd.description && (
-                                    <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                                      {cmd.description}
-                                    </div>
-                                  )}
-                                </div>
-                                {isSelected && (
-                                  <kbd className="flex-shrink-0 px-2 py-1 rounded-md bg-primary-100 dark:bg-primary-900/30 text-xs font-medium text-primary-700 dark:text-primary-300 font-mono">
-                                    ↵
-                                  </kbd>
-                                )}
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* 底部提示 */}
-              <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/50">
-                <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-                  <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 font-mono">
-                      ↑↓
-                    </kbd>
-                    导航
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 font-mono">
-                      ↵
-                    </kbd>
-                    选择
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 font-mono">
-                      ESC
-                    </kbd>
-                    关闭
-                  </span>
-                </div>
-                <div className="text-xs text-neutral-400 dark:text-neutral-500">
-                  {filteredCommands.length} 个结果
-                </div>
-              </div>
-            </motion.div>
+                关闭
+              </span>
+            </div>
+            <div className="text-xs text-neutral-400 dark:text-neutral-500">
+              {filteredCommands.length} 个结果
+            </div>
           </div>
-        </>
-      )}
-    </AnimatePresence>
+        </div>
+      </div>
+    </>
   );
 }

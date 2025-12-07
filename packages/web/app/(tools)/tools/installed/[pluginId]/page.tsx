@@ -3,11 +3,9 @@
 import React, { use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { usePlugins } from '@/hooks/use-plugins';
 import { useToast } from '@/components/toast';
 import { PageLoading } from '@/components/ui/loading';
-import { fadeIn } from '@/lib/animation-config';
 import {
   ArrowLeft,
   Play,
@@ -107,7 +105,7 @@ export default function InstalledPluginDetailPage({
   const hasBackend = runtime && 'backend' in runtime && runtime.backend;
 
   return (
-    <motion.div variants={fadeIn} initial="initial" animate="animate" className="space-y-6">
+    <div className="space-y-6 transition-opacity">
       {/* 返回按钮 */}
       <button
         onClick={() => router.back()}
