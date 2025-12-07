@@ -72,4 +72,5 @@ booltox-plugins/
 # 其他
 *.bak
 *.tmp
+*.tmp.*
 .eslintcache
