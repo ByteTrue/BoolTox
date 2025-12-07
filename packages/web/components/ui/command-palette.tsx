@@ -24,6 +24,7 @@ import { useHotkeys } from '@/hooks/use-hotkeys';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { usePlugins } from '@/hooks/use-plugins';
 import { cn } from '@/lib/utils';
+import { registerCommandPaletteOpener } from './command-palette-trigger';
 
 interface CommandItem {
   id: string;
@@ -55,6 +56,11 @@ export function CommandPalette() {
     setQuery('');
     setSelectedIndex(0);
   }, []);
+
+  // 注册 opener，让外部可以调用
+  useEffect(() => {
+    registerCommandPaletteOpener(openPalette);
+  }, [openPalette]);
 
   // Cmd+K 快捷键
   useHotkeys({

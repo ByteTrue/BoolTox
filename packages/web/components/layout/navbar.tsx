@@ -3,10 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { Logo } from './logo';
 import { MobileNav } from './mobile-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeCustomizer } from '@/components/ui/theme-customizer-new';
+import { openCommandPalette } from '@/components/ui/command-palette-trigger';
 import { cn } from '@/lib/utils';
 
 export function Navbar() {
@@ -90,6 +92,19 @@ export function Navbar() {
 
           {/* 右侧：工具栏 */}
           <div className="flex items-center gap-3">
+            {/* 搜索触发按钮 */}
+            <button
+              onClick={openCommandPalette}
+              className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <Search size={14} />
+              <span>搜索...</span>
+              <kbd className="ml-auto hidden lg:inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
+            </button>
+
+            <ThemeCustomizer />
             <ThemeToggle />
             {/* 未来：用户菜单 */}
           </div>

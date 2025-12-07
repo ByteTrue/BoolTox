@@ -12,10 +12,6 @@ const KeyboardShortcutsPanel = dynamic(
   () => import('@/components/ui/keyboard-shortcuts-panel').then((mod) => mod.KeyboardShortcutsPanel),
   { ssr: false }
 );
-const ThemeCustomizer = dynamic(
-  () => import('@/components/ui/theme-customizer').then((mod) => mod.ThemeCustomizer),
-  { ssr: false }
-);
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +21,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         {/* 全局功能组件 */}
         <CommandPalette />
         <KeyboardShortcutsPanel />
-        <ThemeCustomizer />
       </ToastProvider>
     </ThemeProvider>
   );

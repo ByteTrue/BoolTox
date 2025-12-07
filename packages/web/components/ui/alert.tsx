@@ -1,152 +1,59 @@
-/**
- * Alert 警告提示组件
- * 用于页面内的信息、警告、错误、成功提示
- */
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-'use client';
+import { cn } from "@/lib/utils"
 
-import React from 'react';
-import { Info, CheckCircle, AlertCircle, XCircle, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+const alertVariants = cva(
+  "relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7",
+  {
+    variants: {
+      variant: {
+        default: "bg-background text-foreground",
+        destructive:
+          "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
 
-export type AlertType = 'info' | 'success' | 'warning' | 'error';
+const Alert = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
+>(({ className, variant, ...props }, ref) => (
+  <div
+    ref={ref}
+    role="alert"
+    className={cn(alertVariants({ variant }), className)}
+    {...props}
+  />
+))
+Alert.displayName = "Alert"
 
-interface AlertProps {
-  type: AlertType;
-  title?: string;
-  message: string;
-  onClose?: () => void;
-  closable?: boolean;
-  className?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
+const AlertTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h5
+    ref={ref}
+    className={cn("mb-1 font-medium leading-none tracking-tight", className)}
+    {...props}
+  />
+))
+AlertTitle.displayName = "AlertTitle"
 
-const alertConfig = {
-  info: {
-    icon: Info,
-    bgColor: 'bg-primary-50 dark:bg-primary-900/20',
-    borderColor: 'border-l-primary-500',
-    iconColor: 'text-primary-600 dark:text-primary-400',
-    titleColor: 'text-primary-900 dark:text-primary-100',
-    textColor: 'text-primary-700 dark:text-primary-300',
-    buttonColor: 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300',
-  },
-  success: {
-    icon: CheckCircle,
-    bgColor: 'bg-success-50 dark:bg-success-900/20',
-    borderColor: 'border-l-success-500',
-    iconColor: 'text-success-600 dark:text-success-400',
-    titleColor: 'text-success-900 dark:text-success-100',
-    textColor: 'text-success-700 dark:text-success-300',
-    buttonColor: 'text-success-600 dark:text-success-400 hover:text-success-700 dark:hover:text-success-300',
-  },
-  warning: {
-    icon: AlertCircle,
-    bgColor: 'bg-warning-50 dark:bg-warning-900/20',
-    borderColor: 'border-l-warning-500',
-    iconColor: 'text-warning-600 dark:text-warning-400',
-    titleColor: 'text-warning-900 dark:text-warning-100',
-    textColor: 'text-warning-700 dark:text-warning-300',
-    buttonColor: 'text-warning-600 dark:text-warning-400 hover:text-warning-700 dark:hover:text-warning-300',
-  },
-  error: {
-    icon: XCircle,
-    bgColor: 'bg-error-50 dark:bg-error-900/20',
-    borderColor: 'border-l-error-500',
-    iconColor: 'text-error-600 dark:text-error-400',
-    titleColor: 'text-error-900 dark:text-error-100',
-    textColor: 'text-error-700 dark:text-error-300',
-    buttonColor: 'text-error-600 dark:text-error-400 hover:text-error-700 dark:hover:text-error-300',
-  },
-};
+const AlertDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("text-sm [&_p]:leading-relaxed", className)}
+    {...props}
+  />
+))
+AlertDescription.displayName = "AlertDescription"
 
-export function Alert({
-  type,
-  title,
-  message,
-  onClose,
-  closable = false,
-  className = '',
-  action,
-}: AlertProps) {
-  const config = alertConfig[type];
-  const Icon = config.icon;
-
-  return (
-    <div
-      className={cn(
-        "rounded-xl border-l-4 p-4 transition-all duration-200",
-        config.bgColor,
-        config.borderColor,
-        className
-      )}
-      role="alert"
-    >
-      <div className="flex items-start gap-3">
-        {/* 图标 */}
-        <Icon className={cn("w-5 h-5 flex-shrink-0 mt-0.5", config.iconColor)} />
-
-        {/* 内容 */}
-        <div className="flex-1 min-w-0">
-          {title && (
-            <h4 className={cn("font-semibold mb-1", config.titleColor)}>
-              {title}
-            </h4>
-          )}
-          <p className={cn("text-sm leading-relaxed", config.textColor)}>
-            {message}
-          </p>
-
-          {/* 操作按钮 */}
-          {action && (
-            <button
-              onClick={action.onClick}
-              className={cn(
-                "mt-3 text-sm font-medium underline transition-colors hover:opacity-80 active:scale-95",
-                config.buttonColor
-              )}
-            >
-              {action.label}
-            </button>
-          )}
-        </div>
-
-        {/* 关闭按钮 */}
-        {closable && onClose && (
-          <button
-            onClick={onClose}
-            className={cn(
-              "flex-shrink-0 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors active:scale-95",
-              config.iconColor
-            )}
-            aria-label="关闭"
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * 预设的 Alert 变体
- */
-export function InfoAlert(props: Omit<AlertProps, 'type'>) {
-  return <Alert type="info" {...props} />;
-}
-
-export function SuccessAlert(props: Omit<AlertProps, 'type'>) {
-  return <Alert type="success" {...props} />;
-}
-
-export function WarningAlert(props: Omit<AlertProps, 'type'>) {
-  return <Alert type="warning" {...props} />;
-}
-
-export function ErrorAlert(props: Omit<AlertProps, 'type'>) {
-  return <Alert type="error" {...props} />;
-}
+export { Alert, AlertTitle, AlertDescription }

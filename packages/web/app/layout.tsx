@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { Navbar } from '@/components/layout/navbar';
 import { Providers } from '@/components/providers';
 import { WebVitals } from '@/components/web-vitals';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 const inter = Inter({
@@ -29,6 +30,13 @@ export default function RootLayout({
           <WebVitals />
           <Navbar />
           {children}
+          <Toaster
+            position="bottom-right"
+            richColors
+            closeButton
+            expand={false}
+            duration={4000}
+          />
         </Providers>
       </body>
     </html>

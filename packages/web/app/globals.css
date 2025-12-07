@@ -4,45 +4,60 @@
 
 @layer base {
   :root {
+    /* 基础色 */
     --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --foreground: 240 10% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 240 10% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    --primary: 217 91% 60%;
+    --popover-foreground: 240 10% 4%;
+
+    /* 主色 - 电光蓝（默认） */
+    --primary: 210 100% 56%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
+
+    /* 辅助色 */
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 4%;
+    --muted: 240 5% 96%;
     --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 10% 4%;
+
+    /* 语义色 */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* 边框和输入 */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 217 91% 60%;
-    --radius: 16px;
+    --ring: 210 100% 56%;
+
+    /* 圆角 */
+    --radius: 12px;
   }
 
-  /* 主题色定制 - 蓝色（默认）*/
+  /* 主题色定制 - 电光蓝（默认）*/
   :root,
   [data-accent-color="blue"] {
-    --primary: 217 91% 60%;
-    --ring: 217 91% 60%;
+    --primary: 210 100% 56%;
+    --ring: 210 100% 56%;
   }
 
-  /* 主题色定制 - 紫色 */
+  /* 主题色定制 - 紫罗兰 */
   [data-accent-color="purple"] {
-    --primary: 270 80% 60%;
-    --ring: 270 80% 60%;
+    --primary: 270 80% 65%;
+    --ring: 270 80% 65%;
   }
 
-  /* 主题色定制 - 绿色 */
+  /* 主题色定制 - 翡翠绿 */
   [data-accent-color="green"] {
-    --primary: 142 76% 45%;
-    --ring: 142 76% 45%;
+    --primary: 142 76% 36%;
+    --ring: 142 76% 36%;
   }
 
   /* 主题色定制 - 橙色 */
@@ -57,26 +72,35 @@
     --ring: 330 81% 60%;
   }
 
+  /* 暗黑模式 - 深空黑主题 */
   .dark {
-    --background: 0 0% 6%;
+    --background: 240 10% 4%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 6%;
+    --card: 240 8% 8%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 6%;
+    --popover: 240 8% 8%;
     --popover-foreground: 0 0% 98%;
-    /* 删除 --primary 和 --ring，让 [data-accent-color] 规则继续生效 */
+
+    /* 主色在暗色模式下更亮 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 10%;
+
+    --secondary: 240 6% 12%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 0 0% 10%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 240 6% 12%;
     --accent-foreground: 0 0% 98%;
+
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    /* 删除 --ring，让主题色规则生效 */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 240 6% 15%;
+    --input: 240 6% 15%;
+    /* --ring 让主题色规则继续生效 */
   }
 }
 
