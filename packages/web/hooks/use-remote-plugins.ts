@@ -57,9 +57,10 @@ const REGISTRY_URL = process.env.NODE_ENV === 'development'
   : 'https://raw.githubusercontent.com/ByteTrue/booltox-plugins/main/plugins/index.json';
 
 const fetcher = async (url: string) => {
+  // 允许浏览器复用缓存，避免每次进入页面都直连远端
   const res = await fetch(url, {
-    cache: 'no-cache',
-    headers: { 'Accept': 'application/json' },
+    cache: 'force-cache',
+    headers: { Accept: 'application/json' },
   });
   if (!res.ok) throw new Error(`Failed to fetch plugins: ${res.status}`);
   return res.json() as Promise<PluginRegistry>;
