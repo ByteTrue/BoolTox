@@ -6,7 +6,7 @@ import { usePlugins } from '@/hooks/use-plugins';
 import { useToast } from '@/components/toast';
 import { AgentInstaller } from '@/components/tools/agent-installer';
 import { PluginCard } from '@/components/tools/plugin-card';
-import { Package, RefreshCw, Box, ArrowRight, Layers } from 'lucide-react';
+import { Package, RefreshCw, ArrowRight, Layers } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InstalledPluginsPage() {

@@ -18,12 +18,19 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { MOCK_PLUGINS, type Plugin } from '@/lib/mock-plugins';
+import { MOCK_PLUGINS } from '@/lib/mock-plugins';
 
 export default function PluginDetailPageNew() {
   const params = useParams();
   const router = useRouter();
   const pluginId = params.pluginId as string;
+
+  const tabs: { id: 'overview' | 'features' | 'changelog' | 'reviews'; label: string }[] = [
+    { id: 'overview', label: '简介' },
+    { id: 'features', label: '功能特性' },
+    { id: 'changelog', label: '更新日志' },
+    { id: 'reviews', label: '评论' },
+  ];
 
   // 查找插件
   const plugin = MOCK_PLUGINS.find((p) => p.id === pluginId);
@@ -229,15 +236,10 @@ export default function PluginDetailPageNew() {
       <div className="border-b border-border bg-background">
         <div className="container mx-auto px-6">
           <div className="flex gap-6">
-            {[
-              { id: 'overview', label: '简介' },
-              { id: 'features', label: '功能特性' },
-              { id: 'changelog', label: '更新日志' },
-              { id: 'reviews', label: '评论' },
-            ].map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   'relative border-b-2 py-4 text-sm font-medium transition-colors',
                   activeTab === tab.id

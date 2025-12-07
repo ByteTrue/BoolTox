@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAgent } from '@/hooks/use-agent';
 import { createPostMessageBridge } from '@/lib/postmessage-bridge';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
+import type { PluginInfo } from '@booltox/sdk';
 
 export default function PluginRunPage({ params }: { params: Promise<{ pluginId: string }> }) {
   // Next.js 15: unwrap params
@@ -14,10 +15,7 @@ export default function PluginRunPage({ params }: { params: Promise<{ pluginId: 
   const { client, isAvailable } = useAgent();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [pluginInfo, setPluginInfo] = React.useState<{
-    manifest: any;
-    status: string;
-  } | null>(null);
+  const [pluginInfo, setPluginInfo] = React.useState<PluginInfo | null>(null);
   const [isStarted, setIsStarted] = React.useState(false);
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
   const bridgeCleanupRef = React.useRef<(() => void) | null>(null);
@@ -68,7 +66,7 @@ export default function PluginRunPage({ params }: { params: Promise<{ pluginId: 
         bridgeCleanupRef.current = null;
       }
     };
-  }, [pluginId, isAvailable, isStarted]);
+  }, [pluginId, isAvailable, isStarted, client]);
 
   // iframe 加载完成后创建 postMessage 桥接
   const handleIframeLoad = () => {

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, SlidersHorizontal, Grid3x3, List, RefreshCw } from 'lucide-react';
+import { Search, SlidersHorizontal, Grid3x3, List, RefreshCw } from 'lucide-react';
 import { PluginCard, PluginCardSkeleton } from '@/components/tools/plugin-card-new';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,6 @@ import {
   CATEGORIES,
   TAGS,
   filterPluginsByCategory,
-  filterPluginsByTags,
   searchPlugins,
   sortPluginsByRating,
   sortPluginsByDownloads,

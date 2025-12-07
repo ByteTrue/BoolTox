@@ -11,12 +11,12 @@ export interface BooltoxAPI {
     call: (
       channelId: string,
       method: string,
-      params?: any,
+      params?: unknown,
       timeout?: number
-    ) => Promise<any>;
-    notify: (channelId: string, method: string, params?: any) => Promise<void>;
-    on: (channelId: string, event: string, listener: (data: any) => void) => () => void;
-    off: (channelId: string, event: string, listener?: (data: any) => void) => void;
+    ) => Promise<unknown>;
+    notify: (channelId: string, method: string, params?: unknown) => Promise<void>;
+    on: (channelId: string, event: string, listener: (data: unknown) => void) => () => void;
+    off: (channelId: string, event: string, listener?: (data: unknown) => void) => void;
     isReady: (channelId: string) => boolean;
     waitForReady: (channelId: string, timeout?: number) => Promise<void>;
   };
@@ -43,7 +43,7 @@ export function createBooltoxAPI(
 ): BooltoxAPI {
   // 后端通道管理
   const channels = new Map<string, {
-    listeners: Map<string, Set<(data: any) => void>>;
+    listeners: Map<string, Set<(data: unknown) => void>>;
     ready: boolean;
   }>();
 
@@ -108,7 +108,7 @@ export function createBooltoxAPI(
       /**
        * 调用后端方法
        */
-      async call(channelId: string, method: string, params?: any, timeout = 30000) {
+      async call(channelId: string, method: string, params?: unknown, _timeout = 30000) {
         try {
           console.log('[BooltoxAPI] Calling backend method:', method, params);
           const result = await agentClient.callBackend(pluginId, method, params);
@@ -122,7 +122,7 @@ export function createBooltoxAPI(
       /**
        * 发送通知（不等待响应）
        */
-      async notify(channelId: string, method: string, params?: any) {
+      async notify(channelId: string, method: string, params?: unknown) {
         try {
           await agentClient.callBackend(pluginId, method, params);
         } catch (error) {
@@ -133,7 +133,7 @@ export function createBooltoxAPI(
       /**
        * 监听后端事件
        */
-      on(channelId: string, event: string, listener: (data: any) => void) {
+      on(channelId: string, event: string, listener: (data: unknown) => void) {
         const channel = channels.get(channelId);
         if (!channel) {
           console.warn('[BooltoxAPI] Channel not found:', channelId);
@@ -155,7 +155,7 @@ export function createBooltoxAPI(
       /**
        * 取消监听
        */
-      off(channelId: string, event: string, listener?: (data: any) => void) {
+      off(channelId: string, event: string, listener?: (data: unknown) => void) {
         const channel = channels.get(channelId);
         if (!channel) return;
 
@@ -264,7 +264,7 @@ export function createBooltoxAPI(
       /**
        * 读取文件
        */
-      async readFile(path: string, encoding = 'utf-8') {
+      async readFile(path: string, _encoding = 'utf-8') {
         // TODO: 调用 Agent API
         throw new Error('Not implemented');
       },
@@ -272,7 +272,7 @@ export function createBooltoxAPI(
       /**
        * 写入文件
        */
-      async writeFile(path: string, content: string, encoding = 'utf-8') {
+      async writeFile(path: string, content: string, _encoding = 'utf-8') {
         // TODO: 调用 Agent API
         throw new Error('Not implemented');
       },
@@ -289,6 +289,7 @@ export function injectBooltoxAPI(
   agentClient: AgentClient
 ): void {
   const api = createBooltoxAPI(pluginId, agentClient);
-  (targetWindow as any).booltox = api;
+  const target = targetWindow as Window & { booltox?: BooltoxAPI };
+  target.booltox = api;
   console.log('[BooltoxAPI] API injected for plugin:', pluginId);
 }

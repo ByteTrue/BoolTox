@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X, Home, Box, Package, Settings, FileText, Compass, BookOpen, MessageCircle } from 'lucide-react';
+import { X, Home, Box, Package, Settings, Compass, BookOpen, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 

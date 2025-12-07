@@ -6,7 +6,7 @@ import { usePlugins } from '@/hooks/use-plugins';
 import { useRemotePlugins } from '@/hooks/use-remote-plugins';
 import { useToast } from '@/components/toast';
 import { AgentInstaller } from '@/components/tools/agent-installer';
-import { Download, CheckCircle, RefreshCw, Search, Box, Sparkles, Store } from 'lucide-react';
+import { Download, CheckCircle, RefreshCw, Search, Box, Store } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PluginMarketPage() {

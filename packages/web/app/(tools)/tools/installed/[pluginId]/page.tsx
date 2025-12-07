@@ -5,12 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePlugins } from '@/hooks/use-plugins';
 import { useToast } from '@/components/toast';
-import { PageLoading } from '@/components/ui/loading';
 import {
   ArrowLeft,
   Play,
   Square,
-  Trash2,
   ExternalLink,
   Github,
   Home,
@@ -18,6 +16,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
+import type { PluginBackendConfig, PluginRuntimeConfig } from '@booltox/shared';
 
 export default function InstalledPluginDetailPage({
   params,
@@ -102,7 +101,9 @@ export default function InstalledPluginDetailPage({
   };
 
   const runtime = plugin.manifest.runtime;
-  const hasBackend = runtime && 'backend' in runtime && runtime.backend;
+  const backendConfig: PluginBackendConfig | undefined =
+    runtime && 'backend' in runtime ? (runtime as PluginRuntimeConfig & { backend?: PluginBackendConfig }).backend : undefined;
+  const hasBackend = Boolean(backendConfig);
 
   return (
     <div className="space-y-6 transition-opacity">
@@ -163,7 +164,7 @@ export default function InstalledPluginDetailPage({
               <span>👤 {plugin.manifest.author}</span>
               {hasBackend && (
                 <span className="capitalize">
-                  🔧 {(runtime as any).backend.type} 后端
+                  🔧 {backendConfig?.type} 后端
                 </span>
               )}
               {plugin.isDev && (
@@ -247,11 +248,11 @@ export default function InstalledPluginDetailPage({
                 {plugin.mode === 'webview' ? 'Web 视图' : '独立应用'}
               </dd>
             </div>
-            {hasBackend && (
+            {backendConfig && (
               <div>
                 <dt className="text-sm text-neutral-500 dark:text-neutral-400">后端类型</dt>
                 <dd className="text-sm font-medium text-neutral-900 dark:text-neutral-100 capitalize">
-                  {(runtime as any).backend.type}
+                  {backendConfig.type}
                 </dd>
               </div>
             )}
@@ -345,6 +346,6 @@ export default function InstalledPluginDetailPage({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -52,8 +52,8 @@ export function useRemotePluginsWithSWR() {
       : 'https://raw.githubusercontent.com/ByteTrue/booltox-plugins/main/plugins/index.json';
 
   type RegistryData = {
-    plugins: any[];
-    categories: any[];
+    plugins: unknown[];
+    categories: unknown[];
   };
 
   const { data, error, isLoading, mutate } = useSWR<RegistryData>(

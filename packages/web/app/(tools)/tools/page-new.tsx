@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Search, Grid3x3, List, Plus, Activity, Cpu, HardDrive } from 'lucide-react';
-import { PluginCard, PluginCardSkeleton } from '@/components/tools/plugin-card-new';
+import { PluginCard } from '@/components/tools/plugin-card-new';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';

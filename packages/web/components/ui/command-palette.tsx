@@ -12,12 +12,9 @@ import {
   Home,
   Box,
   Package,
-  Settings,
   FileText,
   Play,
   Square,
-  Trash2,
-  Download,
   ArrowRight,
 } from 'lucide-react';
 import { useHotkeys } from '@/hooks/use-hotkeys';

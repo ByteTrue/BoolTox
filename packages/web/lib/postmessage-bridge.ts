@@ -13,8 +13,8 @@ interface BooltoxMessage {
   id?: string;
   api: string;
   method: string;
-  params?: any[];
-  result?: any;
+  params?: unknown[];
+  result?: unknown;
   error?: string;
 }
 
@@ -28,10 +28,6 @@ export function createPostMessageBridge(
   iframeElement: HTMLIFrameElement
 ): () => void {
   let channelId: string | null = null;
-  const pendingRequests = new Map<string, {
-    resolve: (result: any) => void;
-    reject: (error: any) => void;
-  }>();
 
   // WebSocket 连接（用于接收后端事件）
   let ws: WebSocket | null = null;
@@ -53,7 +49,7 @@ export function createPostMessageBridge(
     console.log('[PostMessageBridge] 收到请求:', message);
 
     try {
-      let result: any;
+      let result: unknown;
 
       // 根据 API 类型分发
       if (message.api === 'backend') {
@@ -98,7 +94,7 @@ export function createPostMessageBridge(
           ws = new WebSocket(`${wsUrl}/plugins/${pluginId}/events`);
 
           // 等待连接建立
-          await new Promise<void>((resolve, reject) => {
+          await new Promise<void>((resolve, _reject) => {
             const timeout = setTimeout(() => {
               console.warn('[PostMessageBridge] WebSocket 连接超时，继续执行');
               resolve(); // 超时也继续，不阻塞
@@ -138,7 +134,7 @@ export function createPostMessageBridge(
       }
 
       case 'call': {
-        const [method, params, timeout] = message.params || [];
+        const [method, params] = message.params || [];
         const result = await agentClient.callBackend(pluginId, method, params);
         return result.result;
       }
@@ -212,10 +208,10 @@ export function createPostMessageBridge(
   /**
    * 发送响应到 iframe
    */
-  const sendResponse = (id: string, result: any) => {
-    const response: BooltoxMessage = {
-      type: 'booltox-response',
-      id,
+      const sendResponse = (id: string, result: unknown) => {
+        const response: BooltoxMessage = {
+          type: 'booltox-response',
+          id,
       api: '',
       method: '',
       result,
@@ -244,10 +240,10 @@ export function createPostMessageBridge(
   /**
    * 发送事件到 iframe
    */
-  const sendEvent = (eventName: string, data: any) => {
-    const message: BooltoxMessage = {
-      type: 'booltox-event',
-      api: 'backend',
+      const sendEvent = (eventName: string, data: unknown) => {
+        const message: BooltoxMessage = {
+          type: 'booltox-event',
+          api: 'backend',
       method: eventName,
       params: [data],
     };

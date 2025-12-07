@@ -70,18 +70,6 @@ export const ThemeCustomizer = React.memo(function ThemeCustomizer() {
   const [currentTheme, setCurrentTheme] = React.useState('blue');
   const [mounted, setMounted] = React.useState(false);
 
-  // 确保只在客户端渲染 Portal
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // 从 localStorage 读取主题
-  React.useEffect(() => {
-    const savedTheme = localStorage.getItem('accent-color') || 'blue';
-    setCurrentTheme(savedTheme);
-    applyTheme(savedTheme);
-  }, []);
-
   // 应用主题 - 使用 useCallback 避免重复创建
   const applyTheme = React.useCallback((themeId: string) => {
     const theme = THEMES.find((t) => t.id === themeId);
@@ -93,6 +81,18 @@ export const ThemeCustomizer = React.memo(function ThemeCustomizer() {
     // 保存到 localStorage
     localStorage.setItem('accent-color', themeId);
   }, []);
+
+  // 确保只在客户端渲染 Portal
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 从 localStorage 读取主题
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('accent-color') || 'blue';
+    setCurrentTheme(savedTheme);
+    applyTheme(savedTheme);
+  }, [applyTheme]);
 
   // 切换主题 - 使用 useCallback
   const handleThemeChange = React.useCallback((themeId: string) => {

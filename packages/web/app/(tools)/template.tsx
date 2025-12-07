@@ -21,7 +21,7 @@ export default function ToolsTemplate({
     element.style.opacity = '0';
 
     // 强制重绘
-    element.offsetHeight;
+    void element.offsetHeight;
 
     // 应用过渡
     element.style.transition = 'opacity 150ms ease-out';

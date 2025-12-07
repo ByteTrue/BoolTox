@@ -133,6 +133,6 @@ export function usePerformanceMonitor() {
 // TypeScript 声明
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
+    gtag?: (...args: unknown[]) => void;
   }
 }

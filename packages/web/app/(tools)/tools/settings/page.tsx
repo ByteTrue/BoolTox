@@ -1,6 +1,6 @@
 'use client';
 
-import { Settings as SettingsIcon, Zap, Bell, Shield, Database, Info } from 'lucide-react';
+import { Zap, Bell, Shield, Database, Info } from 'lucide-react';
 
 export default function SettingsPage() {
   const settingSections = [

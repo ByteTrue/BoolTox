@@ -6,7 +6,7 @@ import { usePlugins } from '@/hooks/use-plugins';
 import { AgentStatus } from '@/components/tools/agent-status';
 import { AgentInstaller } from '@/components/tools/agent-installer';
 import { PluginCard } from '@/components/tools/plugin-card';
-import { Package, Box, Settings, ArrowRight, Activity, Zap, Sparkles } from 'lucide-react';
+import { Package, Box, ArrowRight, Activity, Zap, Sparkles } from 'lucide-react';
 import React from 'react';
 
 export default function ToolsPage() {
