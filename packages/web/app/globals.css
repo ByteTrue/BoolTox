@@ -152,6 +152,22 @@
     text-wrap: balance;
   }
 
+  /* 轻量页面淡入过渡 */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade {
+    animation: fade-in 150ms ease-out;
+  }
+
   @keyframes loading-bar {
     from {
       transform: translateX(-100%);
