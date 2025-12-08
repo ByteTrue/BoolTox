@@ -1,20 +1,13 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import {
-  LayoutDashboard,
-  Compass,
-  Boxes,
-  Settings,
-  User,
-  LayoutTemplate,
-} from "lucide-react"
-import Link from "next/link"
-import { Logo } from "@/components/logo"
-import { SidebarNotification } from "@/components/sidebar-notification"
+import * as React from "react";
+import { LayoutDashboard, Compass, Boxes, Settings, User, LayoutTemplate } from "lucide-react";
+import Link from "next/link";
+import { Logo } from "@/components/logo";
+import { SidebarNotification } from "@/components/sidebar-notification";
 
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/nav-main";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const data = {
   user: {
@@ -41,14 +34,24 @@ const data = {
           icon: LayoutDashboard,
         },
         {
-          title: "Resources",
-          url: "/resources",
+          title: "资源导航",
+          url: "/dashboard/resources",
           icon: Compass,
         },
         {
-          title: "Tools & Market",
-          url: "/tools",
+          title: "工具箱",
+          url: "/dashboard/tools",
           icon: Boxes,
+          items: [
+            {
+              title: "已安装工具",
+              url: "/dashboard/tools/installed",
+            },
+            {
+              title: "工具市场",
+              url: "/dashboard/tools/market",
+            },
+          ],
         },
         {
           title: "Account",
@@ -74,7 +77,7 @@ const data = {
       ],
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -84,7 +87,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <Logo size={24} className="text-current" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -106,5 +109,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
