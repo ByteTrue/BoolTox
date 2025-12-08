@@ -80,10 +80,11 @@ function createZip(pluginDir, outputPath, manifest) {
       }
     }
 
-    // 添加 dist 目录
+    // 添加 dist 目录（扁平化到根目录）
     const distDir = path.join(pluginDir, 'dist');
     if (fs.existsSync(distDir)) {
-      archive.directory(distDir, 'dist');
+      // false 表示不保留 dist 目录结构，直接将内容放到 zip 根目录
+      archive.directory(distDir, false);
     } else {
       console.warn('⚠️  警告: 未找到 dist 目录,请先运行 pnpm build');
     }
