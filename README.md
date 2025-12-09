@@ -156,6 +156,10 @@ booltox-plugins/          # 独立插件仓库
 
 ---
 
+## 📚 文档索引
+
+- 仓库内所有文档的索引与分层说明：[`docs/README.md`](docs/README.md)
+
 ## 🔌 插件生态
 
 ### 官方插件
