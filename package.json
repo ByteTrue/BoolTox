@@ -8,7 +8,6 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=@booltox/web",
-    "dev:agent": "turbo run dev --filter=@booltox/agent",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",

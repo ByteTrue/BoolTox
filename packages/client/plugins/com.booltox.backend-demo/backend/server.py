@@ -13,10 +13,21 @@ import threading
 from typing import Any, Dict, List
 import platform
 
+# 使用标准SDK
+try:
+    from booltox_sdk import BooltoxBackend
+except ImportError:
+    print(json.dumps({
+        "jsonrpc": "2.0",
+        "method": "$log",
+        "params": {"level": "error", "message": "booltox_sdk not found in PYTHONPATH"}
+    }), flush=True)
+    sys.exit(1)
+
 try:
     import psutil
 except ImportError:
-    notification = {"jsonrpc": "2.0", "method": "error", "params": {"message": "psutil 库未安装，请运行: pip install psutil"}}
+    notification = {"jsonrpc": "2.0", "method": "$log", "params": {"level": "error", "message": "psutil 库未安装，请运行: pip install psutil"}}
     print(json.dumps(notification), flush=True)
     sys.exit(1)
 
@@ -24,19 +35,24 @@ except ImportError:
 class SystemMonitor:
     """系统监控类"""
 
-    def __init__(self):
+    def __init__(self, backend=None):
         self.monitoring = False
         self.monitor_thread = None
+        self.backend = backend  # 可选的backend引用，用于发送事件
 
     def send(self, method: str, params: Dict[str, Any] = None) -> None:
-        """发送 JSON-RPC 2.0 通知到前端"""
-        notification = {
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params or {}
-        }
-        sys.stdout.write(json.dumps(notification, ensure_ascii=False) + "\n")
-        sys.stdout.flush()
+        """发送事件到前端（通过SDK）"""
+        if self.backend:
+            self.backend.emit(method, params or {})
+        else:
+            # 降级：直接发送JSON-RPC通知
+            notification = {
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": params or {}
+            }
+            sys.stdout.write(json.dumps(notification, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
 
     def get_system_info(self) -> Dict[str, Any]:
         """获取静态系统信息"""
@@ -195,80 +211,58 @@ class SystemMonitor:
             self.monitor_thread.join(timeout=2)
         self.send("monitor_stopped", {"message": "实时监控已停止"})
 
-    def handle_command(self, payload: Dict[str, Any]) -> None:
-        """处理前端命令"""
-        command = payload.get("command")
-
-        if command == "get_system_info":
-            info = self.get_system_info()
-            self.send("system_info", {"data": info})
-
-        elif command == "get_cpu_info":
-            info = self.get_cpu_info()
-            self.send("cpu_info", {"data": info})
-
-        elif command == "get_memory_info":
-            info = self.get_memory_info()
-            self.send("memory_info", {"data": info})
-
-        elif command == "get_disk_info":
-            info = self.get_disk_info()
-            self.send("disk_info", {"data": info})
-
-        elif command == "get_network_info":
-            info = self.get_network_info()
-            self.send("network_info", {"data": info})
-
-        elif command == "get_processes":
-            sort_by = payload.get("sort_by", "cpu")
-            limit = payload.get("limit", 10)
-            processes = self.get_processes(sort_by, limit)
-            self.send("processes", {"data": processes})
-
-        elif command == "start_monitor":
-            self.start_monitor()
-
-        elif command == "stop_monitor":
-            self.stop_monitor()
-
-        else:
-            self.send("unknown_command", {"command": command})
-
 
 def main() -> None:
     """主函数"""
-    monitor = SystemMonitor()
+    # 使用标准SDK
+    backend = BooltoxBackend()
+    monitor = SystemMonitor(backend)  # 传入backend实例
 
-    # 发送就绪消息
-    monitor.send("backend_ready", {"message": "系统监控后端已启动"})
+    # 注册RPC方法
+    @backend.method("get_system_info")
+    async def get_system_info(params):
+        return monitor.get_system_info()
 
-    # 读取标准输入
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
+    @backend.method("get_cpu_info")
+    async def get_cpu_info(params):
+        return monitor.get_cpu_info()
 
-        try:
-            payload = json.loads(line)
-        except json.JSONDecodeError as e:
-            monitor.send("error", {"message": f"JSON 解析失败: {e.msg}"})
-            continue
+    @backend.method("get_memory_info")
+    async def get_memory_info(params):
+        return monitor.get_memory_info()
 
-        try:
-            monitor.handle_command(payload)
-        except Exception as e:
-            monitor.send("error", {"message": f"命令处理错误: {str(e)}"})
+    @backend.method("get_disk_info")
+    async def get_disk_info(params):
+        return monitor.get_disk_info()
+
+    @backend.method("get_network_info")
+    async def get_network_info(params):
+        return monitor.get_network_info()
+
+    @backend.method("get_processes")
+    async def get_processes(params):
+        return monitor.get_processes()
+
+    @backend.method("start_monitor")
+    async def start_monitor(params):
+        monitor.start_monitor()
+        return {"success": True}
+
+    @backend.method("stop_monitor")
+    async def stop_monitor(params):
+        monitor.stop_monitor()
+        return {"success": True}
+
+    # 启动后端（自动发送$ready信号）
+    backend.run()
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        notification = {"jsonrpc": "2.0", "method": "exit", "params": {"message": "后端被中断"}}
-        sys.stdout.write(json.dumps(notification) + "\n")
-        sys.stdout.flush()
+        pass
     except Exception as e:
-        notification = {"jsonrpc": "2.0", "method": "error", "params": {"message": f"后端错误: {str(e)}"}}
-        sys.stdout.write(json.dumps(notification) + "\n")
-        sys.stdout.flush()
+        sys.stderr.write(f"Backend error: {str(e)}\n")
+        sys.stderr.flush()
         sys.exit(1)
