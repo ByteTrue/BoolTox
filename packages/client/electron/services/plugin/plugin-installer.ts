@@ -42,6 +42,11 @@ export class PluginInstallerService {
     onProgress?: (progress: PluginInstallProgress) => void,
     window?: BrowserWindow
   ): Promise<string> {
+    // 新增：判断是否为二进制工具
+    if (entry.isBinaryTool) {
+      return await this.installBinaryTool(entry, onProgress, window);
+    }
+
     const { id, version, hash, downloadUrl } = entry;
 
     if (!downloadUrl) {
@@ -322,6 +327,155 @@ export class PluginInstallerService {
     if (window && !window.isDestroyed()) {
       window.webContents.send('plugin:install-progress', progress);
     }
+  }
+
+  /**
+   * 安装二进制工具
+   */
+  private async installBinaryTool(
+    entry: PluginRegistryEntry,
+    onProgress?: (progress: PluginInstallProgress) => void,
+    window?: BrowserWindow
+  ): Promise<string> {
+    const { id, binaryAssets } = entry;
+
+    const platform = this.getPlatform();
+    const assetInfo = this.selectAssetForPlatform(entry, platform);
+
+    if (!assetInfo) {
+      throw new Error(`当前平台 ${platform} 无可用的二进制文件`);
+    }
+
+    // 检查是否已在下载
+    if (this.downloadingPlugins.has(id)) {
+      throw new Error(`工具 ${id} 正在下载中`);
+    }
+
+    const pluginDir = path.join(this.pluginsDir, id);
+
+    // 检查是否已安装
+    const exists = await this.checkPluginExists(pluginDir);
+    if (exists) {
+      throw new Error(`工具 ${id} 已安装`);
+    }
+
+    const abortController = new AbortController();
+    this.downloadingPlugins.set(id, abortController);
+
+    try {
+      // 1. 下载可执行文件
+      this.reportProgress(onProgress, window, {
+        stage: 'downloading',
+        percent: 0,
+        message: '正在下载工具...',
+      });
+
+      const tempFile = path.join(
+        this.tempDir,
+        `${id}${path.extname(new URL(assetInfo.url).pathname)}`
+      );
+
+      await this.downloadFile(assetInfo.url, tempFile, abortController.signal, (percent) => {
+        this.reportProgress(onProgress, window, {
+          stage: 'downloading',
+          percent,
+          message: `正在下载: ${percent.toFixed(1)}%`,
+        });
+      });
+
+      // 2. 验证校验和
+      this.reportProgress(onProgress, window, {
+        stage: 'verifying',
+        percent: 80,
+        message: '正在验证文件完整性...',
+      });
+
+      const fileHash = await this.calculateFileHash(tempFile);
+      if (fileHash !== assetInfo.checksum) {
+        await fs.unlink(tempFile);
+        throw new Error('文件校验失败，可能已被篡改');
+      }
+
+      // 3. 创建插件目录
+      this.reportProgress(onProgress, window, {
+        stage: 'installing',
+        percent: 90,
+        message: '正在安装工具...',
+      });
+
+      await fs.mkdir(pluginDir, { recursive: true });
+
+      // 4. 移动可执行文件
+      const exeName = path.basename(new URL(assetInfo.url).pathname);
+      const targetPath = path.join(pluginDir, exeName);
+      await fs.rename(tempFile, targetPath);
+
+      // 5. 设置执行权限（macOS/Linux）
+      if (process.platform !== 'win32') {
+        await fs.chmod(targetPath, 0o755);
+      }
+
+      // 6. 生成 manifest.json
+      const manifest = {
+        id: entry.id,
+        version: entry.version,
+        name: entry.name,
+        description: entry.description,
+        author: entry.author,
+        category: entry.category,
+        keywords: entry.keywords,
+        runtime: {
+          type: 'binary',
+          command: exeName,
+        },
+      };
+
+      await fs.writeFile(path.join(pluginDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+
+      this.reportProgress(onProgress, window, {
+        stage: 'complete',
+        percent: 100,
+        message: '安装完成',
+      });
+
+      logger.info(`[PluginInstaller] Binary tool ${id} installed successfully at ${pluginDir}`);
+      return pluginDir;
+    } catch (error) {
+      // 清理失败的安装
+      await this.cleanup(pluginDir, id);
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.reportProgress(onProgress, window, {
+        stage: 'error',
+        percent: 0,
+        message: '安装失败',
+        error: errorMessage,
+      });
+
+      throw error;
+    } finally {
+      this.downloadingPlugins.delete(id);
+    }
+  }
+
+  /**
+   * 获取当前平台标识
+   */
+  private getPlatform(): 'windows' | 'darwin' | 'linux' {
+    const platform = process.platform;
+    if (platform === 'win32') return 'windows';
+    if (platform === 'darwin') return 'darwin';
+    return 'linux';
+  }
+
+  /**
+   * 根据平台选择资源
+   */
+  private selectAssetForPlatform(
+    entry: PluginRegistryEntry,
+    platform: 'windows' | 'darwin' | 'linux'
+  ): { url: string; checksum: string; size: number } | undefined {
+    return entry.binaryAssets?.[platform];
   }
 }
 

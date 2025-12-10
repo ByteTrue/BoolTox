@@ -12,10 +12,11 @@
  * 3. 管理内部模块
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import type { BrowserWindowConstructorOptions, Rectangle } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import fs from 'node:fs';
 import os from 'os';
 import { setupLogger, createLogger, openLogFolder, getLogPath } from './utils/logger.js';
 import { getPlatformWindowConfig } from './utils/window-platform-config.js';
@@ -29,7 +30,7 @@ import { pluginInstaller } from './services/plugin/plugin-installer.js';
 import { pythonManager } from './services/python-manager.service.js';
 import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
-import type { PluginRegistryEntry } from '@booltox/shared';
+import type { PluginRegistryEntry, PluginManifest } from '@booltox/shared';
 import { IPC_CHANNELS, type RendererConsolePayload } from '../src/shared/constants/ipc-channels.js';
 
 // 初始化日志系统 (必须在所有其他代码之前)
@@ -458,6 +459,71 @@ ipcMain.handle('plugin:uninstall', async (_event, pluginId: string) => {
 ipcMain.handle('plugin:cancel-install', (_event, pluginId: string) => {
   pluginInstaller.cancelDownload(pluginId);
   return { success: true };
+});
+
+// ============ 用户本地添加二进制工具 ============
+ipcMain.handle(
+  'plugin:add-local-binary',
+  async (_event, params: { name: string; exePath: string; description?: string; args?: string[] }) => {
+    try {
+      const { name, exePath, description, args } = params;
+
+      // 1. 验证文件存在
+      if (!fs.existsSync(exePath)) {
+        throw new Error('文件不存在');
+      }
+
+      // 2. 生成插件 ID（local. 前缀 + 文件名）
+      const baseName = path.basename(exePath, path.extname(exePath));
+      const id = `local.${baseName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`;
+
+      // 3. 创建插件目录
+      const pluginsDir = path.join(app.getPath('userData'), 'plugins');
+      const pluginDir = path.join(pluginsDir, id);
+      await fs.promises.mkdir(pluginDir, { recursive: true });
+
+      // 4. 生成 manifest.json（不复制可执行文件，只记录路径）
+      const manifest: PluginManifest = {
+        id,
+        version: '1.0.0',
+        name,
+        description: description ?? `本地工具：${name}`,
+        protocol: '^2.0.0', // 添加协议版本
+        runtime: {
+          type: 'binary',
+          command: exePath, // 绝对路径
+          localExecutablePath: exePath, // 标记为本地工具
+          args: args ?? [],
+        },
+      };
+
+      await fs.promises.writeFile(
+        path.join(pluginDir, 'manifest.json'),
+        JSON.stringify(manifest, null, 2)
+      );
+
+      logger.info(`[Main] Local binary tool added: ${id} -> ${exePath}`);
+
+      // 5. 重新扫描插件
+      await pluginManager.loadPlugins();
+
+      return { success: true, pluginId: id };
+    } catch (error) {
+      logger.error('[Main] Failed to add local binary tool:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+);
+
+// 文件选择对话框
+ipcMain.handle('dialog:openFile', async (_event, options) => {
+  if (!mainWindow) {
+    throw new Error('Main window not found');
+  }
+  return await dialog.showOpenDialog(mainWindow, options);
 });
 
 /**

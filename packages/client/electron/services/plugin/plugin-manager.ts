@@ -54,15 +54,31 @@ export class PluginManager {
 
   async loadPlugins() {
     this.plugins.clear();
-    
+
     // Load from userData
     await this.scanDir(this.pluginsDir, false);
-    
+
     // Load from dev dir (mark as dev plugins)
     if (this.devPluginsDir) {
       await this.scanDir(this.devPluginsDir, true);
     }
-    
+
+    // 开发模式：同时扫描 examples/ 和 plugins/ 目录
+    if (!app.isPackaged) {
+      const examplesDir = path.resolve(process.cwd(), 'examples');
+      const pluginsDir = path.resolve(process.cwd(), 'plugins');
+
+      // 扫描示例插件
+      if (fsSync.existsSync(examplesDir) && examplesDir !== this.devPluginsDir) {
+        await this.scanDir(examplesDir, true);
+      }
+
+      // 扫描官方插件
+      if (fsSync.existsSync(pluginsDir) && pluginsDir !== this.devPluginsDir) {
+        await this.scanDir(pluginsDir, true);
+      }
+    }
+
     logger.info(`[PluginManager] Loaded ${this.plugins.size} plugins.`);
   }
 
@@ -111,7 +127,9 @@ export class PluginManager {
         path: pluginPath,
         status: 'stopped',
         isDev,
-        mode: manifest.runtime?.type === 'standalone' ? 'standalone' : 'webview'
+        mode: manifest.runtime?.type === 'standalone' || manifest.runtime?.type === 'binary'
+          ? 'standalone'
+          : 'webview'
       };
 
       this.plugins.set(manifest.id, runtime);
@@ -152,7 +170,9 @@ export class PluginManager {
     const normalizedMain =
       runtime.type === 'standalone'
         ? manifest.main ?? runtime.entry
-        : runtime.ui.entry;
+        : runtime.type === 'binary'
+          ? runtime.command
+          : runtime.ui.entry;
 
     return {
       ...manifest,
@@ -230,6 +250,22 @@ export class PluginManager {
       };
     }
 
+    // 处理二进制工具
+    if (runtime && runtime.type === 'binary') {
+      if (!runtime.command) {
+        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: binary runtime missing command`);
+        return null;
+      }
+      return {
+        type: 'binary',
+        command: runtime.command,
+        args: runtime.args,
+        env: runtime.env,
+        cwd: runtime.cwd,
+        localExecutablePath: runtime.localExecutablePath,
+      };
+    }
+
     const entry = runtime?.ui?.entry ?? manifest.main;
     if (!entry) {
       logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing runtime.ui.entry or main`);
@@ -258,9 +294,10 @@ export class PluginManager {
     }
 
     const candidates = [
+      path.resolve(process.cwd(), 'examples'),
       path.resolve(process.cwd(), 'plugins'),
-      path.resolve(process.cwd(), 'packages/client/plugins'),
-      path.resolve(app.getAppPath(), 'plugins'),
+      path.resolve(app.getAppPath(), 'examples'),
+      path.resolve(app.getAppPath(), '../examples'),
       path.resolve(app.getAppPath(), '../plugins'),
     ];
 

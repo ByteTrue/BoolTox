@@ -35,6 +35,7 @@ interface ModuleContextValue {
   getModuleById: (moduleId: string) => ModuleInstance | undefined;
   isDevPlugin: (moduleId: string) => boolean; // 检查是否为开发插件
   refreshAvailablePlugins: () => Promise<void>; // 刷新在线插件
+  addLocalBinaryTool: () => Promise<void>; // 添加本地二进制工具
   // 收藏功能
   favoriteModules: ModuleInstance[];
   addFavorite: (moduleId: string) => Promise<void>;
@@ -799,6 +800,67 @@ const focusModuleWindow = useCallback(
     );
   }, []);
 
+  // 添加本地二进制工具
+  const addLocalBinaryTool = useCallback(async () => {
+    try {
+      // 1. 打开文件选择对话框
+      const result = await window.ipc.invoke('dialog:openFile', {
+        filters: [
+          {
+            name: '可执行文件',
+            extensions: ['exe', 'app', 'sh', 'bin', ''], // 支持所有平台
+          },
+        ],
+        properties: ['openFile'],
+      }) as { canceled: boolean; filePaths: string[] };
+
+      if (result.canceled || !result.filePaths[0]) {
+        return;
+      }
+
+      const filePath = result.filePaths[0];
+      const fileName = filePath.split(/[\\/]/).pop()?.replace(/\.[^.]*$/, '') || '未命名工具';
+
+      // 2. 调用 IPC 添加工具
+      const response = await window.ipc.invoke('plugin:add-local-binary', {
+        name: fileName,
+        exePath: filePath,
+        description: '从本地添加的工具',
+      }) as { success: boolean; pluginId?: string; error?: string };
+
+      if (response.success && response.pluginId) {
+        // 3. 刷新插件列表
+        await refreshPluginRegistry();
+
+        // 4. 写入 moduleStore（让工具出现在已安装列表）
+        await window.moduleStore.add({
+          id: response.pluginId,
+          installedAt: new Date().toISOString(),
+          lastUsedAt: new Date().toISOString(),
+          source: 'local',
+        });
+
+        showToast({
+          message: `已添加工具：${fileName}`,
+          type: 'success',
+          duration: 3000,
+        });
+
+        logger.info(`[ModuleContext] Local binary tool added: ${response.pluginId}`);
+      } else {
+        throw new Error(response.error || '添加失败');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showToast({
+        message: `添加本地工具失败: ${message}`,
+        type: 'error',
+        duration: 4000,
+      });
+      logger.error('[ModuleContext] Failed to add local binary tool:', error);
+    }
+  }, [refreshPluginRegistry, showToast]);
+
   const contextValue = useMemo<ModuleContextValue>(
     () => ({
       availableModules: pluginDefinitions,
@@ -816,6 +878,7 @@ const focusModuleWindow = useCallback(
       getModuleById,
       isDevPlugin,
       refreshAvailablePlugins,
+      addLocalBinaryTool,
       favoriteModules,
       addFavorite,
       removeFavorite,
@@ -837,6 +900,7 @@ const focusModuleWindow = useCallback(
       moduleStats,
       uninstallModule,
       refreshAvailablePlugins,
+      addLocalBinaryTool,
       favoriteModules,
       addFavorite,
       removeFavorite,

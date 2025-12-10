@@ -14,7 +14,10 @@ import { useModuleFilter } from "./hooks/use-module-filter";
 import { useModuleSort } from "./hooks/use-module-sort";
 import { useRecommendations } from "./hooks/use-recommendations";
 import { CustomSelect } from "./custom-select";
-import { Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import { iconButtonInteraction } from "@/utils/animation-presets";
+import { getGlassStyle } from "@/utils/glass-layers";
 import type { ModuleTab, ModuleFilter, ModuleSortConfig, ViewMode } from "./types";
 
 /**
@@ -36,6 +39,7 @@ export function ModuleCenter() {
     openModule,
     focusModuleWindow,
     isDevPlugin,
+    addLocalBinaryTool,
   } = useModulePlatform();
 
   const { theme } = useTheme();
@@ -254,6 +258,22 @@ export function ModuleCenter() {
             />
           </div>
           <div className="flex items-center gap-2">
+            {/* 添加本地工具按钮 */}
+            <motion.button
+              {...iconButtonInteraction}
+              onClick={addLocalBinaryTool}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
+                isDark
+                  ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
+              }`}
+              style={getGlassStyle('BUTTON', theme)}
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline">添加本地工具</span>
+            </motion.button>
+
+            {/* 分类过滤 */}
             <CustomSelect
               value={filter.category || "all"}
               onChange={handleCategoryChange}

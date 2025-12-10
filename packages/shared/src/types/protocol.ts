@@ -234,4 +234,24 @@ export interface PluginStandaloneRuntimeConfig {
   requirements?: string;
 }
 
-export type PluginRuntimeConfig = PluginWebRuntimeConfig | PluginStandaloneRuntimeConfig;
+/**
+ * 二进制工具运行时配置
+ */
+export interface PluginBinaryRuntimeConfig {
+  type: 'binary';
+  /** 可执行文件路径（相对于插件目录，或绝对路径） */
+  command: string;
+  /** 启动参数 */
+  args?: string[];
+  /** 环境变量 */
+  env?: Record<string, string>;
+  /** 工作目录（可选，默认为插件目录） */
+  cwd?: string;
+  /** 本地可执行文件路径（仅用于标记用户本地添加的工具） */
+  localExecutablePath?: string;
+}
+
+export type PluginRuntimeConfig =
+  | PluginWebRuntimeConfig
+  | PluginStandaloneRuntimeConfig
+  | PluginBinaryRuntimeConfig;

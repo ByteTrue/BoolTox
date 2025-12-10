@@ -86,6 +86,26 @@ export interface PluginRegistryEntry {
   changelog?: string;
   /** ZIP包下载地址 (运行时生成,不保存在metadata.json) */
   downloadUrl?: string;
+  /** 标记是否为二进制工具 */
+  isBinaryTool?: boolean;
+  /** 二进制工具的多平台资源 */
+  binaryAssets?: {
+    windows?: {
+      url: string;
+      checksum: string; // SHA-256
+      size: number;
+    };
+    darwin?: {
+      url: string;
+      checksum: string;
+      size: number;
+    };
+    linux?: {
+      url: string;
+      checksum: string;
+      size: number;
+    };
+  };
 }
 
 /**

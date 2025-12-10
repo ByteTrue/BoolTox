@@ -57,12 +57,12 @@ const DEFAULT_CONFIG: GitOpsConfig = {
   branch: 'ref',
 };
 
-// 插件仓库配置 (独立仓库)
+// 插件仓库配置（现在和主仓库相同）
 const PLUGIN_REPO_CONFIG: GitOpsConfig = {
   provider: 'github',
   owner: 'ByteTrue',
-  repo: 'booltox-plugins',
-  branch: 'main',
+  repo: 'BoolTox', // 合并后使用主仓库
+  branch: 'main',  // 插件从 main 分支发布
 };
 
 // 缓存时间(毫秒)
@@ -155,24 +155,26 @@ export class GitOpsService {
 
   /**
    * 构建插件仓库的 Raw 文件 URL
-   * 使用独立的插件仓库配置
+   * 使用主仓库的 resources/tools/ 目录
    */
   private getPluginRepoUrl(filePath: string, useCdn = true): string {
     const { provider, owner, repo, branch } = PLUGIN_REPO_CONFIG;
 
     // 移除开头的斜杠
     const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+    // 插件文件都在 resources/tools/ 下
+    const fullPath = `resources/tools/${cleanPath}`;
 
     if (provider === 'github') {
       // GitHub: 使用 jsDelivr CDN (更快) 或 raw.githubusercontent.com (实时)
       if (useCdn) {
-        return `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${cleanPath}`;
+        return `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${fullPath}`;
       } else {
-        return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${cleanPath}`;
+        return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${fullPath}`;
       }
     } else {
       // GitLab
-      return `https://gitlab.com/${owner}/${repo}/-/raw/${branch}/${cleanPath}`;
+      return `https://gitlab.com/${owner}/${repo}/-/raw/${branch}/${fullPath}`;
     }
   }
 
@@ -413,64 +415,28 @@ export class GitOpsService {
    */
   private async getLocalPluginRegistry(): Promise<PluginRegistry> {
     try {
-      // 在开发模式下，从独立的插件仓库读取
-      // 假设 booltox-plugins 和 booltox-web 在同级目录
-      const pluginsRepoRoot = path.resolve(process.cwd(), '../../booltox-plugins');
-      const pluginsDir = path.join(pluginsRepoRoot, 'plugins');
-      logger.info('[GitOps] Reading local plugins from:', pluginsDir);
+      // 在开发模式下，从主仓库的 resources/tools/ 目录读取
+      const toolsDir = path.resolve(process.cwd(), 'resources/tools');
+      const indexPath = path.join(toolsDir, 'index.json');
 
-      // 检查目录是否存在
+      logger.info('[GitOps] Reading local plugins from:', indexPath);
+
+      // 检查文件是否存在
       try {
-        await fs.access(pluginsDir);
+        await fs.access(indexPath);
       } catch {
-        logger.warn('[GitOps] Local plugins directory not found, falling back to empty registry');
+        logger.warn('[GitOps] Local tools/index.json not found, falling back to empty registry');
         return { plugins: [] };
       }
 
-      const entries = await fs.readdir(pluginsDir, { withFileTypes: true });
-      const pluginTypeDirs = entries.filter(e => e.isDirectory()); // official, examples 等
+      // 直接读取 index.json（简化格式）
+      const content = await fs.readFile(indexPath, 'utf-8');
+      const data = JSON.parse(content) as { plugins: PluginRegistryEntry[] };
 
-      const plugins: PluginRegistryEntry[] = [];
-
-      for (const typeDir of pluginTypeDirs) {
-        const typePath = path.join(pluginsDir, typeDir.name);
-        const pluginDirs = await fs.readdir(typePath, { withFileTypes: true });
-
-        for (const dir of pluginDirs.filter(d => d.isDirectory())) {
-          try {
-            const metadataPath = path.join(typePath, dir.name, 'metadata.json');
-            const content = await fs.readFile(metadataPath, 'utf-8');
-            const metadata = JSON.parse(content) as Omit<PluginRegistryEntry, 'downloadUrl'>;
-
-            // 本地开发: 查找 releases 目录下的 zip 文件
-            const releasesDir = path.join(typePath, dir.name, 'releases');
-            let downloadUrl = '';
-
-            try {
-              const releaseFiles = await fs.readdir(releasesDir);
-              const zipFile = releaseFiles.find(f => f.endsWith('.zip'));
-              if (zipFile) {
-                const zipPath = path.join(releasesDir, zipFile);
-                downloadUrl = `file:///${zipPath.replace(/\\/g, '/')}`;
-              }
-            } catch {
-              logger.warn(`[GitOps] No releases found for ${dir.name}`);
-            }
-
-            if (downloadUrl) {
-              plugins.push({ ...metadata, downloadUrl });
-            }
-          } catch (error) {
-            logger.warn(`[GitOps] Failed to read metadata for ${typeDir.name}/${dir.name}:`, error);
-          }
-        }
-      }
-
-      logger.info(`[GitOps] Loaded ${plugins.length} local plugins`);
-      return { plugins };
-
+      logger.info(`[GitOps] Loaded ${data.plugins.length} plugins from local index`);
+      return { plugins: data.plugins };
     } catch (error) {
-      logger.error('[GitOps] Error reading local plugin registry:', error);
+      logger.error('[GitOps] Failed to load local plugin registry:', error);
       return { plugins: [] };
     }
   }

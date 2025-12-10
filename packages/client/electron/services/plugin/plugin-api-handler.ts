@@ -4,7 +4,6 @@
  */
 
 import { exec } from 'node:child_process';
-import type { BufferEncoding } from 'node:buffer';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import util from 'node:util';
@@ -455,7 +454,9 @@ class BooltoxExtensionHostService {
           const explicitConfig = coerceBackendConfig(payload);
           const runtimeConfig = ctx.plugin.manifest.runtime;
           const manifestConfig =
-            runtimeConfig && runtimeConfig.type !== 'standalone' ? runtimeConfig.backend : undefined;
+            runtimeConfig && runtimeConfig.type !== 'standalone' && runtimeConfig.type !== 'binary'
+              ? runtimeConfig.backend
+              : undefined;
           const config = explicitConfig ?? manifestConfig;
           if (!config) {
             throw new Error('Backend configuration missing. Provide definition or manifest.runtime.backend');

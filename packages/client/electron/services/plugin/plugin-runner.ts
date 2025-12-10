@@ -12,6 +12,8 @@ import { backendRunner } from './plugin-backend-runner.js';
 import { PluginRuntime } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import type { ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { pythonManager } from '../python-manager.service.js';
 import { getPlatformWindowConfig } from '../../utils/window-platform-config.js';
 
@@ -49,7 +51,7 @@ export class PluginRunner {
 
   async startPlugin(pluginId: string, parentWindow: BrowserWindow): Promise<number> {
     let state = this.states.get(pluginId);
-    
+
     if (!state) {
       const plugin = pluginManager.getPlugin(pluginId);
       if (!plugin) {
@@ -58,7 +60,9 @@ export class PluginRunner {
       state = {
         runtime: plugin,
         refCount: 0,
-        mode: plugin.manifest.runtime?.type === 'standalone' ? 'standalone' : 'webview'
+        mode: plugin.manifest.runtime?.type === 'standalone' || plugin.manifest.runtime?.type === 'binary'
+          ? 'standalone'
+          : 'webview'
       };
       this.states.set(pluginId, state);
     }
@@ -273,9 +277,11 @@ export class PluginRunner {
         win.setWindowButtonVisibility(false);
       }
 
-      const entryFile = state.runtime.manifest.runtime?.type === 'standalone'
-        ? undefined
-        : state.runtime.manifest.runtime?.ui?.entry ?? state.runtime.manifest.main;
+      const entryFile =
+        state.runtime.manifest.runtime?.type === 'standalone' ||
+        state.runtime.manifest.runtime?.type === 'binary'
+          ? undefined
+          : state.runtime.manifest.runtime?.ui?.entry ?? state.runtime.manifest.main;
       if (!entryFile) {
         throw new Error(`Plugin ${pluginId} manifest missing "runtime.ui.entry"`);
       }
@@ -324,11 +330,78 @@ export class PluginRunner {
 
   private async launchStandalonePlugin(state: PluginState): Promise<number> {
     const pluginId = state.runtime.id;
-    try {
-      const runtimeConfig = state.runtime.manifest.runtime;
-      if (!runtimeConfig || runtimeConfig.type !== 'standalone') {
-        throw new Error(`Plugin ${pluginId} runtime is not standalone`);
+    const runtimeConfig = state.runtime.manifest.runtime;
+
+    if (
+      !runtimeConfig ||
+      (runtimeConfig.type !== 'standalone' && runtimeConfig.type !== 'binary')
+    ) {
+      throw new Error(`Plugin ${pluginId} runtime is not standalone or binary`);
+    }
+
+    // ===== 新增：处理二进制工具 =====
+    if (runtimeConfig.type === 'binary') {
+      try {
+        // 1. 确定可执行文件路径
+        const exePath = runtimeConfig.localExecutablePath
+          ? runtimeConfig.localExecutablePath // 本地工具：使用绝对路径
+          : path.join(state.runtime.path, runtimeConfig.command); // 官方工具：相对路径
+
+        // 2. 验证文件存在
+        if (!fs.existsSync(exePath)) {
+          throw new Error(`可执行文件不存在: ${exePath}`);
+        }
+
+        // 3. 启动独立进程
+        const args = runtimeConfig.args ?? [];
+        const env = { ...process.env, ...runtimeConfig.env };
+        const cwd = runtimeConfig.cwd
+          ? path.isAbsolute(runtimeConfig.cwd)
+            ? runtimeConfig.cwd
+            : path.join(state.runtime.path, runtimeConfig.cwd)
+          : state.runtime.path;
+
+        const child = spawn(exePath, args, {
+          cwd,
+          env,
+          detached: true, // 独立进程
+          stdio: 'ignore', // 不捕获输出
+        });
+
+        child.unref(); // 允许主进程退出而不等待子进程
+
+        // 4. 更新状态
+        state.process = child;
+        state.runtime.status = 'running';
+        state.runtime.error = undefined;
+        this.emitState(state, 'running', {
+          pid: child.pid,
+          external: true,
+        });
+
+        logger.info(`[PluginRunner] Binary tool ${pluginId} launched (PID: ${child.pid})`);
+
+        // 5. 监听进程退出（可选，不阻塞）
+        child.on('exit', (code) => {
+          logger.info(`[PluginRunner] Binary tool ${pluginId} exited with code ${code}`);
+          this.handleStandaloneExit(pluginId, code ?? null);
+        });
+
+        return -1; // 二进制工具返回 -1（表示外部进程）
+      } catch (error) {
+        state.runtime.status = 'error';
+        state.runtime.error = error instanceof Error ? error.message : String(error);
+        this.emitState(state, 'error', {
+          message: error instanceof Error ? error.message : String(error),
+          external: true,
+        });
+        throw error;
       }
+    }
+    // ===== 二进制工具处理结束 =====
+
+    // 现有逻辑：处理 standalone 插件（Python）
+    try {
 
       // 检查是否需要显示依赖安装窗口（Python 插件）
       if (runtimeConfig.requirements) {

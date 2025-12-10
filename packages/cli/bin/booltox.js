@@ -18,15 +18,15 @@ import { createHash } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const templatesRoot = path.resolve(__dirname, '../../resources/templates');
-const repoNodeSdk = path.resolve(__dirname, '../../client/resources/node-sdk');
-const repoPythonSdk = path.resolve(__dirname, '../../client/resources/python-sdk');
+const templatesRoot = path.resolve(__dirname, '../../../packages/client/examples');
+const repoNodeSdk = path.resolve(__dirname, '../../../sdks/node');
+const repoPythonSdk = path.resolve(__dirname, '../../../sdks/python');
 
 const logInfo = (msg) => console.log(chalk.cyan(`[booltox] ${msg}`));
 const logWarn = (msg) => console.warn(chalk.yellow(`[booltox] ${msg}`));
 const logError = (msg) => console.error(chalk.red(`[booltox] ${msg}`));
 
-const templateNames = ['python-backend', 'node-backend', 'python-standalone', 'frontend-only'];
+const templateNames = ['backend-demo', 'backend-node-demo', 'frontend-only-demo', 'python-standalone-demo'];
 const PYTHON_CMD = process.env.BOOLTOX_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
 
 async function copyTemplate(template, dest) {
