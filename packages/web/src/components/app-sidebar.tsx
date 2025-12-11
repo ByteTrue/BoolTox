@@ -39,7 +39,7 @@ const data = {
           icon: Compass,
         },
         {
-          title: "工具箱",
+          title: "Toolbox",
           url: "/dashboard/tools",
           icon: Boxes,
           items: [

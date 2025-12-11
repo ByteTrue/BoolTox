@@ -10,11 +10,11 @@ import { SkeletonLoader } from "../ui/skeleton-loader";
 import { ModuleCard, AvailableModuleCard } from "./module-card";
 import { ModuleListItem } from "./module-list-item";
 import type { ModuleInstance, ModuleDefinition } from "@/types/module";
-import type { PluginRegistryEntry } from "@booltox/shared";
+import type { ToolRegistryEntry } from "@booltox/shared";
 import type { ViewMode } from "./types";
 
 interface ModuleGridProps {
-  modules: ModuleInstance[] | ModuleDefinition[] | PluginRegistryEntry[];
+  modules: ModuleInstance[] | ModuleDefinition[] | ToolRegistryEntry[];
   viewMode: ViewMode;
   isLoading?: boolean;
   processingModuleId?: string | null;
@@ -24,7 +24,7 @@ interface ModuleGridProps {
   onPinToggle?: (moduleId: string) => void;
   onCardClick: (moduleId: string) => void;
   emptyMessage?: string;
-  isDevPlugin?: (moduleId: string) => boolean; // 检查是否为开发插件
+  isDevPlugin?: (moduleId: string) => boolean; // 检查是否为开发工具
 }
 
 export function ModuleGrid({
@@ -37,7 +37,7 @@ export function ModuleGrid({
   onOpen,
   onPinToggle,
   onCardClick,
-  emptyMessage = "暂无插件",
+  emptyMessage = "暂无工具",
   isDevPlugin,
 }: ModuleGridProps) {
   // 加载状态
@@ -68,14 +68,14 @@ export function ModuleGrid({
 
   // 判断是已安装模块还是可用模块
   const isInstalledModule = (
-    module: ModuleInstance | ModuleDefinition | PluginRegistryEntry
+    module: ModuleInstance | ModuleDefinition | ToolRegistryEntry
   ): module is ModuleInstance => {
     return "runtime" in module;
   };
 
-  const isPluginRegistryEntry = (
-    module: ModuleInstance | ModuleDefinition | PluginRegistryEntry
-  ): module is PluginRegistryEntry => {
+  const isToolRegistryEntry = (
+    module: ModuleInstance | ModuleDefinition | ToolRegistryEntry
+  ): module is ToolRegistryEntry => {
     return "downloadUrl" in module || ("hash" in module && !("loader" in module));
   };
 
@@ -92,8 +92,8 @@ export function ModuleGrid({
         {modules.map((module) => {
           // 列表视图: 使用统一的列表项组件
           if (viewMode === "list") {
-            // PluginRegistryEntry 不支持列表视图,跳过或使用卡片
-            if (isPluginRegistryEntry(module)) {
+            // ToolRegistryEntry 不支持列表视图,跳过或使用卡片
+            if (isToolRegistryEntry(module)) {
               const moduleData = {
                 id: module.id,
                 name: module.name,
@@ -128,8 +128,8 @@ export function ModuleGrid({
           }
 
           // 网格视图: 使用不同的卡片组件
-          if (isPluginRegistryEntry(module) || !isInstalledModule(module)) {
-            // 可用模块/插件卡片
+          if (isToolRegistryEntry(module) || !isInstalledModule(module)) {
+            // 可用模块/工具卡片
             const moduleData = {
               id: module.id,
               name: module.name,

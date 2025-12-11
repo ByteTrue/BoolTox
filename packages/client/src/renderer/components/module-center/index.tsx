@@ -21,8 +21,8 @@ import { getGlassStyle } from "@/utils/glass-layers";
 import type { ModuleTab, ModuleFilter, ModuleSortConfig, ViewMode } from "./types";
 
 /**
- * 插件中心（Launchpad 风格）
- * 收藏区 + 全部插件 + 商店推荐
+ * 工具中心（Launchpad 风格）
+ * 收藏区 + 全部工具 + 商店推荐
  */
 export function ModuleCenter() {
   const {
@@ -94,8 +94,8 @@ export function ModuleCenter() {
   );
 
   const availableStoreModules = useMemo(() => {
-    // 将在线插件转换为可以在UI中显示的格式
-    // 过滤掉所有已安装的插件(包括开发模式和正式安装的)
+    // 将在线工具转换为可以在UI中显示的格式
+    // 过滤掉所有已安装的工具(包括开发模式和正式安装的)
     const installedPluginIds = new Set(pluginRegistry.map(p => p.id));
     return availablePlugins.filter(p => !installedPluginIds.has(p.id));
   }, [availablePlugins, pluginRegistry]);
@@ -112,7 +112,7 @@ export function ModuleCenter() {
     const available = availableModules.find((m) => m.id === selectedModuleId);
     if (available) return available;
     
-    // 从在线插件查找并转换为 ModuleInstance 格式
+    // 从在线工具查找并转换为 ModuleInstance 格式
     const onlinePlugin = availablePlugins.find((p) => p.id === selectedModuleId);
     if (onlinePlugin) {
       return {
@@ -153,7 +153,7 @@ export function ModuleCenter() {
     async (moduleId: string) => {
       setProcessingModuleId(moduleId);
       try {
-        // 检查是否是在线插件
+        // 检查是否是在线工具
         const onlinePlugin = availablePlugins.find(p => p.id === moduleId);
         if (onlinePlugin) {
           await installOnlinePlugin(onlinePlugin);
@@ -229,7 +229,7 @@ export function ModuleCenter() {
   const viewMode: ViewMode = "grid";
 
   const statsChips = [
-    { label: "插件总数", value: moduleStats.total },
+    { label: "工具总数", value: moduleStats.total },
     { label: "正在使用", value: moduleStats.enabled },
     { label: "已停用", value: moduleStats.disabled },
   ];
@@ -247,7 +247,7 @@ export function ModuleCenter() {
             />
             <input
               type="text"
-              placeholder="搜索插件..."
+              placeholder="搜索工具..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               className={`w-full rounded-full border py-2.5 pl-10 pr-4 text-sm transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
@@ -330,7 +330,7 @@ export function ModuleCenter() {
                     : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              插件商店 ({availableStoreModules.length})
+              工具商店 ({availableStoreModules.length})
             </button>
           </div>
 
@@ -360,7 +360,7 @@ export function ModuleCenter() {
                 <h2
                   className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
                 >
-                  💡 为您推荐的插件
+                  💡 为您推荐的工具
                 </h2>
                 <ModuleRecommendations
                   recommendations={recommendations}
@@ -375,7 +375,7 @@ export function ModuleCenter() {
               <h2
                 className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
               >
-                🛍️ 全部可用插件
+                🛍️ 全部可用工具
               </h2>
               <ModuleGrid
                 modules={availableStoreModules}
@@ -383,7 +383,7 @@ export function ModuleCenter() {
                 processingModuleId={processingModuleId}
                 onInstall={handleInstall}
                 onCardClick={handleCardClick}
-                emptyMessage="没有找到可用插件"
+                emptyMessage="没有找到可用工具"
               />
             </div>
           </div>
@@ -395,14 +395,14 @@ export function ModuleCenter() {
                   <h2
                     className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
                   >
-                    ★ 收藏的插件
+                    ★ 收藏的工具
                   </h2>
                   <p
                     className={`text-xs md:text-sm ${
                       isDark ? "text-white/60" : "text-slate-500"
                     }`}
                   >
-                    常用插件会显示在这里，可随时取消收藏。
+                    常用工具会显示在这里，可随时取消收藏。
                   </p>
                 </div>
                 <ModuleGrid
@@ -414,7 +414,7 @@ export function ModuleCenter() {
                   onPinToggle={handlePinToggle}
                   onCardClick={handleCardClick}
                   isDevPlugin={isDevPlugin}
-                  emptyMessage="给喜爱的插件点亮一颗星星吧"
+                  emptyMessage="给喜爱的工具点亮一颗星星吧"
                 />
               </section>
             )}
@@ -423,7 +423,7 @@ export function ModuleCenter() {
               <h2
                 className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
               >
-                所有插件
+                所有工具
               </h2>
               <ModuleGrid
                 modules={regularModules}
@@ -434,7 +434,7 @@ export function ModuleCenter() {
                 onPinToggle={handlePinToggle}
                 onCardClick={handleCardClick}
                 isDevPlugin={isDevPlugin}
-                emptyMessage="还没有安装任何插件,前往插件商店看看吧"
+                emptyMessage="还没有安装任何工具,前往工具商店看看吧"
               />
             </section>
           </div>

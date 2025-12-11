@@ -10,7 +10,7 @@
     "booltox": "./bin/booltox.js"
   },
   "scripts": {
-    "dev": "echo \"CLI dev 模式应在插件目录中运行，不要在 CLI 包本身运行\"",
+    "dev": "echo \"CLI dev 模式应在工具目录中运行，不要在 CLI 包本身运行\"",
     "create": "node ./bin/booltox.js create"
   },
   "dependencies": {

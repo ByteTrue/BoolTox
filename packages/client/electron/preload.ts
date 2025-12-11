@@ -151,7 +151,7 @@ const gitOpsAPI = {
 };
 
 /**
- * Plugin API - 插件安装相关
+ * Plugin API - 工具安装相关
  */
 const pluginAPI = {
   install: async (entry: unknown): Promise<{success: boolean; path?: string; error?: string}> => {

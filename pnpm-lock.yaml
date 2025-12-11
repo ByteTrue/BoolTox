@@ -197,14 +197,20 @@ importers:
         specifier: ^0.14.6
         version: 0.14.6
 
-  packages/plugin-sdk:
+  packages/shared:
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
+  packages/tool-sdk:
     dependencies:
       '@booltox/shared':
         specifier: workspace:*
         version: link:../shared
       react:
         specifier: '>=18.0.0'
-        version: 19.2.0
+        version: 19.1.0
     devDependencies:
       '@types/node':
         specifier: ^22.10.1
@@ -217,12 +223,6 @@ importers:
         version: 8.5.1(typescript@5.9.3)
       typescript:
         specifier: ^5.8.0
-        version: 5.9.3
-
-  packages/shared:
-    devDependencies:
-      typescript:
-        specifier: ^5.6.0
         version: 5.9.3
 
   packages/web:

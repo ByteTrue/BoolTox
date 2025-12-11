@@ -387,6 +387,6 @@ function SystemMonitorSection({
  * 推荐与发现区域
  */
 function DiscoverySection() {
-  // 暂时不显示推荐,等待新的插件商店实现
+  // 暂时不显示推荐,等待新的工具商店实现
   return null;
 }

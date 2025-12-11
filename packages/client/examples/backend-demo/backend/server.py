@@ -15,7 +15,7 @@ import platform
 
 # 使用标准SDK
 try:
-    from booltox_sdk import BooltoxBackend
+    from booltox_sdk import BoolToxBackend
 except ImportError:
     print(json.dumps({
         "jsonrpc": "2.0",
@@ -215,7 +215,7 @@ class SystemMonitor:
 def main() -> None:
     """主函数"""
     # 使用标准SDK
-    backend = BooltoxBackend()
+    backend = BoolToxBackend()
     monitor = SystemMonitor(backend)  # 传入backend实例
 
     # 注册RPC方法

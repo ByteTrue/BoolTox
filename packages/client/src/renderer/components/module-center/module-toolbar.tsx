@@ -51,7 +51,7 @@ export function ModuleToolbar({
           />
           <input
             type="text"
-            placeholder="搜索插件..."
+            placeholder="搜索工具..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className={`w-full rounded-full border py-2 pl-10 pr-10 text-sm transition-[background-color,border-color,box-shadow] duration-250 ease-swift focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${

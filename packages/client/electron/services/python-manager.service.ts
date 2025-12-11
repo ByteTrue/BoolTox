@@ -10,7 +10,7 @@
  * 基于 uv 实现跨平台 Python 环境管理：
  * - 自动安装 Python 3.12 到用户数据目录
  * - 管理全局共享虚拟环境
- * - 支持按插件隔离的依赖安装
+ * - 支持按工具隔离的依赖安装
  * - 提供脚本执行（同步/流式）
  */
 
@@ -122,9 +122,9 @@ class PythonManager {
   private pythonInstallDir: string;
   /** 虚拟环境目录 */
   private venvDir: string;
-  /** 插件依赖目录 (legacy) */
+  /** 工具依赖目录 (legacy) */
   private pluginPackagesDir: string;
-  /** 插件独立虚拟环境目录 */
+  /** 工具独立虚拟环境目录 */
   private pluginEnvsDir: string;
   /** 是否已初始化 */
   private initialized: boolean = false;
@@ -197,7 +197,7 @@ class PythonManager {
   }
 
   /**
-   * 获取插件依赖目录
+   * 获取工具依赖目录
    */
   getPluginPackagesDir(pluginId: string): string {
     return path.join(this.pluginPackagesDir, pluginId);
@@ -515,7 +515,7 @@ class PythonManager {
   }
 
   /**
-   * 安装依赖包到插件隔离目录
+   * 安装依赖包到工具隔离目录
    */
   async installPluginPackages(
     pluginId: string,
@@ -529,11 +529,11 @@ class PythonManager {
     const targetDir = this.getPluginPackagesDir(pluginId);
     fs.mkdirSync(targetDir, { recursive: true });
 
-    logger.info(`安装插件 ${pluginId} 依赖到 ${targetDir}:`, packages);
+    logger.info(`安装工具 ${pluginId} 依赖到 ${targetDir}:`, packages);
 
     onProgress?.({
       stage: 'deps',
-      message: `正在为插件 ${pluginId} 安装: ${packages.join(', ')}`,
+      message: `正在为工具 ${pluginId} 安装: ${packages.join(', ')}`,
       percent: 0
     });
 
@@ -565,7 +565,7 @@ class PythonManager {
 
       proc.on('close', (code) => {
         if (code === 0) {
-          logger.info('插件依赖安装成功');
+          logger.info('工具依赖安装成功');
           onProgress?.({
             stage: 'deps',
             message: '依赖安装完成',
@@ -573,7 +573,7 @@ class PythonManager {
           });
           resolve();
         } else {
-          const error = new Error(`插件依赖安装失败 (code: ${code}): ${stderr}`);
+          const error = new Error(`工具依赖安装失败 (code: ${code}): ${stderr}`);
           logger.error(error);
           reject(error);
         }
@@ -584,7 +584,7 @@ class PythonManager {
   }
 
   /**
-   * 从 requirements.txt 安装插件依赖
+   * 从 requirements.txt 安装工具依赖
    */
   async installPluginRequirements(
     pluginId: string,
@@ -598,7 +598,7 @@ class PythonManager {
     const targetDir = this.getPluginPackagesDir(pluginId);
     fs.mkdirSync(targetDir, { recursive: true });
 
-    logger.info(`从 ${requirementsPath} 安装插件 ${pluginId} 依赖`);
+    logger.info(`从 ${requirementsPath} 安装工具 ${pluginId} 依赖`);
 
     onProgress?.({
       stage: 'deps',
@@ -667,7 +667,7 @@ class PythonManager {
     logger.info('执行脚本:', scriptPath, args);
 
     return new Promise((resolve) => {
-      // 构建 PYTHONPATH，包含插件依赖目录
+      // 构建 PYTHONPATH，包含工具依赖目录
       const pythonPathEnv = options.env?.PYTHONPATH || '';
       
       const env = {
@@ -843,7 +843,7 @@ class PythonManager {
   }
 
   /**
-   * 列出插件已安装的包
+   * 列出工具已安装的包
    */
   listPluginPackages(pluginId: string): string[] {
     const targetDir = this.getPluginPackagesDir(pluginId);
@@ -870,7 +870,7 @@ class PythonManager {
   }
 
 // ============================================================================
-// 插件独立虚拟环境支持 (新增)
+// 工具独立虚拟环境支持 (新增)
 // ============================================================================
 
   private getPluginEnvMetadataPath(pluginId: string): string {
@@ -886,7 +886,7 @@ class PythonManager {
       const raw = fs.readFileSync(metadataPath, 'utf-8');
       return JSON.parse(raw) as PluginEnvMetadata;
     } catch (error) {
-      logger.warn(`读取插件 ${pluginId} 虚拟环境 metadata 失败`, error);
+      logger.warn(`读取工具 ${pluginId} 虚拟环境 metadata 失败`, error);
       return null;
     }
   }
@@ -897,7 +897,7 @@ class PythonManager {
       fs.mkdirSync(path.dirname(metadataPath), { recursive: true });
       fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
     } catch (error) {
-      logger.warn(`写入插件 ${pluginId} 虚拟环境 metadata 失败`, error);
+      logger.warn(`写入工具 ${pluginId} 虚拟环境 metadata 失败`, error);
     }
   }
 
@@ -910,7 +910,7 @@ class PythonManager {
   }
 
   /**
-   * 判断插件是否需要重新安装 requirements（新建环境或依赖变更）
+   * 判断工具是否需要重新安装 requirements（新建环境或依赖变更）
    */
   needsPluginRequirementsSetup(pluginId: string, requirementsPath?: string): boolean {
     if (!requirementsPath || !fs.existsSync(requirementsPath)) {
@@ -935,14 +935,14 @@ class PythonManager {
   }
 
   /**
-   * 获取插件独立虚拟环境目录
+   * 获取工具独立虚拟环境目录
    */
   getPluginEnvDir(pluginId: string): string {
     return path.join(this.pluginEnvsDir, pluginId);
   }
 
   /**
-   * 获取插件独立虚拟环境的 Python 路径
+   * 获取工具独立虚拟环境的 Python 路径
    */
   getPluginPythonPath(pluginId: string): string {
     const envDir = this.getPluginEnvDir(pluginId);
@@ -954,7 +954,7 @@ class PythonManager {
   }
 
   /**
-   * 检查插件是否有独立虚拟环境
+   * 检查工具是否有独立虚拟环境
    */
   hasPluginEnv(pluginId: string): boolean {
     const pythonPath = this.getPluginPythonPath(pluginId);
@@ -962,8 +962,8 @@ class PythonManager {
   }
 
   /**
-   * 为插件创建独立虚拟环境
-   * @param pluginId 插件 ID
+   * 为工具创建独立虚拟环境
+   * @param pluginId 工具 ID
    * @param requirementsPath requirements.txt 路径
    * @param onProgress 进度回调
    * @param indexUrl PyPI 镜像源 URL（可选）
@@ -984,7 +984,7 @@ class PythonManager {
     const resolvedRequirements =
       requirementsPath && fs.existsSync(requirementsPath) ? requirementsPath : undefined;
     if (requirementsPath && !resolvedRequirements) {
-      logger.warn(`插件 ${pluginId} 未找到 requirements 文件: ${requirementsPath}`);
+      logger.warn(`工具 ${pluginId} 未找到 requirements 文件: ${requirementsPath}`);
     }
 
     const requirementsHash = this.computeFileHash(resolvedRequirements);
@@ -995,14 +995,14 @@ class PythonManager {
 
     if (!venvExists || versionMismatch) {
       if (venvExists && versionMismatch) {
-        logger.info(`插件 ${pluginId} 虚拟环境 Python 版本变更，重新创建`);
+        logger.info(`工具 ${pluginId} 虚拟环境 Python 版本变更，重新创建`);
         fs.rmSync(envDir, { recursive: true, force: true });
       }
 
-      logger.info(`为插件 ${pluginId} 创建独立虚拟环境: ${venvPath}`);
+      logger.info(`为工具 ${pluginId} 创建独立虚拟环境: ${venvPath}`);
       onProgress?.({
         stage: 'venv',
-        message: `正在为插件 ${pluginId} 创建虚拟环境...`,
+        message: `正在为工具 ${pluginId} 创建虚拟环境...`,
         percent: 0
       });
 
@@ -1030,7 +1030,7 @@ class PythonManager {
 
         proc.on('close', (code) => {
           if (code === 0) {
-            logger.info(`插件 ${pluginId} 虚拟环境创建成功`);
+            logger.info(`工具 ${pluginId} 虚拟环境创建成功`);
             onProgress?.({
               stage: 'venv',
               message: '虚拟环境创建完成',
@@ -1058,11 +1058,11 @@ class PythonManager {
         metadata.pythonVersion !== PYTHON_VERSION;
 
       if (needsInstall && venvExists && !recreated) {
-        logger.info(`插件 ${pluginId} 依赖发生变化，删除旧虚拟环境重新安装`);
+        logger.info(`工具 ${pluginId} 依赖发生变化，删除旧虚拟环境重新安装`);
         try {
           fs.rmSync(envDir, { recursive: true, force: true });
         } catch (error) {
-          logger.warn(`删除插件 ${pluginId} 虚拟环境失败`, error);
+          logger.warn(`删除工具 ${pluginId} 虚拟环境失败`, error);
         }
         return this.ensurePluginEnv(pluginId, resolvedRequirements, onProgress, indexUrl);
       }
@@ -1070,7 +1070,7 @@ class PythonManager {
       if (needsInstall) {
         await this.installPluginEnvRequirements(pluginId, resolvedRequirements, onProgress, indexUrl);
       } else {
-        logger.info(`插件 ${pluginId} requirements 未变化，跳过安装`);
+        logger.info(`工具 ${pluginId} requirements 未变化，跳过安装`);
       }
     }
 
@@ -1084,7 +1084,7 @@ class PythonManager {
   }
 
   /**
-   * 在插件独立虚拟环境中安装依赖
+   * 在工具独立虚拟环境中安装依赖
    */
   async installPluginEnvPackages(
     pluginId: string,
@@ -1097,7 +1097,7 @@ class PythonManager {
       await this.ensurePluginEnv(pluginId, undefined, onProgress);
     }
 
-    logger.info(`在插件 ${pluginId} 虚拟环境中安装依赖:`, packages);
+    logger.info(`在工具 ${pluginId} 虚拟环境中安装依赖:`, packages);
 
     onProgress?.({
       stage: 'deps',
@@ -1135,7 +1135,7 @@ class PythonManager {
 
       proc.on('close', (code) => {
         if (code === 0) {
-          logger.info(`插件 ${pluginId} 依赖安装成功`);
+          logger.info(`工具 ${pluginId} 依赖安装成功`);
           onProgress?.({
             stage: 'deps',
             message: '依赖安装完成',
@@ -1154,8 +1154,8 @@ class PythonManager {
   }
 
   /**
-   * 从 requirements.txt 安装依赖到插件独立虚拟环境
-   * @param pluginId 插件 ID
+   * 从 requirements.txt 安装依赖到工具独立虚拟环境
+   * @param pluginId 工具 ID
    * @param requirementsPath requirements.txt 路径
    * @param onProgress 进度回调
    * @param indexUrl PyPI 镜像源 URL（可选）
@@ -1172,7 +1172,7 @@ class PythonManager {
       await this.ensurePluginEnv(pluginId, undefined, onProgress);
     }
 
-    logger.info(`从 ${requirementsPath} 安装依赖到插件 ${pluginId} 虚拟环境`);
+    logger.info(`从 ${requirementsPath} 安装依赖到工具 ${pluginId} 虚拟环境`);
     if (indexUrl) {
       logger.info(`使用镜像源: ${indexUrl}`);
     }
@@ -1217,7 +1217,7 @@ class PythonManager {
 
       proc.on('close', (code) => {
         if (code === 0) {
-          logger.info(`插件 ${pluginId} requirements.txt 依赖安装成功`);
+          logger.info(`工具 ${pluginId} requirements.txt 依赖安装成功`);
           onProgress?.({
             stage: 'deps',
             message: 'requirements.txt 依赖安装完成',
@@ -1234,7 +1234,7 @@ class PythonManager {
   }
 
   /**
-   * 使用插件独立虚拟环境启动 Python 进程
+   * 使用工具独立虚拟环境启动 Python 进程
    */
   spawnPluginPython(
     pluginId: string,
@@ -1244,7 +1244,7 @@ class PythonManager {
   ): ChildProcess {
     const pythonPath = this.getPluginPythonPath(pluginId);
 
-    // 如果插件没有独立环境，回退到全局环境
+    // 如果工具没有独立环境，回退到全局环境
     const actualPythonPath = fs.existsSync(pythonPath)
       ? pythonPath
       : this.getPythonPath();
@@ -1262,25 +1262,25 @@ class PythonManager {
       windowsHide: true
     });
 
-    logger.info(`启动插件 ${pluginId} Python 进程:`, scriptPath, 'PID:', proc.pid);
+    logger.info(`启动工具 ${pluginId} Python 进程:`, scriptPath, 'PID:', proc.pid);
 
     return proc;
   }
 
   /**
-   * 删除插件独立虚拟环境
+   * 删除工具独立虚拟环境
    */
   async removePluginEnv(pluginId: string): Promise<void> {
     const envDir = this.getPluginEnvDir(pluginId);
 
     if (fs.existsSync(envDir)) {
-      logger.info(`删除插件 ${pluginId} 虚拟环境: ${envDir}`);
+      logger.info(`删除工具 ${pluginId} 虚拟环境: ${envDir}`);
       fs.rmSync(envDir, { recursive: true, force: true });
     }
   }
 
   /**
-   * 列出所有插件虚拟环境
+   * 列出所有工具虚拟环境
    */
   listPluginEnvs(): string[] {
     if (!fs.existsSync(this.pluginEnvsDir)) {
@@ -1294,7 +1294,7 @@ class PythonManager {
   }
 
   /**
-   * 解析插件后端运行所需的 Python 环境（共享或独立）
+   * 解析工具后端运行所需的 Python 环境（共享或独立）
    */
   async resolveBackendEnvironment(options: {
     pluginId: string;

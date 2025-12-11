@@ -33,13 +33,13 @@ pnpm dev:client
    - 点击"打开"
 5. **验证**：
    - 应该看到成功提示："已添加工具：cc-switch"
-   - 插件列表中应该出现 `local.cc-switch`
+   - 工具列表中应该出现 `local.cc-switch`
 
 ---
 
 ### 3. 测试：启动工具
 
-1. **在插件列表中找到 `local.cc-switch`**
+1. **在工具列表中找到 `local.cc-switch`**
 2. **点击卡片或"启动"按钮**
 3. **验证**：
    - cc-switch.exe 窗口应该弹出
@@ -75,7 +75,7 @@ console.log(result)
 // 期望: { success: true, pluginId: 'local.cc-switch' }
 ```
 
-### 测试2：查看所有插件
+### 测试2：查看所有工具
 
 ```javascript
 const plugins = await window.ipc.invoke('plugin:get-all')
@@ -106,7 +106,7 @@ await window.ipc.invoke('plugin:uninstall', 'local.cc-switch')
 
 - [ ] 文件选择对话框可以正常打开
 - [ ] 选择 .exe 文件后显示成功提示
-- [ ] 工具出现在插件列表中
+- [ ] 工具出现在工具列表中
 - [ ] 点击工具可以正常启动
 - [ ] cc-switch.exe 窗口弹出
 - [ ] 卸载后工具从列表消失
@@ -127,9 +127,9 @@ await window.ipc.invoke('plugin:uninstall', 'local.cc-switch')
 
 **排查**：
 ```javascript
-// 检查插件目录
+// 检查工具目录
 const plugins = await window.ipc.invoke('plugin:get-all')
-console.log('所有插件:', plugins.map(p => ({ id: p.id, name: p.manifest.name })))
+console.log('所有工具:', plugins.map(p => ({ id: p.id, name: p.manifest.name })))
 ```
 
 ### 问题3：启动失败

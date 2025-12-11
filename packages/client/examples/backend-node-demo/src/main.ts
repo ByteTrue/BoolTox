@@ -5,7 +5,7 @@
 
 import type { MatchRow, ReplaceResult, TestResult, ValidateResult } from '../shared/regex-types';
 
-type BooltoxBackendHandle = {
+type BoolToxBackendHandle = {
   channelId: string;
   pid?: number;
 };
@@ -18,8 +18,8 @@ type ProgressEventPayload = {
   complete?: boolean;
 };
 
-type BooltoxBackendAPI = {
-  register: () => Promise<BooltoxBackendHandle>;
+type BoolToxBackendAPI = {
+  register: () => Promise<BoolToxBackendHandle>;
   waitForReady: (channelId: string) => Promise<void>;
   call: (channelId: string, method: string, params?: Record<string, unknown>) => Promise<unknown>;
   dispose: (channelId: string) => Promise<void>;
@@ -29,7 +29,7 @@ type BooltoxBackendAPI = {
 declare global {
   interface Window {
     booltox: {
-      backend: BooltoxBackendAPI;
+      backend: BoolToxBackendAPI;
     };
   }
 }

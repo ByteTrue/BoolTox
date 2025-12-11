@@ -13,7 +13,7 @@ import type {
 } from "@/types/module";
 import { logModuleEvent } from "@/utils/module-event-logger";
 import type { StoredModuleInfo } from "@shared/types/module-store.types";
-import type { PluginRuntime as PluginProcessRuntime, PluginRegistryEntry, PluginInstallProgress } from "@booltox/shared";
+import type { ToolRuntime as PluginProcessRuntime, ToolRegistryEntry, ToolInstallProgress } from "@booltox/shared";
 import { useToast } from "./toast-context";
 import { createLogger } from "@/lib/logger";
 
@@ -22,19 +22,19 @@ const logger = createLogger("ModuleContext");
 interface ModuleContextValue {
   availableModules: ModuleDefinition[];
   installedModules: ModuleInstance[];
-  pluginRegistry: PluginProcessRuntime[]; // 已安装的插件列表(新插件系统)
-  availablePlugins: PluginRegistryEntry[]; // 在线插件列表
+  pluginRegistry: PluginProcessRuntime[]; // 已安装的工具列表(新工具系统)
+  availablePlugins: ToolRegistryEntry[]; // 在线工具列表
   moduleStats: ModuleStats;
   activeModuleId: string | null;
   setActiveModuleId: (moduleId: string | null) => void;
   openModule: (moduleId: string) => Promise<void>;
   focusModuleWindow: (moduleId: string) => Promise<void>;
   installModule: (moduleId: string, remote?: boolean) => Promise<void>;
-  installOnlinePlugin: (entry: PluginRegistryEntry) => Promise<void>; // 安装在线插件
+  installOnlinePlugin: (entry: ToolRegistryEntry) => Promise<void>; // 安装在线工具
   uninstallModule: (moduleId: string) => Promise<void>;
   getModuleById: (moduleId: string) => ModuleInstance | undefined;
-  isDevPlugin: (moduleId: string) => boolean; // 检查是否为开发插件
-  refreshAvailablePlugins: () => Promise<void>; // 刷新在线插件
+  isDevPlugin: (moduleId: string) => boolean; // 检查是否为开发工具
+  refreshAvailablePlugins: () => Promise<void>; // 刷新在线工具
   addLocalBinaryTool: () => Promise<void>; // 添加本地二进制工具
   // 收藏功能
   favoriteModules: ModuleInstance[];
@@ -75,7 +75,7 @@ const ModuleContext = createContext<ModuleContextValue | null>(null);
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [installedModules, setInstalledModules] = useState<ModuleInstance[]>([]);
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  const [availablePlugins, setAvailablePlugins] = useState<PluginRegistryEntry[]>([]);
+  const [availablePlugins, setAvailablePlugins] = useState<ToolRegistryEntry[]>([]);
   const { showToast } = useToast();
   const [pluginRegistry, setPluginRegistry] = useState<PluginProcessRuntime[]>([]);
   const installedModulesRef = useRef<ModuleInstance[]>([]);
@@ -94,7 +94,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         setPluginRegistry([]);
       }
     } catch (error) {
-      console.error('[ModuleContext] 获取插件列表失败:', error);
+      console.error('[ModuleContext] 获取工具列表失败:', error);
     }
   }, []);
 
@@ -102,13 +102,13 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     void refreshPluginRegistry();
   }, [refreshPluginRegistry]);
 
-  // 获取在线插件列表
+  // 获取在线工具列表
   const refreshAvailablePlugins = useCallback(async () => {
     try {
       const registry = await window.gitOps.getPlugins();
       setAvailablePlugins(registry.plugins || []);
     } catch (error) {
-      console.error('[ModuleContext] 获取在线插件列表失败:', error);
+      console.error('[ModuleContext] 获取在线工具列表失败:', error);
     }
   }, []);
 
@@ -124,7 +124,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     return map;
   }, [pluginRegistry]);
 
-  // 将 pluginRegistry 转换为 ModuleDefinition (动态插件定义)
+  // 将 pluginRegistry 转换为 ModuleDefinition (动态工具定义)
   const pluginDefinitions = useMemo<ModuleDefinition[]>(() => {
     return pluginRegistry.map((plugin) => {
       const manifest = plugin.manifest;
@@ -149,7 +149,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     [pluginRuntimeModeMap],
   );
 
-  // 检查是否为开发插件(不可卸载)
+  // 检查是否为开发工具(不可卸载)
   const isDevPlugin = useCallback(
     (moduleId: string) => {
       const plugin = pluginRegistry.find((p) => p.id === moduleId);
@@ -222,7 +222,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
               ? undefined
               : runtime.runningWindowId,
         lastLaunchAt: status === "running" ? new Date().toISOString() : runtime.lastLaunchAt,
-        lastError: status === "error" ? (message ?? "插件启动失败") : status === "running" ? null : runtime.lastError,
+        lastError: status === "error" ? (message ?? "工具启动失败") : status === "running" ? null : runtime.lastError,
       }));
 
       const isFocusedUpdate = payload.focused === true;
@@ -313,7 +313,7 @@ const focusModuleWindow = useCallback(
   [isWindowPlugin, setActiveModuleId, showToast],
 );
 
-  // 从持久化存储恢复已安装插件（包含收藏信息等元数据）
+  // 从持久化存储恢复已安装工具（包含收藏信息等元数据）
   useEffect(() => {
     if (pluginDefinitions.length === 0) {
       setInstalledModules([]);
@@ -335,7 +335,7 @@ const focusModuleWindow = useCallback(
           const definition = pluginDefinitions.find((definition) => definition.id === stored.id);
 
           if (!definition) {
-            console.warn(`[ModuleContext] 无法找到插件定义: ${stored.id}，将从存储中清理`);
+            console.warn(`[ModuleContext] 无法找到工具定义: ${stored.id}，将从存储中清理`);
             orphanedIds.push(stored.id);
             continue;
           }
@@ -350,15 +350,15 @@ const focusModuleWindow = useCallback(
           });
         }
 
-        // 清理孤立的插件记录
+        // 清理孤立的工具记录
         for (const id of orphanedIds) {
           await window.moduleStore.remove(id);
-          logger.info(`[ModuleContext] 已清理孤立插件记录: ${id}`);
+          logger.info(`[ModuleContext] 已清理孤立工具记录: ${id}`);
         }
 
         setInstalledModules(restoredModules);
       } catch (error) {
-        console.error("[ModuleContext] 恢复插件失败:", error);
+        console.error("[ModuleContext] 恢复工具失败:", error);
         setInstalledModules([]);
       }
     };
@@ -381,7 +381,7 @@ const focusModuleWindow = useCallback(
           const updates = [...current];
           const toStore: StoredModuleInfo[] = [];
 
-          // 遍历所有插件
+          // 遍历所有工具
           for (const plugin of pluginRegistry) {
             const pluginId = plugin.manifest.id;
             const pluginDef = pluginDefinitions.find(d => d.id === pluginId);
@@ -392,7 +392,7 @@ const focusModuleWindow = useCallback(
             if (storedIds.has(pluginId) && !currentIds.has(pluginId)) {
               const stored = storedModules.find(m => m.id === pluginId);
               if (stored) {
-                logger.info(`[ModuleContext] 从存储恢复插件: ${pluginId}`);
+                logger.info(`[ModuleContext] 从存储恢复工具: ${pluginId}`);
                 updates.push({
                   id: pluginId,
                   definition: pluginDef,
@@ -412,9 +412,9 @@ const focusModuleWindow = useCallback(
                 };
               }
             } else if (!currentIds.has(pluginId)) {
-              // 所有不在当前列表的插件都需要添加(开发插件或新安装的远程插件)
+              // 所有不在当前列表的工具都需要添加(开发工具或新安装的远程工具)
               const source = plugin.isDev ? 'dev' : 'remote';
-              logger.info(`[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}插件: ${pluginId}`);
+              logger.info(`[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}工具: ${pluginId}`);
               
               updates.push({
                 id: pluginId,
@@ -439,15 +439,15 @@ const focusModuleWindow = useCallback(
             }
           }
 
-          // 异步存储新插件
+          // 异步存储新工具
           if (toStore.length > 0) {
             void (async () => {
               for (const info of toStore) {
                 try {
                   await window.moduleStore.add(info);
-                  logger.info(`[ModuleContext] 插件已存储: ${info.id}`);
+                  logger.info(`[ModuleContext] 工具已存储: ${info.id}`);
                 } catch (error) {
-                  console.error(`[ModuleContext] 存储插件失败 ${info.id}:`, error);
+                  console.error(`[ModuleContext] 存储工具失败 ${info.id}:`, error);
                 }
               }
             })();
@@ -456,7 +456,7 @@ const focusModuleWindow = useCallback(
           return updates;
         });
       } catch (error) {
-        console.error('[ModuleContext] 同步插件失败:', error);
+        console.error('[ModuleContext] 同步工具失败:', error);
       }
     };
 
@@ -498,7 +498,7 @@ const focusModuleWindow = useCallback(
       const definition = pluginDefinitions.find((item) => item.id === moduleId);
 
       if (!plugin || !definition) {
-        throw new Error(`未找到插件 ${moduleId}，请先在插件商店安装`);
+        throw new Error(`未找到工具 ${moduleId}，请先在工具商店安装`);
       }
 
       setInstalledModules((current) => {
@@ -538,9 +538,9 @@ const focusModuleWindow = useCallback(
     [pluginDefinitions, pluginRegistry],
   );
 
-  // 安装在线插件
+  // 安装在线工具
   const installOnlinePlugin = useCallback(
-    async (entry: PluginRegistryEntry) => {
+    async (entry: ToolRegistryEntry) => {
       try {
         showToast({
           type: 'info',
@@ -548,7 +548,7 @@ const focusModuleWindow = useCallback(
         });
 
         // 监听安装进度
-        const unsubscribe = window.plugin.onInstallProgress((progress: PluginInstallProgress) => {
+        const unsubscribe = window.plugin.onInstallProgress((progress: ToolInstallProgress) => {
           if (progress.stage === 'complete') {
             showToast({
               type: 'success',
@@ -570,7 +570,7 @@ const focusModuleWindow = useCallback(
           throw new Error(result.error || '安装失败');
         }
 
-        // 刷新插件列表
+        // 刷新工具列表
         await refreshPluginRegistry();
         await refreshAvailablePlugins();
 
@@ -595,10 +595,10 @@ const focusModuleWindow = useCallback(
 
   const uninstallModule = useCallback(
     async (moduleId: string) => {
-      // 检查是否为开发插件
+      // 检查是否为开发工具
       if (isDevPlugin(moduleId)) {
         showToast({
-          message: '开发插件无法卸载,请在开发目录中手动删除',
+          message: '开发工具无法卸载,请在开发目录中手动删除',
           type: 'info',
           duration: 3000,
         });
@@ -611,7 +611,7 @@ const focusModuleWindow = useCallback(
         try {
           await window.ipc.invoke("plugin:stop", moduleId);
         } catch (error) {
-          console.warn(`[ModuleContext] 停止插件失败: ${moduleId}`, error);
+          console.warn(`[ModuleContext] 停止工具失败: ${moduleId}`, error);
         }
         patchModuleRuntime(moduleId, {
           launchState: "idle",
@@ -629,12 +629,12 @@ const focusModuleWindow = useCallback(
         });
       }
 
-      // 如果是插件,调用插件卸载 IPC 删除文件
+      // 如果是工具,调用工具卸载 IPC 删除文件
       if (isWindowPlugin(moduleId)) {
         try {
           const result = await window.ipc.invoke("plugin:uninstall", moduleId) as { success: boolean; error?: string };
           if (!result.success) {
-            console.error(`[ModuleContext] 插件文件删除失败: ${result.error}`);
+            console.error(`[ModuleContext] 工具文件删除失败: ${result.error}`);
             showToast({
               message: `卸载失败: ${result.error}`,
               type: 'error',
@@ -643,7 +643,7 @@ const focusModuleWindow = useCallback(
             return;
           }
         } catch (error) {
-          console.error(`[ModuleContext] 插件卸载失败:`, error);
+          console.error(`[ModuleContext] 工具卸载失败:`, error);
           showToast({
             message: `卸载失败: ${error instanceof Error ? error.message : String(error)}`,
             type: 'error',
@@ -829,7 +829,7 @@ const focusModuleWindow = useCallback(
       }) as { success: boolean; pluginId?: string; error?: string };
 
       if (response.success && response.pluginId) {
-        // 3. 刷新插件列表
+        // 3. 刷新工具列表
         await refreshPluginRegistry();
 
         // 4. 写入 moduleStore（让工具出现在已安装列表）

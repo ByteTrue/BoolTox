@@ -161,7 +161,7 @@ export function SettingsPanel() {
         {/* 左列：应用信息 */}
         <SettingCard title="应用信息" icon={Info} theme={theme}>
           <div className="space-y-3">
-            <SettingItem label="应用名称" value="Booltox 不二工具箱" />
+            <SettingItem label="应用名称" value="BoolTox BoolTox" />
             <SettingItem label="当前版本" value={APP_VERSION} />
           </div>
         </SettingCard>

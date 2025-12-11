@@ -6,14 +6,14 @@
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { BooltoxPermission, PluginRuntime } from '@booltox/shared';
+import type { BooltoxPermission, ToolRuntime } from '@booltox/shared';
 import { pluginRunner } from '../plugin/plugin-runner.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('ExtensionHost');
 
 export interface ExtensionModuleContext {
-  plugin: PluginRuntime;
+  plugin: ToolRuntime;
   sender: WebContents;
   window?: BrowserWindow;
   dataDir: string;
@@ -74,7 +74,7 @@ export class ExtensionHost {
     }
   }
 
-  private resolvePlugin(webContentsId: number): PluginRuntime {
+  private resolvePlugin(webContentsId: number): ToolRuntime {
     const plugin = pluginRunner.getRunningPlugin(webContentsId);
     if (!plugin) {
       const error = new Error(`Access denied: plugin runtime missing for webContents ${webContentsId}`);
@@ -84,7 +84,7 @@ export class ExtensionHost {
     return plugin;
   }
 
-  private async createContext(event: IpcMainInvokeEvent, plugin: PluginRuntime): Promise<ExtensionModuleContext> {
+  private async createContext(event: IpcMainInvokeEvent, plugin: ToolRuntime): Promise<ExtensionModuleContext> {
     await fs.mkdir(this.pluginDataRoot, { recursive: true });
     const pluginDir = path.join(this.pluginDataRoot, plugin.id);
     await fs.mkdir(pluginDir, { recursive: true });
@@ -117,7 +117,7 @@ export class ExtensionHost {
   }
 
   private ensurePermissions(
-    plugin: PluginRuntime,
+    plugin: ToolRuntime,
     required: BooltoxPermission[] | undefined,
     moduleName: string,
     method: string,

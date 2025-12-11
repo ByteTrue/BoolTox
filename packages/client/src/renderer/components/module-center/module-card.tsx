@@ -16,7 +16,7 @@ interface ModuleCardProps {
   onOpen: (moduleId: string) => void;
   onClick: (moduleId: string) => void;
   onPinToggle: (moduleId: string) => void;
-  isDev?: boolean; // 是否为开发插件(不可卸载)
+  isDev?: boolean; // 是否为开发工具(不可卸载)
 }
 
 export function ModuleCard({
@@ -177,7 +177,7 @@ export function ModuleCard({
             borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
           }}
           title={
-            isLaunching ? "插件正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开插件"
+            isLaunching ? "工具正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开工具"
           }
         >
           {isLaunching ? (
@@ -206,7 +206,7 @@ export function ModuleCard({
           style={!module.isFavorite ? {
             borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
           } : undefined}
-          title={module.isFavorite ? "取消收藏" : "收藏该插件"}
+          title={module.isFavorite ? "取消收藏" : "收藏该工具"}
         >
           <Pin 
             className={`mx-auto ${module.isFavorite ? 'fill-current' : ''}`} 
@@ -214,7 +214,7 @@ export function ModuleCard({
           />
         </button>
 
-        {/* 开发插件不显示卸载按钮 */}
+        {/* 开发工具不显示卸载按钮 */}
         {!isDev && (
           <button
             type="button"
@@ -223,7 +223,7 @@ export function ModuleCard({
               onUninstall(module.id);
             }}
             className="flex-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-500 transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-u[1.02] hover:brightness-110 hover:bg-red-500/20"
-            title="卸载插件"
+            title="卸载工具"
           >
             <Trash2 className="mx-auto" size={14} />
           </button>
@@ -361,7 +361,7 @@ export function AvailableModuleCard({
         ) : (
           <span className="flex items-center justify-center gap-2">
             <Download size={16} />
-            安装插件
+            安装工具
           </span>
         )}
       </button>

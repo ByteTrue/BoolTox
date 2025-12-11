@@ -1,4 +1,4 @@
-# @booltox/cli - 插件开发 CLI
+# @booltox/cli - 工具开发 CLI
 
 > [根目录](../../CLAUDE.md) > [packages](./) > **cli**
 
@@ -14,15 +14,15 @@
 
 ## 模块职责
 
-**插件开发者工具链**，提供命令行工具：
-- **创建插件**：脚手架生成（`booltox create`）
-- **开发插件**：热重载开发服务器（`booltox dev`）
-- **构建插件**：打包生产版本（`booltox build`）
-- **打包插件**：生成可分发的 `.zip`（`booltox pack`）
+**工具开发者工具链**，提供命令行工具：
+- **创建工具**：脚手架生成（`booltox create`）
+- **开发工具**：热重载开发服务器（`booltox dev`）
+- **构建工具**：打包生产版本（`booltox build`）
+- **打包工具**：生成可分发的 `.zip`（`booltox pack`）
 
 **核心特性**：
 - 基于 Commander.js 的 CLI 框架
-- 支持 TypeScript/Python 插件模板
+- 支持 TypeScript/Python 工具模板
 - 热重载（Chokidar 监听文件变化）
 - 自动压缩打包（Archiver）
 
@@ -35,13 +35,13 @@
 # 全局安装（推荐）
 pnpm add -g @booltox/cli
 
-# 或在插件项目中本地使用
+# 或在工具项目中本地使用
 pnpm add -D @booltox/cli
 ```
 
 ### 命令使用
 
-#### 创建插件
+#### 创建工具
 ```bash
 booltox create my-plugin
 # 或
@@ -56,12 +56,12 @@ booltox dev
 pnpm --filter @booltox/cli dev
 ```
 
-#### 构建插件
+#### 构建工具
 ```bash
 booltox build
 ```
 
-#### 打包插件
+#### 打包工具
 ```bash
 booltox pack
 # 输出：dist/my-plugin.zip
@@ -74,7 +74,7 @@ booltox pack
 ### CLI 命令
 
 #### `booltox create <name>`
-生成插件脚手架：
+生成工具脚手架：
 - 交互式选择模板（TypeScript/Python/混合）
 - 生成 `package.json`、`src/` 目录、配置文件
 
@@ -109,26 +109,26 @@ booltox pack
 ### 配置文件
 - `bin/booltox.js`：CLI 入口文件（Shebang：`#!/usr/bin/env node`）
 
-### 插件模板
+### 工具模板
 - 模板位置：`templates/`（可能未包含在源码中，需从脚手架生成）
 - 支持模板：
-  - `typescript`：纯 TypeScript 插件
-  - `python`：纯 Python 插件
+  - `typescript`：纯 TypeScript 工具
+  - `python`：纯 Python 工具
   - `hybrid`：TS 前端 + Python 后端
 
 ---
 
 ## 数据模型
 
-### 插件清单（manifest.json）
+### 工具清单（manifest.json）
 ```json
 {
   "id": "my-plugin",
-  "name": "我的插件",
+  "name": "我的工具",
   "version": "1.0.0",
   "type": "typescript",
   "entry": "dist/index.js",
-  "description": "插件描述"
+  "description": "工具描述"
 }
 ```
 
@@ -154,27 +154,27 @@ dist/my-plugin.zip
 ### 建议改进
 1. 添加 Vitest 单元测试
 2. 测试命令执行逻辑（如 `create` 命令是否生成正确文件）
-3. E2E 测试（完整插件开发流程）
+3. E2E 测试（完整工具开发流程）
 
 ---
 
 ## 常见问题（FAQ）
 
-### Q1：如何自定义插件模板？
+### Q1：如何自定义工具模板？
 **A**：
 1. 修改 `templates/` 目录（如果有）
 2. 或在 `booltox create` 命令中添加 `--template` 选项
 
-### Q2：开发模式下如何调试插件？
+### Q2：开发模式下如何调试工具？
 **A**：
 1. 运行 `booltox dev`
 2. 在 BoolTox Client 中加载 `dist/` 目录
 3. 修改源码后自动重新编译
 
-### Q3：打包后如何发布插件？
+### Q3：打包后如何发布工具？
 **A**：
 1. 运行 `booltox pack`
-2. 将 `dist/my-plugin.zip` 上传到插件仓库（如 GitHub Release）
+2. 将 `dist/my-plugin.zip` 上传到工具仓库（如 GitHub Release）
 3. 更新 `plugins/index.json` 元数据
 
 ### Q4：CLI 如何扩展新命令？
@@ -189,7 +189,7 @@ dist/my-plugin.zip
 
 ### 核心目录
 - `bin/booltox.js`：CLI 入口文件
-- `templates/`（可能）：插件模板
+- `templates/`（可能）：工具模板
 
 ### 关键文件
 - `bin/booltox.js`：命令注册与执行逻辑

@@ -42,7 +42,7 @@ export function ModuleHost({ module }: ModuleHostProps) {
             {module.definition.name} 在独立窗口中运行
           </h3>
           <p className="text-sm text-[var(--text-secondary)]">
-            点击下方按钮即可{isRunning ? "聚焦" : isLaunching ? "等待启动完成后重试" : "在新窗口启动"}插件。
+            点击下方按钮即可{isRunning ? "聚焦" : isLaunching ? "等待启动完成后重试" : "在新窗口启动"}工具。
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -54,7 +54,7 @@ export function ModuleHost({ module }: ModuleHostProps) {
               isLaunching ? "cursor-wait opacity-70 hover:scale-100 hover:bg-blue-500/15" : ""
             }`}
           >
-            {isLaunching ? "启动中…" : isRunning ? "聚焦插件窗口" : "打开插件窗口"}
+            {isLaunching ? "启动中…" : isRunning ? "聚焦工具窗口" : "打开工具窗口"}
           </button>
           {isRunning && (
             <span className="rounded-full border border-green-500/30 bg-green-500/15 px-3 py-1 text-xs font-semibold text-green-500">

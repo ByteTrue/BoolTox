@@ -216,13 +216,13 @@ export default function ResourcesLandingPage() {
             <Sparkles className="text-primary mb-4" size={32} />
             <h3 className="mb-2 text-xl font-semibold">想要更强大的工具？</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              探索 BoolTox 工具箱，安装本地插件，获得更强大的功能
+              探索 BoolTox Toolbox，安装本地工具，获得更强大的功能
             </p>
             <Link
               href="/dashboard/tools"
               className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-6 py-3 font-medium shadow-sm transition-all duration-200 hover:shadow-md active:scale-95"
             >
-              <span>探索工具箱</span>
+              <span>探索Toolbox</span>
               <ArrowRight size={16} />
             </Link>
           </div>

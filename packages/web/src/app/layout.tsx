@@ -9,14 +9,10 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export const metadata: Metadata = {
   title: "BoolTox",
-  description: "纯前端工具箱 + 资源导航",
+  description: "Pure Web Toolbox + 资源导航",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" className={`${inter.variable} antialiased`}>
       <body className={inter.className}>

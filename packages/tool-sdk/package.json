@@ -1,0 +1,45 @@
+{
+  "name": "@booltox/tool-sdk",
+  "version": "2.0.0",
+  "description": "BoolTox 工具开发 SDK - 轻量级运行时 API 封装",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./api": "./dist/api.js",
+    "./backend": "./dist/backend.js",
+    "./hooks": "./dist/hooks.js",
+    "./types": "./dist/types.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@booltox/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/react": "^19.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.8.0"
+  },
+  "keywords": [
+    "booltox",
+    "tool",
+    "sdk",
+    "api"
+  ],
+  "author": "ByteTrue",
+  "license": "CC-BY-NC-4.0"
+}

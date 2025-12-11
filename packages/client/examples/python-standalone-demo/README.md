@@ -1,6 +1,6 @@
 # 番茄钟计时器（Python Standalone）
 
-使用 **PySide6 + QFluentWidgets** 编写的独立番茄钟应用，用于展示 BoolTox 插件的「纯 Python Standalone」类型能力。核心特性：
+使用 **PySide6 + QFluentWidgets** 编写的独立番茄钟应用，用于展示 BoolTox 工具的「纯 Python Standalone」类型能力。核心特性：
 
 - 现代 Fluent Design UI：基于 `MSFluentWindow`、`ProgressRing` 等组件构建。
 - 可配置计时器：专注/短休/长休时长、长休间隔、自动开始策略、系统通知等均可在设置页调整并持久化在 `QSettings`。
@@ -18,7 +18,7 @@ com.booltox.python-standalone-demo/
 
 ## 开发/调试
 1. 在宿主根目录运行 `pip install -r packages/client/plugins/com.booltox.python-standalone-demo/requirements.txt`（或使用虚拟环境）。
-2. 以开发模式加载插件目录，BoolTox 会按 `manifest.runtime.entry` 启动 `main.py`。
+2. 以开发模式加载工具目录，BoolTox 会按 `manifest.runtime.entry` 启动 `main.py`。
 3. 所有设置与统计存储在 `QSettings(APP_ID='BoolTox/PomodoroDemo')`，删除 `%APPDATA%/BoolTox` 或 `~/.config/BoolTox` 可重置。
 4. 如需自定义主题，可修改 `DEFAULT_THEME_COLOR` 或调用 `setTheme(Theme.DARK)` 等。
 

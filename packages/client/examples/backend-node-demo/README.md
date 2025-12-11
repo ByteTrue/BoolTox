@@ -1,6 +1,6 @@
 # 正则表达式测试器（Node.js Backend Demo）
 
-基于 `booltox-backend` SDK 与 TypeScript/Vite 构建的完整正则调试插件：Node.js 后端负责任务执行与事件推送，前端为纯 TS 开发（Vite 构建），包含编辑器、实时高亮、历史记录与替换预览。
+基于 `booltox-backend` SDK 与 TypeScript/Vite 构建的完整正则调试工具：Node.js 后端负责任务执行与事件推送，前端为纯 TS 开发（Vite 构建），包含编辑器、实时高亮、历史记录与替换预览。
 
 ## 功能亮点
 - 正则编辑器：支持 g/i/m/s/u 标志位、语法即时校验、模板一键填充。
@@ -53,7 +53,7 @@ com.booltox.backend-node-demo/
 ## 开发与调试
 > 当前运行环境缺少 Node，可按照以下步骤在本地安装 Node (>=18) 后执行。
 
-1. 在仓库根目录执行 `pnpm install`，workspace 会为该插件安装 Vite/TypeScript/ts-node。
+1. 在仓库根目录执行 `pnpm install`，workspace 会为该工具安装 Vite/TypeScript/ts-node。
 2. 前端开发：`pnpm --filter com.booltox.backend-node-demo dev`，Vite 会加载 `index.html` + `src/main.ts`。
 3. 后端开发：`pnpm --filter com.booltox.backend-node-demo dev:backend`（ts-node 热调试）或 `pnpm build:backend` 输出到 `backend/dist`。
 4. 构建前端：`pnpm --filter com.booltox.backend-node-demo build`，会串行执行 `tsc -p backend/tsconfig.json` 与 `vite build`，产物写入 `dist/`。

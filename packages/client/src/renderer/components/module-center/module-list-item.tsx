@@ -17,7 +17,7 @@ interface ModuleListItemProps {
   onInstall?: (moduleId: string) => void;
   onClick: (moduleId: string) => void;
   isProcessing?: boolean;
-  isDev?: boolean; // 是否为开发插件(不可卸载)
+  isDev?: boolean; // 是否为开发工具(不可卸载)
 }
 
 export function ModuleListItem({
@@ -155,7 +155,7 @@ export function ModuleListItem({
                 isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
               }`}
               title={
-                isLaunching ? "插件正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开插件"
+                isLaunching ? "工具正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开工具"
               }
             >
               {isLaunching ? (
@@ -167,7 +167,7 @@ export function ModuleListItem({
               )}
             </motion.button>
 
-            {/* 卸载按钮 - 开发插件不显示 */}
+            {/* 卸载按钮 - 开发工具不显示 */}
             {!isDev && (
               <motion.button
                 {...iconButtonInteraction}
@@ -177,7 +177,7 @@ export function ModuleListItem({
                   onUninstall?.(module.id);
                 }}
                 className={`rounded-lg border border-red-500/30 bg-red-500/20 p-2 text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/30`}
-                title="卸载插件"
+                title="卸载工具"
               >
                 <Trash2 size={16} />
               </motion.button>

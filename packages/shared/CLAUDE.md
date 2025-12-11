@@ -16,8 +16,8 @@
 
 **全局类型定义与协议规范**，为 Web、Client、Plugin SDK 提供统一的接口契约：
 - **API 类型**：HTTP/WebSocket 请求/响应
-- **模块类型**：插件元数据、安装状态
-- **协议类型**：JSON-RPC 2.0、插件通信协议
+- **模块类型**：工具元数据、安装状态
+- **协议类型**：JSON-RPC 2.0、工具通信协议
 - **日志类型**：结构化日志格式
 - **发布类型**：版本管理、更新清单
 
@@ -70,11 +70,11 @@ export * from './types/jsonrpc.js';
 - 错误码定义
 
 #### 2. 模块类型（`module.types.ts`）
-- `ModuleMetadata`：插件元数据
-- `ModuleType`：插件类型枚举（TypeScript/Python/混合）
+- `ModuleMetadata`：工具元数据
+- `ModuleType`：工具类型枚举（TypeScript/Python/混合）
 - `ModuleStatus`：安装/运行状态
 
-#### 3. 插件协议（`plugin.ts`、`protocol.ts`）
+#### 3. 工具协议（`plugin.ts`、`protocol.ts`）
 - `PluginMessage`：PostMessage 通信格式
 - `PluginLifecycle`：生命周期事件
 
@@ -143,7 +143,7 @@ interface JSONRPCRequest {
 }
 ```
 
-### 插件通信协议
+### 工具通信协议
 ```typescript
 interface PluginMessage {
   type: 'request' | 'response' | 'event';
@@ -201,8 +201,8 @@ interface PluginMessage {
 
 ### 关键文件
 - `src/types/api.types.ts`：API 接口类型
-- `src/types/module.types.ts`：模块/插件类型
-- `src/types/plugin.ts`：插件协议
+- `src/types/module.types.ts`：模块/工具类型
+- `src/types/plugin.ts`：工具协议
 - `src/types/jsonrpc.ts`：JSON-RPC 2.0
 - `src/types/log.types.ts`：日志类型
 - `src/types/release.types.ts`：发布/更新类型

@@ -10,7 +10,7 @@
 
 | 类型 | 来源 | 安装方式 | 更新方式 |
 |------|------|---------|---------|
-| **官方工具** | Git 仓库 (`resources/tools/`) | 从插件市场安装（Git + jsDelivr CDN） | 手动检查 + 一键更新 |
+| **官方工具** | Git 仓库 (`resources/tools/`) | 从工具市场安装（Git + jsDelivr CDN） | 手动检查 + 一键更新 |
 | **本地工具** | 用户本地文件 | "添加本地工具"按钮 | 用户自己管理 |
 
 ---
@@ -21,8 +21,8 @@
 
 ```
 packages/client/
-├── plugins/                    # 官方插件源码
-│   ├── uiautodev/              # 源码插件
+├── plugins/                    # 官方工具源码
+│   ├── uiautodev/              # 源码工具
 │   │   ├── manifest.json
 │   │   ├── dist/
 │   │   └── backend/
@@ -38,13 +38,13 @@ packages/client/
 │
 └── resources/tools/            # 打包后的发布物
     ├── index.json              # 工具索引
-    ├── uiautodev.zip           # 源码插件（打包）
+    ├── uiautodev.zip           # 源码工具（打包）
     └── cc-switch.zip           # 二进制工具（打包）
 ```
 
 ### 2. ZIP 包结构
 
-**源码插件（uiautodev.zip）**：
+**源码工具（uiautodev.zip）**：
 ```
 uiautodev.zip
 ├── manifest.json
@@ -112,7 +112,7 @@ Client 启动
 1. 读取 resources/tools/index.json
    → 获取所有官方工具列表
   ↓
-2. 用户在"插件市场" Tab 选择工具
+2. 用户在"工具市场" Tab 选择工具
   ↓
 3. 点击"安装"
   ↓
@@ -173,28 +173,28 @@ Client 启动
 创建：`scripts/package-tool.mjs`
 
 功能：
-- 支持源码插件（现有逻辑）
+- 支持源码工具（现有逻辑）
 - 支持二进制工具（跨平台 ZIP）
 - 输出到 `resources/tools/`
 - 更新 `resources/tools/index.json`
 
 ### Phase 2: 检查更新
 
-在 `PluginInstallerService` 中添加：
+在 `ToolInstallerService` 中添加：
 ```typescript
 async checkUpdate(pluginId: string): Promise<string | null>
 ```
 
 ### Phase 3: 一键更新
 
-在 `PluginInstallerService` 中添加：
+在 `ToolInstallerService` 中添加：
 ```typescript
-async updatePlugin(pluginId: string): Promise<void>
+async updateTool(pluginId: string): Promise<void>
 ```
 
 ### Phase 4: UI 集成
 
-- 在插件卡片上显示"有新版本"徽章
+- 在工具卡片上显示"有新版本"徽章
 - 添加"更新"按钮
 - 添加"检查更新"全局按钮
 
@@ -211,7 +211,7 @@ async updatePlugin(pluginId: string): Promise<void>
 ✅ **架构清理**
 - 统一 Monorepo
 - GitOps 路径更新
-- 5 个插件正常加载
+- 5 个工具正常加载
 
 ---
 

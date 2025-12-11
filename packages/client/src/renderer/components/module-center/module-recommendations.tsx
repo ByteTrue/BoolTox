@@ -30,21 +30,21 @@ export function ModuleRecommendations({
     {
       id: "popular",
       title: "🔥 热门推荐",
-      description: "最受欢迎的插件",
+      description: "最受欢迎的工具",
       icon: Flame,
       modules: recommendations.popular,
     },
     {
       id: "newReleases",
       title: "🆕 新发布",
-      description: "最近7天内发布的新插件",
+      description: "最近7天内发布的新工具",
       icon: Sparkles,
       modules: recommendations.newReleases,
     },
     {
       id: "smart",
       title: "💡 智能推荐",
-      description: "基于您已安装的插件推荐",
+      description: "基于您已安装的工具推荐",
       icon: Lightbulb,
       modules: recommendations.smart,
     },
@@ -82,7 +82,7 @@ export function ModuleRecommendations({
                     : "bg-slate-200 text-slate-600"
                 }`}
               >
-                {section.modules.length} 个插件
+                {section.modules.length} 个工具
               </span>
             </div>
 
@@ -122,7 +122,7 @@ export function ModuleRecommendations({
               borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
             }}
           >
-            <p>暂无推荐插件</p>
+            <p>暂无推荐工具</p>
           </div>
         )}
     </div>

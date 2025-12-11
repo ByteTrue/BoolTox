@@ -1,4 +1,4 @@
-# 密码生成器插件
+# 密码生成器工具
 
 专业的密码生成工具，支持自定义规则、实时强度分析、预设模板和历史记录管理。
 
@@ -58,7 +58,7 @@ com.booltox.frontend-only-demo/
 │   ├── presets.ts          # 预设模板
 │   └── storage.ts          # 本地存储管理
 ├── dist/                   # 构建输出
-├── manifest.json           # 插件清单
+├── manifest.json           # 工具清单
 ├── package.json            # 项目配置
 ├── tsconfig.json           # TypeScript 配置
 ├── vite.config.ts          # Vite 构建配置
@@ -79,7 +79,7 @@ pnpm install
 pnpm dev
 ```
 
-### 构建插件
+### 构建工具
 
 ```bash
 pnpm build
@@ -87,7 +87,7 @@ pnpm build
 
 构建产物将输出到 `dist/` 目录。
 
-### 打包插件
+### 打包工具
 
 在项目根目录执行：
 
@@ -177,7 +177,7 @@ interface PasswordConfig {
 
 ## 许可证
 
-本插件为 BoolTox 工具箱的示例插件，遵循项目主许可证。
+本工具为 BoolTox 工具箱的示例工具，遵循项目主许可证。
 
 ## 作者
 

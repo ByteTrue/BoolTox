@@ -162,7 +162,7 @@ export function ModuleDetailModal({
                       )}
                       {definition.author && <span>作者：{definition.author}</span>}
                       <span>
-                        来源：{definition.source === "remote" ? "远程插件" : "本地插件"}
+                        来源：{definition.source === "remote" ? "远程工具" : "本地工具"}
                       </span>
                       {runtime && (
                         <span
@@ -203,7 +203,7 @@ export function ModuleDetailModal({
                               isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
                             }`}
                           >
-                            {isLaunching ? "启动中…" : isRunning ? "聚焦窗口" : "打开插件"}
+                            {isLaunching ? "启动中…" : isRunning ? "聚焦窗口" : "打开工具"}
                           </motion.button>
                         )}
                         {isInstalled && onUninstall && (
@@ -225,7 +225,7 @@ export function ModuleDetailModal({
                         onClick={() => onInstall(module.id)}
                         className="rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30"
                       >
-                        安装插件
+                        安装工具
                       </motion.button>
                     ) : null}
                   </div>
@@ -247,7 +247,7 @@ export function ModuleDetailModal({
                         : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    插件详情
+                    工具详情
                   </button>
                   <button
                     type="button"
@@ -281,7 +281,7 @@ export function ModuleDetailModal({
                       exit={{ opacity: 0, y: 10 }}
                       className={isDark ? "text-white/80" : "text-slate-700"}
                     >
-                      <h3 className="mb-3 text-lg font-semibold">插件描述</h3>
+                      <h3 className="mb-3 text-lg font-semibold">工具描述</h3>
                       <p className="mb-6 leading-relaxed">
                         {definition.description || "暂无详细描述"}
                       </p>
@@ -302,7 +302,7 @@ export function ModuleDetailModal({
                         </>
                       )}
 
-                      <h3 className="mb-3 text-lg font-semibold">插件信息</h3>
+                      <h3 className="mb-3 text-lg font-semibold">工具信息</h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className={isDark ? "text-white/60" : "text-slate-500"}>
@@ -331,7 +331,7 @@ export function ModuleDetailModal({
                             来源:
                           </span>
                           <span className="font-medium">
-                            {definition.source === "remote" ? "远程插件" : "本地插件"}
+                            {definition.source === "remote" ? "远程工具" : "本地工具"}
                           </span>
                         </div>
                       </div>

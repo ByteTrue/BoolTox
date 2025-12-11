@@ -20,7 +20,7 @@ export function ModuleStats({ stats }: ModuleStatsProps) {
 
   const statsCards = [
     {
-      label: "插件总数",
+      label: "工具总数",
       value: stats.total,
       icon: Package,
       color: "text-blue-500",

@@ -5,7 +5,7 @@
 
 /**
  * Python 依赖安装窗口
- * 在启动 Python 插件前显示，让用户确认并查看依赖安装过程
+ * 在启动 Python 工具前显示，让用户确认并查看依赖安装过程
  */
 
 import { BrowserWindow, ipcMain } from 'electron';
@@ -164,7 +164,7 @@ export async function showPythonDepsInstaller(
         );
 
         sendLog('✅ 依赖安装完成！', 'success');
-        sendLog('🚀 即将启动插件...', 'info');
+        sendLog('🚀 即将启动工具...', 'info');
 
         // 等待一下让用户看到成功消息
         await new Promise((r) => setTimeout(r, 1500));

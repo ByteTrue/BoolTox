@@ -55,7 +55,7 @@ export function useModuleStats(): ModuleStats {
     const enabled = 0;  // 不再使用 enabled/disabled 状态
     const disabled = 0;
     
-    // 过滤掉已安装的非开发插件
+    // 过滤掉已安装的非开发工具
     const installedPluginIds = new Set(
       pluginRegistry
         .filter(p => !p.isDev)

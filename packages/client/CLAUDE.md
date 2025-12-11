@@ -16,7 +16,7 @@
 
 BoolTox 的 **可选本地 Agent（Electron 客户端）**，提供：
 - **原生系统权限**：文件操作、进程调度、系统通知
-- **插件运行时**：Python/TypeScript 插件的本地执行环境
+- **工具运行时**：Python/TypeScript 工具的本地执行环境
 - **高性能计算**：避免浏览器沙箱限制
 - **自动更新**：基于 Electron Updater
 
@@ -24,7 +24,7 @@ BoolTox 的 **可选本地 Agent（Electron 客户端）**，提供：
 - Electron 38.4.0 + Vite 7
 - React 19 + Framer Motion
 - 内置 uv（Python 包管理器）
-- 模块中心（安装/管理插件）
+- 模块中心（安装/管理工具）
 
 ---
 
@@ -63,9 +63,9 @@ pnpm build
 - **安装模块**：通过后端 API（`src/renderer/lib/backend-client.ts`）
 - **运行模块**：启动 Python/TypeScript 进程
 
-### 插件 SDK 集成
+### 工具 SDK 集成
 - 依赖 `@booltox/plugin-sdk`（运行时 API）
-- 插件通过 PostMessage 与 Client 通信
+- 工具通过 PostMessage 与 Client 通信
 
 ---
 
@@ -80,7 +80,7 @@ pnpm build
 - **@booltox/shared**：共享类型
 
 ### 配置文件
-- `vite.config.ts`：Vite + Electron 插件配置
+- `vite.config.ts`：Vite + Electron 工具配置
 - `electron-builder.yml`：打包配置（未找到，可能在 `package.json` 中）
 - `tsconfig.json`：TypeScript 配置
 
@@ -140,7 +140,7 @@ pnpm build
 2. 确保 `uv` 可执行文件已下载（`pnpm prepare:uv`）
 3. 查看 `release/` 目录的错误日志
 
-### Q4：如何集成新的插件类型？
+### Q4：如何集成新的工具类型？
 **A**：
 1. 扩展 `@booltox/shared` 中的 `ModuleType`
 2. 在 Client 中添加对应的运行时逻辑

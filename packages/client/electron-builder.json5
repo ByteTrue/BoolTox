@@ -3,7 +3,7 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.booltox.toolbox",
   "asar": true,
-  "productName": "Booltox",
+  "productName": "BoolTox",
   "directories": {
     "output": "release/${version}"
   },

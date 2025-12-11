@@ -24,13 +24,13 @@ import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
 import { moduleStoreService } from './services/module-store.service.js';
 import { AutoUpdateService } from './services/auto-update.service.js';
 import { gitOpsService, type GitOpsConfig } from './services/git-ops.service.js';
-import { pluginManager } from './services/plugin/plugin-manager.js';
-import { pluginRunner } from './services/plugin/plugin-runner.js';
-import { pluginInstaller } from './services/plugin/plugin-installer.js';
+import { pluginManager } from './services/tool/plugin-manager.js';
+import { pluginRunner } from './services/tool/plugin-runner.js';
+import { pluginInstaller } from './services/tool/plugin-installer.js';
 import { pythonManager } from './services/python-manager.service.js';
 import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
-import type { PluginRegistryEntry, PluginManifest } from '@booltox/shared';
+import type { ToolRegistryEntry, ToolManifest } from '@booltox/shared';
 import { IPC_CHANNELS, type RendererConsolePayload } from '../src/shared/constants/ipc-channels.js';
 
 // 初始化日志系统 (必须在所有其他代码之前)
@@ -139,7 +139,7 @@ function createWindow() {
 }
 
 /**
- * 窗口控制 - 支持主窗口和所有插件窗口
+ * 窗口控制 - 支持主窗口和所有工具窗口
  */
 ipcMain.handle('window:control', (event, action: string) => {
   // 获取发送请求的窗口
@@ -407,7 +407,7 @@ ipcMain.handle('plugin:focus', (_event, id: string) => {
 /**
  * Plugin Installation - IPC Handlers
  */
-ipcMain.handle('plugin:install', async (_event, entry: PluginRegistryEntry) => {
+ipcMain.handle('plugin:install', async (_event, entry: ToolRegistryEntry) => {
   try {
     const pluginDir = await pluginInstaller.installPlugin(
       entry,
@@ -420,7 +420,7 @@ ipcMain.handle('plugin:install', async (_event, entry: PluginRegistryEntry) => {
       mainWindow || undefined
     );
     
-    // 安装完成后,重新加载插件列表
+    // 安装完成后,重新加载工具列表
     await pluginManager.loadPlugins();
     
     return { success: true, path: pluginDir };
@@ -435,15 +435,15 @@ ipcMain.handle('plugin:install', async (_event, entry: PluginRegistryEntry) => {
 
 ipcMain.handle('plugin:uninstall', async (_event, pluginId: string) => {
   try {
-    // 先停止插件
+    // 先停止工具
     if (mainWindow) {
       pluginRunner.stopPlugin(pluginId, mainWindow);
     }
     
-    // 卸载插件
+    // 卸载工具
     await pluginInstaller.uninstallPlugin(pluginId);
     
-    // 重新加载插件列表
+    // 重新加载工具列表
     await pluginManager.loadPlugins();
     
     return { success: true };
@@ -473,17 +473,17 @@ ipcMain.handle(
         throw new Error('文件不存在');
       }
 
-      // 2. 生成插件 ID（local. 前缀 + 文件名）
+      // 2. 生成工具 ID（local. 前缀 + 文件名）
       const baseName = path.basename(exePath, path.extname(exePath));
       const id = `local.${baseName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`;
 
-      // 3. 创建插件目录
+      // 3. 创建工具目录
       const pluginsDir = path.join(app.getPath('userData'), 'plugins');
       const pluginDir = path.join(pluginsDir, id);
       await fs.promises.mkdir(pluginDir, { recursive: true });
 
       // 4. 生成 manifest.json（不复制可执行文件，只记录路径）
-      const manifest: PluginManifest = {
+      const manifest: ToolManifest = {
         id,
         version: '1.0.0',
         name,
@@ -504,7 +504,7 @@ ipcMain.handle(
 
       logger.info(`[Main] Local binary tool added: ${id} -> ${exePath}`);
 
-      // 5. 重新扫描插件
+      // 5. 重新扫描工具
       await pluginManager.loadPlugins();
 
       return { success: true, pluginId: id };

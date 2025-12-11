@@ -1,6 +1,6 @@
-# Contributing to Booltox · 不二工具箱
+# Contributing to BoolTox
 
-首先，感谢你愿意为 Booltox（不二工具箱）贡献代码！🎉
+首先，感谢你愿意为 BoolTox（BoolTox）贡献代码！🎉
 
 我们欢迎所有形式的贡献，包括但不限于：代码、文档、问题报告、功能建议等。
 

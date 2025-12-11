@@ -41,7 +41,7 @@ async function copyTemplate(template, dest) {
 }
 
 async function runCreate(template, name) {
-  const spinner = ora(`创建插件 ${name} ...`).start();
+  const spinner = ora(`创建工具 ${name} ...`).start();
   try {
     await copyTemplate(template, path.resolve(process.cwd(), name));
     spinner.succeed(`创建完成: ${name}`);
@@ -217,7 +217,7 @@ async function runBuild(pluginPath = process.cwd()) {
   try {
     const manifest = loadManifest(pluginPath);
     validateManifest(manifest);
-    logWarn('build 命令暂未集成构建流程，请在插件目录自行执行前端/后端构建（如 pnpm build）。');
+    logWarn('build 命令暂未集成构建流程，请在工具目录自行执行前端/后端构建（如 pnpm build）。');
   } catch (error) {
     logError(error.message);
     process.exitCode = 1;
@@ -311,8 +311,8 @@ program
 
 program
   .command('create')
-  .description('从模板创建插件')
-  .argument('<name>', '插件目录名称')
+  .description('从模板创建工具')
+  .argument('<name>', '工具目录名称')
   .option('-t, --template <template>', '模板名称', 'python-backend')
   .action(async (name, options) => {
     const template = options.template;
@@ -325,7 +325,7 @@ program
 program
   .command('dev')
   .description('开发模式：后端文件变更自动重启，可自动启动前端脚本')
-  .option('-p, --path <path>', '插件目录', process.cwd())
+  .option('-p, --path <path>', '工具目录', process.cwd())
   .option('--no-frontend', '不启动前端脚本')
   .action(async (opts) => {
     await runDev(path.resolve(opts.path), { frontend: opts.frontend !== false });
@@ -333,8 +333,8 @@ program
 
 program
   .command('build')
-  .description('构建插件（当前需手动执行前端/后端构建）')
-  .option('-p, --path <path>', '插件目录', process.cwd())
+  .description('构建工具（当前需手动执行前端/后端构建）')
+  .option('-p, --path <path>', '工具目录', process.cwd())
   .action(async (opts) => {
     await runBuild(path.resolve(opts.path));
   });
@@ -342,7 +342,7 @@ program
 program
   .command('pack')
   .description('打包为 .booltox，并生成 metadata.json')
-  .option('-p, --path <path>', '插件目录', process.cwd())
+  .option('-p, --path <path>', '工具目录', process.cwd())
   .action(async (opts) => {
     await runPack(path.resolve(opts.path));
   });

@@ -1,4 +1,4 @@
-# BoolTox（不二工具箱）
+# BoolTox（BoolTox）
 
 <div align="center">
 

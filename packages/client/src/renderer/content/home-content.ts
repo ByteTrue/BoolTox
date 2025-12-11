@@ -7,7 +7,7 @@
 export const overviewContent = {
   summary: {
     tag: "概览",
-    title: "Booltox · 不二工具箱 运行概览",
+    title: "BoolTox 运行概览",
     description: "最小化宿主，只保留核心指标与最近发布记录。",
     chips: ["核心指标", "模块运行", "版本动态"],
     actions: [

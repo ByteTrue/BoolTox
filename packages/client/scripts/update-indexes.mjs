@@ -79,15 +79,15 @@ function updateAnnouncementsIndex() {
 }
 
 /**
- * 扫描插件目录生成索引
+ * 扫描工具目录生成索引
  */
 function updatePluginsIndex() {
-  console.log('🔌 扫描插件目录...');
+  console.log('🔌 扫描工具目录...');
   
   const pluginsDir = path.join(rootDir, 'resources/plugins');
   
   if (!fs.existsSync(pluginsDir)) {
-    console.warn('  ⚠️ 插件目录不存在,跳过');
+    console.warn('  ⚠️ 工具目录不存在,跳过');
     return;
   }
   
@@ -132,7 +132,7 @@ function updatePluginsIndex() {
       });
     }
   } catch (error) {
-    console.error('  ❌ 扫描插件目录失败:', error.message);
+    console.error('  ❌ 扫描工具目录失败:', error.message);
     return;
   }
   
@@ -145,7 +145,7 @@ function updatePluginsIndex() {
   const indexPath = path.join(pluginsDir, 'index.json');
   fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
   
-  console.log(`  ✅ 插件索引已更新: ${plugins.length} 个插件`);
+  console.log(`  ✅ 工具索引已更新: ${plugins.length} 个工具`);
   console.log(`     文件: ${indexPath}`);
   
   // 打印详情

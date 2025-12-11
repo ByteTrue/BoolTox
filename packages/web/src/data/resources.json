@@ -20,7 +20,7 @@
     {
       "id": "vscode",
       "name": "VS Code",
-      "description": "微软出品的轻量级代码编辑器，支持丰富的插件生态",
+      "description": "微软出品的轻量级代码编辑器，支持丰富的工具生态",
       "url": "https://code.visualstudio.com",
       "category": "dev",
       "featured": true,

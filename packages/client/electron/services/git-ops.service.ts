@@ -14,7 +14,7 @@
  * 这种混合策略确保索引实时更新,同时大文件享受 CDN 加速
  */
 
-import type { PluginRegistryEntry } from '@booltox/shared';
+import type { ToolRegistryEntry } from '@booltox/shared';
 import { app } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
@@ -41,7 +41,7 @@ export interface Announcement {
 }
 
 export interface PluginRegistry {
-  plugins: PluginRegistryEntry[];
+  plugins: ToolRegistryEntry[];
 }
 
 interface CacheEntry<T> {
@@ -57,12 +57,12 @@ const DEFAULT_CONFIG: GitOpsConfig = {
   branch: 'ref',
 };
 
-// 插件仓库配置（现在和主仓库相同）
+// 工具仓库配置（现在和主仓库相同）
 const PLUGIN_REPO_CONFIG: GitOpsConfig = {
   provider: 'github',
   owner: 'ByteTrue',
   repo: 'BoolTox', // 合并后使用主仓库
-  branch: 'main',  // 插件从 main 分支发布
+  branch: 'main',  // 工具从 main 分支发布
 };
 
 // 缓存时间(毫秒)
@@ -154,7 +154,7 @@ export class GitOpsService {
   }
 
   /**
-   * 构建插件仓库的 Raw 文件 URL
+   * 构建工具仓库的 Raw 文件 URL
    * 使用主仓库的 resources/tools/ 目录
    */
   private getPluginRepoUrl(filePath: string, useCdn = true): string {
@@ -162,7 +162,7 @@ export class GitOpsService {
 
     // 移除开头的斜杠
     const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-    // 插件文件都在 resources/tools/ 下
+    // 工具文件都在 resources/tools/ 下
     const fullPath = `resources/tools/${cleanPath}`;
 
     if (provider === 'github') {
@@ -336,7 +336,7 @@ export class GitOpsService {
   }
 
   /**
-   * 获取插件列表
+   * 获取工具列表
    * 使用索引文件,避免 API 调用
    */
   async getPluginRegistry(): Promise<PluginRegistry> {
@@ -356,7 +356,7 @@ export class GitOpsService {
     }
 
     try {
-      // 1. 获取索引文件 (从独立的插件仓库获取)
+      // 1. 获取索引文件 (从独立的工具仓库获取)
       const indexUrl = this.getPluginRepoUrl('plugins/index.json', false);
       logger.info('[GitOps] Fetching plugin index from:', indexUrl);
       const indexRes = await fetch(indexUrl);
@@ -371,7 +371,7 @@ export class GitOpsService {
       logger.debug(`[GitOps] Found ${index.plugins.length} plugins in index:`, index.plugins.map(p => p.id));
       logger.debug('[GitOps] Index data:', JSON.stringify(index, null, 2));
 
-      // 2. 并行获取所有插件 metadata
+      // 2. 并行获取所有工具 metadata
       const metadataPromises = index.plugins.map(async (item) => {
         try {
           const metadataUrl = this.getPluginRepoUrl(`plugins/${item.metadataFile}`);
@@ -383,19 +383,19 @@ export class GitOpsService {
             return null;
           }
 
-          const metadata = await res.json() as Omit<PluginRegistryEntry, 'downloadUrl'>;
+          const metadata = await res.json() as Omit<ToolRegistryEntry, 'downloadUrl'>;
           // 使用索引中的下载文件路径
           const downloadUrl = this.getPluginRepoUrl(`plugins/${item.downloadFile}`, false); // 下载用原始URL
 
           logger.info(`[GitOps] Successfully loaded metadata for ${item.id}`);
-          return { ...metadata, downloadUrl } as PluginRegistryEntry;
+          return { ...metadata, downloadUrl } as ToolRegistryEntry;
         } catch (error) {
           logger.error(`[GitOps] Error fetching metadata for ${item.id}:`, error);
           return null;
         }
       });
 
-      const plugins = (await Promise.all(metadataPromises)).filter((p): p is PluginRegistryEntry => p !== null);
+      const plugins = (await Promise.all(metadataPromises)).filter((p): p is ToolRegistryEntry => p !== null);
       
       const result = { plugins };
       
@@ -411,7 +411,7 @@ export class GitOpsService {
   }
 
   /**
-   * 从本地文件系统读取插件列表 (开发模式)
+   * 从本地文件系统读取工具列表 (开发模式)
    */
   private async getLocalPluginRegistry(): Promise<PluginRegistry> {
     try {
@@ -431,7 +431,7 @@ export class GitOpsService {
 
       // 直接读取 index.json（简化格式）
       const content = await fs.readFile(indexPath, 'utf-8');
-      const data = JSON.parse(content) as { plugins: PluginRegistryEntry[] };
+      const data = JSON.parse(content) as { plugins: ToolRegistryEntry[] };
 
       logger.info(`[GitOps] Loaded ${data.plugins.length} plugins from local index`);
       return { plugins: data.plugins };
@@ -442,7 +442,7 @@ export class GitOpsService {
   }
 
   /**
-   * 获取文件的下载链接 (用于插件下载)
+   * 获取文件的下载链接 (用于工具下载)
    * 如果是私有仓库，可能需要通过此服务代理下载，或者生成带 Token 的 URL
    * 这里简单返回 Raw URL，如果客户端直接下载有问题，可能需要主进程下载
    */

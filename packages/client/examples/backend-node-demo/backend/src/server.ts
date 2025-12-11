@@ -7,7 +7,7 @@ import path from 'path';
 import { Worker } from 'worker_threads';
 import { randomUUID } from 'crypto';
 import { performance } from 'perf_hooks';
-import { BooltoxBackend } from 'booltox-backend';
+import { BoolToxBackend } from 'booltox-backend';
 import type {
   RegexTask,
   RegexTaskPayload,
@@ -20,7 +20,7 @@ import type {
   ValidateResult,
 } from '../../shared/regex-types';
 
-const backend = new BooltoxBackend();
+const backend = new BoolToxBackend();
 
 const WORKER_TIMEOUT_MS = 800;
 const MAX_TEXT_LENGTH = 120_000;

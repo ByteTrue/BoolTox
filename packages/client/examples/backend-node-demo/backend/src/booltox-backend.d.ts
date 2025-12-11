@@ -4,7 +4,7 @@
  */
 
 declare module 'booltox-backend' {
-  export class BooltoxBackend {
+  export class BoolToxBackend {
     constructor();
     on(method: string, handler: (params: any) => any): void;
     notify(method: string, params?: any): void;

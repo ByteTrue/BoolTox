@@ -231,7 +231,7 @@ function AppShellContent() {
       // 屏幕阅读器公告
       const module = getModuleById(moduleId);
       if (module) {
-        announce(`已切换到插件：${module.definition.name}`, 'polite');
+        announce(`已切换到工具：${module.definition.name}`, 'polite');
         if (module.id.startsWith('com.booltox.')) {
           setActiveModuleId(null);
         }
@@ -342,7 +342,7 @@ function AppShellContent() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-blue-300 dark:text-brand-blue-300">BOOLTOX</p>
-                    <p className={`text-lg font-bold drop-shadow ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>不二工具箱</p>
+                    <p className={`text-lg font-bold drop-shadow ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>BoolTox</p>
                   </div>
                 </div>
               </div>
@@ -564,14 +564,14 @@ function NavSection({
               initial="hidden"
               animate="visible"
             >
-              {items.length === 0 && title === "插件中心" && (
+              {items.length === 0 && title === "工具中心" && (
                 <motion.div
                   variants={staggerPresets.fast.item}
                   className={`rounded-2xl border p-4 text-xs shadow-unified-md dark:shadow-unified-md-dark ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}
                   style={getGlassStyle('BUTTON', theme)}
                 >
                   <p className={`mb-3 ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}>
-                    暂无导航项，可在插件中心自定义常用入口。
+                    暂无导航项，可在工具中心自定义常用入口。
                   </p>
                   <GlassButton
                     variant="primary"

@@ -213,7 +213,7 @@ const ensureUrl = async (value, fallback, label = 'URL') => {
 };
 
 /**
- * 扫描可用插件
+ * 扫描可用工具
  */
 const scanPlugins = () => {
   const pluginsDir = path.join(__dirname, '../plugins');
@@ -255,26 +255,26 @@ const scanPlugins = () => {
 };
 
 /**
- * 插件打包
+ * 工具打包
  */
 const packagePlugin = async () => {
-  console.log('\n=== 插件打包工具 ===');
+  console.log('\n=== 工具打包工具 ===');
   
   const plugins = scanPlugins();
   
   if (plugins.length === 0) {
-    console.log('⚠️ 未找到任何插件,请确保 plugins/ 目录下有插件项目');
+    console.log('⚠️ 未找到任何工具,请确保 plugins/ 目录下有工具项目');
     return;
   }
   
-  const pluginId = await askChoice('请选择要打包的插件', plugins);
+  const pluginId = await askChoice('请选择要打包的工具', plugins);
   
-  console.log(`\n📦 正在打包插件: ${pluginId}`);
+  console.log(`\n📦 正在打包工具: ${pluginId}`);
   
   try {
     const scriptPath = path.join(__dirname, 'package-plugin.mjs');
     execSync(`node "${scriptPath}" ${pluginId}`, { stdio: 'inherit' });
-    console.log('\n✅ 插件打包完成!');
+    console.log('\n✅ 工具打包完成!');
   } catch (err) {
     console.error('\n❌ 打包失败:', err.message);
   }
@@ -529,7 +529,7 @@ const updateIndexes = async () => {
     console.log(`   - 新闻: ${announcements.news.length} 篇`);
     console.log(`   - 版本说明: ${announcements.releases.length} 篇`);
     
-    // 更新插件索引
+    // 更新工具索引
     const plugins = [];
     if (fs.existsSync(pluginsDir)) {
       const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
@@ -577,8 +577,8 @@ const updateIndexes = async () => {
     
     const pluginIndexPath = path.join(pluginsDir, 'index.json');
     fs.writeFileSync(pluginIndexPath, JSON.stringify(pluginIndex, null, 2));
-    console.log('✅ 插件索引已更新:', pluginIndexPath);
-    console.log(`   - 插件数量: ${plugins.length} 个`);
+    console.log('✅ 工具索引已更新:', pluginIndexPath);
+    console.log(`   - 工具数量: ${plugins.length} 个`);
     
   } catch (error) {
     console.error('❌ 更新索引失败:', error.message);
@@ -643,11 +643,11 @@ const purgeCdnCache = async () => {
 const mainMenu = async () => {
   while (true) {
     const choice = await askChoice('--- BoolTox 开发者工具 ---', [
-      { value: 'package', label: '打包插件', hint: '将插件打包成 ZIP 文件' },
+      { value: 'package', label: '打包工具', hint: '将工具打包成 ZIP 文件' },
       { value: 'configure', label: '配置发布环境', hint: '设置仓库、令牌等信息' },
       { value: 'publish', label: '构建并发布', hint: '执行打包并推送 Release' },
       { value: 'manifest', label: '生成发布清单', hint: '手动生成 manifest.json' },
-      { value: 'update-indexes', label: '更新资源索引', hint: '更新公告和插件索引文件' },
+      { value: 'update-indexes', label: '更新资源索引', hint: '更新公告和工具索引文件' },
       { value: 'exit', label: '退出', hint: '返回命令行' },
     ], 'exit');
 

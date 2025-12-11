@@ -191,20 +191,20 @@ export interface BooltoxAPI {
   telemetry: BooltoxTelemetryAPI;
 }
 
-export type PluginActivationEvent =
+export type ToolActivationEvent =
   | 'onStartup'
   | 'onCommands'
   | 'onView'
   | 'onWorkspace'
   | 'onDemand';
 
-export interface PluginCapabilityRequest {
+export interface ToolCapabilityRequest {
   module: keyof BooltoxAPI;
   permissions: BooltoxPermission[];
   reason?: string;
 }
 
-export interface PluginBackendConfig {
+export interface ToolBackendConfig {
   type: 'python' | 'node' | 'process';
   entry: string;
   args?: string[];
@@ -214,19 +214,19 @@ export interface PluginBackendConfig {
   requirements?: string;
 }
 
-export interface PluginUiRuntime {
+export interface ToolUiRuntime {
   type: 'webview';
   entry: string;
   assetsDir?: string;
 }
 
-export interface PluginWebRuntimeConfig {
+export interface ToolWebRuntimeConfig {
   type?: 'webview';
-  ui: PluginUiRuntime;
-  backend?: PluginBackendConfig;
+  ui: ToolUiRuntime;
+  backend?: ToolBackendConfig;
 }
 
-export interface PluginStandaloneRuntimeConfig {
+export interface ToolStandaloneRuntimeConfig {
   type: 'standalone';
   entry: string;
   args?: string[];
@@ -237,21 +237,21 @@ export interface PluginStandaloneRuntimeConfig {
 /**
  * 二进制工具运行时配置
  */
-export interface PluginBinaryRuntimeConfig {
+export interface ToolBinaryRuntimeConfig {
   type: 'binary';
-  /** 可执行文件路径（相对于插件目录，或绝对路径） */
+  /** 可执行文件路径（相对于工具目录，或绝对路径） */
   command: string;
   /** 启动参数 */
   args?: string[];
   /** 环境变量 */
   env?: Record<string, string>;
-  /** 工作目录（可选，默认为插件目录） */
+  /** 工作目录（可选，默认为工具目录） */
   cwd?: string;
   /** 本地可执行文件路径（仅用于标记用户本地添加的工具） */
   localExecutablePath?: string;
 }
 
-export type PluginRuntimeConfig =
-  | PluginWebRuntimeConfig
-  | PluginStandaloneRuntimeConfig
-  | PluginBinaryRuntimeConfig;
+export type ToolRuntimeConfig =
+  | ToolWebRuntimeConfig
+  | ToolStandaloneRuntimeConfig
+  | ToolBinaryRuntimeConfig;
