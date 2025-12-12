@@ -1,5 +1,5 @@
 {
-  "name": "@booltox/plugin-system-monitor",
+  "name": "@booltox/tool-system-monitor",
   "version": "2.0.0",
   "private": true,
   "type": "module",

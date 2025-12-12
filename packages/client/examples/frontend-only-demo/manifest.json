@@ -5,19 +5,16 @@
   "description": "专业的密码生成工具，支持自定义规则、实时强度分析、预设模板和历史记录管理",
   "protocol": "^2.0.0",
   "runtime": {
-    "ui": {
-      "type": "webview",
-      "entry": "dist/index.html"
-    }
-  },
-  "permissions": [],
-  "window": {
-    "width": 520,
-    "height": 780,
-    "minWidth": 480,
-    "minHeight": 700,
-    "resizable": true
+    "type": "http-service",
+    "backend": {
+      "type": "node",
+      "entry": "server.js",
+      "port": 8003,
+      "host": "127.0.0.1"
+    },
+    "path": "/",
+    "readyTimeout": 30000
   },
   "author": "BoolTox Team",
-  "keywords": ["password", "generator", "security", "frontend", "encryption"]
+  "keywords": ["password", "generator", "security", "frontend", "http-service"]
 }

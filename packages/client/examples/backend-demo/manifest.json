@@ -5,29 +5,16 @@
   "description": "实时监控系统 CPU、内存、磁盘和进程信息，展示 Python 后端与前端通信",
   "protocol": "^2.0.0",
   "runtime": {
-    "ui": {
-      "type": "webview",
-      "entry": "dist/index.html"
-    },
+    "type": "http-service",
     "backend": {
       "type": "python",
-      "entry": "backend/server.py",
-      "requirements": "requirements.txt"
-    }
-  },
-  "permissions": [
-    "backend.register",
-    "backend.message",
-    "python.run",
-    "window.show",
-    "window.setTitle"
-  ],
-  "window": {
-    "width": 1000,
-    "height": 720,
-    "minWidth": 800,
-    "minHeight": 600,
-    "resizable": true
+      "entry": "backend/http_server.py",
+      "requirements": "requirements.txt",
+      "port": 8001,
+      "host": "127.0.0.1"
+    },
+    "path": "/",
+    "readyTimeout": 30000
   },
   "author": "BoolTox Team",
   "keywords": ["system", "monitor", "backend", "python", "psutil"]

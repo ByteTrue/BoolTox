@@ -45,12 +45,12 @@ declare global {
       getConfig: () => Promise<GitOpsConfig>;
       updateConfig: (config: Partial<GitOpsConfig>) => Promise<GitOpsConfig>;
       getAnnouncements: () => Promise<Announcement[]>;
-      getPlugins: () => Promise<PluginRegistry>;
+      getTools: () => Promise<PluginRegistry>;
     };
-    plugin: {
+    tool: {
       install: (entry: ToolRegistryEntry) => Promise<{success: boolean; path?: string; error?: string}>;
-      uninstall: (pluginId: string) => Promise<{success: boolean; error?: string}>;
-      cancelInstall: (pluginId: string) => Promise<{success: boolean}>;
+      uninstall: (toolId: string) => Promise<{success: boolean; error?: string}>;
+      cancelInstall: (toolId: string) => Promise<{success: boolean}>;
       onInstallProgress: (callback: (progress: ToolInstallProgress) => void) => () => void;
     };
     appSettings: {

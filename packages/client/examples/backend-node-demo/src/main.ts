@@ -5,34 +5,8 @@
 
 import type { MatchRow, ReplaceResult, TestResult, ValidateResult } from '../shared/regex-types';
 
-type BoolToxBackendHandle = {
-  channelId: string;
-  pid?: number;
-};
-
-type ProgressEventPayload = {
-  requestId?: string;
-  percent?: number;
-  processed: number;
-  total: number;
-  complete?: boolean;
-};
-
-type BoolToxBackendAPI = {
-  register: () => Promise<BoolToxBackendHandle>;
-  waitForReady: (channelId: string) => Promise<void>;
-  call: (channelId: string, method: string, params?: Record<string, unknown>) => Promise<unknown>;
-  dispose: (channelId: string) => Promise<void>;
-  on: (channelId: string, event: string, handler: (payload: ProgressEventPayload) => void) => () => void;
-};
-
-declare global {
-  interface Window {
-    booltox: {
-      backend: BoolToxBackendAPI;
-    };
-  }
-}
+// 移除旧的 window.booltox API 声明
+// 新架构：工具在浏览器中运行，直接通过 HTTP API 与后端通信
 
 type TemplateItem = {
   id: string;
@@ -77,14 +51,10 @@ type ReplaceResponse = ReplaceResult & {
 };
 
 type AppState = {
-  channelId: string | null;
-  offProgress: (() => void) | null;
   templates: TemplateItem[];
   history: HistoryEntry[];
   matches: MatchItem[];
   summary: Summary | null;
-  currentRequestId: string | null;
-  activeRequestId: string | null;
 };
 
 const DOM = {
@@ -122,14 +92,10 @@ const HISTORY_LIMIT = 10;
 const HIGHLIGHT_LIMIT = 60_000;
 
 const state: AppState = {
-  channelId: null,
-  offProgress: null,
   templates: [],
   history: loadHistory(),
   matches: [],
-  summary: null,
-  currentRequestId: null,
-  activeRequestId: null
+  summary: null
 };
 
 function loadHistory(): HistoryEntry[] {
@@ -214,61 +180,31 @@ function setStatus(text: string, ready = false) {
   DOM.statusDot.classList.toggle('ready', ready);
 }
 
-async function registerBackend() {
-  setStatus('启动后端...', false);
-  try {
-    if (state.channelId) {
-      await window.booltox.backend.dispose(state.channelId);
-      if (state.offProgress) state.offProgress();
-    }
-    const handle = await window.booltox.backend.register();
-    state.channelId = handle.channelId;
-    await window.booltox.backend.waitForReady(state.channelId);
-    setStatus(`已连接 (PID ${handle.pid ?? 'N/A'})`, true);
-    state.offProgress = window.booltox.backend.on(state.channelId, 'matchProgress', handleProgress);
-    await fetchPatterns();
-  } catch (error) {
-    showBanner('error', (error as Error)?.message || '后端启动失败');
-    setStatus('连接失败', false);
-  }
-}
-
-async function disposeBackend() {
-  if (!state.channelId) return;
-  try {
-    await window.booltox.backend.dispose(state.channelId);
-  } finally {
-    if (state.offProgress) state.offProgress();
-    state.offProgress = null;
-    state.channelId = null;
-    setStatus('已断开', false);
-  }
-}
-
-function handleProgress(event: ProgressEventPayload) {
-  if (!event?.requestId) return;
-  if (state.activeRequestId && event.requestId !== state.activeRequestId) return;
-  if (!state.activeRequestId) state.activeRequestId = event.requestId;
-  const percent = typeof event.percent === 'number'
-    ? event.percent
-    : event.total
-      ? (event.processed / event.total) * 100
-      : 0;
-  DOM.progressBar.style.width = `${Math.min(100, Math.max(0, percent)).toFixed(1)}%`;
-  DOM.progressLabel.textContent = event.complete ? '任务完成' : `处理中 (${Math.round(percent)}%)`;
+async function initApp() {
+  setStatus('就绪', true);
+  await fetchPatterns();
 }
 
 async function callBackend<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T> {
-  if (!state.channelId) {
-    throw new Error('后端尚未连接');
+  const response = await fetch(`/api/${method}`, {
+    method: method === 'getPatterns' ? 'GET' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: method === 'getPatterns' ? undefined : JSON.stringify(params),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-  return window.booltox.backend.call(state.channelId, method, params) as Promise<T>;
+  return response.json();
 }
 
 async function fetchPatterns() {
   try {
-    const { items } = await callBackend<{ items: TemplateItem[]; timestamp: string }>('getPatterns');
-    state.templates = (items as TemplateItem[]) || [];
+    const response = await fetch('/api/patterns');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    state.templates = (data.items as TemplateItem[]) || [];
     if (!DOM.patternInput.value && state.templates.length) {
       DOM.patternInput.value = state.templates[0].pattern;
       setFlags(state.templates[0].flags || '');
@@ -416,14 +352,11 @@ async function handleTest() {
     showBanner('error', '请输入待测文本');
     return;
   }
-  state.activeRequestId = null;
   setLoading('test', true);
   DOM.progressBar.style.width = '0%';
   DOM.progressLabel.textContent = '开始执行';
   try {
     const result = await callBackend<TestResponse>('test', payload);
-    state.currentRequestId = result.requestId;
-    state.activeRequestId = result.requestId;
     state.matches = result.matches || [];
     state.summary = {
       totalMatches: result.totalMatches,
@@ -438,6 +371,8 @@ async function handleTest() {
       flags: payload.flags,
       createdAt: new Date().toLocaleString()
     });
+    DOM.progressBar.style.width = '100%';
+    DOM.progressLabel.textContent = '任务完成';
   } catch (error) {
     showBanner('error', (error as Error)?.message || '匹配失败');
   } finally {
@@ -502,8 +437,11 @@ function attachEvents() {
   DOM.validateBtn.addEventListener('click', handleValidate);
   DOM.runTest.addEventListener('click', handleTest);
   DOM.runReplace.addEventListener('click', handleReplace);
-  DOM.restartBtn.addEventListener('click', registerBackend);
-  DOM.stopBtn.addEventListener('click', disposeBackend);
+
+  // 新架构：工具在浏览器中独立运行，不需要重启/停止按钮
+  // 如需保留按钮，可以将其隐藏或移除事件监听
+  DOM.restartBtn.style.display = 'none';
+  DOM.stopBtn.style.display = 'none';
 
   DOM.copyReplace.addEventListener('click', async () => {
     const text = DOM.replacementPreview.textContent;
@@ -519,17 +457,13 @@ function attachEvents() {
     if (!match) return;
     copyText(match.value);
   });
-
-  window.addEventListener('beforeunload', () => {
-    disposeBackend();
-  });
 }
 
 function init() {
   DOM.testText.value = 'Sample text: support@example.com, https://booltox.dev, +8613812345678';
   renderHistory();
   attachEvents();
-  registerBackend();
+  initApp();
 }
 
 init();

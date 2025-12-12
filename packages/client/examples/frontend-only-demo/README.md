@@ -1,6 +1,15 @@
 # 密码生成器工具
 
-专业的密码生成工具，支持自定义规则、实时强度分析、预设模板和历史记录管理。
+演示如何创建一个**完全独立**的纯前端工具，使用简单的 HTTP 服务器在浏览器中运行。
+
+## 🎯 设计理念
+
+**BoolTox = 进程管理器 + 工具市场**，不是工具运行容器。
+
+- ✅ 工具完全独立，可以手动启动：`node server.js`
+- ✅ 不依赖任何 BoolTox SDK
+- ✅ 在系统默认浏览器中运行
+- ✅ BoolTox 只负责：发现、安装、启动、停止工具
 
 ## 功能特性
 
@@ -30,70 +39,107 @@
 - **强度标记**: 显示每条记录的强度等级
 - **时间戳**: 记录生成时间
 
-### 🎨 UI 设计
-- **深色主题**: 护眼的深色配色方案
-- **玻璃拟态**: 现代化的玻璃拟态卡片设计
-- **流畅动画**: 复制成功等交互反馈动画
-- **响应式布局**: 适配不同窗口尺寸
-
-## 技术栈
-
-- **TypeScript**: 类型安全的核心逻辑
-- **Vite**: 快速的构建工具
-- **纯 CSS**: 无框架依赖的样式实现
-- **Web Crypto API**: 安全的随机数生成
-- **LocalStorage**: 历史记录持久化
-
-## 项目结构
+## 📁 项目结构
 
 ```
 com.booltox.frontend-only-demo/
+├── manifest.json           # 声明 runtime.type = "http-service"
+├── package.json            # Express 依赖
+├── server.js               # 简单的静态文件服务器
 ├── src/
-│   ├── index.html          # HTML 入口
 │   ├── main.ts             # 主应用逻辑
 │   ├── style.css           # 样式文件
-│   ├── types.ts            # TypeScript 类型定义
 │   ├── generator.ts        # 密码生成核心
-│   ├── strength.ts         # 强度分析算法
-│   ├── presets.ts          # 预设模板
-│   └── storage.ts          # 本地存储管理
-├── dist/                   # 构建输出
-├── manifest.json           # 工具清单
-├── package.json            # 项目配置
-├── tsconfig.json           # TypeScript 配置
-├── vite.config.ts          # Vite 构建配置
-└── README.md               # 本文档
+│   └── ...
+├── dist/                   # 构建后的静态文件
+└── README.md
 ```
 
-## 开发指南
+## 🚀 快速开始
 
-### 安装依赖
+### 1. 安装依赖
 
 ```bash
 pnpm install
 ```
 
-### 开发模式
-
-```bash
-pnpm dev
-```
-
-### 构建工具
+### 2. 构建前端
 
 ```bash
 pnpm build
 ```
 
-构建产物将输出到 `dist/` 目录。
-
-### 打包工具
-
-在项目根目录执行：
+### 3. 独立运行
 
 ```bash
-pnpm --filter @booltox/client plugin:pack com.booltox.frontend-only-demo
+node server.js
 ```
+
+服务器将在 `http://127.0.0.1:8003` 启动，在浏览器中打开即可使用。
+
+### 4. 在 BoolTox 中使用
+
+BoolTox 会自动：
+1. 检测并安装 Node.js 依赖（express）
+2. 启动 HTTP 服务器
+3. 在系统默认浏览器中打开工具
+4. 管理进程生命周期（启动/停止）
+
+## 技术栈
+
+- **前端**: TypeScript + Vite + Web Crypto API
+- **服务器**: Node.js + Express（静态文件服务）
+- **存储**: LocalStorage（本地历史记录）
+
+## 📝 从旧架构迁移
+
+旧架构（webview）:
+```json
+{
+  "runtime": {
+    "ui": { "type": "webview", "entry": "dist/index.html" }
+  }
+}
+```
+
+新架构（http-service）:
+```json
+{
+  "runtime": {
+    "type": "http-service",
+    "backend": {
+      "type": "node",
+      "entry": "server.js",
+      "port": 8003
+    }
+  }
+}
+```
+
+## 开发与调试
+
+### 前端开发
+```bash
+pnpm dev  # Vite 开发服务器
+```
+
+### 完整构建
+```bash
+pnpm build  # 构建前端静态文件
+```
+
+### 本地测试
+```bash
+pnpm serve  # 启动生产服务器
+```
+
+## ✨ 优势
+
+1. **极简设计**: BoolTox 只是进程管理器，不处理渲染
+2. **零兼容问题**: 所有工具运行在浏览器中，无 Electron 限制
+3. **独立可测**: 每个工具都可以独立启动测试
+4. **更好的用户体验**: 用户获得完整的浏览器功能
+5. **易于维护**: 不再需要复杂的 IPC 通信逻辑
 
 ## 代码亮点
 
@@ -122,46 +168,6 @@ const entropy = Math.log2(Math.pow(charsetSize, password.length));
 - `storage.ts`: 数据持久化
 - `main.ts`: UI 交互控制
 
-### 4. 类型安全
-
-完整的 TypeScript 类型定义，确保代码质量：
-
-```typescript
-interface PasswordConfig {
-  length: number;
-  uppercase: boolean;
-  lowercase: boolean;
-  numbers: boolean;
-  symbols: boolean;
-  excludeAmbiguous: boolean;
-  customExclude: string;
-}
-```
-
-## 使用示例
-
-### 生成标准密码
-
-1. 调整长度滑块到 12 位
-2. 勾选所需字符类型
-3. 点击"生成密码"按钮
-4. 点击"复制"按钮使用密码
-
-### 使用预设模板
-
-点击任意预设模板按钮，自动应用配置并生成密码。
-
-### 查看历史记录
-
-在历史记录区域点击任意记录，即可在密码显示区查看该密码。
-
-## 性能优化
-
-- **按需渲染**: 仅在数据变化时更新 DOM
-- **事件委托**: 历史记录列表使用事件委托减少监听器
-- **CSS 动画**: 使用 GPU 加速的 CSS 动画
-- **代码分割**: Vite 自动进行代码分割优化
-
 ## 安全考虑
 
 1. **密码学安全随机数**: 使用 `crypto.getRandomValues()` 而非 `Math.random()`
@@ -175,27 +181,6 @@ interface PasswordConfig {
 - Firefox 88+
 - Safari 14+
 
-## 许可证
+---
 
-本工具为 BoolTox 工具箱的示例工具，遵循项目主许可证。
-
-## 作者
-
-BoolTox Team
-
-## 更新日志
-
-### v2.0.0 (2025-12-01)
-
-- ✨ 完全重写为 TypeScript 项目
-- ✨ 新增密码强度实时分析
-- ✨ 新增 5 种预设模板
-- ✨ 新增密码短语生成
-- ✨ 新增历史记录管理
-- 🎨 全新玻璃拟态 UI 设计
-- 🔒 使用 Web Crypto API 提升安全性
-- 📦 使用 Vite 构建系统
-
-### v1.0.0
-
-- 初始版本，基础密码生成功能
+该示例提供最小可行代码，便于第三方工具快速对齐新架构。

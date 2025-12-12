@@ -70,25 +70,3 @@ export interface MonitorData {
   network: NetworkInfo;
   timestamp: number;
 }
-
-export type BackendMessageType = 'stdout' | 'stderr' | 'exit' | 'error' | 'jsonrpc';
-
-export interface BackendJsonRpcNotification<TParams = unknown> {
-  jsonrpc: '2.0';
-  method: string;
-  params?: TParams;
-}
-
-export interface BackendMessage {
-  pluginId?: string;
-  channelId: string;
-  type: BackendMessageType;
-  data?: string;
-  code?: number | null;
-  jsonrpc?: BackendJsonRpcNotification;
-}
-
-export interface BackendHandle {
-  channelId: string;
-  pid: number;
-}

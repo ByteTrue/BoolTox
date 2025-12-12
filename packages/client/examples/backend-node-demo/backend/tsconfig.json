@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "module": "CommonJS",
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "Node",
     "rootDir": "src",
     "outDir": "dist",
     "esModuleInterop": true,
-    "moduleResolution": "Node",
     "skipLibCheck": true,
-    "resolveJsonModule": false,
+    "resolveJsonModule": true,
     "strict": true,
     "types": ["node"],
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist"]

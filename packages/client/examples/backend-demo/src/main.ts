@@ -4,7 +4,8 @@
  */
 
 /**
- * 系统监控主应用
+ * 系统监控主应用 - HTTP Service 模式
+ * 使用标准 WebSocket + fetch API 与后端通信
  */
 
 import './style.css';
@@ -15,33 +16,19 @@ import type {
   DiskInfo,
   ProcessInfo,
   MonitorData,
-  BackendMessage,
-  BackendHandle,
-  BackendJsonRpcNotification,
 } from './types';
 import { formatBytes, getPercentColor, createCircularProgress } from './utils';
 
-type BackendCommandPayload = Record<string, unknown>;
 const logInfo = (...args: unknown[]): void => {
   console.warn('[SystemMonitor]', ...args);
 };
 
-// 声明全局 booltox API
-declare global {
-  interface Window {
-    booltox: {
-      backend: {
-        register: () => Promise<BackendHandle>;
-        postMessage: (channelId: string, payload: BackendCommandPayload) => Promise<void>;
-        dispose: (channelId: string) => Promise<void>;
-        onMessage: (callback: (message: BackendMessage) => void) => () => void;
-      };
-    };
-  }
-}
+// 后端 API 配置
+const API_BASE = 'http://127.0.0.1:8001';
+const WS_URL = 'ws://127.0.0.1:8001/ws/monitor';
 
 // 应用状态
-let backendChannel: string | null = null;
+let ws: WebSocket | null = null;
 
 // DOM 元素
 const elements = {
@@ -59,18 +46,14 @@ const elements = {
 };
 
 /**
- * 发送命令到后端
+ * 调用后端 HTTP API
  */
-async function sendCommand(command: string, params: BackendCommandPayload = {}): Promise<void> {
-  if (!backendChannel) {
-    console.error('后端未启动');
-    return;
+async function callAPI<T = unknown>(endpoint: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${endpoint}`);
+  if (!response.ok) {
+    throw new Error(`API 请求失败: ${response.statusText}`);
   }
-
-  await window.booltox.backend.postMessage(backendChannel, {
-    command,
-    ...params,
-  });
+  return response.json();
 }
 
 /**
@@ -265,190 +248,129 @@ function renderProcessList(processes: ProcessInfo[]): void {
 }
 
 /**
- * 处理后端消息
+ * 处理 WebSocket 消息
  */
-function parseJsonRpcFromMessage(message: BackendMessage): BackendJsonRpcNotification | null {
-  if (message.type === 'jsonrpc' && message.jsonrpc) {
-    return message.jsonrpc;
-  }
+function handleWebSocketMessage(event: MessageEvent): void {
+  try {
+    const message = JSON.parse(event.data);
 
-  if (message.type === 'stdout' && message.data) {
-    try {
-      const parsed = JSON.parse(message.data);
-      if (parsed && parsed.jsonrpc === '2.0' && typeof parsed.method === 'string') {
-        return parsed;
-      }
-    } catch (error) {
-      console.warn('解析后端 stdout 失败:', error);
+    if (message.type === 'monitor_data' && message.data) {
+      const monitorData = message.data as MonitorData;
+      renderCPUInfo(monitorData.cpu);
+      renderMemoryInfo(monitorData.memory);
     }
-  }
-
-  return null;
-}
-
-function handleBackendMessage(message: BackendMessage): void {
-  if (!backendChannel || message.channelId !== backendChannel) return;
-
-  // 先处理进程级事件
-  if (message.type === 'exit') {
-    updateStatus('后端已退出', false);
-    backendChannel = null;
-    elements.startBtn.disabled = true;
-    elements.stopBtn.disabled = true;
-    elements.refreshBtn.disabled = true;
-    return;
-  }
-
-  if (message.type === 'stderr') {
-    console.error('后端 stderr:', message.data);
-  }
-
-  if (message.type === 'error') {
-    console.error('后端错误:', message.data ?? `code=${message.code ?? '未知'}`);
-    alert(`后端错误: ${message.data ?? '未知错误'}`);
-    return;
-  }
-
-  const rpcMessage = parseJsonRpcFromMessage(message);
-  if (!rpcMessage) {
-    return;
-  }
-
-  const method = rpcMessage.method;
-  const params = (rpcMessage.params ?? {}) as Record<string, unknown>;
-
-  switch (method) {
-    case 'backend_ready':
-      logInfo('后端就绪:', params.message);
-      sendCommand('get_system_info');
-      sendCommand('get_disk_info');
-      break;
-
-    case 'system_info':
-      renderSystemInfo(params.data as SystemInfo);
-      break;
-
-    case 'cpu_info':
-      renderCPUInfo(params.data as CPUInfo);
-      break;
-
-    case 'memory_info':
-      renderMemoryInfo(params.data as MemoryInfo);
-      break;
-
-    case 'disk_info':
-      renderDiskInfo(params.data as DiskInfo[]);
-      break;
-
-    case 'processes':
-      renderProcessList(params.data as ProcessInfo[]);
-      break;
-
-    case 'monitor_data': {
-      const data = params.data as MonitorData | undefined;
-      if (data) {
-        renderCPUInfo(data.cpu);
-        renderMemoryInfo(data.memory);
-      }
-      break;
-    }
-
-    case 'monitor_started':
-      elements.startBtn.disabled = true;
-      elements.stopBtn.disabled = false;
-      updateStatus('监控运行中', true);
-      break;
-
-    case 'monitor_stopped':
-      elements.startBtn.disabled = false;
-      elements.stopBtn.disabled = true;
-      updateStatus('监控已停止', true);
-      break;
-
-    case 'exit':
-      updateStatus('后端已退出', false);
-      backendChannel = null;
-      elements.startBtn.disabled = true;
-      elements.stopBtn.disabled = true;
-      elements.refreshBtn.disabled = true;
-      break;
-
-    case 'error':
-      console.error('后端错误:', params.message);
-      alert(`错误: ${params.message}`);
-      break;
-
-    default:
-      logInfo('未知事件:', method, params);
+  } catch (error) {
+    console.error('处理 WebSocket 消息失败:', error);
   }
 }
 
 /**
- * 启动后端
+ * 连接 WebSocket
  */
-async function startBackend(): Promise<void> {
-  try {
-    updateStatus('启动中...', false);
-    const handle = await window.booltox.backend.register();
-    backendChannel = handle.channelId;
-    updateStatus(`后端已启动 (PID: ${handle.pid})`, true);
+function connectWebSocket(): void {
+  if (ws) {
+    ws.close();
+  }
+
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    logInfo('WebSocket 已连接');
+    updateStatus('监控运行中', true);
+    elements.startBtn.disabled = true;
+    elements.stopBtn.disabled = false;
+  };
+
+  ws.onmessage = handleWebSocketMessage;
+
+  ws.onerror = (error) => {
+    console.error('WebSocket 错误:', error);
+    updateStatus('连接错误', false);
+  };
+
+  ws.onclose = () => {
+    logInfo('WebSocket 已断开');
+    updateStatus('监控已停止', true);
     elements.startBtn.disabled = false;
     elements.stopBtn.disabled = true;
-    elements.refreshBtn.disabled = false;
-    logInfo('后端已启动:', handle);
-  } catch (error) {
-    console.error('启动后端失败:', error);
-    updateStatus('启动失败', false);
-    alert(`启动失败: ${error}`);
+    ws = null;
+  };
+}
+
+/**
+ * 断开 WebSocket
+ */
+function disconnectWebSocket(): void {
+  if (ws) {
+    ws.close();
+    ws = null;
   }
 }
 
 /**
  * 开始监控
  */
-async function startMonitoring(): Promise<void> {
-  await sendCommand('start_monitor');
+function startMonitoring(): void {
+  connectWebSocket();
 }
 
 /**
  * 停止监控
  */
-async function stopMonitoring(): Promise<void> {
-  await sendCommand('stop_monitor');
+function stopMonitoring(): void {
+  disconnectWebSocket();
 }
 
 /**
  * 刷新数据
  */
 async function refreshData(): Promise<void> {
-  await sendCommand('get_system_info');
-  await sendCommand('get_cpu_info');
-  await sendCommand('get_memory_info');
-  await sendCommand('get_disk_info');
-  await sendCommand('get_processes', { sort_by: 'cpu', limit: 10 });
+  try {
+    const [systemInfo, cpuInfo, memoryInfo, diskInfo, processes] = await Promise.all([
+      callAPI<SystemInfo>('/api/system'),
+      callAPI<CPUInfo>('/api/cpu'),
+      callAPI<MemoryInfo>('/api/memory'),
+      callAPI<DiskInfo[]>('/api/disk'),
+      callAPI<ProcessInfo[]>('/api/processes?sort_by=cpu&limit=10'),
+    ]);
+
+    renderSystemInfo(systemInfo);
+    renderCPUInfo(cpuInfo);
+    renderMemoryInfo(memoryInfo);
+    renderDiskInfo(diskInfo);
+    renderProcessList(processes);
+  } catch (error) {
+    console.error('刷新数据失败:', error);
+    alert(`刷新数据失败: ${error}`);
+  }
 }
 
 /**
  * 初始化应用
  */
-function init(): void {
-  // 订阅后端消息
-  const unsubscribe = window.booltox.backend.onMessage(handleBackendMessage);
-
+async function init(): Promise<void> {
   // 绑定按钮事件
   elements.startBtn.addEventListener('click', startMonitoring);
   elements.stopBtn.addEventListener('click', stopMonitoring);
   elements.refreshBtn.addEventListener('click', refreshData);
 
-  // 自动启动后端
-  startBackend();
+  // 加载初始数据
+  try {
+    updateStatus('加载中...', false);
+    await refreshData();
+    updateStatus('就绪', true);
+    elements.startBtn.disabled = false;
+    elements.stopBtn.disabled = true;
+    elements.refreshBtn.disabled = false;
+  } catch (error) {
+    console.error('初始化失败:', error);
+    updateStatus('初始化失败', false);
+    alert(`初始化失败: ${error}\n\n请确保后端服务正在运行（http://127.0.0.1:8001）`);
+  }
 
   // 清理
   window.addEventListener('beforeunload', () => {
-    if (backendChannel) {
-      window.booltox.backend.dispose(backendChannel);
-    }
-    unsubscribe();
+    disconnectWebSocket();
   });
 }
 

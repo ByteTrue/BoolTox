@@ -1,70 +1,147 @@
 # 正则表达式测试器（Node.js Backend Demo）
 
-基于 `booltox-backend` SDK 与 TypeScript/Vite 构建的完整正则调试工具：Node.js 后端负责任务执行与事件推送，前端为纯 TS 开发（Vite 构建），包含编辑器、实时高亮、历史记录与替换预览。
+演示如何创建一个**完全独立**的工具，使用 Express 启动 HTTP 服务器，在浏览器中运行。
+
+## 🎯 设计理念
+
+**BoolTox = 进程管理器 + 工具市场**，不是工具运行容器。
+
+- ✅ 工具完全独立，可以手动启动：`node backend/dist/http_server.cjs`
+- ✅ 不依赖任何 BoolTox SDK
+- ✅ 在系统默认浏览器中运行
+- ✅ BoolTox 只负责：发现、安装、启动、停止工具
 
 ## 功能亮点
-- 正则编辑器：支持 g/i/m/s/u 标志位、语法即时校验、模板一键填充。
-- Node 后端：`test`/`replace`/`validate`/`getPatterns` 四类 RPC，内置 800 ms 超时保护与 `matchProgress` 事件。
-- 结果展示：匹配统计、唯一计数、耗时、捕获组列表、上下文高亮与批量复制。
-- 替换面板：兼容 `$1`、`$<name>` 分组引用，返回替换统计与截断预览。
-- 辅助能力：历史记录（10 条）、模板库（含示例文本）、剪贴板复制、100k+ 字符文本下 <200 ms 高亮。
 
-## 目录结构
+- **正则编辑器**：支持 g/i/m/s/u 标志位、语法即时校验、模板一键填充
+- **Node 后端**：`validate`/`test`/`replace`/`patterns` 四类 HTTP API，内置 800 ms 超时保护
+- **结果展示**：匹配统计、唯一计数、耗时、捕获组列表、上下文高亮与批量复制
+- **替换面板**：兼容 `$1`、`$<name>` 分组引用，返回替换统计与截断预览
+- **辅助能力**：历史记录（10 条）、模板库（含示例文本）、剪贴板复制
+
+## 📁 目录结构
+
 ```
 com.booltox.backend-node-demo/
-├── package.json                  # Vite + TypeScript 工作区（pnpm workspace）
-├── index.html                    # 开发入口（引用 /src/main.ts）
-├── src/
-│   ├── main.ts                   # 纯 TS 前端逻辑
-│   └── style.css                 # UI 样式
-├── dist/
-│   ├── index.html                # 运行时入口（指向 ./assets/**）
-│   └── assets/{index.css,index.js}
+├── manifest.json              # 声明 runtime.type = "http-service"
+├── package.json               # Express + TypeScript 依赖
 ├── backend/
-│   ├── src/{server.ts,regex-worker.ts}
-│   ├── dist/{server.cjs,regex-worker.cjs}
-│   └── tsconfig.json             # CJS 编译配置
-├── tsconfig.json                 # 前端 TS 配置
-├── vite.config.ts                # Vite 构建配置（保留 dist，便于校对）
+│   ├── src/
+│   │   ├── http_server.ts     # Express HTTP 服务器（新架构）
+│   │   ├── server.ts          # 旧的 JSON-RPC 版本（已废弃）
+│   │   └── regex-worker.ts    # Worker 线程执行正则任务
+│   └── dist/
+│       ├── http_server.cjs    # 编译后的 HTTP 服务器
+│       └── regex-worker.cjs   # 编译后的 Worker
+├── src/                       # 前端源代码 (TypeScript/Vite)
+├── dist/                      # 构建后的静态文件
 └── README.md
 ```
 
-## 后端 API
-```javascript
-// commands
-{
-  "validate": { pattern, flags },
-  "getPatterns": {},
-  "test": { pattern, flags, text },
-  "replace": { pattern, flags, text, replacement }
-}
+## 🚀 快速开始
 
-// events
+### 1. 安装依赖
+
+```bash
+pnpm install
+```
+
+### 2. 构建前端和后端
+
+```bash
+pnpm build
+```
+
+### 3. 独立运行
+
+```bash
+node backend/dist/http_server.cjs
+```
+
+服务器将在 `http://127.0.0.1:8002` 启动，在浏览器中打开即可使用。
+
+### 4. 在 BoolTox 中使用
+
+BoolTox 会自动：
+1. 检测并安装 Node.js 依赖（express）
+2. 启动 HTTP 服务器
+3. 在系统默认浏览器中打开工具
+4. 管理进程生命周期（启动/停止）
+
+## 📡 API 端点
+
+- `GET /` - 前端页面
+- `GET /api/patterns` - 获取正则表达式模板库
+- `POST /api/validate` - 验证正则表达式语法
+  - Body: `{ pattern: string, flags?: string }`
+- `POST /api/test` - 测试正则匹配
+  - Body: `{ pattern: string, flags?: string, text: string }`
+- `POST /api/replace` - 执行正则替换
+  - Body: `{ pattern: string, flags?: string, text: string, replacement: string }`
+
+## 🔧 技术栈
+
+- **后端**: Node.js + Express + Worker Threads
+- **前端**: TypeScript + Vite
+- **通信**: RESTful API
+
+## 📝 从旧架构迁移
+
+旧架构（webview + JSON-RPC）:
+```json
 {
-  "matchProgress": {
-     requestId, percent, processed, total, complete
+  "runtime": {
+    "ui": { "type": "webview", "entry": "dist/index.html" },
+    "backend": { "type": "node", "entry": "backend/dist/server.cjs" }
   }
 }
 ```
-- Worker 按请求生成唯一 `requestId`，服务器透传到事件，前端可判定是否为当前任务。
-- `test`/`replace` 均限制输入 ≤120 000 字符、返回最多 500 条详细匹配；超出将被标记为 `truncated`。
-- 800 ms 未完成会强制终止 worker，抛出 `[ERR_TIMEOUT]`。
+
+新架构（http-service）:
+```json
+{
+  "runtime": {
+    "type": "http-service",
+    "backend": {
+      "type": "node",
+      "entry": "backend/dist/http_server.cjs",
+      "port": 8002
+    }
+  }
+}
+```
 
 ## 开发与调试
-> 当前运行环境缺少 Node，可按照以下步骤在本地安装 Node (>=18) 后执行。
 
-1. 在仓库根目录执行 `pnpm install`，workspace 会为该工具安装 Vite/TypeScript/ts-node。
-2. 前端开发：`pnpm --filter com.booltox.backend-node-demo dev`，Vite 会加载 `index.html` + `src/main.ts`。
-3. 后端开发：`pnpm --filter com.booltox.backend-node-demo dev:backend`（ts-node 热调试）或 `pnpm build:backend` 输出到 `backend/dist`。
-4. 构建前端：`pnpm --filter com.booltox.backend-node-demo build`，会串行执行 `tsc -p backend/tsconfig.json` 与 `vite build`，产物写入 `dist/`。
-5. 打包：切到 `packages/client/scripts` 执行 `node package-plugin.mjs com.booltox.backend-node-demo`，会把 `dist/` 与 `backend/dist/` 一起写入 `resources/plugins/com.booltox.backend-node-demo/`。
+### 前端开发
+```bash
+pnpm dev  # Vite 开发服务器
+```
 
-日常联调时可直接指向 `dist/index.html`（已提供与最新 TS 逻辑同步的静态版本）；当需要更新 UI/逻辑，只需重新运行 `pnpm build` 以覆盖 dist。
+### 后端开发
+```bash
+pnpm dev:http  # ts-node 热调试 HTTP 服务器
+```
+
+### 完整构建
+```bash
+pnpm build  # 构建后端 + 前端
+```
+
+## ✨ 优势
+
+1. **极简设计**: BoolTox 只是进程管理器，不处理渲染
+2. **零兼容问题**: 所有工具运行在浏览器中，无 Electron 限制
+3. **独立可测**: 每个工具都可以独立启动测试
+4. **更好的用户体验**: 用户获得完整的浏览器功能
+5. **易于维护**: 不再需要复杂的 IPC 通信逻辑
 
 ## 关键实现
-- **超时/隔离**：正则任务在 worker 线程中执行，主进程通过 `setTimeout` + `Worker.terminate()` 保证卡顿可控。
-- **进度上报**：worker 每处理 200 次迭代向主进程发送 `progress`，后端再转发到前端的 `matchProgress` 事件。
-- **UI 性能**：高亮仅渲染前 60k 字符并对匹配区段做排序/裁剪，避免 100k+ 文本导致渲染卡顿。
-- **历史/模板**：历史写入 `localStorage`，模板经 `getPatterns` 动态下发，便于后端统一维护。
 
-如需二次开发，可在 TS 源码中扩展更多 RPC 方法（例如 `explain`）或引入远端存储；构建链已统一为 TypeScript，便于同一套 Lint/Test 流程。欢迎 PR。
+- **超时/隔离**：正则任务在 worker 线程中执行，主进程通过 `setTimeout` + `Worker.terminate()` 保证卡顿可控
+- **API 设计**：RESTful 风格，前端通过标准 `fetch` 调用
+- **错误处理**：统一错误响应格式，便于前端展示
+
+---
+
+该示例提供最小可行代码，便于第三方工具快速对齐新架构。

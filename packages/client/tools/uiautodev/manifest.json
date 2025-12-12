@@ -8,21 +8,15 @@
   "homepage": "https://uiauto.dev",
   "repository": "https://github.com/codeskyblue/uiautodev",
   "runtime": {
-    "ui": {
-      "type": "webview",
-      "entry": "index.html"
-    },
+    "type": "http-service",
     "backend": {
       "type": "python",
       "entry": "backend/main.py",
-      "requirements": "requirements.txt"
-    }
-  },
-  "permissions": ["backend.register", "backend.message"],
-  "window": {
-    "width": 1280,
-    "height": 800,
-    "minWidth": 960,
-    "minHeight": 600
+      "requirements": "requirements.txt",
+      "port": 20242,
+      "host": "127.0.0.1"
+    },
+    "path": "/",
+    "readyTimeout": 30000
   }
 }

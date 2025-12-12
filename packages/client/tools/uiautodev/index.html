@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' http://127.0.0.1:20242; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://127.0.0.1:20242; style-src 'self' 'unsafe-inline' http://127.0.0.1:20242; img-src 'self' data: http://127.0.0.1:20242; connect-src 'self' http://127.0.0.1:20242; frame-src http://127.0.0.1:20242;">
   <title>UI Auto Dev</title>
   <style>
     * {
@@ -147,7 +148,7 @@
   </div>
   
   <!-- 主应用 iframe -->
-  <iframe id="app-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  <iframe id="app-frame" allow="cross-origin-isolated"></iframe>
   
   <!-- 日志面板 -->
   <div id="log-panel"></div>
