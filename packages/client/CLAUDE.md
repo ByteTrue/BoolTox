@@ -8,23 +8,28 @@
 
 | 时间 | 操作 | 说明 |
 |------|------|------|
+| 2025-12-12 15:45 | 架构重构 | 从 webview 容器改为进程管理器，工具完全独立 |
 | 2025-12-10 21:36 | 首次生成 | 基于当前代码初始化模块文档 |
 
 ---
 
 ## 模块职责
 
+**核心理念**：**BoolTox = 进程管理器 + 工具市场**，不是工具运行容器
+
 BoolTox 的 **可选本地 Agent（Electron 客户端）**，提供：
-- **原生系统权限**：文件操作、进程调度、系统通知
-- **工具运行时**：Python/TypeScript 工具的本地执行环境
-- **高性能计算**：避免浏览器沙箱限制
+- **工具市场**：发现、搜索、安装工具
+- **进程管理**：启动、停止、重启工具进程
+- **依赖环境管理**：Python venv、Node.js 依赖自动安装
+- **系统托盘入口**：快速访问已安装工具
+- **浏览器集成**：一键在默认浏览器中打开工具
 - **自动更新**：基于 Electron Updater
 
 **核心特性**：
 - Electron 38.4.0 + Vite 7
 - React 19 + Framer Motion
 - 内置 uv（Python 包管理器）
-- 模块中心（安装/管理工具）
+- 工具完全独立，不依赖 BoolTox SDK
 
 ---
 
@@ -59,13 +64,59 @@ pnpm build
 - **通道定义**：`src/shared/constants/ipc-channels.ts`
 - **Preload Script**：桥接 Main 与 Renderer（通过 `contextBridge`）
 
-### 模块管理 API
-- **安装模块**：通过后端 API（`src/renderer/lib/backend-client.ts`）
-- **运行模块**：启动 Python/TypeScript 进程
+### 工具管理 API
+- **安装工具**：通过后端 API（`src/renderer/lib/backend-client.ts`）
+- **启动工具**：启动 Python/Node.js 进程
+- **健康检查**：轮询 HTTP 服务就绪状态
+- **打开浏览器**：使用 `shell.openExternal()` 打开工具 URL
 
-### 工具 SDK 集成
-- 依赖 `@booltox/plugin-sdk`（运行时 API）
-- 工具通过 PostMessage 与 Client 通信
+### 工具架构模式
+
+#### 1. HTTP Service 模式（推荐）
+工具启动自己的 HTTP 服务器（FastAPI/Express），在浏览器中显示：
+```json
+{
+  "runtime": {
+    "type": "http-service",
+    "backend": {
+      "type": "python",  // 或 "node"
+      "entry": "main.py",
+      "port": 8001
+    }
+  }
+}
+```
+
+**BoolTox 的处理流程**：
+1. 启动后端进程（Python/Node.js）
+2. 轮询健康检查（`http://127.0.0.1:port/`）
+3. 服务就绪后调用 `shell.openExternal(url)`
+4. 工具在系统默认浏览器中运行
+
+#### 2. Standalone 模式
+工具创建自己的原生窗口（Qt/Tkinter 等）：
+```json
+{
+  "runtime": {
+    "type": "standalone",
+    "backend": {
+      "type": "python",
+      "entry": "main.py"
+    }
+  }
+}
+```
+
+**BoolTox 的处理流程**：
+1. 启动进程
+2. 工具自行创建 GUI 窗口
+3. BoolTox 仅管理进程生命周期
+
+**参考示例**：
+- HTTP Service: `examples/backend-demo`（Python/FastAPI）
+- HTTP Service: `examples/backend-node-demo`（Node.js/Express）
+- HTTP Service: `examples/frontend-only-demo`（静态文件服务）
+- Standalone: `examples/python-standalone-demo`（PySide6/Qt）
 
 ---
 
@@ -78,6 +129,8 @@ pnpm build
 - **Electron Store**：持久化存储
 - **Electron Log**：日志记录
 - **@booltox/shared**：共享类型
+
+**注意**：新架构中工具完全独立，不再依赖 `@booltox/plugin-sdk`。
 
 ### 配置文件
 - `vite.config.ts`：Vite + Electron 工具配置
@@ -140,11 +193,19 @@ pnpm build
 2. 确保 `uv` 可执行文件已下载（`pnpm prepare:uv`）
 3. 查看 `release/` 目录的错误日志
 
-### Q4：如何集成新的工具类型？
+### Q4：如何添加新工具？
 **A**：
-1. 扩展 `@booltox/shared` 中的 `ModuleType`
-2. 在 Client 中添加对应的运行时逻辑
-3. 更新 `@booltox/plugin-sdk` 的 API
+1. 创建工具目录，编写 `manifest.json`
+2. 选择运行模式：
+   - **http-service**：工具提供 HTTP 服务，在浏览器中运行
+   - **standalone**：工具创建自己的原生窗口
+3. 参考示例工具：
+   - Python/FastAPI: `examples/backend-demo`
+   - Node.js/Express: `examples/backend-node-demo`
+   - 静态服务: `examples/frontend-only-demo`
+   - Qt 原生: `examples/python-standalone-demo`
+
+**重要**：工具必须完全独立，可以手动运行（如 `python main.py` 或 `node server.js`），不依赖 BoolTox SDK。
 
 ---
 
@@ -168,6 +229,15 @@ pnpm build
 
 ## 下一步建议
 
-- ✅ 已覆盖：架构概览、IPC 通信、模块管理
-- ⚠️ 待补充：具体 Main 进程逻辑（需读取完整 `src/main/main.ts`）
-- 🔍 推荐操作：运行 `pnpm dev` 后体验模块安装流程，了解完整交互
+- ✅ 已覆盖：进程管理架构、工具运行模式（http-service/standalone）
+- ✅ 核心职责：工具市场 + 进程调度 + 浏览器集成
+- ⚠️ 待补充：具体进程管理逻辑（需读取 `electron/services/tool/tool-runner.ts`）
+- 🔍 推荐操作：
+  1. 运行 `pnpm dev` 启动客户端
+  2. 安装示例工具测试新架构
+  3. 查看 `examples/` 目录了解工具开发模式
+
+**新架构核心优势**：
+- 工具完全独立，可独立测试和发布
+- 在浏览器中运行，零兼容问题
+- BoolTox 职责清晰：进程管理 + 工具市场

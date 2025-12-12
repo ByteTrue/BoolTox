@@ -1,6 +1,6 @@
-# BoolTox（不二工具箱） - AI 开发指南
+# BoolTox - AI 开发指南
 
-> 最后更新：2025-12-10 21:36:05
+> 最后更新：2025-12-12 15:30:00
 
 ---
 
@@ -8,17 +8,20 @@
 
 | 时间 | 操作 | 说明 |
 |------|------|------|
+| 2025-12-12 15:30 | 架构重构完成 | 移除 webview 架构，统一为 http-service/standalone 模式 |
 | 2025-12-10 21:36 | 首次生成 | 基于当前代码仓初始化 AI 上下文 |
 
 ---
 
 ## 项目愿景
 
-BoolTox 是一个**开源、可扩展的 Web + Electron 混合工具箱平台**，支持插件生态，提供：
+BoolTox 是一个**开源、可扩展的 Web + Electron 混合工具箱平台**，支持工具生态，提供：
 - **Web 优先**：零安装门槛，浏览器即用
-- **插件生态**：丰富的插件市场，一键安装（GitOps + jsDelivr CDN）
-- **本地 Agent（可选）**：Electron 客户端提供原生系统权限与高性能执行
+- **工具生态**：丰富的工具市场，一键安装（GitOps + jsDelivr CDN）
+- **本地 Agent（可选）**：Electron 客户端提供进程管理与依赖环境
 - **隐私优先**：本地运行，开源透明
+
+**核心理念**：**BoolTox = 进程管理器 + 工具市场**，不是工具运行容器
 
 ---
 
@@ -32,19 +35,54 @@ BoolTox 是一个**开源、可扩展的 Web + Electron 混合工具箱平台**�
          │ HTTP/WebSocket
 ┌────────▼────────┐
 │  本地 Agent      │  ← Electron 38 + Vite
-│  (可选安装)      │     进程调度，系统权限
+│ (进程管理器)     │     启动/停止工具进程
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│   插件生态       │  ← TypeScript, Python
-│  (独立仓库)      │     可选安装，热插拔
+│   工具生态       │  ← 完全独立的工具
+│ (http-service)   │     在系统浏览器中运行
+│  (standalone)    │     或使用原生窗口
 └─────────────────┘
 ```
 
-**核心理念**：
-- **Web 为主体**：所有用户首先访问 Web，Agent 是增强选项
-- **插件隔离**：插件托管在独立仓库 `booltox-plugins`（本仓库已通过 `.gitignore` 排除）
-- **GitOps 插件市场**：`plugins/index.json` 托管在 GitHub，通过 jsDelivr CDN 分发
+### 工具架构
+
+BoolTox 支持两种工具类型：
+
+#### 1. HTTP Service 模式（推荐）
+工具启动自己的 HTTP 服务器，在系统默认浏览器中显示：
+
+```
+用户启动工具
+    ↓
+BoolTox 启动进程 (python/node)
+    ↓
+工具启动 HTTP 服务器 (FastAPI/Express)
+    ↓
+BoolTox 健康检查 → 打开浏览器
+```
+
+**特点**：
+- ✅ 工具完全独立，可手动启动：`python tool.py` 或 `node tool.js`
+- ✅ 不依赖任何 BoolTox SDK
+- ✅ 在系统默认浏览器中运行，零兼容问题
+- ✅ 用户获得完整的浏览器功能
+
+**示例**：
+- backend-demo (Python + FastAPI)
+- backend-node-demo (Node.js + Express)
+- frontend-only-demo (Node.js + 静态文件服务)
+
+#### 2. Standalone 模式
+工具创建自己的原生窗口（Qt、Tkinter 等）：
+
+**特点**：
+- ✅ 原生 GUI 界面，性能优秀
+- ✅ 完全独立运行
+- ✅ 适合需要系统级别窗口管理的场景
+
+**示例**：
+- python-standalone-demo (PySide6 + QFluentWidgets)
 
 ---
 
@@ -56,15 +94,11 @@ graph TD
     Root --> Web["packages/web"]
     Root --> Client["packages/client"]
     Root --> Shared["packages/shared"]
-    Root --> SDK["packages/plugin-sdk"]
-    Root --> CLI["packages/cli"]
     Root --> Docs["docs/"]
 
     click Web "./packages/web/CLAUDE.md" "查看 Web 模块文档"
     click Client "./packages/client/CLAUDE.md" "查看 Client 模块文档"
     click Shared "./packages/shared/CLAUDE.md" "查看 Shared 模块文档"
-    click SDK "./packages/plugin-sdk/CLAUDE.md" "查看 Plugin SDK 模块文档"
-    click CLI "./packages/cli/CLAUDE.md" "查看 CLI 模块文档"
 ```
 
 ---
@@ -73,12 +107,12 @@ graph TD
 
 | 模块路径 | 职责描述 | 语言 | 入口文件 |
 |---------|---------|-----|---------|
-| [packages/web](./packages/web/CLAUDE.md) | Next.js 前端（主站 + 插件市场 + 资源导航） | TypeScript | `src/app/layout.tsx` |
-| [packages/client](./packages/client/CLAUDE.md) | Electron 客户端（可选本地 Agent） | TypeScript + Electron | `src/main/*.ts` (Electron Main) |
-| [packages/shared](./packages/shared/CLAUDE.md) | 共享类型与工具（API/Protocol/Types） | TypeScript | `src/index.ts` |
-| [packages/plugin-sdk](./packages/plugin-sdk/CLAUDE.md) | 插件开发 SDK（运行时 API 封装） | TypeScript | `src/index.ts` |
-| [packages/cli](./packages/cli/CLAUDE.md) | 插件开发 CLI（create/dev/build/pack） | TypeScript + Node.js | `bin/booltox.js` |
-| docs/ | 文档索引（产品/插件/历史） | Markdown | `docs/README.md` |
+| [packages/web](./packages/web/CLAUDE.md) | Next.js 前端（主站 + 工具市场 + 资源导航） | TypeScript | `src/app/layout.tsx` |
+| [packages/client](./packages/client/CLAUDE.md) | Electron 客户端（进程管理 + 依赖环境） | TypeScript + Electron | `electron/main.ts` |
+| [packages/shared](./packages/shared/CLAUDE.md) | 共享类型与协议（ToolRuntimeConfig 等） | TypeScript | `src/index.ts` |
+| docs/ | 文档索引（产品/工具/历史） | Markdown | `docs/README.md` |
+
+**注意**：`packages/tool-sdk` 已废弃，新架构的工具完全独立，不需要 SDK。
 
 ---
 
@@ -153,24 +187,27 @@ pnpm --filter @booltox/client build
 
 ### 修改代码时
 - **必读模块 CLAUDE.md**：先查看对应模块的本地文档
-- **不破坏类型安全**：`shared` 和 `plugin-sdk` 的类型变更必须向后兼容
-- **插件 API 是合约**：一旦发布，`plugin-sdk` 的公开接口不能随意修改
+- **不破坏类型安全**：`shared` 的类型变更必须向后兼容
+- **工具 API 是合约**：`ToolRuntimeConfig` 等类型一旦发布不能随意修改
+- **工具独立性**：新工具应使用 http-service 或 standalone 模式，不依赖 BoolTox SDK
 
 ### 推荐工作流
 1. 阅读 `docs/README.md` 了解产品背景
-2. 查看目标模块的 `CLAUDE.md`（如 `packages/web/CLAUDE.md`）
+2. 查看目标模块的 `CLAUDE.md`（如 `packages/client/CLAUDE.md`）
 3. 通过 Grep/Glob 定位具体实现文件
 4. 修改前运行 `pnpm type-check` 和 `pnpm lint`
+5. 查看示例工具了解最佳实践（`packages/client/examples/`）
 
 ---
 
 ## 相关资源
 
 - **在线体验**：https://booltox.com
-- **插件市场**：https://booltox.com/tools/market
+- **工具市场**：https://booltox.com/tools/market
 - **GitHub 仓库**：https://github.com/ByteTrue/BoolTox
-- **插件仓库**：https://github.com/ByteTrue/booltox-plugins（独立维护）
+- **工具仓库**：https://github.com/ByteTrue/booltox-tools（独立维护）
 - **文档索引**：[docs/README.md](./docs/README.md)
+- **重构计划**：[REFACTOR_PLAN.md](./REFACTOR_PLAN.md)
 
 ---
 
@@ -178,11 +215,12 @@ pnpm --filter @booltox/client build
 
 当前 AI 上下文已覆盖：
 - ✅ 根级架构与模块清单
+- ✅ 新架构说明（http-service/standalone）
 - ✅ 各模块 package.json 与依赖关系
-- ✅ 关键入口文件（layout/page）
-- ⚠️ 待补充：各模块详细 `CLAUDE.md`（下一步将生成）
+- ✅ 关键入口文件与示例工具
 
 **推荐操作**：
-1. 阅读各模块的 `CLAUDE.md`（即将生成）
-2. 如需深入某模块，运行 `pnpm --filter <package-name> dev`
-3. 遇到插件问题，参考 `docs/plugins/development-guide.md`
+1. 阅读各模块的 `CLAUDE.md` 了解详细实现
+2. 查看 `packages/client/examples/` 下的示例工具
+3. 参考 `REFACTOR_PLAN.md` 了解架构演进
+4. 如需深入某模块，运行 `pnpm --filter <package-name> dev`

@@ -1,14 +1,14 @@
-# BoolTox（BoolTox）
+# BoolTox
 
 <div align="center">
 
 ![BoolTox Logo](https://via.placeholder.com/200x200?text=BoolTox)
 
-**开源、可扩展的 Web 工具箱平台**
+**开源、可扩展的 Web 工具平台**
 
-支持插件生态 · 一键安装 · 完全免费
+支持工具生态 · 一键安装 · 完全免费
 
-[在线体验](https://booltox.com) · [插件市场](https://booltox.com/tools/market) · [文档](https://docs.booltox.com) · [贡献指南](#贡献指南)
+[在线体验](https://booltox.com) · [工具市场](https://booltox.com/tools/market) · [文档](https://docs.booltox.com) · [贡献指南](#贡献指南)
 
 [![License](https://img.shields.io/badge/license-CC--BY--NC--4.0-blue.svg)](LICENSE)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
@@ -21,12 +21,12 @@
 ## ✨ 特性
 
 - 🌐 **Web 优先** - 零安装门槛，浏览器即用
-- 🔌 **插件生态** - 丰富的插件市场，一键安装
+- 🔌 **工具生态** - 丰富的工具市场，一键安装
 - 🚀 **高性能** - 本地 Agent 提供原生性能
 - 🎨 **现代设计** - 简约美观的 UI，流畅的动画
 - 🔒 **安全可靠** - 开源透明，本地运行，数据隐私
-- 🛠️ **易于扩展** - 支持 TypeScript、Python 插件开发
-- 📦 **零后端成本** - GitOps 插件市场，GitHub + jsDelivr CDN
+- 🛠️ **易于扩展** - 支持 TypeScript、Python 工具开发
+- 📦 **零后端成本** - GitOps 工具市场，GitHub + jsDelivr CDN
 
 ---
 
@@ -34,11 +34,11 @@
 
 ### 在线使用
 
-访问 [https://booltox.com/tools](https://booltox.com/tools)，无需安装即可浏览插件市场。
+访问 [https://booltox.com/tools](https://booltox.com/tools)，无需安装即可浏览工具市场。
 
 ### 安装 Agent（可选，获取完整功能）
 
-Agent 是一个轻量级的本地服务，提供系统权限和插件运行支持。
+Agent 是一个轻量级的本地服务，提供系统权限和工具运行支持。
 
 **macOS**:
 \`\`\`bash
@@ -70,17 +70,17 @@ Agent 将运行在 http://localhost:9527
 
 <div align="center">
 
-### 工具箱首页
-![工具箱首页](docs/screenshots/tools-home.png)
+### 首页
+![首页](docs/screenshots/tools-home.png)
 
-### 插件市场
-![插件市场](docs/screenshots/plugin-market.png)
+### 工具市场
+![工具市场](docs/screenshots/plugin-market.png)
 
-### 插件详情
-![插件详情](docs/screenshots/plugin-detail.png)
+### 工具详情
+![工具详情](docs/screenshots/plugin-detail.png)
 
-### 插件运行
-![插件运行](docs/screenshots/plugin-running.png)
+### 工具运行
+![工具运行](docs/screenshots/plugin-running.png)
 
 </div>
 
@@ -102,8 +102,8 @@ BoolTox 采用 **Web + Agent** 混合架构：
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│   插件生态       │  ← TypeScript, Python
-│  (独立仓库)      │     可选安装，热插拔
+│   工具生态       │  ← TypeScript, Python
+│   (Monorepo)     │     可选安装，热插拔
 └─────────────────┘
 \`\`\`
 
@@ -122,7 +122,7 @@ BoolTox 采用 **Web + Agent** 混合架构：
 - WebSocket
 - SQLite (better-sqlite3)
 
-**插件系统**:
+**工具系统**:
 - TypeScript / Python
 - JSON-RPC 2.0 协议
 - PostMessage 通信
@@ -139,19 +139,12 @@ BoolTox/
 │   ├── agent/            # 本地 Agent 服务
 │   ├── core/             # 共享业务逻辑
 │   ├── sdk/              # 前端 SDK
-│   └── plugin-sdk/       # 插件开发 SDK
+│   └── plugin-sdk/       # 工具开发 SDK (旧名，将废弃)
 │
 ├── docs/                 # 文档
 ├── .github/              # GitHub Actions
 └── README.md
 
-booltox-plugins/          # 独立插件仓库
-├── packages/
-│   ├── official/         # 官方插件
-│   ├── community/        # 社区插件
-│   └── examples/         # 示例插件
-└── plugins/              # GitOps 元数据
-    └── index.json        # 插件注册表
 \`\`\`
 
 ---
@@ -160,19 +153,19 @@ booltox-plugins/          # 独立插件仓库
 
 - 仓库内所有文档的索引与分层说明：[`docs/README.md`](docs/README.md)
 
-## 🔌 插件生态
+## 🔌 工具生态
 
-### 官方插件
+### 官方工具
 
 - 🍅 **番茄钟** - 番茄工作法计时器，系统通知提醒
 - 📋 **剪贴板管理** - 剪贴板历史记录（即将推出）
 - 📝 **快速笔记** - 轻量级笔记工具（即将推出）
 
-### 插件类型
+### 工具类型
 
-BoolTox 支持 4 种插件类型：
+BoolTox 支持 4 种工具类型：
 
-1. **纯 TypeScript** - 纯前端插件（无需后端）
+1. **纯 TypeScript** - 纯前端工具（无需后端）
 2. **纯 Python** - 独立命令行工具
 3. **TS 前后端** - TS 前端 + TS 后端
 4. **TS 前端 + Python 后端** - 跨语言组合
@@ -185,7 +178,7 @@ BoolTox 支持 4 种插件类型：
 
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
-- Python >= 3.12 (可选，用于 Python 插件)
+- Python >= 3.12 (可选，用于 Python 工具)
 
 ### 本地开发
 
@@ -202,22 +195,18 @@ pnpm dev:agent  # 启动 Agent (http://localhost:9527)
 pnpm dev:web    # 启动 Web 前端 (http://localhost:3000)
 \`\`\`
 
-### 开发插件
 
-\`\`\`bash
-# 克隆插件仓库
-git clone https://github.com/ByteTrue/booltox-plugins.git
+### 开发工具
 
-# 创建新插件
-cd booltox-plugins
-pnpm create:plugin my-awesome-plugin
+```bash
+# 进入工具目录
+cd packages/client/tools/your-tool
 
-# 开发插件
-cd packages/official/my-awesome-plugin
+# 开发工具
 pnpm dev
-\`\`\`
+```
 
-详见 [插件开发指南](docs/PLUGIN_DEVELOPMENT.md)
+详见 [工具开发指南](docs/tools/development-guide.md)
 
 ---
 
@@ -225,9 +214,8 @@ pnpm dev
 
 - [项目进度](docs/PROGRESS.md) - 当前开发进度和计划
 - [架构设计](docs/agent-platform-spec.md) - Web + Agent 架构详解
-- [插件管理](docs/PLUGIN_MANAGEMENT_REDESIGN.md) - 插件系统设计
-- [插件开发指南](docs/PLUGIN_DEVELOPMENT.md) - 如何开发插件
-- [API 文档](docs/API.md) - Agent API 和插件 API
+- [工具开发指南](docs/tools/development-guide.md) - 如何开发工具
+- [API 文档](docs/API.md) - Agent API 和工具 API
 - [贡献指南](CONTRIBUTING.md) - 如何参与贡献
 
 ---
@@ -244,22 +232,22 @@ pnpm dev
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 提交 Pull Request
 
-### 开发插件
+### 开发工具
 
-插件托管在独立仓库：[booltox-plugins](https://github.com/ByteTrue/booltox-plugins)
+工具位于 `packages/client/tools/` 目录：
 
-1. Fork 插件仓库
-2. 开发插件
+1. 在 `packages/client/tools/` 下创建新工具目录
+2. 开发工具（参考 examples）
 3. 提交 Pull Request
-4. 通过审核后自动发布到插件市场
+4. 通过审核后合并到主仓库
 
 ---
 
 ## 📄 许可证
 
 - **主仓库**: [CC-BY-NC-4.0](LICENSE) - 非商业使用
-- **官方插件**: MIT - 商业友好
-- **社区插件**: 各插件自行决定
+- **官方工具**: MIT - 商业友好
+- **社区工具**: 各工具自行决定
 
 ---
 
