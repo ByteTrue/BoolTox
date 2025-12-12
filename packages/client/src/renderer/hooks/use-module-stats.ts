@@ -48,7 +48,7 @@ export function getCategoryLabel(category: string): string {
  * 计算并返回模块系统的各项统计数据
  */
 export function useModuleStats(): ModuleStats {
-  const { installedModules, availablePlugins, pluginRegistry } = useModulePlatform();
+  const { installedModules, availablePlugins, toolRegistry } = useModulePlatform();
 
   const stats = useMemo(() => {
     const installed = installedModules.length;
@@ -56,12 +56,12 @@ export function useModuleStats(): ModuleStats {
     const disabled = 0;
     
     // 过滤掉已安装的非开发工具
-    const installedPluginIds = new Set(
-      pluginRegistry
+    const installedToolIds = new Set(
+      toolRegistry
         .filter(p => !p.isDev)
         .map(p => p.id)
     );
-    const remote = availablePlugins.filter(p => !installedPluginIds.has(p.id)).length;
+    const remote = availablePlugins.filter(p => !installedToolIds.has(p.id)).length;
 
     // 按分类统计已安装模块
     const byCategory = installedModules
@@ -92,7 +92,7 @@ export function useModuleStats(): ModuleStats {
       byCategory,
       allByCategory,
     };
-  }, [installedModules, availablePlugins, pluginRegistry]);
+  }, [installedModules, availablePlugins, toolRegistry]);
 
   return stats;
 }

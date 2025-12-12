@@ -199,8 +199,8 @@ class PythonManager {
   /**
    * 获取工具依赖目录
    */
-  getPluginPackagesDir(pluginId: string): string {
-    return path.join(this.pluginPackagesDir, pluginId);
+  getToolPackagesDir(toolId: string): string {
+    return path.join(this.pluginPackagesDir, toolId);
   }
 
   /**
@@ -517,8 +517,8 @@ class PythonManager {
   /**
    * 安装依赖包到工具隔离目录
    */
-  async installPluginPackages(
-    pluginId: string,
+  async installToolPackages(
+    toolId: string,
     packages: string[],
     onProgress?: ProgressCallback
   ): Promise<void> {
@@ -526,14 +526,14 @@ class PythonManager {
       await this.ensurePython(onProgress);
     }
 
-    const targetDir = this.getPluginPackagesDir(pluginId);
+    const targetDir = this.getToolPackagesDir(toolId);
     fs.mkdirSync(targetDir, { recursive: true });
 
-    logger.info(`安装工具 ${pluginId} 依赖到 ${targetDir}:`, packages);
+    logger.info(`安装工具 ${toolId} 依赖到 ${targetDir}:`, packages);
 
     onProgress?.({
       stage: 'deps',
-      message: `正在为工具 ${pluginId} 安装: ${packages.join(', ')}`,
+      message: `正在为工具 ${toolId} 安装: ${packages.join(', ')}`,
       percent: 0
     });
 
@@ -587,7 +587,7 @@ class PythonManager {
    * 从 requirements.txt 安装工具依赖
    */
   async installPluginRequirements(
-    pluginId: string,
+    toolId: string,
     requirementsPath: string,
     onProgress?: ProgressCallback
   ): Promise<void> {
@@ -595,10 +595,10 @@ class PythonManager {
       await this.ensurePython(onProgress);
     }
 
-    const targetDir = this.getPluginPackagesDir(pluginId);
+    const targetDir = this.getToolPackagesDir(toolId);
     fs.mkdirSync(targetDir, { recursive: true });
 
-    logger.info(`从 ${requirementsPath} 安装工具 ${pluginId} 依赖`);
+    logger.info(`从 ${requirementsPath} 安装工具 ${toolId} 依赖`);
 
     onProgress?.({
       stage: 'deps',
@@ -845,8 +845,8 @@ class PythonManager {
   /**
    * 列出工具已安装的包
    */
-  listPluginPackages(pluginId: string): string[] {
-    const targetDir = this.getPluginPackagesDir(pluginId);
+  listToolPackages(toolId: string): string[] {
+    const targetDir = this.getToolPackagesDir(toolId);
 
     if (!fs.existsSync(targetDir)) {
       return [];
@@ -873,12 +873,12 @@ class PythonManager {
 // 工具独立虚拟环境支持 (新增)
 // ============================================================================
 
-  private getPluginEnvMetadataPath(pluginId: string): string {
-    return path.join(this.getPluginEnvDir(pluginId), 'meta.json');
+  private getPluginEnvMetadataPath(toolId: string): string {
+    return path.join(this.getToolEnvDir(toolId), 'meta.json');
   }
 
-  private readPluginEnvMetadata(pluginId: string): PluginEnvMetadata | null {
-    const metadataPath = this.getPluginEnvMetadataPath(pluginId);
+  private readPluginEnvMetadata(toolId: string): PluginEnvMetadata | null {
+    const metadataPath = this.getPluginEnvMetadataPath(toolId);
     if (!fs.existsSync(metadataPath)) {
       return null;
     }
@@ -886,18 +886,18 @@ class PythonManager {
       const raw = fs.readFileSync(metadataPath, 'utf-8');
       return JSON.parse(raw) as PluginEnvMetadata;
     } catch (error) {
-      logger.warn(`读取工具 ${pluginId} 虚拟环境 metadata 失败`, error);
+      logger.warn(`读取工具 ${toolId} 虚拟环境 metadata 失败`, error);
       return null;
     }
   }
 
-  private writePluginEnvMetadata(pluginId: string, metadata: PluginEnvMetadata): void {
-    const metadataPath = this.getPluginEnvMetadataPath(pluginId);
+  private writePluginEnvMetadata(toolId: string, metadata: PluginEnvMetadata): void {
+    const metadataPath = this.getPluginEnvMetadataPath(toolId);
     try {
       fs.mkdirSync(path.dirname(metadataPath), { recursive: true });
       fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
     } catch (error) {
-      logger.warn(`写入工具 ${pluginId} 虚拟环境 metadata 失败`, error);
+      logger.warn(`写入工具 ${toolId} 虚拟环境 metadata 失败`, error);
     }
   }
 
@@ -912,15 +912,15 @@ class PythonManager {
   /**
    * 判断工具是否需要重新安装 requirements（新建环境或依赖变更）
    */
-  needsPluginRequirementsSetup(pluginId: string, requirementsPath?: string): boolean {
+  needsToolRequirementsSetup(toolId: string, requirementsPath?: string): boolean {
     if (!requirementsPath || !fs.existsSync(requirementsPath)) {
       return false;
     }
-    const hasEnv = this.hasPluginEnv(pluginId);
+    const hasEnv = this.hasToolEnv(toolId);
     if (!hasEnv) {
       return true;
     }
-    const metadata = this.readPluginEnvMetadata(pluginId);
+    const metadata = this.readPluginEnvMetadata(toolId);
     if (!metadata) {
       return true;
     }
@@ -937,15 +937,15 @@ class PythonManager {
   /**
    * 获取工具独立虚拟环境目录
    */
-  getPluginEnvDir(pluginId: string): string {
-    return path.join(this.pluginEnvsDir, pluginId);
+  getToolEnvDir(toolId: string): string {
+    return path.join(this.pluginEnvsDir, toolId);
   }
 
   /**
    * 获取工具独立虚拟环境的 Python 路径
    */
-  getPluginPythonPath(pluginId: string): string {
-    const envDir = this.getPluginEnvDir(pluginId);
+  getPluginPythonPath(toolId: string): string {
+    const envDir = this.getToolEnvDir(toolId);
     if (process.platform === 'win32') {
       return path.join(envDir, '.venv', 'Scripts', 'python.exe');
     } else {
@@ -956,20 +956,20 @@ class PythonManager {
   /**
    * 检查工具是否有独立虚拟环境
    */
-  hasPluginEnv(pluginId: string): boolean {
-    const pythonPath = this.getPluginPythonPath(pluginId);
+  hasToolEnv(toolId: string): boolean {
+    const pythonPath = this.getPluginPythonPath(toolId);
     return fs.existsSync(pythonPath);
   }
 
   /**
    * 为工具创建独立虚拟环境
-   * @param pluginId 工具 ID
+   * @param toolId 工具 ID
    * @param requirementsPath requirements.txt 路径
    * @param onProgress 进度回调
    * @param indexUrl PyPI 镜像源 URL（可选）
    */
-  async ensurePluginEnv(
-    pluginId: string,
+  async ensureToolEnv(
+    toolId: string,
     requirementsPath?: string,
     onProgress?: ProgressCallback,
     indexUrl?: string
@@ -978,31 +978,31 @@ class PythonManager {
       await this.ensurePython(onProgress);
     }
 
-    const envDir = this.getPluginEnvDir(pluginId);
+    const envDir = this.getToolEnvDir(toolId);
     const venvPath = path.join(envDir, '.venv');
-    const pythonPath = this.getPluginPythonPath(pluginId);
+    const pythonPath = this.getPluginPythonPath(toolId);
     const resolvedRequirements =
       requirementsPath && fs.existsSync(requirementsPath) ? requirementsPath : undefined;
     if (requirementsPath && !resolvedRequirements) {
-      logger.warn(`工具 ${pluginId} 未找到 requirements 文件: ${requirementsPath}`);
+      logger.warn(`工具 ${toolId} 未找到 requirements 文件: ${requirementsPath}`);
     }
 
     const requirementsHash = this.computeFileHash(resolvedRequirements);
-    const metadata = this.readPluginEnvMetadata(pluginId);
+    const metadata = this.readPluginEnvMetadata(toolId);
     let venvExists = fs.existsSync(pythonPath);
     const versionMismatch = metadata?.pythonVersion && metadata.pythonVersion !== PYTHON_VERSION;
     let recreated = false;
 
     if (!venvExists || versionMismatch) {
       if (venvExists && versionMismatch) {
-        logger.info(`工具 ${pluginId} 虚拟环境 Python 版本变更，重新创建`);
+        logger.info(`工具 ${toolId} 虚拟环境 Python 版本变更，重新创建`);
         fs.rmSync(envDir, { recursive: true, force: true });
       }
 
-      logger.info(`为工具 ${pluginId} 创建独立虚拟环境: ${venvPath}`);
+      logger.info(`为工具 ${toolId} 创建独立虚拟环境: ${venvPath}`);
       onProgress?.({
         stage: 'venv',
-        message: `正在为工具 ${pluginId} 创建虚拟环境...`,
+        message: `正在为工具 ${toolId} 创建虚拟环境...`,
         percent: 0
       });
 
@@ -1030,7 +1030,7 @@ class PythonManager {
 
         proc.on('close', (code) => {
           if (code === 0) {
-            logger.info(`工具 ${pluginId} 虚拟环境创建成功`);
+            logger.info(`工具 ${toolId} 虚拟环境创建成功`);
             onProgress?.({
               stage: 'venv',
               message: '虚拟环境创建完成',
@@ -1058,23 +1058,23 @@ class PythonManager {
         metadata.pythonVersion !== PYTHON_VERSION;
 
       if (needsInstall && venvExists && !recreated) {
-        logger.info(`工具 ${pluginId} 依赖发生变化，删除旧虚拟环境重新安装`);
+        logger.info(`工具 ${toolId} 依赖发生变化，删除旧虚拟环境重新安装`);
         try {
           fs.rmSync(envDir, { recursive: true, force: true });
         } catch (error) {
-          logger.warn(`删除工具 ${pluginId} 虚拟环境失败`, error);
+          logger.warn(`删除工具 ${toolId} 虚拟环境失败`, error);
         }
-        return this.ensurePluginEnv(pluginId, resolvedRequirements, onProgress, indexUrl);
+        return this.ensureToolEnv(toolId, resolvedRequirements, onProgress, indexUrl);
       }
 
       if (needsInstall) {
-        await this.installPluginEnvRequirements(pluginId, resolvedRequirements, onProgress, indexUrl);
+        await this.installPluginEnvRequirements(toolId, resolvedRequirements, onProgress, indexUrl);
       } else {
-        logger.info(`工具 ${pluginId} requirements 未变化，跳过安装`);
+        logger.info(`工具 ${toolId} requirements 未变化，跳过安装`);
       }
     }
 
-    this.writePluginEnvMetadata(pluginId, {
+    this.writePluginEnvMetadata(toolId, {
       pythonVersion: PYTHON_VERSION,
       requirementsHash,
       updatedAt: new Date().toISOString()
@@ -1087,17 +1087,17 @@ class PythonManager {
    * 在工具独立虚拟环境中安装依赖
    */
   async installPluginEnvPackages(
-    pluginId: string,
+    toolId: string,
     packages: string[],
     onProgress?: ProgressCallback
   ): Promise<void> {
-    const venvPath = path.join(this.getPluginEnvDir(pluginId), '.venv');
+    const venvPath = path.join(this.getToolEnvDir(toolId), '.venv');
 
     if (!fs.existsSync(venvPath)) {
-      await this.ensurePluginEnv(pluginId, undefined, onProgress);
+      await this.ensureToolEnv(toolId, undefined, onProgress);
     }
 
-    logger.info(`在工具 ${pluginId} 虚拟环境中安装依赖:`, packages);
+    logger.info(`在工具 ${toolId} 虚拟环境中安装依赖:`, packages);
 
     onProgress?.({
       stage: 'deps',
@@ -1135,7 +1135,7 @@ class PythonManager {
 
       proc.on('close', (code) => {
         if (code === 0) {
-          logger.info(`工具 ${pluginId} 依赖安装成功`);
+          logger.info(`工具 ${toolId} 依赖安装成功`);
           onProgress?.({
             stage: 'deps',
             message: '依赖安装完成',
@@ -1155,24 +1155,24 @@ class PythonManager {
 
   /**
    * 从 requirements.txt 安装依赖到工具独立虚拟环境
-   * @param pluginId 工具 ID
+   * @param toolId 工具 ID
    * @param requirementsPath requirements.txt 路径
    * @param onProgress 进度回调
    * @param indexUrl PyPI 镜像源 URL（可选）
    */
   async installPluginEnvRequirements(
-    pluginId: string,
+    toolId: string,
     requirementsPath: string,
     onProgress?: ProgressCallback,
     indexUrl?: string
   ): Promise<void> {
-    const venvPath = path.join(this.getPluginEnvDir(pluginId), '.venv');
+    const venvPath = path.join(this.getToolEnvDir(toolId), '.venv');
 
     if (!fs.existsSync(venvPath)) {
-      await this.ensurePluginEnv(pluginId, undefined, onProgress);
+      await this.ensureToolEnv(toolId, undefined, onProgress);
     }
 
-    logger.info(`从 ${requirementsPath} 安装依赖到工具 ${pluginId} 虚拟环境`);
+    logger.info(`从 ${requirementsPath} 安装依赖到工具 ${toolId} 虚拟环境`);
     if (indexUrl) {
       logger.info(`使用镜像源: ${indexUrl}`);
     }
@@ -1217,7 +1217,7 @@ class PythonManager {
 
       proc.on('close', (code) => {
         if (code === 0) {
-          logger.info(`工具 ${pluginId} requirements.txt 依赖安装成功`);
+          logger.info(`工具 ${toolId} requirements.txt 依赖安装成功`);
           onProgress?.({
             stage: 'deps',
             message: 'requirements.txt 依赖安装完成',
@@ -1237,12 +1237,12 @@ class PythonManager {
    * 使用工具独立虚拟环境启动 Python 进程
    */
   spawnPluginPython(
-    pluginId: string,
+    toolId: string,
     scriptPath: string,
     args: string[] = [],
     options: RunScriptOptions = {}
   ): ChildProcess {
-    const pythonPath = this.getPluginPythonPath(pluginId);
+    const pythonPath = this.getPluginPythonPath(toolId);
 
     // 如果工具没有独立环境，回退到全局环境
     const actualPythonPath = fs.existsSync(pythonPath)
@@ -1262,7 +1262,7 @@ class PythonManager {
       windowsHide: true
     });
 
-    logger.info(`启动工具 ${pluginId} Python 进程:`, scriptPath, 'PID:', proc.pid);
+    logger.info(`启动工具 ${toolId} Python 进程:`, scriptPath, 'PID:', proc.pid);
 
     return proc;
   }
@@ -1270,11 +1270,11 @@ class PythonManager {
   /**
    * 删除工具独立虚拟环境
    */
-  async removePluginEnv(pluginId: string): Promise<void> {
-    const envDir = this.getPluginEnvDir(pluginId);
+  async removePluginEnv(toolId: string): Promise<void> {
+    const envDir = this.getToolEnvDir(toolId);
 
     if (fs.existsSync(envDir)) {
-      logger.info(`删除工具 ${pluginId} 虚拟环境: ${envDir}`);
+      logger.info(`删除工具 ${toolId} 虚拟环境: ${envDir}`);
       fs.rmSync(envDir, { recursive: true, force: true });
     }
   }
@@ -1297,29 +1297,29 @@ class PythonManager {
    * 解析工具后端运行所需的 Python 环境（共享或独立）
    */
   async resolveBackendEnvironment(options: {
-    pluginId: string;
-    pluginPath: string;
+    toolId: string;
+    toolPath: string;
     requirementsPath?: string;
   }): Promise<{ pythonPath: string; venvPath?: string; additionalPythonPaths: string[] }> {
-    const { pluginId, pluginPath, requirementsPath } = options;
+    const { toolId, toolPath, requirementsPath } = options;
     let resolvedRequirements: string | undefined;
     if (requirementsPath) {
       resolvedRequirements = path.isAbsolute(requirementsPath)
         ? requirementsPath
-        : path.join(pluginPath, requirementsPath);
+        : path.join(toolPath, requirementsPath);
     }
 
     if (resolvedRequirements && fs.existsSync(resolvedRequirements)) {
-      const venvPath = await this.ensurePluginEnv(pluginId, resolvedRequirements);
+      const venvPath = await this.ensureToolEnv(toolId, resolvedRequirements);
       return {
-        pythonPath: this.getPluginPythonPath(pluginId),
+        pythonPath: this.getPluginPythonPath(toolId),
         venvPath,
         additionalPythonPaths: []
       };
     }
 
     await this.ensurePython();
-    const pluginPackagesDir = this.getPluginPackagesDir(pluginId);
+    const pluginPackagesDir = this.getToolPackagesDir(toolId);
     fs.mkdirSync(pluginPackagesDir, { recursive: true });
     return {
       pythonPath: this.getPythonPath(),

@@ -4,7 +4,7 @@
  */
 
 import { motion } from "framer-motion";
-import { Trash2, Download, ExternalLink, Pin } from "lucide-react";
+import { Trash2, Download, ExternalLink, Pin, Square } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
 import { cardHover } from "@/utils/animation-presets";
@@ -14,6 +14,7 @@ interface ModuleCardProps {
   module: ModuleInstance;
   onUninstall: (moduleId: string) => void;
   onOpen: (moduleId: string) => void;
+  onStop: (moduleId: string) => void;
   onClick: (moduleId: string) => void;
   onPinToggle: (moduleId: string) => void;
   isDev?: boolean; // 是否为开发工具(不可卸载)
@@ -23,6 +24,7 @@ export function ModuleCard({
   module,
   onUninstall,
   onOpen,
+  onStop,
   onClick,
   onPinToggle,
   isDev = false,
@@ -189,6 +191,21 @@ export function ModuleCard({
             <ExternalLink className="mx-auto" size={14} />
           )}
         </button>
+
+        {/* 停止按钮：仅在运行时显示 */}
+        {isRunning && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStop(module.id);
+            }}
+            className="flex-1 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-xs font-medium text-orange-500 transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 hover:bg-orange-500/20"
+            title="停止工具"
+          >
+            <Square className="mx-auto" size={14} />
+          </button>
+        )}
 
         <button
           type="button"

@@ -13,8 +13,8 @@ import { pythonManager } from '../python-manager.service.js';
 const logger = createLogger('PluginDevServer');
 
 export interface PluginDevServerOptions {
-  pluginId: string;
-  pluginPath: string;
+  toolId: string;
+  toolPath: string;
   backend?: ToolBackendConfig;
   onRestart?: (info: { reason: string }) => void;
 }
@@ -27,12 +27,12 @@ export class PluginDevServer {
   async start(options: PluginDevServerOptions): Promise<void> {
     this.options = options;
     if (!options.backend) {
-      logger.info(`[DevServer] 工具 ${options.pluginId} 未声明 backend，跳过后端监听`);
+      logger.info(`[DevServer] 工具 ${options.toolId} 未声明 backend，跳过后端监听`);
       return;
     }
 
     await this.launchBackend('start');
-    this.watcher = chokidar.watch(path.join(options.pluginPath, options.backend.entry), {
+    this.watcher = chokidar.watch(path.join(options.toolPath, options.backend.entry), {
       ignoreInitial: true,
     });
     this.watcher.on('all', async (event: string, filePath: string) => {
@@ -68,28 +68,28 @@ export class PluginDevServer {
 
   private async launchBackend(reason: string): Promise<void> {
     if (!this.options?.backend) return;
-    const { pluginId, pluginPath, backend } = this.options;
+    const { toolId, toolPath, backend } = this.options;
     logger.info(`[DevServer] 启动后端 (${backend.type})，原因=${reason}`);
 
     if (backend.type === 'python') {
       const environment = await pythonManager.resolveBackendEnvironment({
-        pluginId,
-        pluginPath,
+        toolId,
+        toolPath,
         requirementsPath: backend.requirements,
       });
       const env = {
         ...process.env,
         ...(environment.venvPath ? { VIRTUAL_ENV: environment.venvPath } : {}),
-        PYTHONPATH: [pythonManager.getPluginPackagesDir(pluginId), path.join(process.resourcesPath, 'python-sdk')]
+        PYTHONPATH: [pythonManager.getToolPackagesDir(toolId), path.join(process.resourcesPath, 'python-sdk')]
           .filter(Boolean)
           .join(path.delimiter),
-        BOOLTOX_PLUGIN_ID: pluginId,
+        BOOLTOX_PLUGIN_ID: toolId,
       };
       this.proc = pythonManager.spawnPython(
-        path.isAbsolute(backend.entry) ? backend.entry : path.join(pluginPath, backend.entry),
+        path.isAbsolute(backend.entry) ? backend.entry : path.join(toolPath, backend.entry),
         backend.args ?? [],
         {
-          cwd: pluginPath,
+          cwd: toolPath,
           env,
           pythonPath: environment.pythonPath,
           venvPath: environment.venvPath,
@@ -99,11 +99,11 @@ export class PluginDevServer {
       const env = {
         ...process.env,
         NODE_PATH: path.join(process.resourcesPath, 'node-sdk'),
-        BOOLTOX_PLUGIN_ID: pluginId,
+        BOOLTOX_PLUGIN_ID: toolId,
         ...(backend.env ?? {}),
       };
       this.proc = spawn(process.execPath, [backend.entry, ...(backend.args ?? [])], {
-        cwd: pluginPath,
+        cwd: toolPath,
         env,
         stdio: 'inherit',
       });
@@ -111,7 +111,7 @@ export class PluginDevServer {
       this.proc = spawn(
         backend.entry,
         backend.args ?? [],
-        { cwd: pluginPath, env: { ...process.env, ...(backend.env ?? {}) }, stdio: 'inherit' }
+        { cwd: toolPath, env: { ...process.env, ...(backend.env ?? {}) }, stdio: 'inherit' }
       );
     }
   }

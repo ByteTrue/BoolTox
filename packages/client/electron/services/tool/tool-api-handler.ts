@@ -43,7 +43,7 @@ function ensureNumber(value: unknown, field: string): number {
 function resolveSandboxPath(root: string, relativePath: string) {
   const target = path.resolve(root, relativePath);
   if (!target.startsWith(root)) {
-    throw new Error('Security Error: access outside plugin sandbox is not allowed');
+    throw new Error('Security Error: access outside tool sandbox is not allowed');
   }
   return target;
 }
@@ -207,7 +207,7 @@ class BooltoxExtensionHostService {
           }
 
           const cmd = [command, ...args].join(' ').trim();
-          logger.info(`[Shell] ${ctx.plugin.id} -> ${cmd}`);
+          logger.info(`[Shell] ${ctx.tool.id} -> ${cmd}`);
           try {
             const { stdout, stderr } = await execAsync(cmd, {
               cwd: typeof data.cwd === 'string' ? data.cwd : undefined,
@@ -234,7 +234,7 @@ class BooltoxExtensionHostService {
           const timeout = typeof data.timeoutMs === 'number' ? data.timeoutMs : undefined;
           const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
 
-          const pluginPackagesDir = pythonManager.getPluginPackagesDir(ctx.plugin.id);
+          const pluginPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
           return pythonManager.runScript(scriptPath, args, {
             timeout,
             env: {
@@ -388,13 +388,13 @@ class BooltoxExtensionHostService {
           const data = ensureRecord(payload, 'python.installDeps');
           const packages = Array.isArray(data.packages) ? data.packages.map(String) : [];
           if (packages.length === 0) throw new Error('python.installDeps requires at least one package');
-          await pythonManager.installPluginPackages(ctx.plugin.id, packages);
+          await pythonManager.installToolPackages(ctx.tool.id, packages);
           return { success: true };
         }
 
         if (method === 'listDeps') {
           try {
-            const packages = pythonManager.listPluginPackages(ctx.plugin.id);
+            const packages = pythonManager.listToolPackages(ctx.tool.id);
             return { success: true, packages };
           } catch (error) {
             return { success: false, packages: [], error: error instanceof Error ? error.message : String(error) };
@@ -407,7 +407,7 @@ class BooltoxExtensionHostService {
           const timeout = typeof data.timeout === 'number' ? data.timeout : undefined;
           const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
 
-          const pluginPackagesDir = pythonManager.getPluginPackagesDir(ctx.plugin.id);
+          const pluginPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
           return pythonManager.runCode(code, {
             timeout,
             env: {
@@ -424,7 +424,7 @@ class BooltoxExtensionHostService {
           const timeout = typeof data.timeout === 'number' ? data.timeout : undefined;
           const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
 
-          const pluginPackagesDir = pythonManager.getPluginPackagesDir(ctx.plugin.id);
+          const pluginPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
           return pythonManager.runScript(scriptPath, args, {
             timeout,
             env: {
@@ -452,7 +452,7 @@ class BooltoxExtensionHostService {
       handle: async (ctx, method, payload) => {
         if (method === 'register') {
           const explicitConfig = coerceBackendConfig(payload);
-          const runtimeConfig = ctx.plugin.manifest.runtime;
+          const runtimeConfig = ctx.tool.manifest.runtime;
           const manifestConfig =
             runtimeConfig && runtimeConfig.type !== 'standalone' && runtimeConfig.type !== 'binary'
               ? runtimeConfig.backend
@@ -461,7 +461,7 @@ class BooltoxExtensionHostService {
           if (!config) {
             throw new Error('Backend configuration missing. Provide definition or manifest.runtime.backend');
           }
-          return backendRunner.registerBackend(ctx.plugin, config, ctx.sender.id);
+          return backendRunner.registerBackend(ctx.tool, config, ctx.sender.id);
         }
 
         if (method === 'postMessage') {
@@ -522,4 +522,4 @@ class BooltoxExtensionHostService {
   }
 }
 
-export const pluginApiHandler = new BooltoxExtensionHostService();
+export const toolApiHandler = new BooltoxExtensionHostService();

@@ -7,13 +7,13 @@ import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { BooltoxPermission, ToolRuntime } from '@booltox/shared';
-import { pluginRunner } from '../plugin/plugin-runner.js';
+import { toolRunner } from '../tool/tool-runner.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('ExtensionHost');
 
 export interface ExtensionModuleContext {
-  plugin: ToolRuntime;
+  tool: ToolRuntime;
   sender: WebContents;
   window?: BrowserWindow;
   dataDir: string;
@@ -28,11 +28,11 @@ export interface ExtensionModuleDefinition {
 export class ExtensionHost {
   private readonly modules = new Map<string, ExtensionModuleDefinition>();
   private readonly channel: string;
-  private readonly pluginDataRoot: string;
+  private readonly toolDataRoot: string;
 
   constructor(channel = 'booltox:api:call') {
     this.channel = channel;
-    this.pluginDataRoot = path.join(app.getPath('userData'), 'plugin-data');
+    this.toolDataRoot = path.join(app.getPath('userData'), 'tool-data');
   }
 
   registerModule(definition: ExtensionModuleDefinition) {
@@ -58,16 +58,16 @@ export class ExtensionHost {
       throw error;
     }
 
-    const plugin = this.resolvePlugin(event.sender.id);
-    const context = await this.createContext(event, plugin);
+    const tool = this.resolvePlugin(event.sender.id);
+    const context = await this.createContext(event, tool);
 
-    this.ensurePermissions(plugin, module.requiredPermissions?.[method], moduleName, method);
+    this.ensurePermissions(tool, module.requiredPermissions?.[method], moduleName, method);
 
     try {
       return await module.handle(context, method, payload);
     } catch (error) {
       logger.error(
-        `[ExtensionHost] Module ${moduleName}.${method} failed for ${plugin.id}`,
+        `[ExtensionHost] Module ${moduleName}.${method} failed for ${tool.id}`,
         error,
       );
       throw error instanceof Error ? error : new Error(String(error));
@@ -75,24 +75,24 @@ export class ExtensionHost {
   }
 
   private resolvePlugin(webContentsId: number): ToolRuntime {
-    const plugin = pluginRunner.getRunningPlugin(webContentsId);
-    if (!plugin) {
-      const error = new Error(`Access denied: plugin runtime missing for webContents ${webContentsId}`);
-      logger.warn(`[ExtensionHost] ${error.message}`);
-      throw error;
-    }
-    return plugin;
+    // 新架构中不再支持 webview 模式，工具运行在浏览器中
+    const error = new Error(`ExtensionHost is no longer supported. Tools should use http-service runtime and run in the browser. (webContentsId: ${webContentsId})`);
+    logger.warn(`[ExtensionHost] ${error.message}`);
+    throw error;
   }
 
-  private async createContext(event: IpcMainInvokeEvent, plugin: ToolRuntime): Promise<ExtensionModuleContext> {
-    await fs.mkdir(this.pluginDataRoot, { recursive: true });
-    const pluginDir = path.join(this.pluginDataRoot, plugin.id);
-    await fs.mkdir(pluginDir, { recursive: true });
+  private async createContext(event: IpcMainInvokeEvent, tool: ToolRuntime): Promise<ExtensionModuleContext> {
+    await fs.mkdir(this.toolDataRoot, { recursive: true });
+    const toolDir = path.join(this.toolDataRoot, tool.id);
+    await fs.mkdir(toolDir, { recursive: true });
 
     const sender = event.sender;
     if (sender.isDestroyed()) {
-      const error = new Error(`Access denied: plugin window already destroyed for ${plugin.id}`);
-      logger.warn(`[ExtensionHost] ${error.message}`);
+      // 窗口已销毁，这通常是正常的竞态条件（窗口关闭时还有异步 API 调用）
+      // 不抛出错误，而是抛出一个特殊的可识别错误，调用者可以选择静默处理
+      const error = new Error(`Tool window already destroyed for ${tool.id}`);
+      (error as any).code = 'WINDOW_DESTROYED';
+      logger.debug(`[ExtensionHost] ${error.message} (this is usually a normal race condition)`);
       throw error;
     }
 
@@ -101,23 +101,24 @@ export class ExtensionHost {
       window = BrowserWindow.fromWebContents(sender) ?? undefined;
     } catch (error) {
       if (error instanceof Error && error.message.includes('Object has been destroyed')) {
-        const destroyedError = new Error(`Access denied: plugin window already destroyed for ${plugin.id}`);
-        logger.warn(`[ExtensionHost] ${destroyedError.message}`);
+        const destroyedError = new Error(`Tool window already destroyed for ${tool.id}`);
+        (destroyedError as any).code = 'WINDOW_DESTROYED';
+        logger.debug(`[ExtensionHost] ${destroyedError.message} (this is usually a normal race condition)`);
         throw destroyedError;
       }
       throw error;
     }
 
     return {
-      plugin,
+      tool,
       sender,
       window,
-      dataDir: pluginDir,
+      dataDir: toolDir,
     };
   }
 
   private ensurePermissions(
-    plugin: ToolRuntime,
+    tool: ToolRuntime,
     required: BooltoxPermission[] | undefined,
     moduleName: string,
     method: string,
@@ -126,11 +127,11 @@ export class ExtensionHost {
       return;
     }
 
-    const declared = new Set(plugin.manifest.permissions ?? []);
+    const declared = new Set(tool.manifest.permissions ?? []);
     const missing = required.filter((permission) => !declared.has(permission));
     if (missing.length > 0) {
       const error = new Error(
-        `Permission denied for ${plugin.id} on ${moduleName}.${method}: missing [${missing.join(', ')}]`,
+        `Permission denied for ${tool.id} on ${moduleName}.${method}: missing [${missing.join(', ')}]`,
       );
       logger.warn(`[ExtensionHost] ${error.message}`);
       throw error;

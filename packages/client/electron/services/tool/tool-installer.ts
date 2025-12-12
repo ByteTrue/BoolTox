@@ -18,26 +18,26 @@ const logger = createLogger('PluginInstaller');
  * 工具安装服务
  * 负责下载、验证、解压和安装工具
  */
-export class PluginInstallerService {
-  private pluginsDir: string;
+export class ToolInstallerService {
+  private toolsDir: string;
   private tempDir: string;
-  private downloadingPlugins = new Map<string, AbortController>();
+  private downloadingTools = new Map<string, AbortController>();
 
   constructor() {
-    this.pluginsDir = path.join(app.getPath('userData'), 'plugins');
-    this.tempDir = path.join(app.getPath('temp'), 'booltox-plugin-downloads');
+    this.toolsDir = path.join(app.getPath('userData'), 'tools');
+    this.tempDir = path.join(app.getPath('temp'), 'booltox-tool-downloads');
   }
 
   async init() {
     // 确保目录存在
-    await fs.mkdir(this.pluginsDir, { recursive: true });
+    await fs.mkdir(this.toolsDir, { recursive: true });
     await fs.mkdir(this.tempDir, { recursive: true });
   }
 
   /**
    * 安装工具
    */
-  async installPlugin(
+  async installTool(
     entry: ToolRegistryEntry,
     onProgress?: (progress: ToolInstallProgress) => void,
     window?: BrowserWindow
@@ -54,21 +54,21 @@ export class PluginInstallerService {
     }
 
     // 检查是否已在下载
-    if (this.downloadingPlugins.has(id)) {
+    if (this.downloadingTools.has(id)) {
       throw new Error(`工具 ${id} 正在下载中`);
     }
 
-    const pluginDir = path.join(this.pluginsDir, id);
+    const toolDir = path.join(this.toolsDir, id);
     
     // 检查是否已安装
-    const exists = await this.checkPluginExists(pluginDir);
+    const exists = await this.checkToolExists(toolDir);
     if (exists) {
       // TODO: 检查版本,支持更新
       throw new Error(`工具 ${id} 已安装`);
     }
 
     const abortController = new AbortController();
-    this.downloadingPlugins.set(id, abortController);
+    this.downloadingTools.set(id, abortController);
 
     try {
       // 1. 下载
@@ -113,19 +113,47 @@ export class PluginInstallerService {
         message: '正在解压工具...',
       });
 
-      await this.extractZip(tempZipPath, pluginDir);
+      await this.extractZip(tempZipPath, toolDir);
 
       // 4. 验证manifest
       this.reportProgress(onProgress, window, {
         stage: 'installing',
-        percent: 95,
-        message: '正在安装工具...',
+        percent: 90,
+        message: '正在验证工具配置...',
       });
 
-      const manifestPath = path.join(pluginDir, 'manifest.json');
+      const manifestPath = path.join(toolDir, 'manifest.json');
       await this.validateManifest(manifestPath, id);
 
-      // 5. 清理临时文件
+      // 5. 安装依赖（如需要，使用依赖安装窗口）
+      const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
+
+      if (manifest.runtime?.backend?.type === 'node') {
+        const packageJsonPath = path.join(toolDir, 'package.json');
+        const hasPackageJson = await fs.access(packageJsonPath).then(() => true).catch(() => false);
+
+        if (hasPackageJson && window) {
+          logger.info(`[ToolInstaller] 工具 ${id} 需要安装 Node.js 依赖，显示安装窗口`);
+
+          // 使用通用依赖安装器（带 UI 窗口）
+          const { showDepsInstaller } = await import('../../windows/deps-installer.js');
+          const result = await showDepsInstaller({
+            toolId: id,
+            toolName: manifest.name,
+            toolPath: toolDir,
+            language: 'node',
+            packageJsonPath,
+          });
+
+          if (!result.success) {
+            throw new Error(result.cancelled ? '用户取消了依赖安装' : '依赖安装失败');
+          }
+
+          logger.info(`[ToolInstaller] 工具 ${id} Node.js 依赖安装成功`);
+        }
+      }
+
+      // 6. 清理临时文件
       await fs.unlink(tempZipPath).catch(() => {});
 
       this.reportProgress(onProgress, window, {
@@ -134,11 +162,11 @@ export class PluginInstallerService {
         message: '安装完成',
       });
 
-      logger.info(`[PluginInstaller] 工具安装成功: ${id}`);
-      return pluginDir;
+      logger.info(`[ToolInstaller] 工具安装成功: ${id}`);
+      return toolDir;
     } catch (error) {
       // 清理失败的安装
-      await this.cleanup(pluginDir, id);
+      await this.cleanup(toolDir, id);
       
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.reportProgress(onProgress, window, {
@@ -150,33 +178,33 @@ export class PluginInstallerService {
 
       throw error;
     } finally {
-      this.downloadingPlugins.delete(id);
+      this.downloadingTools.delete(id);
     }
   }
 
   /**
    * 卸载工具
    */
-  async uninstallPlugin(pluginId: string): Promise<void> {
-    const pluginDir = path.join(this.pluginsDir, pluginId);
+  async uninstallTool(pluginId: string): Promise<void> {
+    const toolDir = path.join(this.toolsDir, pluginId);
     
-    const exists = await this.checkPluginExists(pluginDir);
+    const exists = await this.checkToolExists(toolDir);
     if (!exists) {
       throw new Error(`工具 ${pluginId} 未安装`);
     }
 
-    await fs.rm(pluginDir, { recursive: true, force: true });
-    logger.info(`[PluginInstaller] 工具已卸载: ${pluginId}`);
+    await fs.rm(toolDir, { recursive: true, force: true });
+    logger.info(`[ToolInstaller] 工具已卸载: ${pluginId}`);
   }
 
   /**
    * 取消下载
    */
   cancelDownload(pluginId: string): void {
-    const controller = this.downloadingPlugins.get(pluginId);
+    const controller = this.downloadingTools.get(pluginId);
     if (controller) {
       controller.abort();
-      this.downloadingPlugins.delete(pluginId);
+      this.downloadingTools.delete(pluginId);
     }
   }
 
@@ -287,9 +315,9 @@ export class PluginInstallerService {
   /**
    * 检查工具是否存在
    */
-  private async checkPluginExists(pluginDir: string): Promise<boolean> {
+  private async checkToolExists(toolDir: string): Promise<boolean> {
     try {
-      await fs.access(pluginDir);
+      await fs.access(toolDir);
       return true;
     } catch {
       return false;
@@ -299,9 +327,9 @@ export class PluginInstallerService {
   /**
    * 清理失败的安装
    */
-  private async cleanup(pluginDir: string, tempZipId: string): Promise<void> {
+  private async cleanup(toolDir: string, tempZipId: string): Promise<void> {
     // 删除工具目录
-    await fs.rm(pluginDir, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(toolDir, { recursive: true, force: true }).catch(() => {});
     
     // 删除临时ZIP文件
     const tempFiles = await fs.readdir(this.tempDir).catch(() => []);
@@ -325,7 +353,7 @@ export class PluginInstallerService {
     }
 
     if (window && !window.isDestroyed()) {
-      window.webContents.send('plugin:install-progress', progress);
+      window.webContents.send('tool:install-progress', progress);
     }
   }
 
@@ -347,20 +375,20 @@ export class PluginInstallerService {
     }
 
     // 检查是否已在下载
-    if (this.downloadingPlugins.has(id)) {
+    if (this.downloadingTools.has(id)) {
       throw new Error(`工具 ${id} 正在下载中`);
     }
 
-    const pluginDir = path.join(this.pluginsDir, id);
+    const toolDir = path.join(this.toolsDir, id);
 
     // 检查是否已安装
-    const exists = await this.checkPluginExists(pluginDir);
+    const exists = await this.checkToolExists(toolDir);
     if (exists) {
       throw new Error(`工具 ${id} 已安装`);
     }
 
     const abortController = new AbortController();
-    this.downloadingPlugins.set(id, abortController);
+    this.downloadingTools.set(id, abortController);
 
     try {
       // 1. 下载可执行文件
@@ -403,11 +431,11 @@ export class PluginInstallerService {
         message: '正在安装工具...',
       });
 
-      await fs.mkdir(pluginDir, { recursive: true });
+      await fs.mkdir(toolDir, { recursive: true });
 
       // 4. 移动可执行文件
       const exeName = path.basename(new URL(assetInfo.url).pathname);
-      const targetPath = path.join(pluginDir, exeName);
+      const targetPath = path.join(toolDir, exeName);
       await fs.rename(tempFile, targetPath);
 
       // 5. 设置执行权限（macOS/Linux）
@@ -430,7 +458,7 @@ export class PluginInstallerService {
         },
       };
 
-      await fs.writeFile(path.join(pluginDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+      await fs.writeFile(path.join(toolDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
       this.reportProgress(onProgress, window, {
         stage: 'complete',
@@ -438,11 +466,11 @@ export class PluginInstallerService {
         message: '安装完成',
       });
 
-      logger.info(`[PluginInstaller] Binary tool ${id} installed successfully at ${pluginDir}`);
-      return pluginDir;
+      logger.info(`[ToolInstaller] Binary tool ${id} installed successfully at ${toolDir}`);
+      return toolDir;
     } catch (error) {
       // 清理失败的安装
-      await this.cleanup(pluginDir, id);
+      await this.cleanup(toolDir, id);
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.reportProgress(onProgress, window, {
@@ -454,7 +482,7 @@ export class PluginInstallerService {
 
       throw error;
     } finally {
-      this.downloadingPlugins.delete(id);
+      this.downloadingTools.delete(id);
     }
   }
 
@@ -479,4 +507,4 @@ export class PluginInstallerService {
   }
 }
 
-export const pluginInstaller = new PluginInstallerService();
+export const toolInstaller = new ToolInstallerService();

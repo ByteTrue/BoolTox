@@ -24,11 +24,11 @@ import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
 import { moduleStoreService } from './services/module-store.service.js';
 import { AutoUpdateService } from './services/auto-update.service.js';
 import { gitOpsService, type GitOpsConfig } from './services/git-ops.service.js';
-import { pluginManager } from './services/tool/plugin-manager.js';
-import { pluginRunner } from './services/tool/plugin-runner.js';
-import { pluginInstaller } from './services/tool/plugin-installer.js';
+import { toolManager } from './services/tool/tool-manager.js';
+import { toolRunner } from './services/tool/tool-runner.js';
+import { toolInstaller } from './services/tool/tool-installer.js';
 import { pythonManager } from './services/python-manager.service.js';
-import './services/plugin/plugin-api-handler.js'; // Initialize API handlers
+import './services/tool/tool-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { ToolRegistryEntry, ToolManifest } from '@booltox/shared';
 import { IPC_CHANNELS, type RendererConsolePayload } from '../src/shared/constants/ipc-channels.js';
@@ -363,7 +363,7 @@ ipcMain.handle('git-ops:get-announcements', async () => {
   return await gitOpsService.getAnnouncements();
 });
 
-ipcMain.handle('git-ops:get-plugins', async () => {
+ipcMain.handle('git-ops:get-tools', async () => {
   return await gitOpsService.getPluginRegistry();
 });
 
@@ -382,48 +382,44 @@ ipcMain.handle('logger:open-log-folder', async () => {
 /**
  * Plugin System - IPC Handlers
  */
-ipcMain.handle('plugin:get-all', () => {
-  return pluginManager.getAllPlugins();
+ipcMain.handle('tool:get-all', () => {
+  return toolManager.getAllTools();
 });
 
-ipcMain.handle('plugin:start', async (_event, id: string) => {
+ipcMain.handle('tool:start', async (_event, id: string) => {
   if (!mainWindow) throw new Error('Main window not found');
-  return await pluginRunner.startPlugin(id, mainWindow);
+  return await toolRunner.startTool(id, mainWindow);
 });
 
-ipcMain.handle('plugin:stop', (_event, id: string) => {
+ipcMain.handle('tool:stop', (_event, id: string) => {
   if (!mainWindow) return;
-  pluginRunner.stopPlugin(id, mainWindow);
+  toolRunner.stopTool(id, mainWindow);
 });
 
-ipcMain.handle('plugin:resize', (_event, id: string, bounds: Rectangle) => {
-  pluginRunner.resizePlugin(id, bounds);
-});
-
-ipcMain.handle('plugin:focus', (_event, id: string) => {
-  pluginRunner.focusPlugin(id);
+ipcMain.handle('tool:focus', (_event, id: string) => {
+  toolRunner.focusTool(id);
 });
 
 /**
  * Plugin Installation - IPC Handlers
  */
-ipcMain.handle('plugin:install', async (_event, entry: ToolRegistryEntry) => {
+ipcMain.handle('tool:install', async (_event, entry: ToolRegistryEntry) => {
   try {
-    const pluginDir = await pluginInstaller.installPlugin(
+    const toolDir = await toolInstaller.installTool(
       entry,
       (progress) => {
         // 发送进度更新到渲染进程
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('plugin:install-progress', progress);
+          mainWindow.webContents.send('tool:install-progress', progress);
         }
       },
       mainWindow || undefined
     );
     
     // 安装完成后,重新加载工具列表
-    await pluginManager.loadPlugins();
+    await toolManager.loadTools();
     
-    return { success: true, path: pluginDir };
+    return { success: true, path: toolDir };
   } catch (error) {
     logger.error('[Main] Plugin installation failed:', error);
     return {
@@ -433,18 +429,18 @@ ipcMain.handle('plugin:install', async (_event, entry: ToolRegistryEntry) => {
   }
 });
 
-ipcMain.handle('plugin:uninstall', async (_event, pluginId: string) => {
+ipcMain.handle('tool:uninstall', async (_event, pluginId: string) => {
   try {
     // 先停止工具
     if (mainWindow) {
-      pluginRunner.stopPlugin(pluginId, mainWindow);
+      toolRunner.stopTool(pluginId, mainWindow);
     }
     
     // 卸载工具
-    await pluginInstaller.uninstallPlugin(pluginId);
+    await toolInstaller.uninstallTool(pluginId);
     
     // 重新加载工具列表
-    await pluginManager.loadPlugins();
+    await toolManager.loadTools();
     
     return { success: true };
   } catch (error) {
@@ -456,14 +452,14 @@ ipcMain.handle('plugin:uninstall', async (_event, pluginId: string) => {
   }
 });
 
-ipcMain.handle('plugin:cancel-install', (_event, pluginId: string) => {
-  pluginInstaller.cancelDownload(pluginId);
+ipcMain.handle('tool:cancel-install', (_event, pluginId: string) => {
+  toolInstaller.cancelDownload(pluginId);
   return { success: true };
 });
 
 // ============ 用户本地添加二进制工具 ============
 ipcMain.handle(
-  'plugin:add-local-binary',
+  'tool:add-local-binary',
   async (_event, params: { name: string; exePath: string; description?: string; args?: string[] }) => {
     try {
       const { name, exePath, description, args } = params;
@@ -479,8 +475,8 @@ ipcMain.handle(
 
       // 3. 创建工具目录
       const pluginsDir = path.join(app.getPath('userData'), 'plugins');
-      const pluginDir = path.join(pluginsDir, id);
-      await fs.promises.mkdir(pluginDir, { recursive: true });
+      const toolDir = path.join(pluginsDir, id);
+      await fs.promises.mkdir(toolDir, { recursive: true });
 
       // 4. 生成 manifest.json（不复制可执行文件，只记录路径）
       const manifest: ToolManifest = {
@@ -498,14 +494,14 @@ ipcMain.handle(
       };
 
       await fs.promises.writeFile(
-        path.join(pluginDir, 'manifest.json'),
+        path.join(toolDir, 'manifest.json'),
         JSON.stringify(manifest, null, 2)
       );
 
       logger.info(`[Main] Local binary tool added: ${id} -> ${exePath}`);
 
       // 5. 重新扫描工具
-      await pluginManager.loadPlugins();
+      await toolManager.loadTools();
 
       return { success: true, pluginId: id };
     } catch (error) {
@@ -659,8 +655,8 @@ app.whenReady().then(() => {
   new AutoUpdateService(() => mainWindow);
   
   // Initialize Plugin System
-  pluginInstaller.init().catch(err => logger.error('Failed to init plugin installer:', err));
-  pluginManager.init().catch(err => logger.error('Failed to init plugin manager:', err));
+  toolInstaller.init().catch(err => logger.error('Failed to init tool installer:', err));
+  toolManager.init().catch(err => logger.error('Failed to init tool manager:', err));
 
   app.on('activate', () => {
     // macOS 特性：点击 Dock 图标时重新创建窗口

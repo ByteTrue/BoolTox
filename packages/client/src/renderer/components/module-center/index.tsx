@@ -28,7 +28,7 @@ export function ModuleCenter() {
   const {
     moduleStats,
     installedModules,
-    pluginRegistry,
+    toolRegistry,
     availableModules,
     availablePlugins,
     uninstallModule,
@@ -37,6 +37,7 @@ export function ModuleCenter() {
     addFavorite,
     removeFavorite,
     openModule,
+    stopModule,
     focusModuleWindow,
     isDevPlugin,
     addLocalBinaryTool,
@@ -96,9 +97,9 @@ export function ModuleCenter() {
   const availableStoreModules = useMemo(() => {
     // 将在线工具转换为可以在UI中显示的格式
     // 过滤掉所有已安装的工具(包括开发模式和正式安装的)
-    const installedPluginIds = new Set(pluginRegistry.map(p => p.id));
+    const installedPluginIds = new Set(toolRegistry.map(p => p.id));
     return availablePlugins.filter(p => !installedPluginIds.has(p.id));
-  }, [availablePlugins, pluginRegistry]);
+  }, [availablePlugins, toolRegistry]);
 
   // 详情 Modal 的模块数据
   const selectedModule = useMemo(() => {
@@ -411,6 +412,7 @@ export function ModuleCenter() {
                   processingModuleId={processingModuleId}
                   onUninstall={handleUninstall}
                   onOpen={handleOpen}
+                  onStop={stopModule}
                   onPinToggle={handlePinToggle}
                   onCardClick={handleCardClick}
                   isDevPlugin={isDevPlugin}
@@ -431,6 +433,7 @@ export function ModuleCenter() {
                 processingModuleId={processingModuleId}
                 onUninstall={handleUninstall}
                 onOpen={handleOpen}
+                onStop={stopModule}
                 onPinToggle={handlePinToggle}
                 onCardClick={handleCardClick}
                 isDevPlugin={isDevPlugin}

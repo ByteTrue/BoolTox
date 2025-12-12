@@ -18,9 +18,9 @@ import { getPlatformWindowConfig } from '../utils/window-platform-config.js';
 const logger = log.scope('python-deps-installer');
 
 export interface PythonDepsInstallerOptions {
-  pluginId: string;
-  pluginName: string;
-  pluginPath: string;
+  toolId: string;
+  toolName: string;
+  toolPath: string;
   requirementsPath: string;
 }
 
@@ -35,7 +35,7 @@ export interface InstallResult {
 export async function showPythonDepsInstaller(
   options: PythonDepsInstallerOptions
 ): Promise<InstallResult> {
-  const { pluginId, pluginName, pluginPath, requirementsPath } = options;
+  const { toolId, toolName, toolPath, requirementsPath } = options;
 
   return new Promise((resolve) => {
     // 创建窗口
@@ -51,7 +51,7 @@ export async function showPythonDepsInstaller(
       autoHideMenuBar: true,
       modal: true,
       show: false,
-      title: `${pluginName} - Python 依赖安装`,
+      title: `${toolName} - Python 依赖安装`,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
@@ -68,20 +68,20 @@ export async function showPythonDepsInstaller(
     let requirementsContent = '';
     const fullRequirementsPath = path.isAbsolute(requirementsPath)
       ? requirementsPath
-      : path.join(pluginPath, requirementsPath);
+      : path.join(toolPath, requirementsPath);
 
     if (fs.existsSync(fullRequirementsPath)) {
       requirementsContent = fs.readFileSync(fullRequirementsPath, 'utf-8');
     }
 
     // 检查虚拟环境状态
-    const hasEnv = pythonManager.hasPluginEnv(pluginId);
-    const envPath = pythonManager.getPluginEnvDir(pluginId);
+    const hasEnv = pythonManager.hasToolEnv(toolId);
+    const envPath = pythonManager.getToolEnvDir(toolId);
 
     // 加载 HTML
     const htmlContent = generateInstallerHTML({
-      pluginId,
-      pluginName,
+      toolId,
+      toolName,
       requirementsContent,
       hasEnv,
       envPath,
@@ -120,7 +120,7 @@ export async function showPythonDepsInstaller(
     };
 
     // 取消按钮
-    ipcMain.once(`python-deps:cancel:${pluginId}`, () => {
+    ipcMain.once(`python-deps:cancel:${toolId}`, () => {
       if (!isInstalling) {
         if (!win.isDestroyed()) {
           win.close();
@@ -130,14 +130,14 @@ export async function showPythonDepsInstaller(
     });
 
     // 开始安装
-    ipcMain.once(`python-deps:install:${pluginId}`, async (_event, data?: { indexUrl?: string }) => {
+    ipcMain.once(`python-deps:install:${toolId}`, async (_event, data?: { indexUrl?: string }) => {
       isInstalling = true;
       const indexUrl = data?.indexUrl || '';
 
       try {
         // 发送日志到窗口
         const sendLog = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
-          safeSend(`python-deps:log:${pluginId}`, { message, type });
+          safeSend(`python-deps:log:${toolId}`, { message, type });
         };
 
         sendLog('🔧 开始准备 Python 环境...', 'info');
@@ -154,8 +154,8 @@ export async function showPythonDepsInstaller(
         sendLog('📦 开始安装依赖...', 'info');
 
         // 安装依赖（传递镜像源）
-        await pythonManager.ensurePluginEnv(
-          pluginId,
+        await pythonManager.ensureToolEnv(
+          toolId,
           fullRequirementsPath,
           (progress) => {
             sendLog(`[${progress.stage}] ${progress.message}`, 'info');
@@ -178,19 +178,19 @@ export async function showPythonDepsInstaller(
         logger.error('依赖安装失败:', error);
 
         // 尝试发送错误消息，如果窗口已销毁则直接 resolve
-        const sent = safeSend(`python-deps:log:${pluginId}`, {
+        const sent = safeSend(`python-deps:log:${toolId}`, {
           message: `❌ 安装失败: ${errorMessage}`,
           type: 'error',
         });
 
         if (sent) {
-          safeSend(`python-deps:log:${pluginId}`, {
+          safeSend(`python-deps:log:${toolId}`, {
             message: '\n请检查网络连接或查看完整日志',
             type: 'error',
           });
 
           // 启用关闭按钮
-          safeSend(`python-deps:install-failed:${pluginId}`, {});
+          safeSend(`python-deps:install-failed:${toolId}`, {});
         } else {
           // 窗口已销毁，直接返回失败
           safeResolve({ success: false, cancelled: false });
@@ -201,8 +201,8 @@ export async function showPythonDepsInstaller(
     // 窗口关闭
     win.once('closed', () => {
       isWindowDestroyed = true;
-      ipcMain.removeAllListeners(`python-deps:cancel:${pluginId}`);
-      ipcMain.removeAllListeners(`python-deps:install:${pluginId}`);
+      ipcMain.removeAllListeners(`python-deps:cancel:${toolId}`);
+      ipcMain.removeAllListeners(`python-deps:install:${toolId}`);
       // 无论什么状态，窗口关闭都应该 resolve
       if (!isInstalling) {
         safeResolve({ success: false, cancelled: true });
@@ -218,13 +218,13 @@ export async function showPythonDepsInstaller(
  * 生成安装窗口 HTML
  */
 function generateInstallerHTML(options: {
-  pluginId: string;
-  pluginName: string;
+  toolId: string;
+  toolName: string;
   requirementsContent: string;
   hasEnv: boolean;
   envPath: string;
 }): string {
-  const { pluginId, pluginName, requirementsContent, hasEnv, envPath } = options;
+  const { toolId, toolName, requirementsContent, hasEnv, envPath } = options;
 
   return `
 <!DOCTYPE html>
@@ -700,7 +700,7 @@ function generateInstallerHTML(options: {
   <div class="window">
     <div class="titlebar">
       <div class="titlebar-info">
-        <span class="titlebar-title">${pluginName}</span>
+        <span class="titlebar-title">${toolName}</span>
         <span class="titlebar-subtitle">Python 依赖安装</span>
       </div>
       <div class="titlebar-actions">
@@ -712,7 +712,7 @@ function generateInstallerHTML(options: {
     <div class="container">
     <!-- 标题区域 -->
     <div class="header">
-      <h1>🐍 ${pluginName}</h1>
+      <h1>🐍 ${toolName}</h1>
       <div class="subtitle">Python 依赖环境检查</div>
     </div>
 
@@ -776,7 +776,7 @@ function generateInstallerHTML(options: {
 
   <script>
     const { ipcRenderer } = require('electron');
-    const pluginId = '${pluginId}';
+    const toolId = '${toolId}';
 
     const logContainer = document.getElementById('log-container');
     const installBtn = document.getElementById('install-btn');
@@ -790,7 +790,7 @@ function generateInstallerHTML(options: {
     // 取消按钮
     cancelBtn.addEventListener('click', () => {
       if (!isInstalling) {
-        ipcRenderer.send('python-deps:cancel:' + pluginId);
+        ipcRenderer.send('python-deps:cancel:' + toolId);
       }
     });
 
@@ -808,11 +808,11 @@ function generateInstallerHTML(options: {
       logContainer.innerHTML = '';
       // 传递选择的镜像源
       const indexUrl = mirrorSelect.value || '';
-      ipcRenderer.send('python-deps:install:' + pluginId, { indexUrl });
+      ipcRenderer.send('python-deps:install:' + toolId, { indexUrl });
     });
 
     // 接收日志
-    ipcRenderer.on('python-deps:log:' + pluginId, (event, { message, type }) => {
+    ipcRenderer.on('python-deps:log:' + toolId, (event, { message, type }) => {
       const line = document.createElement('div');
       line.className = \`log-line \${type}\`;
       line.textContent = message;
@@ -821,7 +821,7 @@ function generateInstallerHTML(options: {
     });
 
     // 安装失败
-    ipcRenderer.on('python-deps:install-failed:' + pluginId, () => {
+    ipcRenderer.on('python-deps:install-failed:' + toolId, () => {
       installBtn.disabled = true;
       cancelBtn.disabled = false;
       cancelBtn.textContent = '关闭';

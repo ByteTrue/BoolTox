@@ -145,28 +145,28 @@ const gitOpsAPI = {
   getAnnouncements: async (): Promise<Announcement[]> => {
     return await ipcRenderer.invoke('git-ops:get-announcements') as Announcement[];
   },
-  getPlugins: async (): Promise<PluginRegistry> => {
-    return await ipcRenderer.invoke('git-ops:get-plugins') as PluginRegistry;
+  getTools: async (): Promise<PluginRegistry> => {
+    return await ipcRenderer.invoke('git-ops:get-tools') as PluginRegistry;
   },
 };
 
 /**
  * Plugin API - 工具安装相关
  */
-const pluginAPI = {
+const toolAPI = {
   install: async (entry: unknown): Promise<{success: boolean; path?: string; error?: string}> => {
-    return await ipcRenderer.invoke('plugin:install', entry) as {success: boolean; path?: string; error?: string};
+    return await ipcRenderer.invoke('tool:install', entry) as {success: boolean; path?: string; error?: string};
   },
   uninstall: async (pluginId: string): Promise<{success: boolean; error?: string}> => {
-    return await ipcRenderer.invoke('plugin:uninstall', pluginId) as {success: boolean; error?: string};
+    return await ipcRenderer.invoke('tool:uninstall', pluginId) as {success: boolean; error?: string};
   },
   cancelInstall: async (pluginId: string): Promise<{success: boolean}> => {
-    return await ipcRenderer.invoke('plugin:cancel-install', pluginId) as {success: boolean};
+    return await ipcRenderer.invoke('tool:cancel-install', pluginId) as {success: boolean};
   },
   onInstallProgress: (callback: (progress: unknown) => void): (() => void) => {
     const listener = (_event: IpcRendererEvent, progress: unknown) => callback(progress);
-    ipcRenderer.on('plugin:install-progress', listener);
-    return () => ipcRenderer.removeListener('plugin:install-progress', listener);
+    ipcRenderer.on('tool:install-progress', listener);
+    return () => ipcRenderer.removeListener('tool:install-progress', listener);
   },
 };
 
@@ -291,7 +291,7 @@ contextBridge.exposeInMainWorld('update', updateAPI);
 
 contextBridge.exposeInMainWorld('gitOps', gitOpsAPI);
 
-contextBridge.exposeInMainWorld('plugin', pluginAPI);
+contextBridge.exposeInMainWorld('tool', toolAPI);
 
 contextBridge.exposeInMainWorld('appSettings', appSettingsAPI);
 

@@ -10,76 +10,82 @@ import fsSync from 'fs';
 import { BOOLTOX_PROTOCOL_VERSION, ToolManifest, ToolRuntime, ToolRuntimeConfig } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 
-const logger = createLogger('PluginManager');
+const logger = createLogger('ToolManager');
 const DEFAULT_PROTOCOL_RANGE = '^1.0.0';
 
-export class PluginManager {
-  private plugins: Map<string, ToolRuntime> = new Map();
-  private pluginsDir: string;
-  private devPluginsDir?: string;
+export class ToolManager {
+  private tools: Map<string, ToolRuntime> = new Map();
+  private toolsDir: string;
+  private devToolsDir?: string;
 
   constructor() {
     // Use userData/plugins for installed plugins
-    this.pluginsDir = path.join(app.getPath('userData'), 'plugins');
+    this.toolsDir = path.join(app.getPath('userData'), 'tools');
     
     // 只在开发模式下加载开发目录的工具
     // 使用 app.isPackaged 判断更可靠,打包后为 true,开发时为 false
     if (!app.isPackaged) {
-      this.devPluginsDir = this.resolveDevPluginsDir();
-      if (this.devPluginsDir) {
-        logger.info(`[PluginManager] Dev plugins dir resolved: ${this.devPluginsDir}`);
+      this.devToolsDir = this.resolveDevToolsDir();
+      if (this.devToolsDir) {
+        logger.info(`[ToolManager] Dev tools dir resolved: ${this.devToolsDir}`);
       } else {
-        logger.warn('[PluginManager] Dev plugins dir not found, will only load installed plugins');
+        logger.warn('[ToolManager] Dev tools dir not found, will only load installed tools');
       }
     }
   }
 
   async init() {
-    logger.info(`[PluginManager] Initializing... Plugins dir: ${this.pluginsDir}`);
-    if (this.devPluginsDir) {
-      logger.info(`[PluginManager] Dev plugins dir: ${this.devPluginsDir}`);
+    logger.info(`[ToolManager] Initializing... Tools dir: ${this.toolsDir}`);
+    if (this.devToolsDir) {
+      logger.info(`[ToolManager] Dev tools dir: ${this.devToolsDir}`);
     }
     
-    await this.ensurePluginsDir();
-    await this.loadPlugins();
+    await this.ensureToolsDir();
+    await this.loadTools();
   }
 
-  private async ensurePluginsDir() {
+  private async ensureToolsDir() {
     try {
-      await fs.access(this.pluginsDir);
+      await fs.access(this.toolsDir);
     } catch {
-      await fs.mkdir(this.pluginsDir, { recursive: true });
+      await fs.mkdir(this.toolsDir, { recursive: true });
     }
   }
 
-  async loadPlugins() {
-    this.plugins.clear();
+  async loadTools() {
+    this.tools.clear();
 
     // Load from userData
-    await this.scanDir(this.pluginsDir, false);
+    await this.scanDir(this.toolsDir, false);
 
-    // Load from dev dir (mark as dev plugins)
-    if (this.devPluginsDir) {
-      await this.scanDir(this.devPluginsDir, true);
+    // Load from dev dir (mark as dev tools)
+    if (this.devToolsDir) {
+      await this.scanDir(this.devToolsDir, true);
     }
 
-    // 开发模式：同时扫描 examples/ 和 plugins/ 目录
+    // 开发模式：同时扫描 examples/ 和 tools/ 目录
     if (!app.isPackaged) {
       const examplesDir = path.resolve(process.cwd(), 'examples');
-      const pluginsDir = path.resolve(process.cwd(), 'plugins');
+      const devToolsDir = path.resolve(process.cwd(), 'tools');
+
+      logger.info(`[ToolManager] Dev mode - checking directories:`);
+      logger.info(`[ToolManager]   examplesDir: ${examplesDir}, exists: ${fsSync.existsSync(examplesDir)}, equals devToolsDir: ${examplesDir === this.devToolsDir}`);
+      logger.info(`[ToolManager]   devToolsDir: ${devToolsDir}, exists: ${fsSync.existsSync(devToolsDir)}, equals devToolsDir: ${devToolsDir === this.devToolsDir}`);
 
       // 扫描示例工具
-      if (fsSync.existsSync(examplesDir) && examplesDir !== this.devPluginsDir) {
+      if (fsSync.existsSync(examplesDir) && examplesDir !== this.devToolsDir) {
+        logger.info(`[ToolManager] Scanning examples dir: ${examplesDir}`);
         await this.scanDir(examplesDir, true);
       }
 
       // 扫描官方工具
-      if (fsSync.existsSync(pluginsDir) && pluginsDir !== this.devPluginsDir) {
-        await this.scanDir(pluginsDir, true);
+      if (fsSync.existsSync(devToolsDir) && devToolsDir !== this.devToolsDir) {
+        logger.info(`[ToolManager] Scanning dev tools dir: ${devToolsDir}`);
+        await this.scanDir(devToolsDir, true);
       }
     }
 
-    logger.info(`[PluginManager] Loaded ${this.plugins.size} plugins.`);
+    logger.info(`[ToolManager] Loaded ${this.tools.size} tools.`);
   }
 
   private async scanDir(dir: string, isDev = false) {
@@ -96,20 +102,20 @@ export class PluginManager {
       for (const entry of entries) {
         // 跳过scripts等非工具目录
         if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'scripts' && entry.name !== 'node_modules') {
-          await this.loadPluginFromPath(path.join(dir, entry.name), isDev);
+          await this.loadToolFromPath(path.join(dir, entry.name), isDev);
         }
       }
     } catch (error) {
-      logger.error(`[PluginManager] Failed to scan plugins directory ${dir}:`, error);
+      logger.error(`[ToolManager] Failed to scan tools directory ${dir}:`, error);
     }
   }
 
-  async loadPluginFromPath(pluginPath: string, isDev = false) {
+  async loadToolFromPath(toolPath: string, isDev = false) {
     try {
-      const manifestPath = path.join(pluginPath, 'manifest.json');
+      const manifestPath = path.join(toolPath, 'manifest.json');
       const manifestContent = await fs.readFile(manifestPath, 'utf-8');
       const rawManifest = JSON.parse(manifestContent) as ToolManifest;
-      const manifest = this.normalizeManifest(rawManifest, pluginPath);
+      const manifest = this.normalizeManifest(rawManifest, toolPath);
       
       if (!manifest) {
         return;
@@ -117,52 +123,50 @@ export class PluginManager {
       
       // Basic validation
       if (!manifest.id) {
-        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing id`);
+        logger.error(`[ToolManager] Invalid manifest at ${toolPath}: Missing id`);
         return;
       }
 
       const runtime: ToolRuntime = {
         id: manifest.id,
         manifest,
-        path: pluginPath,
+        path: toolPath,
         status: 'stopped',
         isDev,
-        mode: manifest.runtime?.type === 'standalone' || manifest.runtime?.type === 'binary'
-          ? 'standalone'
-          : 'webview'
+        mode: 'standalone' // 所有工具都是 standalone 模式
       };
 
-      this.plugins.set(manifest.id, runtime);
-      logger.info(`[PluginManager] Loaded plugin: ${manifest.name} (${manifest.id})${isDev ? ' [DEV]' : ''}`);
+      this.tools.set(manifest.id, runtime);
+      logger.info(`[ToolManager] Loaded tool: ${manifest.name} (${manifest.id})${isDev ? ' [DEV]' : ''}`);
     } catch (error) {
-      logger.error(`[PluginManager] Failed to load plugin at ${pluginPath}:`, error);
+      logger.error(`[ToolManager] Failed to load tool at ${toolPath}:`, error);
     }
   }
 
-  getAllPlugins(): ToolRuntime[] {
-    return Array.from(this.plugins.values());
+  getAllTools(): ToolRuntime[] {
+    return Array.from(this.tools.values());
   }
 
-  getPlugin(id: string): ToolRuntime | undefined {
-    return this.plugins.get(id);
+  getTool(id: string): ToolRuntime | undefined {
+    return this.tools.get(id);
   }
   
-  getPluginsDir(): string {
-    return this.pluginsDir;
+  getToolsDir(): string {
+    return this.toolsDir;
   }
 
-  private normalizeManifest(manifest: ToolManifest, pluginPath: string): ToolManifest | null {
+  private normalizeManifest(manifest: ToolManifest, toolPath: string): ToolManifest | null {
     const normalizedPermissions = manifest.permissions ?? [];
     const protocolRange = manifest.protocol ?? DEFAULT_PROTOCOL_RANGE;
 
     if (!this.satisfiesProtocol(protocolRange, BOOLTOX_PROTOCOL_VERSION)) {
       logger.error(
-        `[PluginManager] Plugin ${manifest.id ?? pluginPath} requires protocol ${protocolRange}, but host is ${BOOLTOX_PROTOCOL_VERSION}`,
+        `[ToolManager] Plugin ${manifest.id ?? toolPath} requires protocol ${protocolRange}, but host is ${BOOLTOX_PROTOCOL_VERSION}`,
       );
       return null;
     }
 
-    const runtime = this.resolveRuntimeConfig(manifest, pluginPath);
+    const runtime = this.resolveRuntimeConfig(manifest, toolPath);
     if (!runtime) {
       return null;
     }
@@ -172,7 +176,9 @@ export class PluginManager {
         ? manifest.main ?? runtime.entry
         : runtime.type === 'binary'
           ? runtime.command
-          : runtime.ui.entry;
+          : runtime.type === 'http-service'
+            ? undefined // http-service 不需要 main entry
+            : undefined; // 不再支持 webview
 
     return {
       ...manifest,
@@ -233,12 +239,12 @@ export class PluginManager {
     return compare(version, range) === 0;
   }
 
-  private resolveRuntimeConfig(manifest: ToolManifest, pluginPath: string): ToolRuntimeConfig | null {
+  private resolveRuntimeConfig(manifest: ToolManifest, toolPath: string): ToolRuntimeConfig | null {
     const runtime = manifest.runtime;
 
     if (runtime && runtime.type === 'standalone') {
       if (!runtime.entry) {
-        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: standalone runtime missing entry`);
+        logger.error(`[ToolManager] Invalid manifest at ${toolPath}: standalone runtime missing entry`);
         return null;
       }
       return {
@@ -253,7 +259,7 @@ export class PluginManager {
     // 处理二进制工具
     if (runtime && runtime.type === 'binary') {
       if (!runtime.command) {
-        logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: binary runtime missing command`);
+        logger.error(`[ToolManager] Invalid manifest at ${toolPath}: binary runtime missing command`);
         return null;
       }
       return {
@@ -266,39 +272,41 @@ export class PluginManager {
       };
     }
 
-    const entry = runtime?.ui?.entry ?? manifest.main;
-    if (!entry) {
-      logger.error(`[PluginManager] Invalid manifest at ${pluginPath}: Missing runtime.ui.entry or main`);
-      return null;
+    // 处理 HTTP 服务工具
+    if (runtime && runtime.type === 'http-service') {
+      if (!runtime.backend || !runtime.backend.port) {
+        logger.error(`[ToolManager] Invalid manifest at ${toolPath}: http-service runtime missing backend.port`);
+        return null;
+      }
+      return {
+        type: 'http-service',
+        backend: runtime.backend,
+        path: runtime.path,
+        readyTimeout: runtime.readyTimeout,
+      };
     }
 
-    return {
-      type: 'webview',
-      ui: {
-        type: runtime?.ui?.type ?? 'webview',
-        entry,
-        assetsDir: runtime?.ui?.assetsDir,
-      },
-      backend: runtime?.backend,
-    };
+    // 不再支持 webview 类型
+    logger.error(`[ToolManager] Invalid manifest at ${toolPath}: Unsupported runtime type. Only standalone, binary, and http-service are supported.`);
+    return null;
   }
 
-  private resolveDevPluginsDir(): string | undefined {
+  private resolveDevToolsDir(): string | undefined {
     if (app.isPackaged) {
       return undefined;
     }
 
-    const override = process.env.BOOLTOX_DEV_PLUGINS_DIR;
+    const override = process.env.BOOLTOX_DEV_TOOLS_DIR;
     if (override && fsSync.existsSync(override)) {
       return override;
     }
 
     const candidates = [
       path.resolve(process.cwd(), 'examples'),
-      path.resolve(process.cwd(), 'plugins'),
+      path.resolve(process.cwd(), 'tools'),
       path.resolve(app.getAppPath(), 'examples'),
       path.resolve(app.getAppPath(), '../examples'),
-      path.resolve(app.getAppPath(), '../plugins'),
+      path.resolve(app.getAppPath(), '../tools'),
     ];
 
     for (const dir of candidates) {
@@ -312,4 +320,4 @@ export class PluginManager {
   }
 }
 
-export const pluginManager = new PluginManager();
+export const toolManager = new ToolManager();

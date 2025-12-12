@@ -21,6 +21,7 @@ interface ModuleGridProps {
   onUninstall?: (moduleId: string) => void;
   onInstall?: (moduleId: string) => void;
   onOpen?: (moduleId: string) => void;
+  onStop?: (moduleId: string) => void;
   onPinToggle?: (moduleId: string) => void;
   onCardClick: (moduleId: string) => void;
   emptyMessage?: string;
@@ -35,6 +36,7 @@ export function ModuleGrid({
   onUninstall,
   onInstall,
   onOpen,
+  onStop,
   onPinToggle,
   onCardClick,
   emptyMessage = "暂无工具",
@@ -119,6 +121,7 @@ export function ModuleGrid({
                 module={module}
                 onUninstall={onUninstall}
                 onOpen={onOpen}
+                onStop={onStop}
                 onInstall={onInstall}
                 onClick={onCardClick}
                 isProcessing={processingModuleId === module.id}
@@ -156,6 +159,7 @@ export function ModuleGrid({
                 module={module}
                 onUninstall={onUninstall || (() => {})}
                 onOpen={onOpen || (() => {})}
+                onStop={onStop || (() => {})}
                 onPinToggle={onPinToggle || (() => {})}
                 onClick={onCardClick}
                 isDev={isDevPlugin?.(module.id) || false}

@@ -146,7 +146,7 @@ export interface BooltoxBackendRegistration {
 export type BooltoxBackendMessageType = 'stdout' | 'stderr' | 'exit' | 'error';
 
 export interface BooltoxBackendMessage {
-  pluginId: string;
+  toolId: string;
   channelId: string;
   type: BooltoxBackendMessageType;
   data?: string;
@@ -214,12 +214,20 @@ export interface ToolBackendConfig {
   requirements?: string;
 }
 
+/**
+ * @deprecated 不再支持 webview 类型，请使用 ToolHttpServiceRuntimeConfig 代替
+ * 工具应启动独立 HTTP 服务器，在系统默认浏览器中运行
+ */
 export interface ToolUiRuntime {
   type: 'webview';
   entry: string;
   assetsDir?: string;
 }
 
+/**
+ * @deprecated 不再支持 webview 类型，请使用 ToolHttpServiceRuntimeConfig 代替
+ * 工具应启动独立 HTTP 服务器，在系统默认浏览器中运行
+ */
 export interface ToolWebRuntimeConfig {
   type?: 'webview';
   ui: ToolUiRuntime;
@@ -251,7 +259,27 @@ export interface ToolBinaryRuntimeConfig {
   localExecutablePath?: string;
 }
 
+/**
+ * HTTP 服务工具运行时配置
+ * 工具启动本地 HTTP 服务器，BoolTox 在浏览器中打开
+ */
+export interface ToolHttpServiceRuntimeConfig {
+  type: 'http-service';
+  /** 后端配置 */
+  backend: ToolBackendConfig & {
+    /** 服务监听端口 */
+    port: number;
+    /** 服务主机（默认 127.0.0.1） */
+    host?: string;
+  };
+  /** 可选：自定义 URL 路径（默认为 /） */
+  path?: string;
+  /** 可选：等待服务就绪的超时时间（毫秒，默认 30000） */
+  readyTimeout?: number;
+}
+
 export type ToolRuntimeConfig =
   | ToolWebRuntimeConfig
   | ToolStandaloneRuntimeConfig
-  | ToolBinaryRuntimeConfig;
+  | ToolBinaryRuntimeConfig
+  | ToolHttpServiceRuntimeConfig;

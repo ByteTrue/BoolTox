@@ -32,7 +32,7 @@ const DEFAULT_RPC_TIMEOUT = 30000;
 // ============================================================================
 
 export interface BackendMessagePayload {
-  pluginId: string;
+  toolId: string;
   channelId: string;
   type: 'stdout' | 'stderr' | 'exit' | 'error' | 'jsonrpc';
   data?: string;
@@ -51,7 +51,7 @@ interface PendingRequest {
 }
 
 interface BackendProcess {
-  pluginId: string;
+  toolId: string;
   config: ToolBackendConfig;
   process: ChildProcess;
   channelId: string;
@@ -107,16 +107,16 @@ export class PluginBackendRunner extends EventEmitter {
   private processes = new Map<string, BackendProcess>();
 
   /**
-   * Register and start a backend process for a plugin
+   * Register and start a backend process for a tool
    */
   async registerBackend(
-    plugin: ToolRuntime,
+    tool: ToolRuntime,
     config: ToolBackendConfig,
     webContentsId: number
   ): Promise<{ pid: number; channelId: string }> {
     const entryPath = path.isAbsolute(config.entry)
       ? config.entry
-      : path.join(plugin.path, config.entry);
+      : path.join(tool.path, config.entry);
     const args = config.args ?? [];
     const env = { ...process.env, ...config.env };
 
@@ -127,19 +127,19 @@ export class PluginBackendRunner extends EventEmitter {
       if (config.requirements) {
         const requirementsPath = path.isAbsolute(config.requirements)
           ? config.requirements
-          : path.join(plugin.path, config.requirements);
+          : path.join(tool.path, config.requirements);
 
         // 检查 requirements.txt 是否存在
         if (fs.existsSync(requirementsPath)) {
-          const needsSetup = pythonManager.needsPluginRequirementsSetup(plugin.id, requirementsPath);
+          const needsSetup = pythonManager.needsToolRequirementsSetup(tool.id, requirementsPath);
           if (needsSetup) {
-            logger.info(`工具 ${plugin.id} 需要安装依赖，显示安装窗口`);
+            logger.info(`工具 ${tool.id} 需要安装依赖，显示安装窗口`);
 
             const { showPythonDepsInstaller } = await loadPythonDepsInstaller();
             const result = await showPythonDepsInstaller({
-              pluginId: plugin.id,
-              pluginName: plugin.manifest.name,
-              pluginPath: plugin.path,
+              toolId: tool.id,
+              toolName: tool.manifest.name,
+              toolPath: tool.path,
               requirementsPath,
             });
 
@@ -147,31 +147,37 @@ export class PluginBackendRunner extends EventEmitter {
               const errorMsg = result.cancelled
                 ? '用户取消了依赖安装'
                 : '依赖安装失败';
-              logger.warn(`工具 ${plugin.id}: ${errorMsg}`);
+              logger.warn(`工具 ${tool.id}: ${errorMsg}`);
               throw new Error(errorMsg);
             }
 
-            logger.info(`工具 ${plugin.id} 依赖安装成功`);
+            logger.info(`工具 ${tool.id} 依赖安装成功`);
           }
         }
       }
 
       const sdkPath = pythonManager.getPythonSdkPath();
+      logger.info(`工具 ${tool.id} Python SDK 路径: ${sdkPath}`);
+      logger.info(`SDK 路径是否存在: ${fs.existsSync(sdkPath)}`);
+      logger.info(`SDK booltox_sdk.py 是否存在: ${fs.existsSync(path.join(sdkPath, 'booltox_sdk.py'))}`);
+
       const environment = await pythonManager.resolveBackendEnvironment({
-        pluginId: plugin.id,
-        pluginPath: plugin.path,
+        toolId: tool.id,
+        toolPath: tool.path,
         requirementsPath: config.requirements,
       });
       const pythonPathEntries = [sdkPath, ...environment.additionalPythonPaths].filter(Boolean);
       const pythonPathValue = pythonPathEntries.join(path.delimiter);
 
+      logger.info(`工具 ${tool.id} PYTHONPATH: ${pythonPathValue}`);
+
       child = pythonManager.spawnPython(entryPath, args, {
-        cwd: plugin.path,
+        cwd: tool.path,
         env: {
           ...env,
           ...(environment.venvPath ? { VIRTUAL_ENV: environment.venvPath } : {}),
           PYTHONPATH: pythonPathValue,
-          BOOLTOX_PLUGIN_ID: plugin.id,
+          BOOLTOX_PLUGIN_ID: tool.id,
           BOOLTOX_CHANNEL_ID: '', // Will be set after channelId is generated
         },
         pythonPath: environment.pythonPath,
@@ -180,20 +186,20 @@ export class PluginBackendRunner extends EventEmitter {
     } else if (config.type === 'node') {
       // Add SDK path for Node.js via symlink in plugin's node_modules
       const sdkPath = this.getNodeSdkPath();
-      this.ensureNodeSdkSymlink(plugin.path, sdkPath);
+      this.ensureNodeSdkSymlink(tool.path, sdkPath);
       // ELECTRON_RUN_AS_NODE=1 让 Electron 以纯 Node.js 模式运行
       child = spawn(process.execPath, [entryPath, ...args], {
-        cwd: plugin.path,
+        cwd: tool.path,
         env: {
           ...env,
           ELECTRON_RUN_AS_NODE: '1',
-          BOOLTOX_PLUGIN_ID: plugin.id,
+          BOOLTOX_PLUGIN_ID: tool.id,
         },
         stdio: 'pipe',
       });
     } else {
       child = spawn(entryPath, args, {
-        cwd: plugin.path,
+        cwd: tool.path,
         env,
         stdio: 'pipe',
       });
@@ -204,9 +210,9 @@ export class PluginBackendRunner extends EventEmitter {
       throw new Error('Backend process does not expose stdio streams');
     }
 
-    const channelId = `${plugin.id}:${randomUUID()}`;
+    const channelId = `${tool.id}:${randomUUID()}`;
     const record: BackendProcess = {
-      pluginId: plugin.id,
+      toolId: tool.id,
       config,
       process: child,
       channelId,
@@ -218,7 +224,7 @@ export class PluginBackendRunner extends EventEmitter {
     };
 
     this.processes.set(channelId, record);
-    logger.info(`Started backend ${channelId} for plugin ${plugin.id} (${config.type})`);
+    logger.info(`Started backend ${channelId} for tool ${tool.id} (${config.type})`);
 
     // Set up stdout handler for JSON-RPC messages
     child.stdout.on('data', (buffer: Buffer) => {
@@ -230,7 +236,7 @@ export class PluginBackendRunner extends EventEmitter {
       const data = buffer.toString();
       logger.debug(`[${channelId}] stderr: ${data}`);
       this.emit('message', {
-        pluginId: plugin.id,
+        toolId: tool.id,
         channelId,
         type: 'stderr',
         data,
@@ -244,7 +250,7 @@ export class PluginBackendRunner extends EventEmitter {
       this.rejectAllPending(channelId, 'Backend process exited');
 
       this.emit('message', {
-        pluginId: plugin.id,
+        toolId: tool.id,
         channelId,
         type: 'exit',
         code: code ?? null,
@@ -259,7 +265,7 @@ export class PluginBackendRunner extends EventEmitter {
       this.rejectAllPending(channelId, error.message);
 
       this.emit('message', {
-        pluginId: plugin.id,
+        toolId: tool.id,
         channelId,
         type: 'error',
         data: error.message,
@@ -298,7 +304,7 @@ export class PluginBackendRunner extends EventEmitter {
       } else {
         // Non-JSON-RPC output, emit as stdout
         this.emit('message', {
-          pluginId: proc.pluginId,
+          toolId: proc.toolId,
           channelId,
           type: 'stdout',
           data: trimmed,
@@ -361,7 +367,7 @@ export class PluginBackendRunner extends EventEmitter {
         const readyParams = params as { version?: string; methods?: string[] } | undefined;
         proc.methods = readyParams?.methods ?? [];
         logger.info(`Backend ${channelId} is ready (methods: ${proc.methods.join(', ')})`);
-        this.emit('ready', { channelId, pluginId: proc.pluginId, webContentsId: proc.webContentsId });
+        this.emit('ready', { channelId, toolId: proc.toolId, webContentsId: proc.webContentsId });
         break;
       }
 
@@ -370,7 +376,7 @@ export class PluginBackendRunner extends EventEmitter {
         if (eventParams?.event) {
           this.emit('backend-event', {
             channelId,
-            pluginId: proc.pluginId,
+            toolId: proc.toolId,
             event: eventParams.event,
             data: eventParams.data,
             webContentsId: proc.webContentsId,
@@ -411,7 +417,7 @@ export class PluginBackendRunner extends EventEmitter {
       default:
         // Custom notification - forward to renderer
         this.emit('message', {
-          pluginId: proc.pluginId,
+          toolId: proc.toolId,
           channelId,
           type: 'jsonrpc',
           jsonrpc: notification,
@@ -581,11 +587,11 @@ export class PluginBackendRunner extends EventEmitter {
   }
 
   /**
-   * Dispose all backends for a plugin
+   * Dispose all backends for a tool
    */
-  disposeAllForPlugin(pluginId: string): void {
+  disposeAllForPlugin(toolId: string): void {
     for (const [channelId, proc] of this.processes.entries()) {
-      if (proc.pluginId === pluginId) {
+      if (proc.toolId === toolId) {
         this.dispose(channelId);
       }
     }
@@ -607,7 +613,7 @@ export class PluginBackendRunner extends EventEmitter {
 
 
   /**
-   * Ensure the Node.js SDK symlink exists in the plugin's node_modules directory
+   * Ensure the Node.js SDK symlink exists in the tool's node_modules directory
    * This allows standard Node.js module resolution to find 'booltox-backend'
    */
   private ensureNodeSdkSymlink(pluginPath: string, sdkPath: string): void {

@@ -4,7 +4,7 @@
  */
 
 import { motion } from "framer-motion";
-import { Trash2, Download, ExternalLink } from "lucide-react";
+import { Trash2, Download, ExternalLink, Square } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow } from "@/utils/glass-layers";
 import { cardHover, iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
@@ -14,6 +14,7 @@ interface ModuleListItemProps {
   module: ModuleInstance | ModuleDefinition;
   onUninstall?: (moduleId: string) => void;
   onOpen?: (moduleId: string) => void;
+  onStop?: (moduleId: string) => void;
   onInstall?: (moduleId: string) => void;
   onClick: (moduleId: string) => void;
   isProcessing?: boolean;
@@ -24,6 +25,7 @@ export function ModuleListItem({
   module,
   onUninstall,
   onOpen,
+  onStop,
   onInstall,
   onClick,
   isProcessing = false,
@@ -166,6 +168,22 @@ export function ModuleListItem({
                 <ExternalLink size={16} />
               )}
             </motion.button>
+
+            {/* 停止按钮：仅在运行时显示 */}
+            {isRunning && (
+              <motion.button
+                {...iconButtonInteraction}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStop?.(module.id);
+                }}
+                className={`rounded-lg border border-orange-500/30 bg-orange-500/20 p-2 text-orange-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-orange-500/30`}
+                title="停止工具"
+              >
+                <Square size={16} />
+              </motion.button>
+            )}
 
             {/* 卸载按钮 - 开发工具不显示 */}
             {!isDev && (

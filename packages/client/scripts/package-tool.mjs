@@ -95,8 +95,8 @@ function createZip(pluginDir, outputPath, manifest) {
       archive.directory(backendDir, 'backend');
     }
 
-    // 附加 README、requirements 等单文件
-    ['README.md', 'requirements.txt'].forEach((file) => {
+    // 附加 README、requirements、package.json 等单文件
+    ['README.md', 'requirements.txt', 'package.json'].forEach((file) => {
       const filePath = path.join(pluginDir, file);
       if (fs.existsSync(filePath)) {
         archive.file(filePath, { name: file });

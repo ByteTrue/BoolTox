@@ -1,6 +1,4 @@
 packages:
   - 'packages/*'
-  - 'sdks/node'  # Node.js SDK 加入 workspace
-  # examples/ 和 plugins/ 不参与 workspace，仅用于开发和发布
+  # examples/ 不参与 workspace，仅用于开发和测试
   # - 'examples/*'
-  # - 'plugins/*'
