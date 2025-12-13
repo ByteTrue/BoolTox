@@ -206,12 +206,24 @@ export interface ToolCapabilityRequest {
 
 export interface ToolBackendConfig {
   type: 'python' | 'node' | 'process';
-  entry: string;
+  entry: string | PlatformSpecificEntry;  // 支持平台特定入口
   args?: string[];
   env?: Record<string, string>;
   keepAlive?: boolean;
   /** Relative path to requirements.txt for Python backend */
   requirements?: string;
+}
+
+/**
+ * 平台特定的入口文件配置
+ * 用于 binary 工具跨平台分发
+ */
+export interface PlatformSpecificEntry {
+  'darwin-arm64'?: string;  // macOS Apple Silicon
+  'darwin-x64'?: string;    // macOS Intel
+  'win32-x64'?: string;     // Windows x64
+  'linux-x64'?: string;     // Linux x64
+  'linux-arm64'?: string;   // Linux ARM64（如树莓派）
 }
 
 /**
@@ -278,8 +290,25 @@ export interface ToolHttpServiceRuntimeConfig {
   readyTimeout?: number;
 }
 
+/**
+ * CLI 工具运行时配置
+ * 工具在系统终端中运行
+ */
+export interface ToolCliRuntimeConfig {
+  type: 'cli';
+  /** 后端配置 */
+  backend: ToolBackendConfig;
+  /** 可选：工作目录（默认为工具目录） */
+  cwd?: string;
+  /** 可选：终端窗口标题 */
+  title?: string;
+  /** 可选：是否在工具退出后保持终端窗口打开（默认 true） */
+  keepOpen?: boolean;
+}
+
 export type ToolRuntimeConfig =
   | ToolWebRuntimeConfig
   | ToolStandaloneRuntimeConfig
   | ToolBinaryRuntimeConfig
-  | ToolHttpServiceRuntimeConfig;
+  | ToolHttpServiceRuntimeConfig
+  | ToolCliRuntimeConfig;
