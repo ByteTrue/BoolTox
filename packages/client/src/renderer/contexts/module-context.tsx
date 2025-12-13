@@ -122,6 +122,12 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkUpdates = async () => {
       try {
+        // 确保 API 已就绪
+        if (!window.tool?.checkUpdates) {
+          logger.warn('[ModuleContext] Tool API not ready, skipping update check');
+          return;
+        }
+
         const result = await window.tool.checkUpdates();
         if (result.success && Array.isArray(result.updates)) {
           const updatesMap = new Map();
@@ -139,12 +145,18 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // 立即检查一次
-    checkUpdates();
+    // 延迟检查，确保应用完全启动
+    const timeout = setTimeout(() => {
+      checkUpdates();
+    }, 2000);
 
     // 每天检查一次
     const interval = setInterval(checkUpdates, 24 * 60 * 60 * 1000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
   }, []);
 
   const pluginRuntimeModeMap = useMemo(() => {
