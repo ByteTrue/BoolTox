@@ -9,6 +9,7 @@ import fs from 'fs/promises';
 import fsSync from 'fs';
 import { BOOLTOX_PROTOCOL_VERSION, ToolManifest, ToolRuntime, ToolRuntimeConfig } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
+import { inferManifest, validateSimplifiedManifest } from './manifest-infer.service.js';
 
 const logger = createLogger('ToolManager');
 const DEFAULT_PROTOCOL_RANGE = '^1.0.0';
@@ -115,12 +116,24 @@ export class ToolManager {
       const manifestPath = path.join(toolPath, 'manifest.json');
       const manifestContent = await fs.readFile(manifestPath, 'utf-8');
       const rawManifest = JSON.parse(manifestContent) as ToolManifest;
-      const manifest = this.normalizeManifest(rawManifest, toolPath);
-      
+
+      // 验证简化配置
+      const validation = validateSimplifiedManifest(rawManifest);
+      if (!validation.valid) {
+        logger.error(`[ToolManager] Invalid manifest at ${toolPath}:`, validation.errors);
+        return;
+      }
+
+      // 推断完整配置（如果使用简化配置）
+      const inferredManifest = inferManifest(rawManifest, toolPath);
+
+      // 标准化 manifest
+      const manifest = this.normalizeManifest(inferredManifest, toolPath);
+
       if (!manifest) {
         return;
       }
-      
+
       // Basic validation
       if (!manifest.id) {
         logger.error(`[ToolManager] Invalid manifest at ${toolPath}: Missing id`);

@@ -1,0 +1,10 @@
+{
+  "name": "简化示例工具",
+  "version": "1.0.0",
+  "description": "演示简化 manifest.json 配置的示例工具",
+  "start": "python main.py",
+  "port": 8080,
+  "icon": "🔧",
+  "author": "BoolTox Team",
+  "keywords": ["示例", "演示"]
+}

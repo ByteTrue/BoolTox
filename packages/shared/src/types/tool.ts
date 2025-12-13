@@ -11,27 +11,35 @@ import type {
 } from './protocol.js';
 
 export interface ToolManifest {
-  /** Unique identifier (e.g., "com.booltox.todo") */
-  id: string;
+  /** Unique identifier (e.g., "com.booltox.todo") - 可选，将从文件夹名自动生成 */
+  id?: string;
   /** Semantic version string */
   version: string;
   /** Display name */
   name: string;
   /** Short description */
   description?: string;
+
+  // ===== 简化配置（新架构推荐） =====
+  /** 启动命令（简化配置）- 例如 "python main.py" 或 "node server.js" */
+  start?: string;
+  /** HTTP 服务端口（简化配置）- 有端口表示 http-service 类型 */
+  port?: number;
+  // ===================================
+
   /** Entry HTML file path relative to tool root (legacy) */
   main?: string;
   /** Icon file path relative to tool root */
   icon?: string;
   /** Requested permissions */
   permissions?: BooltoxPermission[];
-  /** Protocol version range, e.g. "^2.0.0" */
+  /** Protocol version range, e.g. "^2.0.0" - 可选，不再要求工具知道 BoolTox 版本 */
   protocol?: string;
   /** Activation events */
   activation?: ToolActivationEvent[];
   /** Capability requests (fine-grained permissions) */
   capabilities?: ToolCapabilityRequest[];
-  /** Runtime configuration describing UI/backend */
+  /** Runtime configuration describing UI/backend - 完整配置（向后兼容） */
   runtime?: ToolRuntimeConfig;
   /** Default window configuration */
   window?: {
