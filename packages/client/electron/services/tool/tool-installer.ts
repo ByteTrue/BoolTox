@@ -6,9 +6,11 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import { createWriteStream } from 'fs';
 import { createHash } from 'crypto';
 import AdmZip from 'adm-zip';
+import axios from 'axios';
 import type { ToolRegistryEntry, ToolInstallProgress } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 
@@ -209,7 +211,7 @@ export class ToolInstallerService {
   }
 
   /**
-   * 下载文件
+   * 下载文件（支持断点续传和自动重试）
    */
   private async downloadFile(
     url: string,
@@ -217,45 +219,86 @@ export class ToolInstallerService {
     signal: AbortSignal,
     onProgress?: (percent: number) => void
   ): Promise<void> {
-    const response = await fetch(url, { signal });
+    const maxRetries = 3;
+    let retryCount = 0;
+    let downloadedBytes = 0;
 
-    if (!response.ok) {
-      throw new Error(`下载失败: ${response.statusText}`);
-    }
-
-    const total = parseInt(response.headers.get('content-length') || '0', 10);
-    let downloaded = 0;
-
-    const writer = createWriteStream(outputPath);
-    const reader = response.body?.getReader();
-
-    if (!reader) {
-      throw new Error('无法读取响应流');
-    }
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        downloaded += value.length;
-        writer.write(value);
-
-        if (total && onProgress) {
-          const percent = (downloaded / total) * 70; // 下载占70%进度
-          onProgress(percent);
+    while (retryCount <= maxRetries) {
+      try {
+        // 检查已下载的字节数
+        try {
+          const stats = await fs.stat(outputPath);
+          downloadedBytes = stats.size;
+        } catch {
+          downloadedBytes = 0;
         }
-      }
 
-      writer.end();
-      await new Promise<void>((resolve, reject) => {
-        writer.on('finish', () => resolve());
-        writer.on('error', reject);
-      });
-    } catch (error) {
-      writer.destroy();
-      await fs.unlink(outputPath).catch(() => {});
-      throw error;
+        const headers: Record<string, string> = {};
+
+        // 断点续传
+        if (downloadedBytes > 0) {
+          headers['Range'] = `bytes=${downloadedBytes}-`;
+          logger.info(`Resuming download from byte ${downloadedBytes}`);
+        }
+
+        const response = await axios.get(url, {
+          responseType: 'stream',
+          signal,
+          headers,
+        });
+
+        // 计算总字节数
+        const contentLength = response.headers['content-length'];
+        const totalBytes = downloadedBytes + (contentLength ? parseInt(contentLength, 10) : 0);
+
+        // 创建写入流（断点续传时使用追加模式）
+        const writeStream = createWriteStream(outputPath, {
+          flags: downloadedBytes > 0 ? 'a' : 'w',
+        });
+
+        let currentBytes = downloadedBytes;
+
+        // 监听数据流
+        response.data.on('data', (chunk: Buffer) => {
+          currentBytes += chunk.length;
+          if (totalBytes && onProgress) {
+            const percent = (currentBytes / totalBytes) * 70; // 下载占 70% 进度
+            onProgress(percent);
+          }
+        });
+
+        // 等待下载完成
+        await new Promise<void>((resolve, reject) => {
+          response.data.pipe(writeStream);
+          writeStream.on('finish', () => resolve());
+          writeStream.on('error', (err) => reject(err));
+          response.data.on('error', (err) => reject(err));
+        });
+
+        // 下载成功，退出重试循环
+        logger.info(`Download completed: ${url}`);
+        return;
+
+      } catch (error) {
+        retryCount++;
+
+        // 如果是用户取消，不重试
+        if (signal.aborted) {
+          throw new Error('下载已取消');
+        }
+
+        if (retryCount > maxRetries) {
+          throw new Error(`下载失败（已重试 ${maxRetries} 次）: ${error instanceof Error ? error.message : String(error)}`);
+        }
+
+        // 指数退避：1s, 2s, 4s
+        const backoffTime = Math.min(1000 * Math.pow(2, retryCount - 1), 10000);
+        logger.warn(`Download failed, retry ${retryCount}/${maxRetries} in ${backoffTime}ms`);
+
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+
+        // 继续重试
+      }
     }
   }
 
