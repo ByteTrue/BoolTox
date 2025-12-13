@@ -168,6 +168,15 @@ const toolAPI = {
     ipcRenderer.on('tool:install-progress', listener);
     return () => ipcRenderer.removeListener('tool:install-progress', listener);
   },
+  checkUpdates: async (): Promise<{success: boolean; updates: unknown[]; error?: string}> => {
+    return await ipcRenderer.invoke('tool:check-updates') as {success: boolean; updates: unknown[]; error?: string};
+  },
+  updateTool: async (toolId: string): Promise<{success: boolean; error?: string}> => {
+    return await ipcRenderer.invoke('tool:update', toolId) as {success: boolean; error?: string};
+  },
+  updateAllTools: async (toolIds: string[]): Promise<{success: boolean; success: string[]; failed: string[]; error?: string}> => {
+    return await ipcRenderer.invoke('tool:update-all', toolIds) as {success: boolean; success: string[]; failed: string[]; error?: string};
+  },
 };
 
 /**

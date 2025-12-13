@@ -81,6 +81,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const [toolRegistry, setPluginRegistry] = useState<PluginProcessRuntime[]>([]);
   const installedModulesRef = useRef<ModuleInstance[]>([]);
   const toastHistoryRef = useRef<Map<string, number>>(new Map());
+  const [toolUpdates, setToolUpdates] = useState<Map<string, unknown>>(new Map()); // 工具更新信息
 
   useEffect(() => {
     installedModulesRef.current = installedModules;
@@ -116,6 +117,35 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshAvailablePlugins();
   }, [refreshAvailablePlugins]);
+
+  // 定期检查工具更新
+  useEffect(() => {
+    const checkUpdates = async () => {
+      try {
+        const result = await window.tool.checkUpdates();
+        if (result.success && Array.isArray(result.updates)) {
+          const updatesMap = new Map();
+          result.updates.forEach((update: any) => {
+            updatesMap.set(update.toolId, update);
+          });
+          setToolUpdates(updatesMap);
+
+          if (result.updates.length > 0) {
+            logger.info(`Found ${result.updates.length} tool updates`);
+          }
+        }
+      } catch (error) {
+        logger.error('[ModuleContext] Failed to check updates:', error);
+      }
+    };
+
+    // 立即检查一次
+    checkUpdates();
+
+    // 每天检查一次
+    const interval = setInterval(checkUpdates, 24 * 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const pluginRuntimeModeMap = useMemo(() => {
     const map = new Map<string, 'http-service' | 'standalone' | 'binary'>();
@@ -393,7 +423,10 @@ const focusModuleWindow = useCallback(
           restoredModules.push({
             id: stored.id,
             definition,
-            runtime: createRuntime(true),
+            runtime: {
+              ...createRuntime(true),
+              updateAvailable: toolUpdates.has(stored.id), // 添加更新信息
+            },
             isFavorite: stored.isFavorite ?? false,
             favoriteOrder: stored.favoriteOrder ?? undefined,
             favoritedAt: stored.favoritedAt ?? undefined,
@@ -414,7 +447,7 @@ const focusModuleWindow = useCallback(
     };
 
     void restoreInstalledModules();
-  }, [pluginDefinitions]);
+  }, [pluginDefinitions, toolUpdates]); // 添加 toolUpdates 依赖
 
   // 同步 toolRegistry 到 installedModules
   useEffect(() => {

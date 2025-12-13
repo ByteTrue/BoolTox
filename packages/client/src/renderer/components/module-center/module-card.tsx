@@ -101,10 +101,21 @@ export function ModuleCard({
 
           {/* 图标 */}
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+            className={`flex h-12 w-12 items-center justify-center rounded-xl relative ${
               isDark ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20" : "bg-gradient-to-br from-blue-400/20 to-purple-400/20"
             }`}
           >
+            {/* 更新徽章 */}
+            {module.runtime.updateAvailable && (
+              <div
+                className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center"
+                title="有可用更新"
+              >
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+              </div>
+            )}
+
             {module.definition.icon && module.definition.icon.startsWith('http') ? (
               <img
                 src={module.definition.icon}

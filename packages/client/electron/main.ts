@@ -29,6 +29,7 @@ import { toolRunner } from './services/tool/tool-runner.js';
 import { toolInstaller } from './services/tool/tool-installer.js';
 import { pythonManager } from './services/python-manager.service.js';
 import { TrayService } from './services/tray.service.js';
+import { toolUpdater } from './services/tool/tool-updater.service.js';
 import './services/tool/tool-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { ToolRegistryEntry, ToolManifest } from '@booltox/shared';
@@ -499,6 +500,43 @@ ipcMain.handle('tool:uninstall', async (_event, pluginId: string) => {
 ipcMain.handle('tool:cancel-install', (_event, pluginId: string) => {
   toolInstaller.cancelDownload(pluginId);
   return { success: true };
+});
+
+/**
+ * 工具更新 - IPC Handlers
+ */
+ipcMain.handle('tool:check-updates', async () => {
+  try {
+    const updates = await toolUpdater.checkUpdates();
+    return { success: true, updates };
+  } catch (error) {
+    logger.error('[Main] Failed to check updates:', error);
+    return { success: false, error: String(error), updates: [] };
+  }
+});
+
+ipcMain.handle('tool:update', async (_event, toolId: string) => {
+  try {
+    await toolUpdater.updateTool(toolId);
+    // 重新加载工具列表
+    await toolManager.loadTools();
+    return { success: true };
+  } catch (error) {
+    logger.error(`[Main] Failed to update tool ${toolId}:`, error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('tool:update-all', async (_event, toolIds: string[]) => {
+  try {
+    const result = await toolUpdater.updateAllTools(toolIds);
+    // 重新加载工具列表
+    await toolManager.loadTools();
+    return { success: true, ...result };
+  } catch (error) {
+    logger.error('[Main] Failed to batch update tools:', error);
+    return { success: false, error: String(error) };
+  }
 });
 
 // ============ 用户本地添加二进制工具 ============
