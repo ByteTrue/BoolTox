@@ -341,7 +341,6 @@ function AppShellContent() {
                     <Boxes className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-blue-300 dark:text-brand-blue-300">BOOLTOX</p>
                     <p className={`text-lg font-bold drop-shadow ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>BoolTox</p>
                   </div>
                 </div>
