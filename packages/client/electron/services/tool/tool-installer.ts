@@ -127,33 +127,10 @@ export class ToolInstallerService {
       const manifestPath = path.join(toolDir, 'manifest.json');
       await this.validateManifest(manifestPath, id);
 
-      // 5. 安装依赖（如需要，使用依赖安装窗口）
-      const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
-
-      if (manifest.runtime?.backend?.type === 'node') {
-        const packageJsonPath = path.join(toolDir, 'package.json');
-        const hasPackageJson = await fs.access(packageJsonPath).then(() => true).catch(() => false);
-
-        if (hasPackageJson && window) {
-          logger.info(`[ToolInstaller] 工具 ${id} 需要安装 Node.js 依赖，显示安装窗口`);
-
-          // 使用通用依赖安装器（带 UI 窗口）
-          const { showDepsInstaller } = await import('../../windows/deps-installer.js');
-          const result = await showDepsInstaller({
-            toolId: id,
-            toolName: manifest.name,
-            toolPath: toolDir,
-            language: 'node',
-            packageJsonPath,
-          });
-
-          if (!result.success) {
-            throw new Error(result.cancelled ? '用户取消了依赖安装' : '依赖安装失败');
-          }
-
-          logger.info(`[ToolInstaller] 工具 ${id} Node.js 依赖安装成功`);
-        }
-      }
+      // 5. 跳过依赖安装（分离安装和依赖准备）
+      // 依赖将在首次启动时安装，提升安装速度感知
+      // const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
+      // if (manifest.runtime?.backend?.type === 'node') { ... }
 
       // 6. 清理临时文件
       await fs.unlink(tempZipPath).catch(() => {});
@@ -164,7 +141,7 @@ export class ToolInstallerService {
         message: '安装完成',
       });
 
-      logger.info(`[ToolInstaller] 工具安装成功: ${id}`);
+      logger.info(`[ToolInstaller] 工具安装成功: ${id}（依赖将在首次启动时安装）`);
       return toolDir;
     } catch (error) {
       // 清理失败的安装

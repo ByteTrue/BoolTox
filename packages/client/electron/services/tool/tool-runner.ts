@@ -138,8 +138,23 @@ export class ToolRunner {
       return state.loadingPromise;
     }
 
-    // http-service 模式：启动后端服务，在浏览器中打开
+    // 在启动前检查并准备依赖
     const runtimeConfig = state.runtime.manifest.runtime;
+    if (runtimeConfig && (runtimeConfig.type === 'http-service' || runtimeConfig.type === 'standalone' || runtimeConfig.type === 'cli')) {
+      const backend = runtimeConfig.backend;
+      if (backend) {
+        try {
+          await this.ensureDependencies(state.runtime, backend, parentWindow);
+        } catch (error) {
+          this.emitState(state, 'error', {
+            message: error instanceof Error ? error.message : '依赖准备失败'
+          });
+          throw error;
+        }
+      }
+    }
+
+    // http-service 模式：启动后端服务，在浏览器中打开
     if (runtimeConfig && runtimeConfig.type === 'http-service') {
       const host = runtimeConfig.backend.host || '127.0.0.1';
       const port = runtimeConfig.backend.port;
@@ -993,6 +1008,101 @@ export class ToolRunner {
       throw error;
     } finally {
       state.loadingPromise = undefined;
+    }
+  }
+
+  /**
+   * 确保工具依赖已准备好
+   * 首次启动时安装依赖，后续启动直接跳过
+   */
+  private async ensureDependencies(
+    runtime: ToolRuntime,
+    backend: any,
+    parentWindow: BrowserWindow
+  ): Promise<void> {
+    const toolPath = runtime.path;
+    const toolId = runtime.id;
+
+    // Python 工具
+    if (backend.type === 'python' && backend.requirements) {
+      const requirementsPath = path.join(toolPath, backend.requirements);
+      const venvPath = path.join(toolPath, 'venv');
+
+      // 检查 requirements.txt 是否存在
+      try {
+        await fsPromises.access(requirementsPath);
+      } catch {
+        // 没有 requirements.txt，跳过
+        return;
+      }
+
+      // 检查 venv 是否存在
+      try {
+        await fsPromises.access(venvPath);
+        logger.info(`[ToolRunner] Python 环境已存在: ${toolId}`);
+        return; // venv 存在，跳过安装
+      } catch {
+        // venv 不存在，需要安装
+      }
+
+      logger.info(`[ToolRunner] 首次启动 ${toolId}，准备 Python 环境...`);
+
+      // 显示依赖准备对话框
+      const { showDepsInstaller } = await import('../../windows/deps-installer.js');
+      const result = await showDepsInstaller({
+        toolId,
+        toolName: runtime.manifest.name,
+        toolPath,
+        language: 'python',
+        requirementsPath,
+      });
+
+      if (!result.success) {
+        throw new Error(result.cancelled ? '用户取消了环境准备' : '环境准备失败');
+      }
+
+      logger.info(`[ToolRunner] Python 环境准备完成: ${toolId}`);
+    }
+
+    // Node.js 工具
+    if (backend.type === 'node') {
+      const packageJsonPath = path.join(toolPath, 'package.json');
+      const nodeModulesPath = path.join(toolPath, 'node_modules');
+
+      // 检查 package.json 是否存在
+      try {
+        await fsPromises.access(packageJsonPath);
+      } catch {
+        // 没有 package.json，跳过
+        return;
+      }
+
+      // 检查 node_modules 是否存在
+      try {
+        await fsPromises.access(nodeModulesPath);
+        logger.info(`[ToolRunner] Node.js 依赖已存在: ${toolId}`);
+        return; // node_modules 存在，跳过安装
+      } catch {
+        // node_modules 不存在，需要安装
+      }
+
+      logger.info(`[ToolRunner] 首次启动 ${toolId}，安装 Node.js 依赖...`);
+
+      // 显示依赖准备对话框
+      const { showDepsInstaller } = await import('../../windows/deps-installer.js');
+      const result = await showDepsInstaller({
+        toolId,
+        toolName: runtime.manifest.name,
+        toolPath,
+        language: 'node',
+        packageJsonPath,
+      });
+
+      if (!result.success) {
+        throw new Error(result.cancelled ? '用户取消了依赖安装' : '依赖安装失败');
+      }
+
+      logger.info(`[ToolRunner] Node.js 依赖安装完成: ${toolId}`);
     }
   }
 
