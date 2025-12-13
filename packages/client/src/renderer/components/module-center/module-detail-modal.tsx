@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, GLASS_BORDERS } from "@/utils/glass-layers";
 import { iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
+import { ScreenshotCarousel } from "./screenshot-carousel";
 import type { ModuleInstance, ModuleDefinition } from "@/types/module";
 
 interface ModuleDetailModalProps {
@@ -281,6 +282,14 @@ export function ModuleDetailModal({
                       exit={{ opacity: 0, y: 10 }}
                       className={isDark ? "text-white/80" : "text-slate-700"}
                     >
+                      {/* 截图轮播 */}
+                      {definition.screenshots && definition.screenshots.length > 0 && (
+                        <ScreenshotCarousel
+                          screenshots={definition.screenshots}
+                          toolName={definition.name}
+                        />
+                      )}
+
                       <h3 className="mb-3 text-lg font-semibold">工具描述</h3>
                       <p className="mb-6 leading-relaxed">
                         {definition.description || "暂无详细描述"}

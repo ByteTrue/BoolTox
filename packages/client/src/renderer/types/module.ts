@@ -19,6 +19,7 @@ export interface ModuleDefinition {
   category?: string;
   keywords?: string[];
   icon?: string;
+  screenshots?: string[]; // 工具截图 URL 列表
   installedByDefault?: boolean;
   loader?: ModuleLoader;
   source?: ModuleSource;

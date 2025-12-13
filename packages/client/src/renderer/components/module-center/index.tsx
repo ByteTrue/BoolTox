@@ -9,12 +9,13 @@ import { useTheme } from "../theme-provider";
 import { ModuleGrid } from "./module-grid";
 import { ModuleDetailModal } from "./module-detail-modal";
 import { ModuleRecommendations } from "./module-recommendations";
+import { BatchActionsBar } from "./batch-actions-bar";
 import { useModuleSearch, useSearchInput } from "./hooks/use-module-search";
 import { useModuleFilter } from "./hooks/use-module-filter";
 import { useModuleSort } from "./hooks/use-module-sort";
 import { useRecommendations } from "./hooks/use-recommendations";
 import { CustomSelect } from "./custom-select";
-import { Search, SlidersHorizontal, ArrowUpDown, Plus } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, Plus, CheckSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { iconButtonInteraction } from "@/utils/animation-presets";
 import { getGlassStyle } from "@/utils/glass-layers";
@@ -51,6 +52,10 @@ export function ModuleCenter() {
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
 
+  // 批量操作状态
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(new Set());
+
   // 搜索状态
   const { inputValue, debouncedValue, setInputValue } = useSearchInput();
 
@@ -71,6 +76,7 @@ export function ModuleCenter() {
   const { filteredInstalled, availableCategories } = useModuleFilter(
     installedModules,
     availableModules,
+    availablePlugins, // 传递在线工具列表
     filter
   );
 
@@ -126,6 +132,7 @@ export function ModuleCenter() {
           category: onlinePlugin.category || 'utilities',
           keywords: onlinePlugin.keywords || [],
           icon: onlinePlugin.icon || '🔌',
+          screenshots: onlinePlugin.screenshots || [], // 截图列表
           installedByDefault: false,
           source: 'remote' as const,
           loader: () => Promise.resolve(() => null),
@@ -193,6 +200,63 @@ export function ModuleCenter() {
     },
     [addFavorite, installedModules, removeFavorite]
   );
+
+  // 批量操作：切换选择
+  const handleSelect = useCallback((toolId: string) => {
+    setSelectedToolIds(prev => {
+      const next = new Set(prev);
+      if (next.has(toolId)) {
+        next.delete(toolId);
+      } else {
+        next.add(toolId);
+      }
+      return next;
+    });
+  }, []);
+
+  // 批量操作：启动全部
+  const handleStartAll = useCallback(async () => {
+    const toolIds = Array.from(selectedToolIds);
+    for (const toolId of toolIds) {
+      await openModule(toolId);
+    }
+    setIsSelectionMode(false);
+    setSelectedToolIds(new Set());
+  }, [selectedToolIds, openModule]);
+
+  // 批量操作：停止全部（仅 http-service）
+  const handleStopAll = useCallback(async () => {
+    const toolIds = Array.from(selectedToolIds);
+    for (const toolId of toolIds) {
+      const tool = installedModules.find(m => m.id === toolId);
+      if (tool?.definition.runtime?.type === 'http-service') {
+        await stopModule(toolId);
+      }
+    }
+  }, [selectedToolIds, installedModules, stopModule]);
+
+  // 批量操作：卸载全部
+  const handleUninstallAll = useCallback(async () => {
+    const count = selectedToolIds.size;
+    if (!confirm(`确定要卸载 ${count} 个工具吗？此操作不可恢复。`)) {
+      return;
+    }
+
+    const toolIds = Array.from(selectedToolIds);
+    for (const toolId of toolIds) {
+      await uninstallModule(toolId);
+    }
+    setIsSelectionMode(false);
+    setSelectedToolIds(new Set());
+  }, [selectedToolIds, uninstallModule]);
+
+  // 检查选中的工具中是否有 http-service 类型
+  const hasHttpServiceSelected = useMemo(() => {
+    return Array.from(selectedToolIds).some(toolId => {
+      const tool = installedModules.find(m => m.id === toolId);
+      return tool?.definition.runtime?.type === 'http-service' && tool.runtime.launchState === 'running';
+    });
+  }, [selectedToolIds, installedModules]);
 
   // 处理打开模块
   const handleOpen = useCallback(
@@ -273,6 +337,28 @@ export function ModuleCenter() {
               <Plus size={16} />
               <span className="hidden sm:inline">添加本地工具</span>
             </motion.button>
+
+            {/* 选择模式按钮 */}
+            {activeTab === "installed" && (
+              <motion.button
+                {...iconButtonInteraction}
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  setSelectedToolIds(new Set());
+                }}
+                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
+                  isSelectionMode
+                    ? "border-blue-500/50 bg-blue-500/20 text-blue-500"
+                    : isDark
+                    ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
+                }`}
+                style={getGlassStyle('BUTTON', theme)}
+              >
+                <CheckSquare size={16} />
+                <span className="hidden sm:inline">{isSelectionMode ? "取消选择" : "选择"}</span>
+              </motion.button>
+            )}
 
             {/* 分类过滤 */}
             <CustomSelect
@@ -416,6 +502,9 @@ export function ModuleCenter() {
                   onPinToggle={handlePinToggle}
                   onCardClick={handleCardClick}
                   isDevPlugin={isDevPlugin}
+                  isSelectionMode={isSelectionMode}
+                  selectedToolIds={selectedToolIds}
+                  onSelect={handleSelect}
                   emptyMessage="给喜爱的工具点亮一颗星星吧"
                 />
               </section>
@@ -437,12 +526,30 @@ export function ModuleCenter() {
                 onPinToggle={handlePinToggle}
                 onCardClick={handleCardClick}
                 isDevPlugin={isDevPlugin}
+                isSelectionMode={isSelectionMode}
+                selectedToolIds={selectedToolIds}
+                onSelect={handleSelect}
                 emptyMessage="还没有安装任何工具,前往工具商店看看吧"
               />
             </section>
           </div>
         )}
       </div>
+
+      {/* 批量操作栏 */}
+      {isSelectionMode && selectedToolIds.size > 0 && (
+        <BatchActionsBar
+          selectedCount={selectedToolIds.size}
+          onStartAll={handleStartAll}
+          onStopAll={handleStopAll}
+          onUninstallAll={handleUninstallAll}
+          onCancel={() => {
+            setIsSelectionMode(false);
+            setSelectedToolIds(new Set());
+          }}
+          hasHttpService={hasHttpServiceSelected}
+        />
+      )}
 
       {/* 详情 Modal */}
       <ModuleDetailModal

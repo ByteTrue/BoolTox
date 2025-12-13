@@ -5,6 +5,7 @@
 
 import { useMemo } from "react";
 import type { ModuleDefinition, ModuleInstance } from "@/types/module";
+import type { ToolRegistryEntry } from "@booltox/shared";
 import type { ModuleFilter } from "../types";
 
 /**
@@ -14,6 +15,7 @@ import type { ModuleFilter } from "../types";
 export function useModuleFilter(
   installedModules: ModuleInstance[],
   availableModules: ModuleDefinition[],
+  availablePlugins: ToolRegistryEntry[], // 新增：在线工具列表
   filter: ModuleFilter
 ) {
   // 过滤已安装模块
@@ -62,16 +64,30 @@ export function useModuleFilter(
   // 获取所有可用分类
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
-    
-    [...installedModules, ...availableModules].forEach((module) => {
-      const definition = "definition" in module ? module.definition : module;
-      if (definition.category) {
-        categories.add(definition.category);
+
+    // 从已安装模块提取分类
+    installedModules.forEach((module) => {
+      if (module.definition.category) {
+        categories.add(module.definition.category);
+      }
+    });
+
+    // 从本地可用模块提取分类
+    availableModules.forEach((module) => {
+      if (module.category) {
+        categories.add(module.category);
+      }
+    });
+
+    // 从在线工具提取分类
+    availablePlugins.forEach((plugin) => {
+      if (plugin.category) {
+        categories.add(plugin.category);
       }
     });
 
     return Array.from(categories).sort();
-  }, [installedModules, availableModules]);
+  }, [installedModules, availableModules, availablePlugins]);
 
   return {
     filteredInstalled,
