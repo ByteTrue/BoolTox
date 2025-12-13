@@ -26,6 +26,9 @@ interface ModuleGridProps {
   onCardClick: (moduleId: string) => void;
   emptyMessage?: string;
   isDevPlugin?: (moduleId: string) => boolean; // 检查是否为开发工具
+  isSelectionMode?: boolean; // 是否为选择模式
+  selectedToolIds?: Set<string>; // 已选中的工具 ID
+  onSelect?: (moduleId: string) => void; // 选择回调
 }
 
 export function ModuleGrid({
@@ -41,6 +44,9 @@ export function ModuleGrid({
   onCardClick,
   emptyMessage = "暂无工具",
   isDevPlugin,
+  isSelectionMode = false,
+  selectedToolIds = new Set(),
+  onSelect,
 }: ModuleGridProps) {
   // 加载状态
   if (isLoading) {
@@ -163,6 +169,9 @@ export function ModuleGrid({
                 onPinToggle={onPinToggle || (() => {})}
                 onClick={onCardClick}
                 isDev={isDevPlugin?.(module.id) || false}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedToolIds.has(module.id)}
+                onSelect={onSelect}
               />
             );
           }

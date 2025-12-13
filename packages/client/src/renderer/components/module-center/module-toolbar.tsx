@@ -3,7 +3,7 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { Search, SlidersHorizontal, ArrowUpDown, X, Plus } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, X, Plus, CheckSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../theme-provider";
 import { CustomSelect } from "./custom-select";
@@ -20,6 +20,8 @@ interface ModuleToolbarProps {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   onAddLocalTool?: () => void; // 新增：添加本地工具回调
+  isSelectionMode?: boolean; // 是否为选择模式
+  onToggleSelectionMode?: () => void; // 切换选择模式
 }
 
 export function ModuleToolbar({
@@ -31,6 +33,8 @@ export function ModuleToolbar({
   selectedCategory,
   onCategoryChange,
   onAddLocalTool,
+  isSelectionMode = false,
+  onToggleSelectionMode,
 }: ModuleToolbarProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -77,8 +81,27 @@ export function ModuleToolbar({
 
         {/* 右侧控制按钮 */}
         <div className="flex items-center gap-2">
+          {/* 选择模式按钮 */}
+          {onToggleSelectionMode && (
+            <motion.button
+              {...iconButtonInteraction}
+              onClick={onToggleSelectionMode}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
+                isSelectionMode
+                  ? "border-blue-500/50 bg-blue-500/20 text-blue-500"
+                  : isDark
+                  ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
+              }`}
+              style={getGlassStyle('BUTTON', theme)}
+            >
+              <CheckSquare size={16} />
+              <span>{isSelectionMode ? "取消选择" : "选择"}</span>
+            </motion.button>
+          )}
+
           {/* 添加本地工具按钮 */}
-          {onAddLocalTool && (
+          {onAddLocalTool && !isSelectionMode && (
             <motion.button
               {...iconButtonInteraction}
               onClick={onAddLocalTool}

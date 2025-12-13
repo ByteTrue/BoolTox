@@ -4,7 +4,7 @@
  */
 
 import { motion } from "framer-motion";
-import { Trash2, Download, ExternalLink, Pin, Square, Clock } from "lucide-react";
+import { Trash2, Download, ExternalLink, Pin, Square, Clock, Check } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
 import { cardHover } from "@/utils/animation-presets";
@@ -19,6 +19,9 @@ interface ModuleCardProps {
   onClick: (moduleId: string) => void;
   onPinToggle: (moduleId: string) => void;
   isDev?: boolean; // 是否为开发工具(不可卸载)
+  isSelectionMode?: boolean; // 是否为选择模式
+  isSelected?: boolean; // 是否被选中
+  onSelect?: (moduleId: string) => void; // 选择回调
 }
 
 export function ModuleCard({
@@ -29,6 +32,9 @@ export function ModuleCard({
   onClick,
   onPinToggle,
   isDev = false,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
 }: ModuleCardProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -73,6 +79,26 @@ export function ModuleCard({
       {/* 头部: 图标和状态 */}
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
+          {/* 选择模式：复选框 */}
+          {isSelectionMode && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect?.(module.id);
+              }}
+              className={`flex h-6 w-6 items-center justify-center rounded-md border-2 transition-all ${
+                isSelected
+                  ? "border-blue-500 bg-blue-500"
+                  : isDark
+                  ? "border-white/30 hover:border-blue-500/50"
+                  : "border-slate-300 hover:border-blue-500/50"
+              }`}
+            >
+              {isSelected && <Check className="h-4 w-4 text-white" />}
+            </button>
+          )}
+
           {/* 图标 */}
           <div
             className={`flex h-12 w-12 items-center justify-center rounded-xl ${
