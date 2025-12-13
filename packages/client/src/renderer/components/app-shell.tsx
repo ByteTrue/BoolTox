@@ -32,6 +32,8 @@ import {
 } from "@/utils/accessibility";
 
 import { getPrimaryNav } from "@/config/navigation";
+import { CommandPalette } from "./command-palette";
+import { useCommandPalette } from "@/contexts/command-palette-context";
 
 // 路由懒加载 - 优化首屏加载性能
 const OverviewPanel = lazy(() => import("./overview-panel").then(m => ({ default: m.OverviewPanel })));
@@ -202,6 +204,7 @@ function AppShellContent() {
   } = useModulePlatform();
   const [activeNav, setActiveNav] = useState<string>('overview');
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const { toggle: toggleCommandPalette } = useCommandPalette();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -213,6 +216,18 @@ function AppShellContent() {
       window.removeEventListener("sidebar-toggle", handler);
     };
   }, []);
+
+  // 全局快捷键：Ctrl/Cmd+K 打开命令面板
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleCommandPalette();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleCommandPalette]);
 
   // 屏幕阅读器公告
   const announce = useScreenReaderAnnounce();
@@ -403,6 +418,9 @@ function AppShellContent() {
           </main>
         </div>
       </div>
+
+      {/* 命令面板 */}
+      <CommandPalette />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { SpotlightProvider } from './renderer/contexts/spotlight-context';
 import { ToastProvider } from './renderer/contexts/toast-context';
 import { UpdateProvider } from './renderer/contexts/update-context';
 import { ActivityFeedProvider } from './renderer/contexts/activity-feed-context';
+import { CommandPaletteProvider } from './renderer/contexts/command-palette-context';
 import { initErrorTracking } from './renderer/lib/error-tracking';
 import { ErrorBoundary } from './renderer/components/error-boundary';
 import { profiler } from './renderer/lib/performance-profiler';
@@ -62,9 +63,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <ModuleProvider>
             <UpdateProvider>
               <ActivityFeedProvider>
-                <RootLayout>
-                  <Page />
-                </RootLayout>
+                <CommandPaletteProvider>
+                  <RootLayout>
+                    <Page />
+                  </RootLayout>
+                </CommandPaletteProvider>
               </ActivityFeedProvider>
             </UpdateProvider>
           </ModuleProvider>
