@@ -30,6 +30,7 @@ import { toolInstaller } from './services/tool/tool-installer.js';
 import { pythonManager } from './services/python-manager.service.js';
 import { TrayService } from './services/tray.service.js';
 import { toolUpdater } from './services/tool/tool-updater.service.js';
+import { quickPanelManager } from './windows/quick-panel-manager.js';
 import './services/tool/tool-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { ToolRegistryEntry, ToolManifest } from '@booltox/shared';
@@ -156,6 +157,9 @@ function createWindow() {
       logger.info('Application closing');
     }
   });
+
+  // 设置主窗口引用到快捷面板管理器
+  quickPanelManager.setMainWindow(mainWindow);
 }
 
 /**
@@ -742,6 +746,11 @@ app.whenReady().then(() => {
     trayService.create();
   }
 
+  // 初始化快捷面板
+  quickPanelManager.createWindow();
+  quickPanelManager.registerShortcut();
+  quickPanelManager.registerIPCHandlers();
+
   // Initialize Plugin System
   toolInstaller.init().catch(err => logger.error('Failed to init tool installer:', err));
   toolManager.init().catch(err => logger.error('Failed to init tool manager:', err));
@@ -821,6 +830,9 @@ app.on('before-quit', async () => {
     trayService.destroy();
     trayService = null;
   }
+
+  // 清理快捷面板
+  quickPanelManager.destroy();
 
   // 停止所有运行中的工具
   try {

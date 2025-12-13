@@ -6,13 +6,16 @@
 import './renderer/lib/setup-renderer-console-logging';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 
 // Import styles
 import './renderer/globals.css';
 
-// Import the main layout and page
+// Import the main layout
 import RootLayout from './renderer/layout';
-import Page from './renderer/page';
+
+// Import the new App Shell
+import { AppShell } from './renderer/components/app-shell';
 
 // Import only the contexts we need
 import { ModuleProvider } from './renderer/contexts/module-context';
@@ -39,40 +42,37 @@ type PerfWindow = Window & {
 };
 
 // ========== Phase 1: Performance Monitoring ==========
-// 记录脚本开始执行时间
 const scriptStartTime = performance.now();
 const perfWindow = window as PerfWindow;
 
-// 标记应用启动开始（如果 HTML 中有全局标记，使用它；否则使用脚本开始时间）
 if (!perfWindow.__APP_START_TIME__) {
   perfWindow.__APP_START_TIME__ = scriptStartTime;
 }
 
 profiler.mark('app-startup-begin');
-
 initErrorTracking();
-
-// 标记 React 渲染开始
 profiler.mark('react-render-begin');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary name="App Root" showHomeButton={false}>
-      <ToastProvider>
-        <SpotlightProvider>
-          <ModuleProvider>
-            <UpdateProvider>
-              <ActivityFeedProvider>
-                <CommandPaletteProvider>
-                  <RootLayout>
-                    <Page />
-                  </RootLayout>
-                </CommandPaletteProvider>
-              </ActivityFeedProvider>
-            </UpdateProvider>
-          </ModuleProvider>
-        </SpotlightProvider>
-      </ToastProvider>
+      <BrowserRouter>
+        <ToastProvider>
+          <SpotlightProvider>
+            <ModuleProvider>
+              <UpdateProvider>
+                <ActivityFeedProvider>
+                  <CommandPaletteProvider>
+                    <RootLayout>
+                      <AppShell />
+                    </RootLayout>
+                  </CommandPaletteProvider>
+                </ActivityFeedProvider>
+              </UpdateProvider>
+            </ModuleProvider>
+          </SpotlightProvider>
+        </ToastProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,
 );
@@ -85,15 +85,14 @@ profiler.measure('React Initial Render', 'react-render-begin', 'react-render-end
 requestAnimationFrame(async () => {
   profiler.mark('app-startup-end');
   profiler.measure('App Startup Time', 'app-startup-begin', 'app-startup-end');
-  
-  // 输出性能报告（使用品牌蓝色）
-  console.warn('%c🚀 BoolTox Performance Report', 'font-size: 16px; font-weight: bold; color: rgb(101, 187, 233);');
+
+  console.warn('%c🚀 BoolTox Performance Report (New Architecture)', 'font-size: 16px; font-weight: bold; color: rgb(101, 187, 233);');
   profiler.report('Phase 1: Startup Performance');
-  
+
   // 开发环境：启动内存和 FPS 监控
   if (import.meta.env.DEV) {
     const { memoryMonitor, fpsMonitor } = await import('./renderer/lib/performance-profiler');
-    
+
     console.warn('\n🔧 Development Mode: Performance monitoring enabled');
     console.warn('📋 Available commands:');
     console.warn('  - profiler.report()         // 查看启动性能报告');
@@ -103,13 +102,11 @@ requestAnimationFrame(async () => {
     console.warn('  - fpsMonitor.start((fps) => console.log(`FPS: ${fps}`))');
     console.warn('  - fpsMonitor.stop()');
     console.warn('  - fpsMonitor.getFPS()       // 获取当前 FPS\n');
-    
-    // 暴露到全局（方便调试）
+
     perfWindow.profiler = profiler;
     perfWindow.memoryMonitor = memoryMonitor;
     perfWindow.fpsMonitor = fpsMonitor;
-    
-    // 保留完整对象引用
+
     perfWindow.__perf__ = {
       profiler,
       memoryMonitor,

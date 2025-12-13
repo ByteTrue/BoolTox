@@ -42,4 +42,9 @@ import type { AutoUpdateStatus } from './services/auto-update.service';
     getStatus: () => Promise<AutoUpdateStatus>;
     onStatus: (listener: (status: AutoUpdateStatus) => void) => () => void;
   };
+  quickPanel: {
+    hide: () => Promise<void>;
+    showMain: () => Promise<void>;
+    navigateTo: (route: string) => Promise<void>;
+  };
 }

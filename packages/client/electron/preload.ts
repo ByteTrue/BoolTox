@@ -31,6 +31,21 @@ const windowAPI = {
 };
 
 /**
+ * 快捷面板API
+ */
+const quickPanelAPI = {
+  hide: async () => {
+    await ipcRenderer.invoke('quick-panel:hide');
+  },
+  showMain: async () => {
+    await ipcRenderer.invoke('quick-panel:show-main');
+  },
+  navigateTo: async (route: string) => {
+    await ipcRenderer.invoke('quick-panel:navigate', route);
+  },
+};
+
+/**
  * 简单的IPC通信
  */
 const ipcAPI = {
@@ -311,3 +326,5 @@ contextBridge.exposeInMainWorld('tool', toolAPI);
 contextBridge.exposeInMainWorld('appSettings', appSettingsAPI);
 
 contextBridge.exposeInMainWorld('python', pythonAPI);
+
+contextBridge.exposeInMainWorld('quickPanel', quickPanelAPI);
