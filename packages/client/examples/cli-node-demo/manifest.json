@@ -1,0 +1,18 @@
+{
+  "id": "com.booltox.cli-node-demo",
+  "version": "1.0.0",
+  "name": "文件管理器（CLI）",
+  "description": "简单的命令行文件管理工具，演示如何将标准 Node.js CLI 工具集成到 BoolTox",
+  "protocol": "^2.0.0",
+  "runtime": {
+    "type": "cli",
+    "backend": {
+      "type": "node",
+      "entry": "cli.js"
+    },
+    "title": "BoolTox 文件管理器",
+    "keepOpen": true
+  },
+  "author": "BoolTox Team",
+  "keywords": ["cli", "file", "node", "commander"]
+}
