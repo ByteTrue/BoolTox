@@ -120,7 +120,16 @@ export class ToolManager {
       // 验证简化配置
       const validation = validateSimplifiedManifest(rawManifest);
       if (!validation.valid) {
-        logger.error(`[ToolManager] Invalid manifest at ${toolPath}:`, validation.errors);
+        logger.error(`[ToolManager] Invalid manifest at ${toolPath}:`);
+        validation.errors.forEach(err => {
+          logger.error(`  ✗ ${err.message}`);
+          if (err.field && err.field !== 'unknown') {
+            logger.error(`    字段: ${err.field}`);
+          }
+          if (err.suggestedFix) {
+            logger.info(`    💡 建议: ${err.suggestedFix}`);
+          }
+        });
         return;
       }
 

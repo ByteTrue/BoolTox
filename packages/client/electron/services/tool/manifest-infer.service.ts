@@ -18,9 +18,21 @@
 import type { ToolManifest } from '@booltox/shared';
 import type { ToolRuntimeConfig, ToolBackendConfig } from '@booltox/shared';
 import path from 'path';
+import Ajv from 'ajv';
+import { MANIFEST_SCHEMA } from '@booltox/shared/schemas/manifest.schema.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('ManifestInfer');
+
+// 创建 AJV 实例
+const ajv = new Ajv({ allErrors: true, verbose: true });
+const validateSchema = ajv.compile(MANIFEST_SCHEMA);
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  suggestedFix?: string;
+}
 
 /**
  * 从 start 命令推断后端类型
@@ -204,25 +216,65 @@ function generateToolId(toolPath: string): string {
 /**
  * 验证简化配置的完整性
  */
-export function validateSimplifiedManifest(manifest: ToolManifest): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
+export function validateSimplifiedManifest(manifest: ToolManifest): { valid: boolean; errors: ValidationError[] } {
+  // 使用 JSON Schema 验证
+  const valid = validateSchema(manifest);
 
-  // 必需字段
-  if (!manifest.name) {
-    errors.push('Missing required field: "name"');
+  if (valid) {
+    return { valid: true, errors: [] };
   }
 
-  if (!manifest.version) {
-    errors.push('Missing required field: "version"');
-  }
+  const errors: ValidationError[] = (validateSchema.errors || []).map(error => {
+    const field = error.instancePath?.replace(/^\//, '') || error.params?.missingProperty || 'unknown';
+    let message = error.message || '验证失败';
+    let suggestedFix: string | undefined;
 
-  // 配置完整性
-  if (!manifest.start && !manifest.runtime) {
-    errors.push('Must provide either "start" (simplified) or "runtime" (full) configuration');
-  }
+    // 自定义错误信息
+    if (error.keyword === 'required') {
+      const missing = error.params.missingProperty;
+      message = `缺少必需字段 "${missing}"`;
 
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+      // 提供修复建议
+      if (missing === 'name') {
+        suggestedFix = '添加: "name": "工具名称"';
+      } else if (missing === 'version') {
+        suggestedFix = '添加: "version": "1.0.0"';
+      } else if (missing === 'start') {
+        suggestedFix = '添加: "start": "python main.py" 或配置 "runtime" 字段';
+      }
+    } else if (error.keyword === 'pattern') {
+      message = `字段 "${field}" 格式不正确`;
+
+      if (field.includes('version')) {
+        suggestedFix = '版本号格式：1.0.0 或 1.2.3-beta';
+      } else if (field.includes('id')) {
+        suggestedFix = 'ID 格式：com.booltox.tool-name（小写字母、数字、点、连字符）';
+      }
+    } else if (error.keyword === 'type') {
+      message = `字段 "${field}" 类型错误，期望 ${error.params.type}`;
+
+      if (field.includes('port')) {
+        suggestedFix = '端口必须是数字：8001（不要用引号）';
+      }
+    } else if (error.keyword === 'minimum' || error.keyword === 'maximum') {
+      message = `字段 "${field}" 超出范围`;
+
+      if (field.includes('port')) {
+        suggestedFix = '端口范围：1024-65535';
+      }
+    } else if (error.keyword === 'minLength') {
+      message = `字段 "${field}" 不能为空`;
+    } else if (error.keyword === 'anyOf') {
+      message = '缺少必需配置';
+      suggestedFix = '必须提供 "start" 字段（简化配置）或 "runtime" 字段（完整配置）';
+    }
+
+    return {
+      field,
+      message,
+      suggestedFix,
+    };
+  });
+
+  return { valid: false, errors };
 }
