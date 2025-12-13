@@ -36,13 +36,17 @@ export function ModuleCard({
   const isRunning = launchState === "running";
   const isLaunchError = launchState === "error";
   const isStandalone = module.definition.runtimeMode === 'standalone';
-  const launchStateBadge = isRunning
-    ? { label: isStandalone ? "外部工具运行中" : "窗口运行中", tone: "success" as const }
-    : isLaunching
-      ? { label: "启动中…", tone: "warning" as const }
-      : isLaunchError
-        ? { label: "启动失败", tone: "danger" as const }
-        : null;
+
+  // 检查是否为外部工具（CLI/Binary）
+  const runtimeType = module.definition.runtime?.type;
+  const isExternalTool = runtimeType === 'cli' || runtimeType === 'binary';
+
+  // 启动器模式：不显示运行状态（所有工具）
+  const launchStateBadge = isLaunching
+    ? { label: "启动中…", tone: "warning" as const }
+    : isLaunchError
+      ? { label: "启动失败", tone: "danger" as const }
+      : null;
 
   return (
     <motion.div
@@ -100,11 +104,9 @@ export function ModuleCard({
         {launchStateBadge && (
           <span
             className={`rounded-full px-2 py-1 text-xs font-semibold ${
-              launchStateBadge.tone === "success"
-                ? "border-green-500/30 bg-green-500/15 text-green-500"
-                : launchStateBadge.tone === "warning"
-                  ? "border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
-                  : "border-red-500/30 bg-red-500/15 text-red-500"
+              launchStateBadge.tone === "warning"
+                ? "border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
+                : "border-red-500/30 bg-red-500/15 text-red-500"
             }`}
           >
             {launchStateBadge.label}
@@ -192,20 +194,7 @@ export function ModuleCard({
           )}
         </button>
 
-        {/* 停止按钮：仅在运行时显示 */}
-        {isRunning && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onStop(module.id);
-            }}
-            className="flex-1 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-xs font-medium text-orange-500 transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 hover:bg-orange-500/20"
-            title="停止工具"
-          >
-            <Square className="mx-auto" size={14} />
-          </button>
-        )}
+        {/* 移除停止按钮 - 启动器模式不提供停止功能 */}
 
         <button
           type="button"

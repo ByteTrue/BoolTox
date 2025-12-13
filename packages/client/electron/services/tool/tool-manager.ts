@@ -19,7 +19,7 @@ export class ToolManager {
   private devToolsDir?: string;
 
   constructor() {
-    // Use userData/plugins for installed plugins
+    // Use userData/tools for installed tools
     this.toolsDir = path.join(app.getPath('userData'), 'tools');
     
     // 只在开发模式下加载开发目录的工具
@@ -161,7 +161,7 @@ export class ToolManager {
 
     if (!this.satisfiesProtocol(protocolRange, BOOLTOX_PROTOCOL_VERSION)) {
       logger.error(
-        `[ToolManager] Plugin ${manifest.id ?? toolPath} requires protocol ${protocolRange}, but host is ${BOOLTOX_PROTOCOL_VERSION}`,
+        `[ToolManager] 工具 ${manifest.id ?? toolPath} 需要协议版本 ${protocolRange}，但当前版本是 ${BOOLTOX_PROTOCOL_VERSION}`,
       );
       return null;
     }

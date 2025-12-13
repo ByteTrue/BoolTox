@@ -10,6 +10,8 @@
 
 import { spawn, type ChildProcess } from 'child_process';
 import os from 'os';
+import path from 'path';
+import fs from 'fs';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('TerminalLauncher');
@@ -102,28 +104,66 @@ end tell
   }
 
   /**
-   * Windows: 使用 cmd.exe
+   * Windows: 使用 cmd.exe + 临时批处理文件
    */
   private static launchWindows(options: TerminalLaunchOptions): ChildProcess {
     const { command, args, cwd, title } = options;
-
-    const fullCommand = [command, ...args].map(arg => `"${arg}"`).join(' ');
     const windowTitle = title || 'BoolTox CLI Tool';
 
-    logger.info(`[TerminalLauncher] Windows 命令: ${fullCommand}`);
+    logger.info(`[TerminalLauncher] Windows 命令: ${command}`);
+    logger.info(`[TerminalLauncher] Windows 参数:`, args);
 
-    // 直接运行工具
-    return spawn('cmd.exe', [
-      '/c',
-      'start',
-      windowTitle,
-      'cmd.exe',
-      '/k',
-      `cd /d "${cwd}" && ${fullCommand}`,
-    ], {
+    // 在批处理文件中，所有参数都用引号包裹（避免特殊字符问题）
+    // 路径中的 @ 等字符在批处理中是安全的（在引号内）
+    const quotedCommand = `"${command}"`;
+    const quotedArgs = args.map(arg => `"${arg}"`).join(' ');
+    const fullCommand = quotedArgs ? `${quotedCommand} ${quotedArgs}` : quotedCommand;
+
+    // 使用临时批处理文件
+    const batchContent = `@echo off
+chcp 65001 >nul
+cd /d "${cwd}"
+${fullCommand}
+`;
+
+    // 创建临时批处理文件
+    const tempDir = os.tmpdir();
+    const batchFile = path.join(tempDir, `booltox-${Date.now()}.bat`);
+
+    try {
+      fs.writeFileSync(batchFile, batchContent, { encoding: 'utf8' });
+      logger.info(`[TerminalLauncher] 已创建临时批处理文件: ${batchFile}`);
+      logger.info(`[TerminalLauncher] 批处理文件内容:\n${batchContent}`);
+    } catch (error) {
+      logger.error(`[TerminalLauncher] 创建批处理文件失败:`, error);
+      throw error;
+    }
+
+    // 启动新的 cmd 窗口执行批处理文件
+    // start "标题" "批处理文件路径"
+    const launchCmd = `start "${windowTitle}" "${batchFile}"`;
+
+    logger.info(`[TerminalLauncher] Windows 启动命令: ${launchCmd}`);
+
+    const process = spawn('cmd', ['/c', launchCmd], {
       stdio: 'ignore',
       shell: true,
+      detached: true,
     });
+
+    // 清理临时文件（延迟删除，确保批处理启动后才删除）
+    setTimeout(() => {
+      try {
+        if (fs.existsSync(batchFile)) {
+          fs.unlinkSync(batchFile);
+          logger.info(`[TerminalLauncher] 已清理临时批处理文件: ${batchFile}`);
+        }
+      } catch (error) {
+        logger.warn(`[TerminalLauncher] 清理批处理文件失败（忽略）:`, error);
+      }
+    }, 5000); // 5秒后删除
+
+    return process;
   }
 
   /**

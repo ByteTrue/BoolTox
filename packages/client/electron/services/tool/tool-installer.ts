@@ -12,7 +12,7 @@ import AdmZip from 'adm-zip';
 import type { ToolRegistryEntry, ToolInstallProgress } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 
-const logger = createLogger('PluginInstaller');
+const logger = createLogger('ToolInstaller');
 
 /**
  * 工具安装服务

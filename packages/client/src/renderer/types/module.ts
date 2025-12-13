@@ -4,6 +4,7 @@
  */
 
 import type { ComponentType } from "react";
+import type { ToolRuntimeConfig } from "@booltox/shared";
 
 export type ModuleLoader = () => Promise<ComponentType> | ComponentType;
 
@@ -22,6 +23,7 @@ export interface ModuleDefinition {
   loader?: ModuleLoader;
   source?: ModuleSource;
   runtimeMode?: 'webview' | 'standalone';
+  runtime?: ToolRuntimeConfig;  // 新增：运行时配置（用于判断工具类型）
 }
 
 export type ModuleLaunchState = "idle" | "launching" | "running" | "stopping" | "error";

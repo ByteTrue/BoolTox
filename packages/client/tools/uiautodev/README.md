@@ -4,10 +4,119 @@
 
 ## 特性
 
+- ✅ **完全本地化**：使用静态文件服务，无需网络即可运行
+- ✅ **完全掌控前端**：所有前端资源可自由修改（`static/` 目录）
+- ✅ **架构简化**：使用标准 FastAPI StaticFiles（减少 150+ 行代码）
 - ✅ **离线运行**：内置 uiautodev 源代码（14MB），无需依赖 PyPI 服务器
 - ✅ **二次开发友好**：源代码可见可改，便于定制功能
 - ✅ **版本锁定**：避免上游更新导致的兼容性问题
 - ✅ **完整功能**：支持 Android/iOS/Harmony 设备的 UI 自动化
+
+## 快速开始
+
+### 通过 BoolTox 启动（推荐）
+
+在 BoolTox 客户端中点击 "uiautodev" 工具即可启动。
+
+### 手动启动（开发/测试）
+
+```bash
+cd packages/client/tools/uiautodev
+python backend/main.py
+```
+
+访问：`http://127.0.0.1:20242`
+
+## 自定义前端
+
+现在你可以完全掌控前端资源！
+
+### 修改页面标题
+
+编辑 `static/index.html`：
+```html
+<title>我的 UIAuto 工具</title>
+```
+
+### 替换 Logo
+
+```bash
+cp my-logo.webp static/assets/logo.webp
+```
+
+### 添加自定义脚本
+
+在 `static/index.html` 中添加：
+```html
+<script>
+  console.log('我的自定义脚本');
+</script>
+```
+
+## 目录结构
+
+```
+uiautodev/
+├── static/                         ← 前端资源（完全掌控）
+│   ├── index.html                  ← 可自由编辑
+│   ├── favicon.ico
+│   └── assets/
+│       ├── index-9353aa21.js       ← 主程序（1 MB）
+│       ├── index-3ba1a158.css      ← 样式（278 KB）
+│       └── ...
+├── uiautodev/                      ← Python 后端
+│   ├── app.py                      ← FastAPI 应用（已简化）
+│   ├── driver/                     ← 设备驱动
+│   └── router/                     ← API 路由
+├── backend/
+│   └── main.py                     ← BoolTox 启动脚本
+└── requirements.txt                ← Python 依赖
+```
+
+## 架构演进
+
+### 之前（HTTP 缓存代理）
+- 从 uiauto.dev 下载资源并缓存
+- 使用哈希键名（不直观）
+- 复杂度高（~150 行代理逻辑）
+
+### 现在（静态文件服务）
+- 标准 FastAPI StaticFiles
+- 清晰的文件名
+- 简洁（~20 行代码）
+
+**迁移完成日期**：2025-12-13
+
+## 常见问题
+
+### Q1: 端口冲突（10048 错误）
+
+```bash
+# Windows
+netstat -ano | findstr :20242
+taskkill /F /PID <PID>
+
+# macOS/Linux
+lsof -ti:20242 | xargs kill -9
+```
+
+### Q2: 如何更新前端资源？
+
+手动替换 `static/` 目录中的文件即可。
+
+## 相关文档
+
+- `MIGRATION.md`：完整的迁移指南
+- `CACHE_VS_STATIC.md`：两种方案的详细对比
+- `extract_cache.py`：缓存文件提取工具
+
+## 总结
+
+✅ **完全本地化**：无需网络
+✅ **完全掌控**：可自由修改前端
+✅ **架构简化**：减少 150+ 行代码
+
+**现在 uiautodev 是一个真正属于你的工具！** 🎯
 
 ## 目录结构
 

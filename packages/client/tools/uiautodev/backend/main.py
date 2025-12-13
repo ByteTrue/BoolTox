@@ -35,26 +35,26 @@ def log(message: str, level: str = "INFO"):
 
 
 def start_uiautodev_server():
-    """启动 uiautodev 服务（使用本地源代码）"""
+    """启动 uiautodev 服务（使用本地静态文件）"""
     global server_process
 
-    log("正在启动 uiautodev 服务（本地源代码）...")
+    log("正在启动 uiautodev 服务（完全本地化）...")
 
     try:
-        # 获取工具目录作为工作目录（缓存文件会存在这里）
+        # 获取工具目录作为工作目录
         plugin_dir = Path(__file__).parent.parent
-        cache_dir = plugin_dir / "cache"
-        cache_dir.mkdir(exist_ok=True)
+
+        # 检查静态文件目录是否存在
+        static_dir = plugin_dir / "static"
+        if not static_dir.exists():
+            log("⚠️ 静态文件目录不存在，请运行 extract_cache.py", level="ERROR")
+            log(f"   位置: {static_dir}", level="ERROR")
+            sys.exit(1)
 
         # 使用本地源代码启动 uiautodev server
-        # 直接运行 uiautodev 包的 __main__.py
         uiautodev_main = plugin_dir / "uiautodev" / "__main__.py"
 
-        # 检查 cache 是否存在且不为空
-        cache_http_dir = cache_dir / "http"
-        has_cache = cache_http_dir.exists() and any(cache_http_dir.iterdir())
-
-        # 构建启动命令
+        # 构建启动命令（无需 --offline，现在使用静态文件服务）
         cmd = [
             sys.executable, str(uiautodev_main),
             "server",
@@ -63,12 +63,7 @@ def start_uiautodev_server():
             "--no-browser"
         ]
 
-        # 只有当 cache 存在时才使用 offline 模式
-        if has_cache:
-            cmd.append("--offline")
-            log("使用 offline 模式（已有缓存）")
-        else:
-            log("首次启动，将从远程服务器下载前端资源")
+        log("使用静态文件服务（完全本地化，无需网络）")
 
         # 设置环境变量，确保使用本地源代码
         env = os.environ.copy()

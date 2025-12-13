@@ -12,9 +12,11 @@ import { ToolRuntime } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import { resolveEntryPath } from '../../utils/platform-utils.js';
 import type { ChildProcess } from 'node:child_process';
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
+import os from 'node:os';
+import net from 'node:net';
 import { pythonManager } from '../python-manager.service.js';
 import http from 'node:http';
 
@@ -34,6 +36,60 @@ interface PluginState {
 export class ToolRunner {
   // Map toolId -> PluginState
   private states: Map<string, PluginState> = new Map();
+
+  /**
+   * 获取所有运行中的工具（用于退出时清理）
+   */
+  getAllRunningTools(): PluginState[] {
+    return Array.from(this.states.values()).filter(state => state.process && !state.process.killed);
+  }
+
+  /**
+   * 清理所有运行中的工具进程
+   */
+  async cleanupAllTools(): Promise<void> {
+    const runningTools = this.getAllRunningTools();
+    logger.info(`[ToolRunner] 清理所有运行中的工具，共 ${runningTools.length} 个`);
+
+    for (const state of runningTools) {
+      try {
+        await this.forceStopTool(state);
+      } catch (error) {
+        logger.warn(`[ToolRunner] 清理工具 ${state.runtime.id} 失败`, error);
+      }
+    }
+
+    logger.info(`[ToolRunner] 所有工具已清理`);
+  }
+
+  /**
+   * 强制停止工具（不经过 refCount 检查）
+   */
+  private async forceStopTool(state: PluginState): Promise<void> {
+    const toolId = state.runtime.id;
+    logger.info(`[ToolRunner] 强制停止工具: ${toolId}`);
+
+    if (state.process && !state.process.killed) {
+      const pid = state.process.pid;
+      if (pid) {
+        if (os.platform() === 'win32') {
+          try {
+            execSync(`taskkill /F /T /PID ${pid}`, { timeout: 5000 });
+            logger.info(`[ToolRunner] 已停止工具进程树 (PID: ${pid})`);
+          } catch (error) {
+            logger.warn(`[ToolRunner] taskkill 失败，尝试 kill()`, error);
+            state.process.kill('SIGTERM');
+          }
+        } else {
+          state.process.kill('SIGTERM');
+        }
+      }
+    }
+
+    state.process = undefined;
+    backendRunner.disposeAllForPlugin(toolId);
+    this.states.delete(toolId);
+  }
 
   private emitState(state: PluginState, status: ToolRuntime['status'] | 'launching' | 'stopping', extra: Record<string, unknown> = {}) {
     const payload = {
@@ -55,7 +111,7 @@ export class ToolRunner {
     if (!state) {
       const plugin = toolManager.getTool(toolId);
       if (!plugin) {
-        throw new Error(`Plugin ${toolId} not found`);
+        throw new Error(`工具 ${toolId} 未找到`);
       }
       state = {
         runtime: plugin,
@@ -135,14 +191,32 @@ export class ToolRunner {
 
     if (state.refCount <= 0) {
       state.refCount = 0;
-      
+
       if (state.destroyTimer) clearTimeout(state.destroyTimer);
-      
+
       logger.debug(`[ToolRunner] Scheduling destroy for ${toolId} in 1000ms`);
-       this.emitState(state, 'stopping');
+      this.emitState(state, 'stopping');
       state.destroyTimer = setTimeout(() => {
-        this.destroyPlugin(state);
-        this.states.delete(toolId);
+        // 对于外部运行的工具（CLI/Binary），立即清理状态
+        // 不尝试杀死进程（因为工具在外部运行，BoolTox 无法控制）
+        const runtimeConfig = state.runtime.manifest.runtime;
+        const isExternalTool = runtimeConfig && (runtimeConfig.type === 'cli' || runtimeConfig.type === 'binary');
+
+        if (isExternalTool) {
+          logger.info(`[ToolRunner] 外部工具 ${toolId} 已清理状态（工具在外部独立运行）`);
+          // 只清理状态，不杀进程
+          state.process = undefined;
+          backendRunner.disposeAllForPlugin(state.runtime.id);
+          state.runtime.status = 'stopped';
+          state.runtime.viewId = undefined;
+          state.runtime.windowId = undefined;
+          this.emitState(state, 'stopped');
+          this.states.delete(toolId);
+        } else {
+          // HTTP 服务和 Standalone 工具：正常清理进程树
+          this.destroyPlugin(state);
+          this.states.delete(toolId);
+        }
       }, 1000);
     }
   }
@@ -150,9 +224,36 @@ export class ToolRunner {
   private destroyPlugin(state: PluginState) {
     if (state.process && !state.process.killed) {
       try {
-        state.process.kill();
+        const pid = state.process.pid;
+        if (!pid) {
+          state.process.kill();
+        } else {
+          // Windows: 使用 taskkill /T 杀死整个进程树
+          // macOS/Linux: 发送 SIGTERM，让脚本的信号处理器清理子进程
+          if (os.platform() === 'win32') {
+            logger.info(`[ToolRunner] Windows: 使用 taskkill /T 杀死进程树 (PID: ${pid})`);
+            try {
+              execSync(`taskkill /F /T /PID ${pid}`, { timeout: 5000 });
+            } catch (error) {
+              logger.warn(`[ToolRunner] taskkill 失败，尝试 kill()`, error);
+              state.process.kill();
+            }
+          } else {
+            // macOS/Linux: SIGTERM 会触发 Python 的信号处理器
+            logger.info(`[ToolRunner] Unix: 发送 SIGTERM 到进程 (PID: ${pid})`);
+            state.process.kill('SIGTERM');
+
+            // 等待 2 秒，如果还没退出则强制 SIGKILL
+            setTimeout(() => {
+              if (state.process && !state.process.killed) {
+                logger.warn(`[ToolRunner] 进程未响应 SIGTERM，发送 SIGKILL`);
+                state.process.kill('SIGKILL');
+              }
+            }, 2000);
+          }
+        }
       } catch (error) {
-        logger.warn(`[ToolRunner] Failed to kill standalone plugin ${state.runtime.id}`, error);
+        logger.warn(`[ToolRunner] 无法停止独立工具 ${state.runtime.id}`, error);
       }
     }
     state.process = undefined;
@@ -161,7 +262,7 @@ export class ToolRunner {
     state.runtime.viewId = undefined;
     state.runtime.windowId = undefined;
     this.emitState(state, 'stopped');
-    logger.info(`[ToolRunner] Plugin destroyed: ${state.runtime.id}`);
+    logger.info(`[ToolRunner] 工具已销毁: ${state.runtime.id}`);
   }
 
   private handlePluginDestroyed(toolId: string) {
@@ -182,7 +283,7 @@ export class ToolRunner {
       state.refCount = 0;
       this.states.delete(toolId);
       this.emitState(state, 'stopped');
-      logger.info(`[ToolRunner] Plugin destroyed: ${toolId}`);
+      logger.info(`[ToolRunner] 工具已销毁: ${toolId}`);
     }
   }
 
@@ -206,7 +307,7 @@ export class ToolRunner {
     }
 
     // standalone/binary 模式：外部管理
-    logger.info(`[ToolRunner] focusTool called for standalone plugin ${toolId}, external window must be managed by plugin`);
+    logger.info(`[ToolRunner] focusTool 调用独立工具 ${toolId}，外部窗口需由工具自行管理`);
     this.emitState(state, 'running', { external: true, pid: state.process?.pid });
   }
 
@@ -218,7 +319,7 @@ export class ToolRunner {
       !runtimeConfig ||
       (runtimeConfig.type !== 'standalone' && runtimeConfig.type !== 'binary')
     ) {
-      throw new Error(`Plugin ${toolId} runtime is not standalone or binary`);
+      throw new Error(`工具 ${toolId} runtime 类型不是 standalone 或 binary`);
     }
 
     // ===== 新增：处理二进制工具 =====
@@ -256,18 +357,29 @@ export class ToolRunner {
         state.process = child;
         state.runtime.status = 'running';
         state.runtime.error = undefined;
+
+        logger.info(`[ToolRunner] Binary 工具已在外部启动 (PID: ${child.pid})`);
+        logger.info(`[ToolRunner] ℹ️ Binary 工具在独立窗口运行，BoolTox 不管理其生命周期`);
+
+        // 发送启动事件（不设置为 running，而是 launched）
         this.emitState(state, 'running', {
           pid: child.pid,
           external: true,
+          uncontrollable: true,
+          launcher: true  // 新增：标记为启动器模式
         });
 
-        logger.info(`[ToolRunner] Binary tool ${toolId} launched (PID: ${child.pid})`);
-
-        // 5. 监听进程退出（可选，不阻塞）
-        child.on('exit', (code) => {
-          logger.info(`[ToolRunner] Binary tool ${toolId} exited with code ${code}`);
-          this.handleStandaloneExit(toolId, code ?? null);
-        });
+        // 外部工具启动后立即清理状态（500ms 后）
+        setTimeout(() => {
+          const currentState = this.states.get(toolId);
+          if (currentState && currentState.runtime.status === 'running') {
+            logger.info(`[ToolRunner] 外部工具 ${toolId} 启动完成，清理状态以支持重复启动`);
+            currentState.runtime.status = 'stopped';
+            currentState.refCount = 0;
+            this.emitState(currentState, 'stopped', { external: true, launcher: true });
+            this.states.delete(toolId);
+          }
+        }, 500);
 
         return -1; // 二进制工具返回 -1（表示外部进程）
       } catch (error) {
@@ -349,7 +461,7 @@ export class ToolRunner {
       state.runtime.error = undefined;
       const pid = child.pid ?? undefined;
       this.emitState(state, 'running', { pid, external: true });
-      logger.info(`[ToolRunner] Standalone plugin ${toolId} started with PID ${pid ?? 'unknown'}`);
+      logger.info(`[ToolRunner] 独立工具 ${toolId} 已启动 (PID: ${pid ?? 'unknown'})`);
 
       child.stderr?.on('data', (chunk: Buffer) => {
         logger.warn(`[ToolRunner] [${toolId}] stderr: ${chunk.toString()}`);
@@ -360,12 +472,12 @@ export class ToolRunner {
       });
 
       child.on('exit', (code) => {
-        logger.info(`[ToolRunner] Standalone plugin ${toolId} exited with code ${code}`);
+        logger.info(`[ToolRunner] 独立工具 ${toolId} 退出 (code: ${code})`);
         this.handleStandaloneExit(toolId, code ?? null);
       });
 
       child.on('error', (error) => {
-        logger.error(`[ToolRunner] Standalone plugin ${toolId} failed`, error);
+        logger.error(`[ToolRunner] 独立工具 ${toolId} 启动失败`, error);
         this.emitState(state, 'error', { message: error.message, external: true });
       });
 
@@ -388,6 +500,7 @@ export class ToolRunner {
     if (!state) {
       return;
     }
+
     state.process = undefined;
     state.runtime.status = 'stopped';
     state.refCount = 0;
@@ -401,7 +514,7 @@ export class ToolRunner {
     const runtimeConfig = state.runtime.manifest.runtime;
 
     if (!runtimeConfig || runtimeConfig.type !== 'http-service') {
-      throw new Error(`Plugin ${toolId} runtime is not http-service`);
+      throw new Error(`工具 ${toolId} runtime 类型不是 http-service`);
     }
 
     try {
@@ -486,6 +599,68 @@ export class ToolRunner {
       const readyTimeout = runtimeConfig.readyTimeout || 30000;
 
       logger.info(`[ToolRunner] 启动 HTTP 服务工具 ${toolId} (${url})`);
+
+      // 启动前检查端口是否被占用
+      const isPortInUse = await new Promise<boolean>((resolve) => {
+        const server = net.createServer();
+        server.once('error', (err: NodeJS.ErrnoException) => {
+          if (err.code === 'EADDRINUSE') {
+            resolve(true); // 端口被占用
+          } else {
+            resolve(false);
+          }
+        });
+        server.once('listening', () => {
+          server.close();
+          resolve(false); // 端口可用
+        });
+        server.listen(port, host);
+      });
+
+      if (isPortInUse) {
+        logger.warn(`[ToolRunner] 端口 ${port} 已被占用，尝试清理...`);
+
+        // Windows: 杀死占用端口的进程
+        if (os.platform() === 'win32') {
+          try {
+            // 获取占用端口的 PID
+            const netstatOutput = execSync(`netstat -ano | findstr :${port} | findstr LISTENING`, {
+              encoding: 'utf8',
+              timeout: 5000,
+            }).trim();
+
+            const lines = netstatOutput.split('\n');
+            const pidSet = new Set<string>();
+
+            for (const line of lines) {
+              const parts = line.trim().split(/\s+/);
+              const pid = parts[parts.length - 1];
+              if (pid && pid !== '0') {
+                pidSet.add(pid);
+              }
+            }
+
+            if (pidSet.size > 0) {
+              logger.info(`[ToolRunner] 发现 ${pidSet.size} 个进程占用端口 ${port}，正在清理: ${Array.from(pidSet).join(', ')}`);
+
+              for (const pid of pidSet) {
+                try {
+                  execSync(`taskkill /F /T /PID ${pid}`, { timeout: 5000 });
+                  logger.info(`[ToolRunner] 已清理进程 ${pid}`);
+                } catch (error) {
+                  logger.warn(`[ToolRunner] 清理进程 ${pid} 失败`, error);
+                }
+              }
+
+              // 等待端口释放
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              logger.info(`[ToolRunner] 端口清理完成，继续启动...`);
+            }
+          } catch (error) {
+            logger.warn(`[ToolRunner] 端口检查失败，继续尝试启动`, error);
+          }
+        }
+      }
 
       // 启动后端进程
       let child: ChildProcess;
@@ -590,6 +765,19 @@ export class ToolRunner {
           state.runtime.error = undefined;
           this.emitState(state, 'running', { pid: child.pid, url, external: true });
 
+          // 启动器模式：启动后立即清理状态（500ms 后）
+          // 允许重复启动，不显示持久的"运行中"状态
+          setTimeout(() => {
+            const currentState = this.states.get(toolId);
+            if (currentState && currentState.runtime.status === 'running') {
+              logger.info(`[ToolRunner] HTTP 工具 ${toolId} 启动完成，清理状态（启动器模式）`);
+              currentState.runtime.status = 'stopped';
+              currentState.refCount = 0;
+              this.emitState(currentState, 'stopped', { external: true, launcher: true });
+              // 保留在 states 中以便跟踪进程（用于退出时清理）
+            }
+          }, 500);
+
           return child.pid ?? -1;
         } catch (error) {
           // 服务尚未就绪，继续等待
@@ -628,7 +816,7 @@ export class ToolRunner {
     const runtimeConfig = state.runtime.manifest.runtime;
 
     if (!runtimeConfig || runtimeConfig.type !== 'cli') {
-      throw new Error(`Plugin ${toolId} runtime is not cli`);
+      throw new Error(`工具 ${toolId} runtime 类型不是 cli`);
     }
 
     try {
@@ -754,23 +942,36 @@ export class ToolRunner {
       state.process = terminalProcess;
       state.runtime.status = 'running';
 
-      logger.info(`[ToolRunner] CLI 工具已在终端启动 (PID: ${terminalProcess.pid ?? 'unknown'})`);
+      logger.info(`[ToolRunner] CLI 工具已在外部终端启动 (PID: ${terminalProcess.pid ?? 'unknown'})`);
+      logger.info(`[ToolRunner] ℹ️ CLI 工具在独立终端运行，BoolTox 不管理其生命周期`);
 
-      // 监听进程退出
-      terminalProcess.on('exit', (code) => {
-        logger.info(`[ToolRunner] CLI 工具 ${toolId} 退出 (code: ${code})`);
-        this.handleStandaloneExit(toolId, code ?? null);
-      });
-
+      // 外部工具：不监听 exit 事件，不尝试管理生命周期
+      // 启动后立即清理状态，允许重复启动
       terminalProcess.on('error', (error) => {
         logger.error(`[ToolRunner] CLI 工具 ${toolId} 启动失败`, error);
         this.emitState(state, 'error', { message: error.message, external: true });
       });
 
+      // 发送启动事件（不设置为 running，而是 launched）
       this.emitState(state, 'running', {
         pid: terminalProcess.pid ?? undefined,
-        external: true  // CLI 在外部终端运行
+        external: true,
+        uncontrollable: true,
+        launcher: true  // 新增：标记为启动器模式（前端据此不显示状态）
       });
+
+      // 外部工具启动后立即清理状态（500ms 后）
+      // 这样用户可以立即再次启动
+      setTimeout(() => {
+        const currentState = this.states.get(toolId);
+        if (currentState && currentState.runtime.status === 'running') {
+          logger.info(`[ToolRunner] 外部工具 ${toolId} 启动完成，清理状态以支持重复启动`);
+          currentState.runtime.status = 'stopped';
+          currentState.refCount = 0;
+          this.emitState(currentState, 'stopped', { external: true, launcher: true });
+          this.states.delete(toolId);
+        }
+      }, 500);
 
       return terminalProcess.pid ?? -1;
 

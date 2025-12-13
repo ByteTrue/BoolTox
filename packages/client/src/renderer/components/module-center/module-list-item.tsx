@@ -35,19 +35,23 @@ export function ModuleListItem({
   const isDark = theme === "dark";
 
   const isInstalled = "runtime" in module;
-  const definition = isInstalled ? module.definition : module;
-  const launchState = isInstalled ? module.runtime.launchState ?? "idle" : "idle";
+  const definition = isInstalled ? (module as ModuleInstance).definition : (module as ModuleDefinition);
+  const launchState = isInstalled ? (module.runtime as any).launchState ?? "idle" : "idle";
   const isLaunching = launchState === "launching";
   const isRunning = launchState === "running";
   const isLaunchError = launchState === "error";
+
+  // 检查是否为外部工具（CLI/Binary）
+  const runtimeType = definition.runtime?.type;
+  const isExternalTool = runtimeType === 'cli' || runtimeType === 'binary';
+
+  // 启动器模式：不显示运行状态（所有工具都不显示）
   const launchStateBadge = isInstalled
-    ? isRunning
-      ? { label: "窗口运行中", className: "border-green-500/30 bg-green-500/15 text-green-500" }
-      : isLaunching
-        ? { label: "启动中…", className: "border-yellow-500/30 bg-yellow-500/15 text-yellow-600" }
-        : isLaunchError
-          ? { label: "启动失败", className: "border-red-500/30 bg-red-500/15 text-red-500" }
-          : null
+    ? isLaunching
+      ? { label: "启动中…", className: "border-yellow-500/30 bg-yellow-500/15 text-yellow-600" }
+      : isLaunchError
+        ? { label: "启动失败", className: "border-red-500/30 bg-red-500/15 text-red-500" }
+        : null
     : null;
 
   return (
@@ -179,9 +183,13 @@ export function ModuleListItem({
                   onStop?.(module.id);
                 }}
                 className={`rounded-lg border border-orange-500/30 bg-orange-500/20 p-2 text-orange-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-orange-500/30`}
-                title="停止工具"
+                title={isExternalTool ? "我已关闭工具（标记为已停止）" : "停止工具"}
               >
-                <Square size={16} />
+                {isExternalTool ? (
+                  <span className="text-xs px-1">已关闭</span>
+                ) : (
+                  <Square size={16} />
+                )}
               </motion.button>
             )}
 

@@ -23,7 +23,7 @@ import { resolveEntryPath } from '../../utils/platform-utils.js';
 import { pythonManager } from '../python-manager.service.js';
 import type { ChildProcess } from 'node:child_process';
 
-const logger = createLogger('PluginBackendRunner');
+const logger = createLogger('ToolBackendRunner');
 
 // Default timeout for RPC calls (30 seconds)
 const DEFAULT_RPC_TIMEOUT = 30000;

@@ -11,7 +11,7 @@ import { createLogger } from '../../utils/logger.js';
 import { resolveEntryPath } from '../../utils/platform-utils.js';
 import { pythonManager } from '../python-manager.service.js';
 
-const logger = createLogger('PluginDevServer');
+const logger = createLogger('ToolDevServer');
 
 export interface PluginDevServerOptions {
   toolId: string;

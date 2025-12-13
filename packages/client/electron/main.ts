@@ -721,3 +721,21 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+/**
+ * BoolTox 退出前清理所有工具进程
+ */
+app.on('will-quit', async (event) => {
+  event.preventDefault(); // 阻止立即退出
+
+  logger.info('[Main] BoolTox 正在退出，清理所有运行中的工具进程...');
+
+  try {
+    await toolRunner.cleanupAllTools();
+    logger.info('[Main] 所有工具进程已清理，BoolTox 退出');
+  } catch (error) {
+    logger.error('[Main] 清理工具进程时出错', error);
+  } finally {
+    app.exit(0); // 强制退出
+  }
+});
