@@ -4,10 +4,11 @@
  */
 
 import { motion } from "framer-motion";
-import { Trash2, Download, ExternalLink, Pin, Square } from "lucide-react";
+import { Trash2, Download, ExternalLink, Pin, Square, Clock } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from "@/utils/glass-layers";
 import { cardHover } from "@/utils/animation-presets";
+import { formatDistanceToNow } from "@/utils/date";
 import type { ModuleInstance } from "@/types/module";
 
 interface ModuleCardProps {
@@ -37,11 +38,12 @@ export function ModuleCard({
   const isLaunchError = launchState === "error";
   const isStandalone = module.definition.runtimeMode === 'standalone';
 
-  // 检查是否为外部工具（CLI/Binary）
+  // 检查工具类型
   const runtimeType = module.definition.runtime?.type;
+  const isHttpService = runtimeType === 'http-service';
   const isExternalTool = runtimeType === 'cli' || runtimeType === 'binary';
 
-  // 启动器模式：不显示运行状态（所有工具）
+  // 启动器模式：只在启动中或错误时显示状态标签
   const launchStateBadge = isLaunching
     ? { label: "启动中…", tone: "warning" as const }
     : isLaunchError
@@ -161,10 +163,21 @@ export function ModuleCard({
             </span>
           </>
         )}
+        {/* 上次启动时间 */}
+        {module.runtime.lastLaunchedAt && (
+          <>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {formatDistanceToNow(module.runtime.lastLaunchedAt)}
+            </span>
+          </>
+        )}
       </div>
 
       {/* 操作按钮 */}
       <div className="flex items-center gap-2">
+        {/* 启动/打开按钮 */}
         <button
           type="button"
           onClick={(e) => {
@@ -181,7 +194,11 @@ export function ModuleCard({
             borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
           }}
           title={
-            isLaunching ? "工具正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开工具"
+            isLaunching
+              ? "工具正在启动…"
+              : isHttpService && isRunning
+                ? "打开浏览器"
+                : "启动工具"
           }
         >
           {isLaunching ? (
@@ -194,7 +211,27 @@ export function ModuleCard({
           )}
         </button>
 
-        {/* 移除停止按钮 - 启动器模式不提供停止功能 */}
+        {/* 停止按钮 - 仅 http-service 类型显示 */}
+        {isHttpService && isRunning && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStop(module.id);
+            }}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 ${
+              isDark
+                ? "bg-white/5 text-white hover:bg-white/10"
+                : "bg-white/50 text-slate-700 hover:bg-white"
+            }`}
+            style={{
+              borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+            }}
+            title="停止服务"
+          >
+            <Square className="mx-auto" size={14} />
+          </button>
+        )}
 
         <button
           type="button"

@@ -233,7 +233,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
             : status === "stopped"
               ? undefined
               : runtime.runningWindowId,
-        lastLaunchAt: status === "running" ? new Date().toISOString() : runtime.lastLaunchAt,
+        lastLaunchedAt: status === "running" ? Date.now() : runtime.lastLaunchedAt,
         lastError: status === "error" ? (message ?? "工具启动失败") : status === "running" ? null : runtime.lastError,
       }));
 
@@ -279,6 +279,7 @@ const openModule = useCallback(
       patchModuleRuntime(moduleId, {
         launchState: "launching",
         lastError: null,
+        lastLaunchedAt: Date.now(), // 记录启动时间
       });
       try {
         await window.ipc.invoke("tool:start", moduleId);

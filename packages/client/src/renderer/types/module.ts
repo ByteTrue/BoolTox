@@ -36,7 +36,7 @@ export interface ModuleRuntime {
   installedPath?: string;
   updateAvailable?: boolean;
   launchState: ModuleLaunchState;
-  lastLaunchAt?: string;
+  lastLaunchedAt?: number; // 时间戳（毫秒）
   runningWindowId?: number;
   lastError?: string | null;
 }
