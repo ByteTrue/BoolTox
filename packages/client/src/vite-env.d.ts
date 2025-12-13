@@ -52,10 +52,15 @@ declare global {
       uninstall: (toolId: string) => Promise<{success: boolean; error?: string}>;
       cancelInstall: (toolId: string) => Promise<{success: boolean}>;
       onInstallProgress: (callback: (progress: ToolInstallProgress) => void) => () => void;
+      checkUpdates: () => Promise<{success: boolean; updates: unknown[]; error?: string}>;
+      updateTool: (toolId: string) => Promise<{success: boolean; error?: string}>;
+      updateAllTools: (toolIds: string[]) => Promise<{success: boolean; updated: string[]; failed: string[]; error?: string}>;
     };
     appSettings: {
       getAutoLaunch: () => Promise<boolean>;
       setAutoLaunch: (enabled: boolean) => Promise<{success: boolean; error?: string}>;
+      getCloseToTray: () => Promise<boolean>;
+      setCloseToTray: (enabled: boolean) => Promise<{success: boolean; error?: string}>;
     };
   }
 }

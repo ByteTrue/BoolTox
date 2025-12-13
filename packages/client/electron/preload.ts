@@ -174,8 +174,8 @@ const toolAPI = {
   updateTool: async (toolId: string): Promise<{success: boolean; error?: string}> => {
     return await ipcRenderer.invoke('tool:update', toolId) as {success: boolean; error?: string};
   },
-  updateAllTools: async (toolIds: string[]): Promise<{success: boolean; success: string[]; failed: string[]; error?: string}> => {
-    return await ipcRenderer.invoke('tool:update-all', toolIds) as {success: boolean; success: string[]; failed: string[]; error?: string};
+  updateAllTools: async (toolIds: string[]): Promise<{success: boolean; updated: string[]; failed: string[]; error?: string}> => {
+    return await ipcRenderer.invoke('tool:update-all', toolIds) as {success: boolean; updated: string[]; failed: string[]; error?: string};
   },
 };
 

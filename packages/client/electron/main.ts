@@ -532,10 +532,10 @@ ipcMain.handle('tool:update-all', async (_event, toolIds: string[]) => {
     const result = await toolUpdater.updateAllTools(toolIds);
     // 重新加载工具列表
     await toolManager.loadTools();
-    return { success: true, ...result };
+    return { success: true, updated: result.success, failed: result.failed };
   } catch (error) {
     logger.error('[Main] Failed to batch update tools:', error);
-    return { success: false, error: String(error) };
+    return { success: false, updated: [], failed: [], error: String(error) };
   }
 });
 

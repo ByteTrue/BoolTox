@@ -101,9 +101,7 @@ export function ManifestValidationError({ errors, manifestPath }: ManifestValida
             type="button"
             onClick={() => {
               // 在编辑器中打开文件
-              if (window.electron?.shell) {
-                window.electron.shell.openPath?.(manifestPath);
-              }
+              window.ipc?.invoke?.('shell:open-path', manifestPath);
             }}
             className="flex items-center gap-1 text-blue-500 hover:underline"
           >

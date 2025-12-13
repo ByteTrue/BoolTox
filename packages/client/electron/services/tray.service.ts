@@ -13,6 +13,7 @@
  */
 
 import { Tray, Menu, nativeImage, app, BrowserWindow } from 'electron';
+import type { NativeImage } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import { createLogger } from '../utils/logger.js';
@@ -162,7 +163,7 @@ export class TrayService {
    * 获取托盘图标路径
    * 使用临时占位图标（稍后替换为品牌图标）
    */
-  private getTrayIconPath(): string | nativeImage {
+  private getTrayIconPath(): string | NativeImage {
     // 根据平台和主题选择不同的图标
     const iconName = process.platform === 'darwin'
       ? 'tray-icon-template.png'  // macOS 使用模板图标（自动适应主题）
@@ -192,7 +193,7 @@ export class TrayService {
   /**
    * 创建占位图标（临时方案）
    */
-  private createPlaceholderIcon(): nativeImage {
+  private createPlaceholderIcon(): NativeImage {
     // 创建一个简单的 16x16 图标（蓝色方块 + "B" 字母）
     const size = 16;
     const canvas = `

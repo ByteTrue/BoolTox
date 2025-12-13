@@ -141,7 +141,19 @@ export class ToolRunner {
     // 在启动前检查并准备依赖
     const runtimeConfig = state.runtime.manifest.runtime;
     if (runtimeConfig && (runtimeConfig.type === 'http-service' || runtimeConfig.type === 'standalone' || runtimeConfig.type === 'cli')) {
-      const backend = runtimeConfig.backend;
+      // 获取 backend 配置
+      let backend: any;
+      if (runtimeConfig.type === 'http-service' || runtimeConfig.type === 'cli') {
+        backend = runtimeConfig.backend;
+      } else if (runtimeConfig.type === 'standalone') {
+        // standalone 直接有 entry，转换为 backend 格式
+        backend = {
+          type: 'python', // 默认假设是 python，实际会从 entry 推断
+          entry: runtimeConfig.entry,
+          requirements: runtimeConfig.requirements,
+        };
+      }
+
       if (backend) {
         try {
           await this.ensureDependencies(state.runtime, backend, parentWindow);

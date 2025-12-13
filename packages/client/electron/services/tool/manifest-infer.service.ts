@@ -19,10 +19,36 @@ import type { ToolManifest } from '@booltox/shared';
 import type { ToolRuntimeConfig, ToolBackendConfig } from '@booltox/shared';
 import path from 'path';
 import Ajv from 'ajv';
-import { MANIFEST_SCHEMA } from '@booltox/shared/schemas/manifest.schema.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('ManifestInfer');
+
+// Manifest Schema 定义（内联，避免导入问题）
+const MANIFEST_SCHEMA = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  required: ["name", "version"],
+  properties: {
+    name: { type: "string", minLength: 1 },
+    version: { type: "string", pattern: "^\\d+\\.\\d+\\.\\d+" },
+    description: { type: "string" },
+    start: { type: "string", minLength: 1 },
+    port: { type: "number", minimum: 1024, maximum: 65535 },
+    id: { type: "string", pattern: "^[a-z0-9.-]+$" },
+    protocol: { type: "string" },
+    runtime: { type: "object" },
+    icon: { type: "string" },
+    author: { type: "string" },
+    category: { type: "string" },
+    keywords: { type: "array", items: { type: "string" } },
+    screenshots: { type: "array", items: { type: "string" } },
+    window: { type: "object" },
+  },
+  anyOf: [
+    { required: ["start"] },
+    { required: ["runtime"] },
+  ],
+};
 
 // 创建 AJV 实例
 const ajv = new Ajv({ allErrors: true, verbose: true });
@@ -160,20 +186,15 @@ export function inferManifest(manifest: ToolManifest, toolPath: string): ToolMan
 
   // 无 port，检查是否为 GUI 应用
   if (isGuiApp(start)) {
-    const backend: ToolBackendConfig = {
-      type: backendType,
+    const runtime: any = {
+      type: 'standalone',
       entry,
     };
 
     // Python 工具：添加 requirements.txt
     if (backendType === 'python') {
-      (backend as any).requirements = 'requirements.txt';
+      runtime.requirements = 'requirements.txt';
     }
-
-    const runtime: ToolRuntimeConfig = {
-      type: 'standalone',
-      backend,
-    };
 
     logger.info(`Inferred as standalone GUI application`);
 

@@ -479,8 +479,10 @@ const focusModuleWindow = useCallback(
           // 遍历所有工具
           for (const plugin of toolRegistry) {
             const toolId = plugin.manifest.id;
+            if (!toolId) continue; // 跳过没有 ID 的工具
+
             const pluginDef = pluginDefinitions.find(d => d.id === toolId);
-            
+
             if (!pluginDef) continue;
 
             // 如果已在存储中但未在当前列表,添加它
@@ -493,8 +495,8 @@ const focusModuleWindow = useCallback(
                   definition: pluginDef,
                   runtime: createRuntime(true),
                   isFavorite: stored.isFavorite ?? false,
-                  favoriteOrder: stored.favoriteOrder,
-                  favoritedAt: stored.favoritedAt,
+                  favoriteOrder: stored.favoriteOrder ?? undefined,
+                  favoritedAt: stored.favoritedAt ?? undefined,
                 });
               }
             } else if (currentIds.has(toolId)) {
@@ -516,6 +518,8 @@ const focusModuleWindow = useCallback(
                 definition: pluginDef,
                 runtime: createRuntime(true),
                 isFavorite: false,
+                favoriteOrder: undefined,
+                favoritedAt: undefined,
               });
               
               // 持久化到存储
@@ -524,8 +528,8 @@ const focusModuleWindow = useCallback(
                   id: toolId,
                   installedAt: new Date().toISOString(),
                   lastUsedAt: new Date().toISOString(),
-                  version: pluginDef.version,
-                  source,
+                  version: pluginDef.version || '1.0.0',
+                  source: source || 'remote',
                   isFavorite: false,
                   favoriteOrder: undefined,
                   favoritedAt: undefined,
@@ -614,7 +618,7 @@ const focusModuleWindow = useCallback(
         id: moduleId,
         installedAt: new Date().toISOString(),
         lastUsedAt: new Date().toISOString(),
-        version: definition.version,
+        version: definition.version || '1.0.0',
         source: plugin.isDev ? "dev" : "remote",
         isFavorite: false,
         favoriteOrder: undefined,

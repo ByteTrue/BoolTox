@@ -157,6 +157,13 @@ class ModuleStoreService {
   getConfigPath(): string {
     return this.store.path;
   }
+
+  /**
+   * 获取底层 Store 实例（用于直接访问设置）
+   */
+  getStore(): Store<ModulesConfig> {
+    return this.store;
+  }
 }
 
 // 导出单例

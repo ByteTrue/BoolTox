@@ -42,8 +42,8 @@ export class ToolUpdaterService {
       logger.info('Checking tool updates...');
 
       // 获取在线工具列表
-      const registry = await gitOpsService.getTools();
-      const onlineTools = registry.tools || [];
+      const registry = await gitOpsService.getPluginRegistry();
+      const onlineTools = registry.plugins || [];
 
       // 获取已安装工具
       const installedTools = toolManager.getAllTools();
@@ -56,7 +56,7 @@ export class ToolUpdaterService {
           continue;
         }
 
-        const online = onlineTools.find(t => t.id === installed.id);
+        const online = onlineTools.find((t: any) => t.id === installed.id);
         if (!online) {
           logger.debug(`Tool ${installed.id} not found in online registry`);
           continue;
@@ -103,8 +103,8 @@ export class ToolUpdaterService {
       logger.info(`Updating tool: ${toolId}`);
 
       // 获取在线工具信息
-      const registry = await gitOpsService.getTools();
-      const tool = (registry.tools || []).find(t => t.id === toolId);
+      const registry = await gitOpsService.getPluginRegistry();
+      const tool = (registry.plugins || []).find((t: any) => t.id === toolId);
 
       if (!tool) {
         throw new Error(`工具 ${toolId} 在工具市场中未找到`);
