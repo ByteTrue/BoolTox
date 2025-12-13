@@ -180,6 +180,12 @@ const appSettingsAPI = {
   setAutoLaunch: async (enabled: boolean): Promise<{success: boolean; error?: string}> => {
     return await ipcRenderer.invoke('app-settings:set-auto-launch', enabled) as {success: boolean; error?: string};
   },
+  getCloseToTray: async (): Promise<boolean> => {
+    return await ipcRenderer.invoke('app-settings:get-close-to-tray') as boolean;
+  },
+  setCloseToTray: async (enabled: boolean): Promise<{success: boolean; error?: string}> => {
+    return await ipcRenderer.invoke('app-settings:set-close-to-tray', enabled) as {success: boolean; error?: string};
+  },
 };
 
 /**

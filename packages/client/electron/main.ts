@@ -28,6 +28,7 @@ import { toolManager } from './services/tool/tool-manager.js';
 import { toolRunner } from './services/tool/tool-runner.js';
 import { toolInstaller } from './services/tool/tool-installer.js';
 import { pythonManager } from './services/python-manager.service.js';
+import { TrayService } from './services/tray.service.js';
 import './services/tool/tool-api-handler.js'; // Initialize API handlers
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { ToolRegistryEntry, ToolManifest } from '@booltox/shared';
@@ -52,6 +53,7 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let mainWindow: BrowserWindow | null = null;
+let trayService: TrayService | null = null;
 
 const processRendererConsoleLog = (payload?: RendererConsolePayload) => {
   if (!payload || typeof payload !== 'object') return;
@@ -136,6 +138,23 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
   }
+
+  // 窗口关闭事件处理：最小化到托盘 vs 退出应用
+  mainWindow.on('close', (event) => {
+    // 获取用户设置
+    const store = moduleStoreService.getStore();
+    const closeToTray = store.get('settings.closeToTray', true) as boolean;
+
+    if (closeToTray && trayService) {
+      // 最小化到托盘而不是退出
+      event.preventDefault();
+      mainWindow?.hide();
+      logger.info('Window minimized to tray');
+    } else {
+      // 直接退出，清理所有资源
+      logger.info('Application closing');
+    }
+  });
 }
 
 /**
@@ -185,6 +204,31 @@ ipcMain.handle('app-settings:set-auto-launch', (_event, enabled: boolean) => {
     return { success: true };
   } catch (error) {
     logger.error('Failed to set auto launch:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+/**
+ * 应用设置 - 关闭到托盘
+ */
+ipcMain.handle('app-settings:get-close-to-tray', () => {
+  try {
+    const store = moduleStoreService.getStore();
+    return store.get('settings.closeToTray', true) as boolean;
+  } catch (error) {
+    logger.error('Failed to get close to tray setting:', error);
+    return true; // 默认启用
+  }
+});
+
+ipcMain.handle('app-settings:set-close-to-tray', (_event, enabled: boolean) => {
+  try {
+    const store = moduleStoreService.getStore();
+    store.set('settings.closeToTray', enabled);
+    logger.info(`Close to tray ${enabled ? 'enabled' : 'disabled'}`);
+    return { success: true };
+  } catch (error) {
+    logger.error('Failed to set close to tray:', error);
     return { success: false, error: String(error) };
   }
 });
@@ -650,10 +694,16 @@ ipcMain.handle('python:run-script', async (
 app.whenReady().then(() => {
   // 平台特定的应用级优化
   setupPlatformOptimizations();
-  
+
   createWindow();
   new AutoUpdateService(() => mainWindow);
-  
+
+  // 初始化系统托盘
+  if (mainWindow) {
+    trayService = new TrayService(mainWindow);
+    trayService.create();
+  }
+
   // Initialize Plugin System
   toolInstaller.init().catch(err => logger.error('Failed to init tool installer:', err));
   toolManager.init().catch(err => logger.error('Failed to init tool manager:', err));
@@ -719,6 +769,27 @@ function setupPlatformOptimizations() {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+/**
+ * 应用退出前清理资源
+ */
+app.on('before-quit', async () => {
+  logger.info('Application quitting, cleaning up resources...');
+
+  // 销毁托盘
+  if (trayService) {
+    trayService.destroy();
+    trayService = null;
+  }
+
+  // 停止所有运行中的工具
+  try {
+    await toolRunner.cleanupAllTools();
+    logger.info('All tools stopped successfully');
+  } catch (error) {
+    logger.error('Failed to stop tools:', error);
   }
 });
 

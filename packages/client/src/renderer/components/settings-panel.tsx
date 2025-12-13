@@ -33,6 +33,7 @@ import {
   Sun,
   Moon,
   Rocket,
+  Minimize2,
 } from 'lucide-react';
 
 export function SettingsPanel() {
@@ -42,6 +43,8 @@ export function SettingsPanel() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [autoLaunch, setAutoLaunch] = useState(false);
   const [isLoadingAutoLaunch, setIsLoadingAutoLaunch] = useState(false);
+  const [closeToTray, setCloseToTray] = useState(true);
+  const [isLoadingCloseToTray, setIsLoadingCloseToTray] = useState(false);
 
   const isDev = import.meta.env.MODE === 'development';
 
@@ -56,10 +59,21 @@ export function SettingsPanel() {
     }
   }, []);
 
+  // 加载关闭到托盘状态
+  useEffect(() => {
+    if (window.appSettings) {
+      window.appSettings.getCloseToTray().then(enabled => {
+        setCloseToTray(enabled);
+      }).catch(err => {
+        console.error('Failed to load close to tray status:', err);
+      });
+    }
+  }, []);
+
   // 切换开机启动
   const handleAutoLaunchToggle = async () => {
     if (!window.appSettings || isLoadingAutoLaunch) return;
-    
+
     setIsLoadingAutoLaunch(true);
     try {
       const newState = !autoLaunch;
@@ -73,6 +87,26 @@ export function SettingsPanel() {
       console.error('Failed to toggle auto launch:', error);
     } finally {
       setIsLoadingAutoLaunch(false);
+    }
+  };
+
+  // 切换关闭到托盘
+  const handleCloseToTrayToggle = async () => {
+    if (!window.appSettings || isLoadingCloseToTray) return;
+
+    setIsLoadingCloseToTray(true);
+    try {
+      const newState = !closeToTray;
+      const result = await window.appSettings.setCloseToTray(newState);
+      if (result.success) {
+        setCloseToTray(newState);
+      } else {
+        console.error('Failed to set close to tray:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to toggle close to tray:', error);
+    } finally {
+      setIsLoadingCloseToTray(false);
     }
   };
 
@@ -187,6 +221,17 @@ export function SettingsPanel() {
               checked={autoLaunch}
               onChange={handleAutoLaunchToggle}
               disabled={isLoadingAutoLaunch}
+              theme={theme}
+            />
+
+            {/* 关闭到托盘 */}
+            <SettingToggle
+              label="关闭到托盘"
+              description={closeToTray ? '关闭窗口时最小化到托盘' : '关闭窗口时直接退出'}
+              icon={Minimize2}
+              checked={closeToTray}
+              onChange={handleCloseToTrayToggle}
+              disabled={isLoadingCloseToTray}
               theme={theme}
             />
           </div>
