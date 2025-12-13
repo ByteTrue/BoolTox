@@ -8,6 +8,7 @@ import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 import type { ToolBackendConfig } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
+import { resolveEntryPath } from '../../utils/platform-utils.js';
 import { pythonManager } from '../python-manager.service.js';
 
 const logger = createLogger('PluginDevServer');
@@ -32,7 +33,13 @@ export class PluginDevServer {
     }
 
     await this.launchBackend('start');
-    this.watcher = chokidar.watch(path.join(options.toolPath, options.backend.entry), {
+
+    // 监听后端入口文件变化（支持平台特定路径）
+    const watchPath = typeof options.backend.entry === 'string'
+      ? path.join(options.toolPath, options.backend.entry)
+      : options.toolPath;  // 如果是平台特定，监听整个工具目录
+
+    this.watcher = chokidar.watch(watchPath, {
       ignoreInitial: true,
     });
     this.watcher.on('all', async (event: string, filePath: string) => {
@@ -86,7 +93,7 @@ export class PluginDevServer {
         BOOLTOX_PLUGIN_ID: toolId,
       };
       this.proc = pythonManager.spawnPython(
-        path.isAbsolute(backend.entry) ? backend.entry : path.join(toolPath, backend.entry),
+        resolveEntryPath(backend.entry, toolPath),
         backend.args ?? [],
         {
           cwd: toolPath,
@@ -102,14 +109,16 @@ export class PluginDevServer {
         BOOLTOX_PLUGIN_ID: toolId,
         ...(backend.env ?? {}),
       };
-      this.proc = spawn(process.execPath, [backend.entry, ...(backend.args ?? [])], {
+      const entryPath = resolveEntryPath(backend.entry, toolPath);
+      this.proc = spawn(process.execPath, [entryPath, ...(backend.args ?? [])], {
         cwd: toolPath,
         env,
         stdio: 'inherit',
       });
     } else {
+      const entryPath = resolveEntryPath(backend.entry, toolPath);
       this.proc = spawn(
-        backend.entry,
+        entryPath,
         backend.args ?? [],
         { cwd: toolPath, env: { ...process.env, ...(backend.env ?? {}) }, stdio: 'inherit' }
       );

@@ -10,6 +10,7 @@ import { toolManager } from './tool-manager';
 import { backendRunner } from './tool-backend-runner.js';
 import { ToolRuntime } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
+import { resolveEntryPath } from '../../utils/platform-utils.js';
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -98,6 +99,17 @@ export class ToolRunner {
       }
       state.runtime.status = 'loading';
       state.loadingPromise = this.launchHttpServiceTool(state);
+      return state.loadingPromise;
+    }
+
+    if (runtimeConfig && runtimeConfig.type === 'cli') {
+      if (state.runtime.status === 'running' && state.process && !state.process.killed) {
+        logger.info(`[ToolRunner] CLI 工具已运行 (PID: ${state.process.pid})`);
+        this.emitState(state, 'running', { pid: state.process.pid ?? undefined, external: true });
+        return state.process.pid ?? -1;
+      }
+      state.runtime.status = 'loading';
+      state.loadingPromise = this.launchCliTool(state);
       return state.loadingPromise;
     }
 
@@ -303,9 +315,7 @@ export class ToolRunner {
         }
       }
 
-      const entryPath = path.isAbsolute(runtimeConfig.entry)
-        ? runtimeConfig.entry
-        : path.join(state.runtime.path, runtimeConfig.entry);
+      const entryPath = resolveEntryPath(runtimeConfig.entry, state.runtime.path);
       const args = runtimeConfig.args ?? [];
       const env = {
         ...process.env,
@@ -480,9 +490,7 @@ export class ToolRunner {
       // 启动后端进程
       let child: ChildProcess;
       if (backendConfig.type === 'python') {
-        const entryPath = path.isAbsolute(backendConfig.entry)
-          ? backendConfig.entry
-          : path.join(state.runtime.path, backendConfig.entry);
+        const entryPath = resolveEntryPath(backendConfig.entry, state.runtime.path);
         const args = backendConfig.args ?? [];
         const env = {
           ...process.env,
@@ -511,9 +519,7 @@ export class ToolRunner {
           venvPath: environment.venvPath,
         });
       } else if (backendConfig.type === 'node') {
-        const entryPath = path.isAbsolute(backendConfig.entry)
-          ? backendConfig.entry
-          : path.join(state.runtime.path, backendConfig.entry);
+        const entryPath = resolveEntryPath(backendConfig.entry, state.runtime.path);
         const args = backendConfig.args ?? [];
         const env = {
           ...process.env,
@@ -595,6 +601,181 @@ export class ToolRunner {
       throw new Error(`HTTP 服务启动超时 (${readyTimeout}ms)`);
 
     } catch (error) {
+      state.runtime.status = 'error';
+      state.runtime.error = error instanceof Error ? error.message : String(error);
+      state.loadingPromise = undefined;
+      if (state.process && !state.process.killed) {
+        try {
+          state.process.kill();
+        } catch (killError) {
+          logger.warn(`[ToolRunner] 清理失败进程时出错`, killError);
+        }
+      }
+      state.process = undefined;
+      state.refCount = 0;
+      this.emitState(state, 'error', { message: error instanceof Error ? error.message : String(error), external: true });
+      throw error;
+    } finally {
+      state.loadingPromise = undefined;
+    }
+  }
+
+  /**
+   * 启动 CLI 工具（在系统终端中运行）
+   */
+  private async launchCliTool(state: PluginState): Promise<number> {
+    const toolId = state.runtime.id;
+    const runtimeConfig = state.runtime.manifest.runtime;
+
+    if (!runtimeConfig || runtimeConfig.type !== 'cli') {
+      throw new Error(`Plugin ${toolId} runtime is not cli`);
+    }
+
+    try {
+      const backendConfig = runtimeConfig.backend;
+
+      // 检查并安装依赖（与 http-service 相同）
+      if (backendConfig.type === 'python' && backendConfig.requirements) {
+        const requirementsPath = path.isAbsolute(backendConfig.requirements)
+          ? backendConfig.requirements
+          : path.join(state.runtime.path, backendConfig.requirements);
+
+        const needsSetup = pythonManager.needsToolRequirementsSetup(toolId, requirementsPath);
+        if (needsSetup) {
+          logger.info(`[ToolRunner] CLI 工具 ${toolId} 需要安装 Python 依赖`);
+
+          const { showDepsInstaller } = await import('../../windows/deps-installer.js');
+          const result = await showDepsInstaller({
+            toolId: toolId,
+            toolName: state.runtime.manifest.name,
+            toolPath: state.runtime.path,
+            language: 'python',
+            requirementsPath,
+          });
+
+          if (!result.success) {
+            throw new Error(result.cancelled ? '用户取消了依赖安装' : '依赖安装失败');
+          }
+
+          logger.info(`[ToolRunner] CLI 工具 ${toolId} Python 依赖安装成功`);
+        }
+      } else if (backendConfig.type === 'node') {
+        const packageJsonPath = path.join(state.runtime.path, 'package.json');
+        const nodeModulesPath = path.join(state.runtime.path, 'node_modules');
+
+        try {
+          await fsPromises.access(packageJsonPath);
+          const hasNodeModules = await fsPromises.access(nodeModulesPath).then(() => true).catch(() => false);
+
+          if (!hasNodeModules) {
+            logger.info(`[ToolRunner] CLI 工具 ${toolId} 需要安装 Node.js 依赖`);
+
+            const { showDepsInstaller } = await import('../../windows/deps-installer.js');
+            const result = await showDepsInstaller({
+              toolId: toolId,
+              toolName: state.runtime.manifest.name,
+              toolPath: state.runtime.path,
+              language: 'node',
+              packageJsonPath,
+            });
+
+            if (!result.success) {
+              throw new Error(result.cancelled ? '用户取消了依赖安装' : '依赖安装失败');
+            }
+
+            logger.info(`[ToolRunner] CLI 工具 ${toolId} Node.js 依赖安装成功`);
+          }
+        } catch (error) {
+          if (error instanceof Error && error.message.includes('取消')) {
+            throw error;
+          }
+          logger.info(`[ToolRunner] CLI 工具 ${toolId} 无 package.json，跳过依赖安装`);
+        }
+      }
+
+      // 构建启动命令
+      let command: string;
+      let args: string[];
+
+      if (backendConfig.type === 'python') {
+        const entryPath = resolveEntryPath(backendConfig.entry, state.runtime.path);
+        const cmdArgs = backendConfig.args ?? [];
+
+        const environment = await pythonManager.resolveBackendEnvironment({
+          toolId: toolId,
+          toolPath: state.runtime.path,
+          requirementsPath: backendConfig.requirements,
+        });
+
+        // 使用 venv 中的 Python
+        command = environment.pythonPath || 'python3';
+        args = [entryPath, ...cmdArgs];
+
+        logger.info(`[ToolRunner] CLI 工具使用 Python: ${command}`);
+      } else if (backendConfig.type === 'node') {
+        const entryPath = resolveEntryPath(backendConfig.entry, state.runtime.path);
+        const cmdArgs = backendConfig.args ?? [];
+
+        command = 'node';
+        args = [entryPath, ...cmdArgs];
+
+        logger.info(`[ToolRunner] CLI 工具使用 Node.js: ${command} ${args.join(' ')}`);
+      } else if (backendConfig.type === 'process') {
+        // 自定义命令（支持平台特定二进制）
+        const entryPath = resolveEntryPath(backendConfig.entry, state.runtime.path);
+        command = entryPath;
+        args = backendConfig.args ?? [];
+
+        logger.info(`[ToolRunner] CLI 工具使用自定义命令: ${command}`);
+      } else {
+        throw new Error(`不支持的 CLI 后端类型: ${backendConfig.type}`);
+      }
+
+      // 在终端中启动
+      const { TerminalLauncher } = await import('./terminal-launcher.js');
+
+      const cwd = runtimeConfig.cwd
+        ? path.resolve(state.runtime.path, runtimeConfig.cwd)
+        : state.runtime.path;
+
+      logger.info(`[ToolRunner] 启动 CLI 工具 ${toolId} 在终端中`);
+      logger.info(`[ToolRunner] 命令: ${command} ${args.join(' ')}`);
+      logger.info(`[ToolRunner] 工作目录: ${cwd}`);
+
+      const terminalProcess = TerminalLauncher.launch({
+        command,
+        args,
+        cwd,
+        env: backendConfig.env,
+        title: runtimeConfig.title || state.runtime.manifest.name,
+        keepOpen: runtimeConfig.keepOpen,
+      });
+
+      state.process = terminalProcess;
+      state.runtime.status = 'running';
+
+      logger.info(`[ToolRunner] CLI 工具已在终端启动 (PID: ${terminalProcess.pid ?? 'unknown'})`);
+
+      // 监听进程退出
+      terminalProcess.on('exit', (code) => {
+        logger.info(`[ToolRunner] CLI 工具 ${toolId} 退出 (code: ${code})`);
+        this.handleStandaloneExit(toolId, code ?? null);
+      });
+
+      terminalProcess.on('error', (error) => {
+        logger.error(`[ToolRunner] CLI 工具 ${toolId} 启动失败`, error);
+        this.emitState(state, 'error', { message: error.message, external: true });
+      });
+
+      this.emitState(state, 'running', {
+        pid: terminalProcess.pid ?? undefined,
+        external: true  // CLI 在外部终端运行
+      });
+
+      return terminalProcess.pid ?? -1;
+
+    } catch (error) {
+      logger.error(`[ToolRunner] CLI 工具 ${toolId} 启动失败`, error);
       state.runtime.status = 'error';
       state.runtime.error = error instanceof Error ? error.message : String(error);
       state.loadingPromise = undefined;

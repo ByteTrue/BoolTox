@@ -286,8 +286,23 @@ export class ToolManager {
       };
     }
 
+    // 处理 CLI 工具
+    if (runtime && runtime.type === 'cli') {
+      if (!runtime.backend || !runtime.backend.entry) {
+        logger.error(`[ToolManager] Invalid manifest at ${toolPath}: cli runtime missing backend.entry`);
+        return null;
+      }
+      return {
+        type: 'cli',
+        backend: runtime.backend,
+        cwd: runtime.cwd,
+        title: runtime.title,
+        keepOpen: runtime.keepOpen,
+      };
+    }
+
     // 不再支持 webview 类型
-    logger.error(`[ToolManager] Invalid manifest at ${toolPath}: Unsupported runtime type. Only standalone, binary, and http-service are supported.`);
+    logger.error(`[ToolManager] Invalid manifest at ${toolPath}: Unsupported runtime type. Only standalone, binary, http-service, and cli are supported.`);
     return null;
   }
 

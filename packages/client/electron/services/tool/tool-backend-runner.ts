@@ -19,6 +19,7 @@ import {
   isJsonRpcNotification,
 } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
+import { resolveEntryPath } from '../../utils/platform-utils.js';
 import { pythonManager } from '../python-manager.service.js';
 import type { ChildProcess } from 'node:child_process';
 
@@ -114,9 +115,7 @@ export class PluginBackendRunner extends EventEmitter {
     config: ToolBackendConfig,
     webContentsId: number
   ): Promise<{ pid: number; channelId: string }> {
-    const entryPath = path.isAbsolute(config.entry)
-      ? config.entry
-      : path.join(tool.path, config.entry);
+    const entryPath = resolveEntryPath(config.entry, tool.path);
     const args = config.args ?? [];
     const env = { ...process.env, ...config.env };
 
