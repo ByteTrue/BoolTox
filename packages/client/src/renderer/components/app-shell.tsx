@@ -3,8 +3,8 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { Suspense, lazy } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TabBar } from './tab-bar';
 import { useTheme } from './theme-provider';
@@ -26,6 +26,20 @@ const pageVariants = {
 
 export function AppShell() {
   const { theme } = useTheme();
+  const navigate = useNavigate();
+
+  // 监听快捷面板的导航事件
+  useEffect(() => {
+    const handleNavigate = (_event: any, route: string) => {
+      navigate(route);
+    };
+
+    window.ipc?.on('navigate-to', handleNavigate);
+
+    return () => {
+      window.ipc?.off('navigate-to', handleNavigate);
+    };
+  }, [navigate]);
 
   return (
     <div

@@ -15,10 +15,12 @@ export function QuickPanel() {
   useEffect(() => {
     const loadModules = async () => {
       try {
+        console.log('[QuickPanel] 开始加载工具列表...');
         const modules = await window.tool?.getAll();
+        console.log('[QuickPanel] 工具列表加载完成:', modules?.length, modules);
         setInstalledModules(modules || []);
       } catch (error) {
-        console.error('加载工具列表失败', error);
+        console.error('[QuickPanel] 加载工具列表失败', error);
       }
     };
 
