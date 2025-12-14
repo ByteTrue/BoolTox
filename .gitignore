@@ -71,3 +71,4 @@ env/
 *.tmp
 *.tmp.*
 .eslintcache
+booltox-plugins/
