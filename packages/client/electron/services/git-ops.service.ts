@@ -464,6 +464,28 @@ export class GitOpsService {
     targetDir: string,
     config: Partial<GitOpsConfig> = {}
   ): Promise<void> {
+    // 开发模式：检测本地 booltox-plugins 仓库，创建符号链接
+    if (!app.isPackaged) {
+      const localPluginPath = path.resolve(process.cwd(), '..', 'booltox-plugins', toolPath);
+
+      // 如果本地存在，创建符号链接
+      if (fsSync.existsSync(localPluginPath)) {
+        logger.info(`[GitOps] 开发模式：创建符号链接 ${targetDir} → ${localPluginPath}`);
+
+        // 确保父目录存在
+        await fs.mkdir(path.dirname(targetDir), { recursive: true });
+
+        // 创建符号链接（目录类型）
+        await fs.symlink(localPluginPath, targetDir, 'dir');
+
+        logger.info(`[GitOps] 符号链接创建成功，修改源码将立即生效`);
+        return;
+      }
+
+      logger.warn(`[GitOps] 本地工具目录不存在: ${localPluginPath}，降级到 GitHub 下载`);
+    }
+
+    // 生产模式或本地不存在：从 Git 仓库下载
     const repoConfig = { ...PLUGIN_REPO_CONFIG, ...config };
     const { provider, owner, repo, branch, baseUrl, token } = repoConfig;
 
