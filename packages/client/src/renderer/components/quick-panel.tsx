@@ -3,13 +3,24 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Zap, Grid, Settings, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function QuickPanel() {
   const [query, setQuery] = useState('');
   const [installedModules, setInstalledModules] = useState<any[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // 自动聚焦搜索框
+  useEffect(() => {
+    // 延迟聚焦，确保窗口完全显示
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // 加载已安装工具（通过 IPC，不依赖 Context）
   useEffect(() => {
@@ -105,11 +116,11 @@ export function QuickPanel() {
         <div className="relative p-6 border-b border-white/10">
           <Search className="absolute left-9 top-1/2 -translate-y-1/2 text-white/60" size={20} />
           <input
+            ref={inputRef}
             type="text"
             placeholder="搜索工具或操作..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            autoFocus
             className="w-full bg-white/10 border border-white/20 rounded-xl pl-12 pr-4 py-3.5 text-white text-lg placeholder:text-white/50 focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
