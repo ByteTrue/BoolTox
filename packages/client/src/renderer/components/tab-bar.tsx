@@ -96,12 +96,12 @@ export function TabBar() {
         backdropFilter: 'blur(12px)',
       }}
     >
-      {/* 标签页列表 */}
+      {/* 标签页列表 - 整个容器也可拖拽 */}
       <div
         className="flex gap-1.5 flex-1 overflow-x-auto scrollbar-none"
         style={{
-          // @ts-ignore
-          WebkitAppRegion: 'no-drag',
+          // @ts-ignore - 保持拖拽，只在按钮上禁用
+          WebkitAppRegion: 'drag',
         }}
       >
         <AnimatePresence mode="popLayout">
@@ -116,6 +116,10 @@ export function TabBar() {
                 transition={{ duration: 0.15 }}
                 onClick={() => navigate(tab.path)}
                 onAuxClick={(e) => handleAuxClick(tab, e)}
+                style={{
+                  // @ts-ignore - 标签按钮禁用拖拽
+                  WebkitAppRegion: 'no-drag',
+                }}
                 className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 min-w-[90px] relative ${
                   isActive
                     ? theme === 'dark'
