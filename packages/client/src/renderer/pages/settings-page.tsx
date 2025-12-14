@@ -9,12 +9,13 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../components/theme-provider';
 import { SettingsPanel } from '../components/settings-panel';
 import { DeveloperSettings } from './settings/developer';
+import { AboutSettings } from './settings/about';
 
 // 设置菜单项（只保留有实际内容的）
 const SETTINGS_SECTIONS = [
-  { key: 'developer', label: '开发者模式', path: '/settings/developer' },
   { key: 'general', label: '通用设置', path: '/settings/general' },
   { key: 'about', label: '关于', path: '/settings/about' },
+  { key: 'developer', label: '开发者模式', path: '/settings/developer' },
 ];
 
 export function SettingsPage() {
@@ -73,6 +74,7 @@ export function SettingsPage() {
         >
           <Routes>
             <Route path="/developer" element={<DeveloperSettings />} />
+            <Route path="/about" element={<AboutSettings />} />
             <Route path="/*" element={<SettingsPanel />} />
           </Routes>
         </motion.div>
