@@ -191,20 +191,28 @@ export function QuickPanel() {
                     <button
                       key={module.id}
                       onClick={() => handleToolClick(module.id)}
-                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left group"
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group ${
+                        theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                      }`}
                     >
                       <span className="text-3xl">{module.manifest.icon || '🔧'}</span>
                       <div className="flex-1">
-                        <p className="text-white font-medium group-hover:text-blue-400 transition-colors">
+                        <p className={`font-medium transition-colors ${
+                          theme === 'dark'
+                            ? 'text-white group-hover:text-blue-400'
+                            : 'text-gray-900 group-hover:text-blue-600'
+                        }`}>
                           {module.manifest.name}
                         </p>
-                        <p className="text-white/60 text-sm line-clamp-1">
+                        <p className={`text-sm line-clamp-1 ${
+                          theme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                        }`}>
                           {module.manifest.description}
                         </p>
                       </div>
                       {module.status === 'running' && (
-                        <span className="flex items-center gap-1 text-xs text-green-400">
-                          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                        <span className="flex items-center gap-1 text-xs text-green-600">
+                          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                           运行中
                         </span>
                       )}
@@ -212,7 +220,7 @@ export function QuickPanel() {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <p className="text-white/60">没有找到匹配的工具</p>
+                    <p className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>没有找到匹配的工具</p>
                   </div>
                 )}
               </motion.div>
@@ -229,7 +237,9 @@ export function QuickPanel() {
                 {/* 收藏的工具 */}
                 {favorites.length > 0 && (
                   <div>
-                    <h3 className="text-white/80 text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <h3 className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
+                      theme === 'dark' ? 'text-white/80' : 'text-gray-600'
+                    }`}>
                       ★ 收藏的工具
                     </h3>
                     <div className="grid grid-cols-3 gap-2">
@@ -237,12 +247,16 @@ export function QuickPanel() {
                         <button
                           key={module.id}
                           onClick={() => handleToolClick(module.id)}
-                          className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-white/10 transition-colors group"
+                          className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-colors group ${
+                            theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                          }`}
                         >
                           <span className="text-4xl group-hover:scale-110 transition-transform">
                             {module.manifest.icon || '🔧'}
                           </span>
-                          <span className="text-white text-sm text-center line-clamp-1">
+                          <span className={`text-sm text-center line-clamp-1 ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}>
                             {module.manifest.name}
                           </span>
                         </button>
@@ -253,7 +267,9 @@ export function QuickPanel() {
 
                 {/* 快速操作 */}
                 <div>
-                  <h3 className="text-white/80 text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <h3 className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
+                    theme === 'dark' ? 'text-white/80' : 'text-gray-600'
+                  }`}>
                     <Zap size={14} />
                     快速操作
                   </h3>
@@ -262,7 +278,11 @@ export function QuickPanel() {
                       <button
                         key={action.id}
                         onClick={() => handleActionClick(action.action)}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-white text-sm"
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-sm ${
+                          theme === 'dark'
+                            ? 'hover:bg-white/10 text-white'
+                            : 'hover:bg-gray-100 text-gray-900'
+                        }`}
                       >
                         {action.icon}
                         <span>{action.label}</span>
@@ -272,9 +292,11 @@ export function QuickPanel() {
                 </div>
 
                 {/* 提示 */}
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-white/40 text-xs text-center">
-                    按 <kbd className="px-2 py-0.5 rounded bg-white/10 text-white/60">ESC</kbd> 关闭
+                <div className={`pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
+                  <p className={`text-xs text-center ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>
+                    按 <kbd className={`px-2 py-0.5 rounded ${
+                      theme === 'dark' ? 'bg-white/10 text-white/60' : 'bg-gray-200 text-gray-600'
+                    }`}>ESC</kbd> 关闭
                   </p>
                 </div>
               </motion.div>
