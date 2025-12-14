@@ -14,6 +14,7 @@ import log from 'electron-log';
 import fs from 'fs';
 import { spawn } from 'child_process';
 import { pythonManager } from '../services/python-manager.service.js';
+import { nodeManager } from '../services/node-manager.service.js';
 import { getPlatformWindowConfig } from '../utils/window-platform-config.js';
 
 const logger = log.scope('deps-installer');
