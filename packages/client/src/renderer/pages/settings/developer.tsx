@@ -200,12 +200,6 @@ export function DeveloperSettings() {
           }}
         >
           <div className="flex justify-between">
-            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>工作目录:</span>
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
-              {process.cwd ? process.cwd() : 'N/A'}
-            </span>
-          </div>
-          <div className="flex justify-between">
             <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>开发模式:</span>
             <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>
               {import.meta.env.DEV ? '是' : '否'}
