@@ -21,6 +21,7 @@ import {
 import { createLogger } from '../../utils/logger.js';
 import { resolveEntryPath } from '../../utils/platform-utils.js';
 import { pythonManager } from '../python-manager.service.js';
+import { nodeManager } from '../node-manager.service.js';
 import type { ChildProcess } from 'node:child_process';
 
 const logger = createLogger('ToolBackendRunner');
@@ -183,15 +184,20 @@ export class PluginBackendRunner extends EventEmitter {
         venvPath: environment.venvPath,
       });
     } else if (config.type === 'node') {
-      // Add SDK path for Node.js via symlink in plugin's node_modules
-      const sdkPath = this.getNodeSdkPath();
-      this.ensureNodeSdkSymlink(tool.path, sdkPath);
-      // ELECTRON_RUN_AS_NODE=1 让 Electron 以纯 Node.js 模式运行
-      child = spawn(process.execPath, [entryPath, ...args], {
+      // 确保 Node.js 可用
+      logger.info('[NodeBackend] 确保 Node.js 环境...');
+      const nodePath = await nodeManager.ensureNode((progress) => {
+        logger.info(`[NodeBackend] ${progress.message}`);
+        // TODO: 发送进度到渲染进程
+      });
+
+      logger.info(`[NodeBackend] 使用 Node.js: ${nodePath}`);
+
+      // 使用 NodeManager 提供的 Node.js 启动
+      child = spawn(nodePath, [entryPath, ...args], {
         cwd: tool.path,
         env: {
           ...env,
-          ELECTRON_RUN_AS_NODE: '1',
           BOOLTOX_PLUGIN_ID: tool.id,
         },
         stdio: 'pipe',
