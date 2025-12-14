@@ -7,10 +7,50 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Zap, Grid, Settings, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// 获取系统主题
+function getSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+// 解析实际主题
+function resolveActualTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light';
+
+  const stored = window.localStorage.getItem('app-theme-mode');
+
+  if (stored === 'light') return 'light';
+  if (stored === 'dark') return 'dark';
+  if (stored === 'system') return getSystemTheme();
+
+  // 默认跟随系统
+  return getSystemTheme();
+}
+
 export function QuickPanel() {
   const [query, setQuery] = useState('');
   const [installedModules, setInstalledModules] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => resolveActualTheme());
+
+  // 监听主题变化（支持跟随系统）
+  useEffect(() => {
+    const updateTheme = () => {
+      setTheme(resolveActualTheme());
+    };
+
+    // 监听 localStorage 变化（主窗口切换主题时同步）
+    window.addEventListener('storage', updateTheme);
+
+    // 监听系统主题变化
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', updateTheme);
+
+    return () => {
+      window.removeEventListener('storage', updateTheme);
+      mediaQuery.removeEventListener('change', updateTheme);
+    };
+  }, []);
 
   // 自动聚焦搜索框
   useEffect(() => {
@@ -107,21 +147,29 @@ export function QuickPanel() {
         transition={{ duration: 0.15 }}
         className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
         style={{
-          background: 'rgba(17, 24, 39, 0.98)',
+          background: theme === 'dark'
+            ? 'rgba(17, 24, 39, 0.98)'
+            : 'rgba(255, 255, 255, 0.98)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: theme === 'dark'
+            ? '1px solid rgba(255, 255, 255, 0.1)'
+            : '1px solid rgba(0, 0, 0, 0.1)',
         }}
       >
         {/* 搜索框 */}
-        <div className="relative p-6 border-b border-white/10">
-          <Search className="absolute left-9 top-1/2 -translate-y-1/2 text-white/60" size={20} />
+        <div className={`relative p-6 border-b ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
+          <Search className={`absolute left-9 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-400'}`} size={20} />
           <input
             ref={inputRef}
             type="text"
             placeholder="搜索工具或操作..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-white/10 border border-white/20 rounded-xl pl-12 pr-4 py-3.5 text-white text-lg placeholder:text-white/50 focus:outline-none focus:border-blue-500 transition-colors"
+            className={`w-full border rounded-xl pl-12 pr-4 py-3.5 text-lg focus:outline-none transition-colors ${
+              theme === 'dark'
+                ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-500'
+                : 'bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-blue-500'
+            }`}
           />
         </div>
 

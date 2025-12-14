@@ -34,7 +34,7 @@ export function TabBar() {
   const [activeTabId, setActiveTabId] = useState('home');
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themeMode, setThemeMode } = useTheme();
 
   // 根据路由同步激活标签
   useEffect(() => {
@@ -79,8 +79,16 @@ export function TabBar() {
     }
   }, [closeTab]);
 
-  // 切换主题
-  const themeIcon = theme === 'dark' ? <Moon size={16} /> : theme === 'light' ? <Sun size={16} /> : <Monitor size={16} />;
+  // 循环切换主题：light → dark → system → light
+  const handleToggleTheme = () => {
+    const modes = ['light', 'dark', 'system'] as const;
+    const currentIndex = modes.indexOf(themeMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setThemeMode(modes[nextIndex]);
+  };
+
+  // 主题图标
+  const themeIcon = themeMode === 'dark' ? <Moon size={16} /> : themeMode === 'light' ? <Sun size={16} /> : <Monitor size={16} />;
 
   return (
     <div
@@ -166,7 +174,7 @@ export function TabBar() {
       >
         {/* 主题切换 */}
         <button
-          onClick={toggleTheme}
+          onClick={handleToggleTheme}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
             theme === 'dark'
               ? 'hover:bg-white/10 text-white/80'
