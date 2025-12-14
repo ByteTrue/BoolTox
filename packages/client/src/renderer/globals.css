@@ -137,129 +137,60 @@ textarea:focus-visible {
   color: #ffffff;
 }
 
-.sidebar-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(120, 125, 135, 0.28) transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(120, 125, 135, 0.24), rgba(120, 125, 135, 0.36));
-  border-radius: 999px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(120, 125, 135, 0.32), rgba(120, 125, 135, 0.42));
-}
-
-
-.content-scroll-area {
-  height: 100%;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(120, 125, 135, 0.35) transparent;
-}
-
-.content-scroll-area::-webkit-scrollbar {
-  width: 10px;
-}
-
-.content-scroll-area::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.content-scroll-area::-webkit-scrollbar-thumb {
-  background: rgba(120, 125, 135, 0.28);
-  border-radius: 10px;
-  border: 2px solid transparent;
-}
-
-.content-scroll-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 125, 135, 0.4);
-}
-
-/* 优雅滚动条 - 用于 Drawer 和弹窗 */
-/* 现代化滚动条设计 */
+/* 现代化滚动条设计 - Linus式简洁版 */
 .elegant-scroll {
   overflow-y: auto;
   scroll-behavior: smooth;
+  /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Firefox 滚动条显示 */
-.elegant-scroll:hover,
-.elegant-scroll:active,
-.elegant-scroll.scrolling {
-  scrollbar-color: rgba(101, 187, 233, 0.3) transparent;
-}
-
-/* Webkit 滚动条容器 - 更窄的设计 */
+/* Webkit 滚动条 */
 .elegant-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
-/* 滚动条轨道 - 完全透明 */
 .elegant-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* 滚动条滑块 - 默认隐藏 */
 .elegant-scroll::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 999px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  transition: background 0.2s ease;
 }
 
-/* 悬停或滚动时显示滚动条 - 毛玻璃效果 */
+/* 滚动时显示 - 浅色主题 */
 .elegant-scroll:hover::-webkit-scrollbar-thumb,
-.elegant-scroll:active::-webkit-scrollbar-thumb,
 .elegant-scroll.scrolling::-webkit-scrollbar-thumb {
-  background: rgba(101, 187, 233, 0.25);
-  backdrop-filter: blur(8px) saturate(170%);
-  box-shadow: 0 2px 8px rgba(101, 187, 233, 0.15);
+  background: rgba(0, 0, 0, 0.15);
 }
 
-/* 滑块悬停效果 */
-.elegant-scroll:hover::-webkit-scrollbar-thumb:hover,
-.elegant-scroll:active::-webkit-scrollbar-thumb:hover,
-.elegant-scroll.scrolling::-webkit-scrollbar-thumb:hover {
-  background: rgba(101, 187, 233, 0.4);
-  box-shadow: 0 4px 12px rgba(101, 187, 233, 0.25);
-  transform: scaleX(1.2);
+.elegant-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
-/* 深色模式优化 - 更亮的滚动条 */
-[data-theme="dark"] .elegant-scroll:hover,
-[data-theme="dark"] .elegant-scroll:active,
-[data-theme="dark"] .elegant-scroll.scrolling {
-  scrollbar-color: rgba(101, 187, 233, 0.4) transparent;
+/* Firefox - 浅色主题 */
+.elegant-scroll:hover,
+.elegant-scroll.scrolling {
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
 
+/* 深色模式 */
 [data-theme="dark"] .elegant-scroll:hover::-webkit-scrollbar-thumb,
-[data-theme="dark"] .elegant-scroll:active::-webkit-scrollbar-thumb,
 [data-theme="dark"] .elegant-scroll.scrolling::-webkit-scrollbar-thumb {
-  background: rgba(101, 187, 233, 0.35);
-  backdrop-filter: blur(8px) saturate(170%);
-  box-shadow: 0 2px 8px rgba(101, 187, 233, 0.2);
+  background: rgba(255, 255, 255, 0.15);
 }
 
-[data-theme="dark"] .elegant-scroll:hover::-webkit-scrollbar-thumb:hover,
-[data-theme="dark"] .elegant-scroll:active::-webkit-scrollbar-thumb:hover,
-[data-theme="dark"] .elegant-scroll.scrolling::-webkit-scrollbar-thumb:hover {
-  background: rgba(101, 187, 233, 0.5);
-  box-shadow: 0 4px 12px rgba(101, 187, 233, 0.3);
-  transform: scaleX(1.2);
+[data-theme="dark"] .elegant-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] .elegant-scroll:hover,
+[data-theme="dark"] .elegant-scroll.scrolling {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 [data-animate] {
@@ -291,14 +222,18 @@ textarea:focus-visible {
   }
 }
 
-/* Apple-style 隐藏滚动条 */
-.scrollbar-hide {
+/* 完全隐藏滚动条 - 用于标签栏等不需要显示滚动条的区域 */
+.scrollbar-hide,
+.scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
 }
 
 /* ============================================

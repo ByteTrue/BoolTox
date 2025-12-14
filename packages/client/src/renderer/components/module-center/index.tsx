@@ -437,7 +437,7 @@ export function ModuleCenter() {
       </div>
 
       {/* 内容区域 - 添加 padding 为阴影预留空间 */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 overflow-y-auto px-2 py-2 elegant-scroll">
         {activeTab === "store" ? (
           <div className="space-y-8">
             {(recommendations.popular.length > 0 ||

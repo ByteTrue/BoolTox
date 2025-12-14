@@ -159,7 +159,7 @@ export function CommandPalette() {
                 </div>
 
                 {/* 结果列表 */}
-                <div className="max-h-[60vh] overflow-y-auto">
+                <div className="max-h-[60vh] overflow-y-auto elegant-scroll">
                   {filteredCommands.length === 0 ? (
                     <div className="px-4 py-8 text-center text-white/40">
                       未找到匹配的工具
