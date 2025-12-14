@@ -47,7 +47,7 @@ class QuickPanelManager {
       minimizable: false,
       maximizable: false,
       webPreferences: {
-        preload: path.join(__dirname, '../preload.js'),
+        preload: path.join(__dirname, '../preload.mjs'),
         contextIsolation: true,
         nodeIntegration: false,
       },

@@ -9,9 +9,10 @@
  */
 
 import { useState } from 'react';
-import { useTheme } from '../components/theme-provider';
+import { useTheme } from '../theme-provider';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { colord } from 'colord';
 
 interface ColorPickerProps {
   value: string;
