@@ -17,6 +17,7 @@ export default defineConfig({
           environment: 'node',
           include: ['electron/**/*.{test,spec}.{ts,tsx}'],
           globals: true,
+          setupFiles: ['./vitest.setup.main.ts'],
         },
       },
       // 渲染进程单元测试
