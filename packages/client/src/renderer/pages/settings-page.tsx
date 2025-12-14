@@ -10,14 +10,10 @@ import { useTheme } from '../components/theme-provider';
 import { SettingsPanel } from '../components/settings-panel';
 import { DeveloperSettings } from './settings/developer';
 
-// 设置菜单项
+// 设置菜单项（只保留有实际内容的）
 const SETTINGS_SECTIONS = [
-  { key: 'general', label: '通用设置', path: '/settings/general' },
-  { key: 'shortcuts', label: '快捷键', path: '/settings/shortcuts' },
-  { key: 'updates', label: '更新检查', path: '/settings/updates' },
-  { key: 'data', label: '数据管理', path: '/settings/data' },
-  { key: 'logs', label: '日志管理', path: '/settings/logs' },
   { key: 'developer', label: '开发者模式', path: '/settings/developer' },
+  { key: 'general', label: '通用设置', path: '/settings/general' },
   { key: 'about', label: '关于', path: '/settings/about' },
 ];
 
@@ -26,10 +22,10 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 当前激活的设置项
+  // 当前激活的设置项（默认开发者模式）
   const activeSection = SETTINGS_SECTIONS.find(
     section => section.path === location.pathname
-  )?.key || 'general';
+  )?.key || 'developer';
 
   return (
     <div className="flex h-full">
