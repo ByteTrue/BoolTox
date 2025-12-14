@@ -187,7 +187,7 @@ export function TabBar() {
 
         {/* 设置按钮 */}
         <button
-          onClick={() => navigate('/settings/appearance')}
+          onClick={() => navigate('/settings/developer')}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
             activeTabId === 'settings'
               ? theme === 'dark'

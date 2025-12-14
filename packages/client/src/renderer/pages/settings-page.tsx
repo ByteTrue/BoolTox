@@ -8,16 +8,16 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTheme } from '../components/theme-provider';
 import { SettingsPanel } from '../components/settings-panel';
-import { AppearanceSettings } from './settings/appearance';
+import { DeveloperSettings } from './settings/developer';
 
 // 设置菜单项
 const SETTINGS_SECTIONS = [
-  { key: 'appearance', label: '外观主题', path: '/settings/appearance' },
   { key: 'general', label: '通用设置', path: '/settings/general' },
   { key: 'shortcuts', label: '快捷键', path: '/settings/shortcuts' },
   { key: 'updates', label: '更新检查', path: '/settings/updates' },
   { key: 'data', label: '数据管理', path: '/settings/data' },
   { key: 'logs', label: '日志管理', path: '/settings/logs' },
+  { key: 'developer', label: '开发者模式', path: '/settings/developer' },
   { key: 'about', label: '关于', path: '/settings/about' },
 ];
 
@@ -76,7 +76,7 @@ export function SettingsPage() {
           transition={{ duration: 0.2 }}
         >
           <Routes>
-            <Route path="/appearance" element={<AppearanceSettings />} />
+            <Route path="/developer" element={<DeveloperSettings />} />
             <Route path="/*" element={<SettingsPanel />} />
           </Routes>
         </motion.div>
