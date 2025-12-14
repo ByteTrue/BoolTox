@@ -57,12 +57,12 @@ const DEFAULT_CONFIG: GitOpsConfig = {
   branch: 'ref',
 };
 
-// 工具仓库配置（现在和主仓库相同）
+// 工具仓库配置（独立仓库）
 const PLUGIN_REPO_CONFIG: GitOpsConfig = {
   provider: 'github',
   owner: 'ByteTrue',
-  repo: 'BoolTox', // 合并后使用主仓库
-  branch: 'main',  // 工具从 main 分支发布
+  repo: 'booltox-plugins', // 工具独立仓库
+  branch: 'main',
 };
 
 // 缓存时间(毫秒)
