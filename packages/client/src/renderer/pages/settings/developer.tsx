@@ -200,9 +200,15 @@ export function DeveloperSettings() {
           }}
         >
           <div className="flex justify-between">
-            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>开发模式:</span>
+            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>环境模式:</span>
             <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>
-              {import.meta.env.DEV ? '是' : '否'}
+              {import.meta.env.MODE === 'development' ? '开发环境' : '生产环境'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>Electron:</span>
+            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+              {typeof window !== 'undefined' && window.electron ? '已启用' : '未启用'}
             </span>
           </div>
           <div className="flex justify-between">
