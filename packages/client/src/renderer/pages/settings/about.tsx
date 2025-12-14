@@ -71,22 +71,6 @@ export function AboutSettings() {
         ))}
       </div>
 
-      {/* 致谢 */}
-      <div
-        className="rounded-lg border p-4"
-        style={{
-          background: theme === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
-          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <p className={`text-sm text-center ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
-          参考项目：Cherry Studio 设计模式
-        </p>
-        <p className={`text-sm text-center mt-2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
-          设计哲学：Linus Torvalds "好品味"理念
-        </p>
-      </div>
-
       {/* 许可证 */}
       <div className="text-center">
         <p className={`text-sm ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>
