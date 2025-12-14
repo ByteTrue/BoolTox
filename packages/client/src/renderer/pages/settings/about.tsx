@@ -81,5 +81,6 @@ export function AboutSettings() {
         </p>
       </div>
     </div>
+    </div>
   );
 }
