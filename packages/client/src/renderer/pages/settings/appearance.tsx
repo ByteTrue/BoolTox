@@ -8,9 +8,9 @@
  * 包含主题切换和自定义主色调
  */
 
-import { useTheme } from '../components/theme-provider';
-import { useCustomThemeContext } from '../contexts/custom-theme-context';
-import { ColorPicker } from '../components/ui/color-picker';
+import { useTheme } from '../../components/theme-provider';
+import { useCustomThemeContext } from '../../contexts/custom-theme-context';
+import { ColorPicker } from '../../components/ui/color-picker';
 import { motion } from 'framer-motion';
 
 export function AppearanceSettings() {

@@ -135,6 +135,8 @@ class QuickPanelManager {
    * 切换快捷面板显示/隐藏
    */
   toggle() {
+    logger.info('🔥 快捷面板切换触发！当前可见:', this.window?.isVisible());
+
     if (this.window?.isVisible()) {
       this.hide();
     } else {
