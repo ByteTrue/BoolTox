@@ -16,6 +16,7 @@ import RootLayout from './renderer/layout';
 
 // Import the new App Shell
 import { AppShell } from './renderer/components/app-shell';
+import { QuickPanel } from './renderer/components/quick-panel';
 
 // Import only the contexts we need
 import { ModuleProvider } from './renderer/contexts/module-context';
@@ -54,28 +55,40 @@ profiler.mark('app-startup-begin');
 // initErrorTracking(); // 暂时禁用
 profiler.mark('react-render-begin');
 
+// 检测是否为快捷面板窗口
+const isQuickPanel = window.location.hash === '#/quick-panel';
+
+// 渲染
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ErrorBoundary name="App Root" showHomeButton={false}>
-      <BrowserRouter>
-        <ToastProvider>
-          <CustomThemeProvider>
-            <SpotlightProvider>
-              <ModuleProvider>
-                <UpdateProvider>
-                  <ActivityFeedProvider>
-                    <CommandPaletteProvider>
-                      <RootLayout>
-                        <AppShell />
-                      </RootLayout>
-                    </CommandPaletteProvider>
-                  </ActivityFeedProvider>
-                </UpdateProvider>
-              </ModuleProvider>
-            </SpotlightProvider>
-          </CustomThemeProvider>
-        </ToastProvider>
-      </BrowserRouter>
+    <ErrorBoundary name={isQuickPanel ? 'Quick Panel' : 'App Root'} showHomeButton={false}>
+      {isQuickPanel ? (
+        // 快捷面板：最小化的 Provider 树
+        <RootLayout>
+          <QuickPanel />
+        </RootLayout>
+      ) : (
+        // 主窗口：完整的 Provider 树
+        <BrowserRouter>
+          <ToastProvider>
+            <CustomThemeProvider>
+              <SpotlightProvider>
+                <ModuleProvider>
+                  <UpdateProvider>
+                    <ActivityFeedProvider>
+                      <CommandPaletteProvider>
+                        <RootLayout>
+                          <AppShell />
+                        </RootLayout>
+                      </CommandPaletteProvider>
+                    </ActivityFeedProvider>
+                  </UpdateProvider>
+                </ModuleProvider>
+              </SpotlightProvider>
+            </CustomThemeProvider>
+          </ToastProvider>
+        </BrowserRouter>
+      )}
     </ErrorBoundary>
   </React.StrictMode>,
 );
