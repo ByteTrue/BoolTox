@@ -24,7 +24,7 @@ import { ToastProvider } from './renderer/contexts/toast-context';
 import { UpdateProvider } from './renderer/contexts/update-context';
 import { ActivityFeedProvider } from './renderer/contexts/activity-feed-context';
 import { CommandPaletteProvider } from './renderer/contexts/command-palette-context';
-import { initErrorTracking } from './renderer/lib/error-tracking';
+// import { initErrorTracking } from './renderer/lib/error-tracking'; // 暂时禁用，等待日志系统兼容
 import { ErrorBoundary } from './renderer/components/error-boundary';
 import { profiler } from './renderer/lib/performance-profiler';
 import type { MemoryMonitor, FPSMonitor } from './renderer/lib/performance-profiler';
@@ -50,7 +50,7 @@ if (!perfWindow.__APP_START_TIME__) {
 }
 
 profiler.mark('app-startup-begin');
-initErrorTracking();
+// initErrorTracking(); // 暂时禁用
 profiler.mark('react-render-begin');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

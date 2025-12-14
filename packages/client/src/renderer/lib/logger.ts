@@ -3,273 +3,92 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-/* eslint-disable no-console */
+/**
+ * 渲染进程日志封装
+ * 自动转发日志到主进程 LoggerService
+ */
 
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
-  NONE = 4,
+type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+
+interface LogSource {
+  process: 'renderer';
+  module?: string;
+  window?: string;
 }
 
-export interface LoggerConfig {
-  level: LogLevel;
-  enableTimestamp: boolean;
-  enableNamespace: boolean;
-}
+/**
+ * 渲染进程 Logger
+ */
+class RendererLogger {
+  private module: string;
+  private window: string;
 
-export interface LogEvent {
-  level: LogLevel;
-  namespace: string;
-  message: string;
-  args: unknown[];
-  timestamp: number;
-}
-
-export type LogSink = (event: LogEvent) => void;
-
-type WindowWithViteEnv = Window & {
-  __VITE_ENV__?: {
-    PROD?: boolean;
-    LOG_LEVEL?: string;
-    VITE_LOG_LEVEL?: string;
-  };
-};
-
-function readEnvLogLevel(): string | undefined {
-  if (typeof process !== 'undefined' && process.env) {
-    const { LOG_LEVEL, VITE_LOG_LEVEL } = process.env;
-    if (LOG_LEVEL) return LOG_LEVEL;
-    if (VITE_LOG_LEVEL) return VITE_LOG_LEVEL;
+  constructor(module: string = '', window: string = 'main') {
+    this.module = module;
+    this.window = window;
   }
 
-  try {
-    const meta = (0, eval)('import.meta') as { env?: Record<string, unknown> } | undefined;
-    const envValue = meta?.env?.VITE_LOG_LEVEL as string | undefined;
-    if (envValue) return envValue;
-  } catch {
-    // import.meta 不可用时忽略
-  }
+  /**
+   * 转发日志到主进程
+   */
+  private async logToMain(level: LogLevel, message: string, ...meta: any[]): Promise<void> {
+    const source: LogSource = {
+      process: 'renderer',
+      module: this.module,
+      window: this.window,
+    };
 
-  if (typeof window !== 'undefined') {
-    const viteEnv = (window as WindowWithViteEnv).__VITE_ENV__;
-    if (viteEnv?.LOG_LEVEL) return viteEnv.LOG_LEVEL;
-    if (viteEnv?.VITE_LOG_LEVEL) return viteEnv.VITE_LOG_LEVEL;
-  }
-
-  return undefined;
-}
-
-function parseLogLevel(value: string | undefined): LogLevel | undefined {
-  switch (value?.toUpperCase()) {
-    case 'DEBUG':
-      return LogLevel.DEBUG;
-    case 'INFO':
-      return LogLevel.INFO;
-    case 'WARN':
-      return LogLevel.WARN;
-    case 'ERROR':
-      return LogLevel.ERROR;
-    case 'NONE':
-      return LogLevel.NONE;
-    default:
-      return undefined;
-  }
-}
-
-function isProduction(): boolean {
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
-    return true;
-  }
-
-  if (typeof window !== 'undefined') {
-    const viteEnv = (window as WindowWithViteEnv).__VITE_ENV__;
-    if (typeof viteEnv?.PROD === 'boolean') {
-      return viteEnv.PROD;
-    }
-  }
-
-  try {
-    const meta = (0, eval)('import.meta') as { env?: Record<string, unknown> } | undefined;
-    const prod = meta?.env?.PROD as boolean | undefined;
-    if (typeof prod === 'boolean') {
-      return prod;
-    }
-  } catch {
-    // ignore
-  }
-
-  return false;
-}
-
-function resolveDefaultLogLevel(): LogLevel {
-  const envLevel = parseLogLevel(readEnvLogLevel());
-  if (envLevel !== undefined) {
-    return envLevel;
-  }
-
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
-    return LogLevel.ERROR;
-  }
-
-  return isProduction() ? LogLevel.ERROR : LogLevel.DEBUG;
-}
-
-const DEFAULT_CONFIG: LoggerConfig = {
-  level: resolveDefaultLogLevel(),
-  enableTimestamp: true,
-  enableNamespace: true,
-};
-
-let globalConfig: LoggerConfig = { ...DEFAULT_CONFIG };
-const logSinks = new Set<LogSink>();
-
-const notifyLogSinks = (event: LogEvent) => {
-  for (const sink of logSinks) {
     try {
-      sink(event);
+      // 同时输出到控制台（开发环境）
+      if (import.meta.env.DEV) {
+        const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+        const moduleStr = this.module ? ` [${this.module}]` : '';
+        console[level](`${timestamp} <${level.toUpperCase()}>${moduleStr} ${message}`, ...meta);
+      }
+
+      // 转发到主进程
+      await window.ipc?.invoke('app:log-to-main', source, level, message, meta);
     } catch (error) {
-      console.error("Logger sink error", error);
-    }
-  }
-};
-
-export const registerLogSink = (sink: LogSink): (() => void) => {
-  logSinks.add(sink);
-  return () => {
-    logSinks.delete(sink);
-  };
-};
-
-export class Logger {
-  private readonly namespace: string;
-  private readonly config: LoggerConfig;
-
-  constructor(namespace: string, config?: Partial<LoggerConfig>) {
-    this.namespace = namespace;
-    this.config = { ...globalConfig, ...config };
-  }
-
-  static create(namespace: string, config?: Partial<LoggerConfig>): Logger {
-    return new Logger(namespace, config);
-  }
-
-  static configure(config: Partial<LoggerConfig>): void {
-    globalConfig = { ...globalConfig, ...config };
-  }
-
-  static getLogLevelFromEnv(): LogLevel {
-    return resolveDefaultLogLevel();
-  }
-
-  debug(message: string, ...args: unknown[]): void {
-    this.log(LogLevel.DEBUG, 'DEBUG', (...params) => console.debug(...params), message, args);
-  }
-
-  info(message: string, ...args: unknown[]): void {
-    this.log(LogLevel.INFO, 'INFO', (...params) => console.info(...params), message, args);
-  }
-
-  warn(message: string, ...args: unknown[]): void {
-    this.log(LogLevel.WARN, 'WARN', (...params) => console.warn(...params), message, args);
-  }
-
-  error(message: string, ...args: unknown[]): void {
-    this.log(LogLevel.ERROR, 'ERROR', (...params) => console.error(...params), message, args);
-  }
-
-  time(label: string): void {
-    if (this.config.level <= LogLevel.DEBUG) {
-      console.time(this.buildLabel(label));
+      // IPC 失败时降级到控制台
+      console.error('[Logger] 转发日志到主进程失败:', error);
+      console[level](message, ...meta);
     }
   }
 
-  timeEnd(label: string): void {
-    if (this.config.level <= LogLevel.DEBUG) {
-      console.timeEnd(this.buildLabel(label));
-    }
+  /**
+   * 公共日志方法
+   */
+  public error(message: string, ...meta: any[]): void {
+    void this.logToMain('error', message, ...meta);
   }
 
-  group(label: string): void {
-    if (this.config.level <= LogLevel.DEBUG) {
-      console.group(this.buildLabel(label));
-    }
+  public warn(message: string, ...meta: any[]): void {
+    void this.logToMain('warn', message, ...meta);
   }
 
-  groupEnd(): void {
-    if (this.config.level <= LogLevel.DEBUG) {
-      console.groupEnd();
-    }
+  public info(message: string, ...meta: any[]): void {
+    void this.logToMain('info', message, ...meta);
   }
 
-  private log(
-    level: LogLevel,
-    label: string,
-    output: (...params: unknown[]) => void,
-    message: string,
-    args: unknown[],
-  ): void {
-    if (!this.shouldLog(level)) {
-      return;
-    }
-
-    const prefixParts: string[] = [label];
-
-    if (this.config.enableTimestamp) {
-      prefixParts.push(this.getTimestamp());
-    }
-
-    if (this.config.enableNamespace) {
-      prefixParts.push(`[${this.namespace}]`);
-    }
-
-    const prefix = prefixParts.join(' ');
-    output(`${prefix} ${message}`.trim(), ...args);
-
-    notifyLogSinks({
-      level,
-      namespace: this.namespace,
-      message,
-      args,
-      timestamp: Date.now(),
-    });
+  public debug(message: string, ...meta: any[]): void {
+    void this.logToMain('debug', message, ...meta);
   }
 
-  private shouldLog(level: LogLevel): boolean {
-    if (this.config.level === LogLevel.NONE) {
-      return false;
-    }
-
-    return this.config.level <= level;
-  }
-
-  private buildLabel(label: string): string {
-    if (!this.config.enableNamespace) {
-      return label;
-    }
-
-    return `[${this.namespace}] ${label}`;
-  }
-
-  private getTimestamp(): string {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const ms = String(now.getMilliseconds()).padStart(3, '0');
-    return `[${hours}:${minutes}:${seconds}.${ms}]`;
+  /**
+   * 创建带命名空间的子 logger
+   */
+  public withContext(module: string): RendererLogger {
+    return new RendererLogger(module, this.window);
   }
 }
 
-export function createLogger(namespace: string, config?: Partial<LoggerConfig>): Logger {
-  return Logger.create(namespace, config);
+// 导出默认实例
+export const logger = new RendererLogger();
+
+// 导出创建方法
+export function createLogger(namespace: string): RendererLogger {
+  return new RendererLogger(namespace);
 }
 
-export function configureLogger(config: Partial<LoggerConfig>): void {
-  Logger.configure(config);
-}
-
-Logger.configure({
-  level: Logger.getLogLevelFromEnv(),
-});
+// 导出类型
+export type { LogLevel, LogSource };

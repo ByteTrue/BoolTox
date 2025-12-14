@@ -4,107 +4,285 @@
  */
 
 /**
- * 生产环境日志系统
- * 使用 electron-log 实现日志持久化
+ * 中心化日志服务
+ * 基于 winston + winston-daily-rotate-file
+ * 参考 Cherry Studio LoggerService 设计
  */
 
-import log from 'electron-log';
-import { app } from 'electron';
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import { app, ipcMain } from 'electron';
 import path from 'path';
-import fs from 'fs/promises';
+import os from 'os';
 
-// 配置日志
-export function setupLogger() {
-  // 设置日志文件路径
-  // 开发环境: logs/
-  // 生产环境: %APPDATA%/Roaming/BoolTox/logs/ (Windows)
-  const logPath = app.isPackaged
-    ? path.join(app.getPath('userData'), 'logs')
-    : path.join(process.cwd(), 'logs');
+// 日志级别
+export const LOG_LEVEL = {
+  ERROR: 'error',
+  WARN: 'warn',
+  INFO: 'info',
+  DEBUG: 'debug',
+} as const;
 
-  // 确保日志目录存在
-  fs.mkdir(logPath, { recursive: true }).catch(err => {
-    console.error('创建日志目录失败:', err);
-  });
+export type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 
-  log.transports.file.resolvePathFn = () => path.join(logPath, 'main.log');
-  
-  // 配置日志级别
-  // 开发环境: debug
-  // 生产环境: info
-  log.transports.file.level = app.isPackaged ? 'info' : 'debug';
-  log.transports.console.level = app.isPackaged ? 'info' : 'debug';
-  
-  // 设置日志格式
-  log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
-  
-  // 日志文件大小限制 (10MB)
-  log.transports.file.maxSize = 10 * 1024 * 1024;
-  
-  // 开启日志文件归档
-  log.transports.file.archiveLog = (_oldLogFile) => {
-    const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-    const archivePath = path.join(
-      logPath,
-      'archive',
-      `main-${timestamp}.log`
+const LEVEL_MAP = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
+};
+
+// ANSI 颜色
+const ANSI = {
+  RED: '\x1b[31m',
+  YELLOW: '\x1b[33m',
+  GREEN: '\x1b[32m',
+  BLUE: '\x1b[34m',
+  CYAN: '\x1b[36m',
+  BOLD: '\x1b[1m',
+  END: '\x1b[0m',
+};
+
+function colorText(text: string, color: keyof typeof ANSI): string {
+  return ANSI[color] + text + ANSI.END;
+}
+
+// 日志来源
+interface LogSource {
+  process: 'main' | 'renderer';
+  module?: string;
+  window?: string;
+}
+
+/**
+ * LoggerService 单例
+ */
+class LoggerService {
+  private static instance: LoggerService;
+  private logger: winston.Logger;
+  private logsDir: string;
+
+  // 环境变量（开发环境）
+  private envLevel: LogLevel | 'none' = 'none';
+  private envShowModules: string[] = [];
+
+  // 当前模块名
+  private module: string = '';
+  private context: Record<string, any> = {};
+
+  private constructor() {
+    // 日志目录
+    this.logsDir = app.isPackaged
+      ? path.join(app.getPath('userData'), 'logs')
+      : path.join(process.cwd(), 'logs');
+
+    // 环境变量（开发环境）
+    if (!app.isPackaged) {
+      // 日志级别：BOOLTOX_LOG_LEVEL=debug
+      if (process.env.BOOLTOX_LOG_LEVEL && Object.values(LOG_LEVEL).includes(process.env.BOOLTOX_LOG_LEVEL as LogLevel)) {
+        this.envLevel = process.env.BOOLTOX_LOG_LEVEL as LogLevel;
+        console.log(colorText(`[LoggerService] 环境变量 BOOLTOX_LOG_LEVEL: ${this.envLevel}`, 'BLUE'));
+      }
+
+      // 模块过滤：BOOLTOX_LOG_MODULES=ToolManager,PythonManager
+      if (process.env.BOOLTOX_LOG_MODULES) {
+        this.envShowModules = process.env.BOOLTOX_LOG_MODULES.split(',')
+          .map((m) => m.trim())
+          .filter((m) => m !== '');
+        console.log(colorText(`[LoggerService] 环境变量 BOOLTOX_LOG_MODULES: ${this.envShowModules.join(', ')}`, 'BLUE'));
+      }
+    }
+
+    // Winston 配置
+    const transports: winston.transport[] = [];
+
+    // 通用日志文件（滚动，保留 30 天）
+    transports.push(
+      new DailyRotateFile({
+        filename: path.join(this.logsDir, 'app.%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        maxSize: '10m',
+        maxFiles: '30d',
+        level: 'debug',
+      })
     );
-    return archivePath;
-  };
 
-  // 捕获未处理的错误
-  log.catchErrors({
-    showDialog: false,
-    onError: (error) => {
-      log.error('未捕获的错误:', error);
-    },
-  });
+    // 错误日志文件（滚动，保留 60 天）
+    transports.push(
+      new DailyRotateFile({
+        level: 'warn',
+        filename: path.join(this.logsDir, 'app-error.%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        maxSize: '10m',
+        maxFiles: '60d',
+      })
+    );
 
-  // 重定向 console 到 log
-  /* eslint-disable no-console */
-  console.log = log.log.bind(log);
-  console.info = log.info.bind(log);
-  console.warn = log.warn.bind(log);
-  console.error = log.error.bind(log);
-  console.debug = log.debug.bind(log);
-  /* eslint-enable no-console */
+    // 创建 logger
+    this.logger = winston.createLogger({
+      level: app.isPackaged ? 'info' : 'debug',
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.errors({ stack: true }),
+        winston.format.json()
+      ),
+      exitOnError: false,
+      transports,
+    });
 
-  log.info('='.repeat(80));
-  log.info(`BoolTox 启动 - 版本 ${app.getVersion()}`);
-  log.info(`环境: ${app.isPackaged ? '生产' : '开发'}`);
-  log.info(`日志路径: ${logPath}`);
-  log.info(`平台: ${process.platform} ${process.arch}`);
-  log.info(`Electron: ${process.versions.electron}`);
-  log.info(`Node: ${process.versions.node}`);
-  log.info('='.repeat(80));
+    // 注册 IPC handler（渲染进程日志转发）
+    this.registerIpcHandler();
+
+    // 启动日志
+    this.info('='.repeat(80));
+    this.info(`BoolTox 启动 - 版本 ${app.getVersion()}`);
+    this.info(`环境: ${app.isPackaged ? '生产' : '开发'}`);
+    this.info(`日志路径: ${this.logsDir}`);
+    this.info(`平台: ${process.platform} ${process.arch}`);
+    this.info(`系统: ${os.platform()}-${os.arch()} / ${os.version()}`);
+    this.info(`CPU: ${os.cpus()[0]?.model || 'Unknown'}`);
+    this.info(`内存: ${(os.totalmem() / 1024 / 1024 / 1024).toFixed(2)}GB`);
+    this.info(`Electron: ${process.versions.electron}`);
+    this.info(`Node: ${process.versions.node}`);
+    this.info('='.repeat(80));
+  }
+
+  /**
+   * 获取单例
+   */
+  public static getInstance(): LoggerService {
+    if (!LoggerService.instance) {
+      LoggerService.instance = new LoggerService();
+    }
+    return LoggerService.instance;
+  }
+
+  /**
+   * 创建带命名空间的 logger
+   */
+  public withContext(module: string, context?: Record<string, any>): LoggerService {
+    const newLogger = Object.create(this);
+    newLogger.logger = this.logger;
+    newLogger.module = module;
+    newLogger.context = { ...this.context, ...context };
+    return newLogger;
+  }
+
+  /**
+   * 处理日志
+   */
+  private processLog(source: LogSource, level: LogLevel, message: string, meta: any[]): void {
+    // 开发环境：彩色控制台输出 + 模块过滤
+    if (!app.isPackaged) {
+      // 环境变量过滤
+      if (this.envLevel !== 'none' && LEVEL_MAP[level] < LEVEL_MAP[this.envLevel]) {
+        return;
+      }
+      if (this.module && this.envShowModules.length > 0 && !this.envShowModules.includes(this.module)) {
+        return;
+      }
+
+      // 彩色输出
+      const time = colorText(
+        new Date().toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        'CYAN'
+      );
+
+      const moduleStr = this.module ? ` ${colorText(`[${this.module}]`, 'BOLD')} ` : ' ';
+
+      const levelColors = {
+        error: 'RED',
+        warn: 'YELLOW',
+        info: 'GREEN',
+        debug: 'BLUE',
+      } as const;
+
+      const levelStr = colorText(`<${level.toUpperCase()}>`, levelColors[level]);
+
+      console.log(`${time} ${levelStr}${moduleStr}${message}`, ...meta);
+    }
+
+    // 写入文件
+    this.logger.log(level, message, {
+      module: this.module,
+      source: source.process,
+      window: source.window,
+      context: this.context,
+      meta,
+    });
+  }
+
+  /**
+   * 处理渲染进程日志
+   */
+  private processRendererLog(source: LogSource, level: LogLevel, message: string, meta: any[]): void {
+    this.processLog(source, level, `[Renderer] ${message}`, meta);
+  }
+
+  /**
+   * 注册 IPC handler（渲染进程日志转发）
+   */
+  private registerIpcHandler(): void {
+    ipcMain.handle('app:log-to-main', (_event, source: LogSource, level: LogLevel, message: string, meta: any[]) => {
+      this.processRendererLog(source, level, message, meta);
+    });
+  }
+
+  /**
+   * 公共日志方法
+   */
+  public error(message: string, ...meta: any[]): void {
+    this.processLog({ process: 'main', module: this.module }, 'error', message, meta);
+  }
+
+  public warn(message: string, ...meta: any[]): void {
+    this.processLog({ process: 'main', module: this.module }, 'warn', message, meta);
+  }
+
+  public info(message: string, ...meta: any[]): void {
+    this.processLog({ process: 'main', module: this.module }, 'info', message, meta);
+  }
+
+  public debug(message: string, ...meta: any[]): void {
+    this.processLog({ process: 'main', module: this.module }, 'debug', message, meta);
+  }
+
+  /**
+   * 关闭日志系统
+   */
+  public finish(): void {
+    this.logger.end();
+  }
+
+  /**
+   * 获取日志目录
+   */
+  public getLogsDir(): string {
+    return this.logsDir;
+  }
 }
 
-// 创建带命名空间的日志记录器
+// 导出单例
+export const loggerService = LoggerService.getInstance();
+
+// 兼容旧 API
+export function setupLogger() {
+  // LoggerService 已在单例初始化时自动设置
+  return loggerService;
+}
+
 export function createLogger(namespace: string) {
-  return {
-    debug: (...args: unknown[]) => log.debug(`[${namespace}]`, ...args),
-    info: (...args: unknown[]) => log.info(`[${namespace}]`, ...args),
-    warn: (...args: unknown[]) => log.warn(`[${namespace}]`, ...args),
-    error: (...args: unknown[]) => log.error(`[${namespace}]`, ...args),
-  };
+  return loggerService.withContext(namespace);
 }
 
-// 导出日志实例
-export { log };
-
-// 工具函数: 获取日志文件路径
 export function getLogPath(): string {
-  return app.isPackaged
-    ? path.join(app.getPath('userData'), 'logs', 'main.log')
-    : path.join(process.cwd(), 'logs', 'main.log');
+  return path.join(loggerService.getLogsDir(), 'app.log');
 }
 
-// 工具函数: 打开日志目录
 export async function openLogFolder() {
   const { shell } = await import('electron');
-  const logDir = app.isPackaged
-    ? path.join(app.getPath('userData'), 'logs')
-    : path.join(process.cwd(), 'logs');
-  
-  await shell.openPath(logDir);
+  await shell.openPath(loggerService.getLogsDir());
 }
+
+// 导出类型
+export type { LogLevel, LogSource };

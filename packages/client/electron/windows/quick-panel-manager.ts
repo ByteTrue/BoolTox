@@ -6,6 +6,7 @@
 import { BrowserWindow, screen, globalShortcut, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
+import { IpcChannel } from '../../src/shared/constants/ipc-channels.js';
 import { createLogger } from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -171,17 +172,17 @@ class QuickPanelManager {
    */
   registerIPCHandlers() {
     // 隐藏快捷面板
-    ipcMain.handle('quick-panel:hide', () => {
+    ipcMain.handle(IpcChannel.QuickPanel_Hide, () => {
       this.hide();
     });
 
     // 显示主窗口
-    ipcMain.handle('quick-panel:show-main', () => {
+    ipcMain.handle(IpcChannel.QuickPanel_ShowMain, () => {
       this.showMainWindow();
     });
 
     // 导航到指定路由
-    ipcMain.handle('quick-panel:navigate', (_event, route: string) => {
+    ipcMain.handle(IpcChannel.QuickPanel_Navigate, (_event, route: string) => {
       this.navigateTo(route);
     });
 

@@ -5,6 +5,7 @@
 
 import { autoUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater';
 import { BrowserWindow, ipcMain } from 'electron';
+import { IpcChannel } from '../../src/shared/constants/ipc-channels.js';
 
 export type AutoUpdateStatus =
   | { state: 'idle' }
@@ -50,19 +51,19 @@ export class AutoUpdateService {
       this.updateStatus({ state: 'downloaded', info });
     });
 
-    ipcMain.handle('auto-update:check', async () => {
+    ipcMain.handle(IpcChannel.AutoUpdate_Check, async () => {
       return autoUpdater.checkForUpdates();
     });
 
-    ipcMain.handle('auto-update:download', () => {
+    ipcMain.handle(IpcChannel.AutoUpdate_Download, () => {
       return autoUpdater.downloadUpdate();
     });
 
-    ipcMain.handle('auto-update:get-status', () => {
+    ipcMain.handle(IpcChannel.AutoUpdate_GetStatus, () => {
       return this.status;
     });
 
-    ipcMain.handle('auto-update:quit-and-install', () => {
+    ipcMain.handle(IpcChannel.AutoUpdate_QuitAndInstall, () => {
       autoUpdater.quitAndInstall();
       return true;
     });
