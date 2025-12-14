@@ -24,6 +24,7 @@ import { ToastProvider } from './renderer/contexts/toast-context';
 import { UpdateProvider } from './renderer/contexts/update-context';
 import { ActivityFeedProvider } from './renderer/contexts/activity-feed-context';
 import { CommandPaletteProvider } from './renderer/contexts/command-palette-context';
+import { CustomThemeProvider } from './renderer/contexts/custom-theme-context';
 // import { initErrorTracking } from './renderer/lib/error-tracking'; // 暂时禁用，等待日志系统兼容
 import { ErrorBoundary } from './renderer/components/error-boundary';
 import { profiler } from './renderer/lib/performance-profiler';
@@ -58,19 +59,21 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary name="App Root" showHomeButton={false}>
       <BrowserRouter>
         <ToastProvider>
-          <SpotlightProvider>
-            <ModuleProvider>
-              <UpdateProvider>
-                <ActivityFeedProvider>
-                  <CommandPaletteProvider>
-                    <RootLayout>
-                      <AppShell />
-                    </RootLayout>
-                  </CommandPaletteProvider>
-                </ActivityFeedProvider>
-              </UpdateProvider>
-            </ModuleProvider>
-          </SpotlightProvider>
+          <CustomThemeProvider>
+            <SpotlightProvider>
+              <ModuleProvider>
+                <UpdateProvider>
+                  <ActivityFeedProvider>
+                    <CommandPaletteProvider>
+                      <RootLayout>
+                        <AppShell />
+                      </RootLayout>
+                    </CommandPaletteProvider>
+                  </ActivityFeedProvider>
+                </UpdateProvider>
+              </ModuleProvider>
+            </SpotlightProvider>
+          </CustomThemeProvider>
         </ToastProvider>
       </BrowserRouter>
     </ErrorBoundary>

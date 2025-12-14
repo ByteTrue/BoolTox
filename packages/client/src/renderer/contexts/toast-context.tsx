@@ -29,6 +29,21 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 const logger = createLogger('ToastContext');
 
+// 全局 Toast API（参考 Cherry Studio）
+interface GlobalToastAPI {
+  success: (message: string, duration?: number) => void;
+  error: (message: string, duration?: number) => void;
+  info: (message: string, duration?: number) => void;
+  warning: (message: string, duration?: number) => void;
+}
+
+// 声明全局类型
+declare global {
+  interface Window {
+    toast?: GlobalToastAPI;
+  }
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastIdCounterRef = useRef(0);
@@ -53,7 +68,35 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         removeToast(id);
       }, options.duration ?? 3000);
     }
-  }, [removeToast]);;;;;;
+  }, [removeToast]);
+
+  // 挂载全局 Toast API
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.toast = {
+        success: (message: string, duration?: number) => {
+          showToast({ message, type: 'success', duration });
+        },
+        error: (message: string, duration?: number) => {
+          showToast({ message, type: 'error', duration });
+        },
+        info: (message: string, duration?: number) => {
+          showToast({ message, type: 'info', duration });
+        },
+        warning: (message: string, duration?: number) => {
+          showToast({ message, type: 'default', duration });
+        },
+      };
+
+      logger.info('全局 Toast API 已挂载到 window.toast');
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete window.toast;
+      }
+    };
+  }, [showToast]);;;;;
 
   const value = useMemo<ToastContextValue>(() => ({
     toasts,
