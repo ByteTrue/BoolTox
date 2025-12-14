@@ -5,25 +5,38 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Search, Zap, Grid, Settings, Home } from 'lucide-react';
-import { useModulePlatform } from '../contexts/module-context';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function QuickPanel() {
   const [query, setQuery] = useState('');
-  const { installedModules, openModule } = useModulePlatform();
+  const [installedModules, setInstalledModules] = useState<any[]>([]);
+
+  // 加载已安装工具（通过 IPC，不依赖 Context）
+  useEffect(() => {
+    const loadModules = async () => {
+      try {
+        const modules = await window.tool?.getAll();
+        setInstalledModules(modules || []);
+      } catch (error) {
+        console.error('加载工具列表失败', error);
+      }
+    };
+
+    loadModules();
+  }, []);
 
   // 收藏的工具（最多 6 个）
   const favorites = useMemo(
-    () => installedModules.filter((m) => m.isFavorite).slice(0, 6),
+    () => installedModules.filter((m: any) => m.isFavorite).slice(0, 6),
     [installedModules]
   );
 
   // 搜索过滤
   const filteredModules = useMemo(() => {
     if (!query) return [];
-    return installedModules.filter((module) =>
-      module.definition.name.toLowerCase().includes(query.toLowerCase()) ||
-      module.definition.description?.toLowerCase().includes(query.toLowerCase())
+    return installedModules.filter((module: any) =>
+      module.definition?.name?.toLowerCase().includes(query.toLowerCase()) ||
+      module.definition?.description?.toLowerCase().includes(query.toLowerCase())
     );
   }, [query, installedModules]);
 
@@ -46,15 +59,18 @@ export function QuickPanel() {
   }, []);
 
   // 处理工具点击
-  const handleToolClick = (toolId: string) => {
-    openModule(toolId);
-    window.quickPanel?.hide();
+  const handleToolClick = async (toolId: string) => {
+    try {
+      await window.tool?.start(toolId);
+      window.quickPanel?.hide();
+    } catch (error) {
+      console.error('启动工具失败', error);
+    }
   };
 
   // 处理快速操作点击
   const handleActionClick = (action: () => void) => {
     action();
-    window.quickPanel?.hide();
   };
 
   return (
@@ -98,7 +114,7 @@ export function QuickPanel() {
                 className="space-y-2"
               >
                 {filteredModules.length > 0 ? (
-                  filteredModules.map((module) => (
+                  filteredModules.map((module: any) => (
                     <button
                       key={module.id}
                       onClick={() => handleToolClick(module.id)}
@@ -113,7 +129,7 @@ export function QuickPanel() {
                           {module.definition.description}
                         </p>
                       </div>
-                      {module.runtime.launchState === 'running' && (
+                      {module.runtime?.launchState === 'running' && (
                         <span className="flex items-center gap-1 text-xs text-green-400">
                           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                           运行中
@@ -144,7 +160,7 @@ export function QuickPanel() {
                       ★ 收藏的工具
                     </h3>
                     <div className="grid grid-cols-3 gap-2">
-                      {favorites.map((module) => (
+                      {favorites.map((module: any) => (
                         <button
                           key={module.id}
                           onClick={() => handleToolClick(module.id)}
