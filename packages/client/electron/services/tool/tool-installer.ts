@@ -135,74 +135,66 @@ export class ToolInstallerService {
     }
 
     const toolDir = path.join(this.toolsDir, id);
-      });
 
-      const tempZipPath = path.join(this.tempDir, `${id}-${version}.zip`);
-      await this.downloadFile(
-        downloadUrl,
-        tempZipPath,
-        abortController.signal,
-        (percent) => {
-          this.reportProgress(onProgress, window, {
-            stage: 'downloading',
-            percent,
-            message: `正在下载: ${percent.toFixed(1)}%`,
-          });
-        }
-      );
+    // 1. 下载
+    this.reportProgress(onProgress, window, {
+      stage: 'downloading',
+      percent: 0,
+      message: '正在下载工具包...',
+    });
 
-      // 2. 验证哈希
-      if (hash) {
+    const tempZipPath = path.join(this.tempDir, `${id}-${version}.zip`);
+    await this.downloadFile(
+      downloadUrl,
+      tempZipPath,
+      abortController.signal,
+      (percent) => {
         this.reportProgress(onProgress, window, {
-          stage: 'verifying',
-          percent: 80,
-          message: '正在验证文件完整性...',
+          stage: 'downloading',
+          percent,
+          message: `正在下载: ${percent.toFixed(1)}%`,
         });
-
-        const fileHash = await this.calculateFileHash(tempZipPath);
-        if (fileHash !== hash) {
-          throw new Error('文件校验失败,可能已被篡改');
-        }
       }
+    );
 
-      // 3. 解压
+    // 2. 验证哈希
+    if (hash) {
       this.reportProgress(onProgress, window, {
-        stage: 'extracting',
-        percent: 85,
-        message: '正在解压工具...',
+        stage: 'verifying',
+        percent: 80,
+        message: '正在验证文件完整性...',
       });
 
-      await this.extractZip(tempZipPath, toolDir);
+      const fileHash = await this.calculateFileHash(tempZipPath);
+      if (fileHash !== hash) {
+        throw new Error('文件校验失败,可能已被篡改');
+      }
+    }
 
-      // 4. 验证manifest
-      this.reportProgress(onProgress, window, {
-        stage: 'installing',
-        percent: 90,
-        message: '正在验证工具配置...',
-      });
+    // 3. 解压
+    this.reportProgress(onProgress, window, {
+      stage: 'extracting',
+      percent: 85,
+      message: '正在解压工具...',
+    });
 
-      const manifestPath = path.join(toolDir, 'manifest.json');
-      await this.validateManifest(manifestPath, id);
+    await this.extractZip(tempZipPath, toolDir);
 
-      // 5. 跳过依赖安装（分离安装和依赖准备）
-      // 依赖将在首次启动时安装，提升安装速度感知
-      // const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
-      // if (manifest.runtime?.backend?.type === 'node') { ... }
+    // 4. 清理临时文件
+    await fs.unlink(tempZipPath).catch(() => {});
 
-      // 6. 清理临时文件
-      await fs.unlink(tempZipPath).catch(() => {});
+    this.reportProgress(onProgress, window, {
+      stage: 'complete',
+      percent: 100,
+      message: '安装完成',
+    });
 
-      this.reportProgress(onProgress, window, {
-        stage: 'complete',
-        percent: 100,
-        message: '安装完成',
-      });
+    logger.info(`[ToolInstaller] 工具安装成功: ${id}`);
+    return toolDir;
+  }
 
-      logger.info(`[ToolInstaller] 工具安装成功: ${id}（依赖将在首次启动时安装）`);
-      return toolDir;
-    } catch (error) {
-      // 清理失败的安装
-      await this.cleanup(toolDir, id);
+  /**
+   * 安装二进制工具
       
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.reportProgress(onProgress, window, {
