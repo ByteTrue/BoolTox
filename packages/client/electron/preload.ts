@@ -14,6 +14,7 @@ import type { IpcRendererEvent } from 'electron';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types';
 import type { Announcement, GitOpsConfig, PluginRegistry } from './services/git-ops.service';
 import type { AutoUpdateStatus } from './services/auto-update.service';
+import { IpcChannel } from '../src/shared/constants/ipc-channels';
 
 /**
  * 窗口控制API
@@ -169,14 +170,26 @@ const gitOpsAPI = {
  * Plugin API - 工具安装相关
  */
 const toolAPI = {
+  getAll: async (): Promise<unknown[]> => {
+    return await ipcRenderer.invoke(IpcChannel.Tool_GetAll) as unknown[];
+  },
+  start: async (toolId: string): Promise<unknown> => {
+    return await ipcRenderer.invoke(IpcChannel.Tool_Start, toolId);
+  },
+  stop: async (toolId: string): Promise<void> => {
+    return await ipcRenderer.invoke(IpcChannel.Tool_Stop, toolId);
+  },
+  focus: async (toolId: string): Promise<void> => {
+    return await ipcRenderer.invoke(IpcChannel.Tool_Focus, toolId);
+  },
   install: async (entry: unknown): Promise<{success: boolean; path?: string; error?: string}> => {
-    return await ipcRenderer.invoke('tool:install', entry) as {success: boolean; path?: string; error?: string};
+    return await ipcRenderer.invoke(IpcChannel.Tool_Install, entry) as {success: boolean; path?: string; error?: string};
   },
   uninstall: async (pluginId: string): Promise<{success: boolean; error?: string}> => {
-    return await ipcRenderer.invoke('tool:uninstall', pluginId) as {success: boolean; error?: string};
+    return await ipcRenderer.invoke(IpcChannel.Tool_Uninstall, pluginId) as {success: boolean; error?: string};
   },
   cancelInstall: async (pluginId: string): Promise<{success: boolean}> => {
-    return await ipcRenderer.invoke('tool:cancel-install', pluginId) as {success: boolean};
+    return await ipcRenderer.invoke(IpcChannel.Tool_CancelInstall, pluginId) as {success: boolean};
   },
   onInstallProgress: (callback: (progress: unknown) => void): (() => void) => {
     const listener = (_event: IpcRendererEvent, progress: unknown) => callback(progress);
@@ -184,13 +197,13 @@ const toolAPI = {
     return () => ipcRenderer.removeListener('tool:install-progress', listener);
   },
   checkUpdates: async (): Promise<{success: boolean; updates: unknown[]; error?: string}> => {
-    return await ipcRenderer.invoke('tool:check-updates') as {success: boolean; updates: unknown[]; error?: string};
+    return await ipcRenderer.invoke(IpcChannel.Tool_CheckUpdates) as {success: boolean; updates: unknown[]; error?: string};
   },
   updateTool: async (toolId: string): Promise<{success: boolean; error?: string}> => {
-    return await ipcRenderer.invoke('tool:update', toolId) as {success: boolean; error?: string};
+    return await ipcRenderer.invoke(IpcChannel.Tool_Update, toolId) as {success: boolean; error?: string};
   },
   updateAllTools: async (toolIds: string[]): Promise<{success: boolean; updated: string[]; failed: string[]; error?: string}> => {
-    return await ipcRenderer.invoke('tool:update-all', toolIds) as {success: boolean; updated: string[]; failed: string[]; error?: string};
+    return await ipcRenderer.invoke(IpcChannel.Tool_UpdateAll, toolIds) as {success: boolean; updated: string[]; failed: string[]; error?: string};
   },
 };
 
