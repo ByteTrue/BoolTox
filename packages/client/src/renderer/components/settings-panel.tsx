@@ -390,55 +390,6 @@ export function SettingsPanel() {
         <LogManager />
       </SettingCard>
 
-      {/* 高级选项（仅开发环境，折叠面板） */}
-      {isDev && (
-        <SettingCard title="高级选项" icon={Server} theme={theme}>
-          <div className="space-y-3">
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className={`flex items-center justify-between w-full text-sm font-medium transition-colors ${
-                theme === 'dark'
-                  ? 'text-white/90 hover:text-white'
-                  : 'text-slate-800 hover:text-slate-900'
-              }`}
-            >
-              <span>开发者信息</span>
-              {showAdvanced ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </button>
-            
-            <AnimatePresence>
-              {showAdvanced && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden space-y-3 pt-2"
-                >
-                  <SettingItem
-                    label="环境"
-                    value={import.meta.env.MODE === 'development' ? '开发环境' : '生产环境'}
-                  />
-                  <SettingItem label="API 地址" value={ADMIN_API_BASE} />
-                  <SettingItem label="更新渠道" value={RELEASE_CHANNEL} />
-                  <SettingItem
-                    label="Electron"
-                    value={typeof window !== 'undefined' && window.electron ? '已启用' : '未启用'}
-                  />
-                  <SettingItem
-                    label="Node 集成"
-                    value={typeof process !== 'undefined' ? '已启用' : '未启用'}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </SettingCard>
-      )}
 
       <Modal
         open={showNotes}
