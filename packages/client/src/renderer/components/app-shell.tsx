@@ -3,10 +3,11 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { Suspense, lazy } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TabBar } from './tab-bar';
+import { QuickPanel } from './quick-panel';
 import { useTheme } from './theme-provider';
 import { GlassLoadingFallback } from './ui/glass-loading-fallback';
 import { ErrorBoundary } from './error-boundary';
@@ -26,7 +27,28 @@ const pageVariants = {
 
 export function AppShell() {
   const { theme } = useTheme();
+  const [isQuickPanel, setIsQuickPanel] = useState(false);
 
+  // 检测是否为快捷面板路由
+  useEffect(() => {
+    const checkHash = () => {
+      setIsQuickPanel(window.location.hash === '#/quick-panel');
+    };
+
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+
+    return () => {
+      window.removeEventListener('hashchange', checkHash);
+    };
+  }, []);
+
+  // 快捷面板路由（单独渲染）
+  if (isQuickPanel) {
+    return <QuickPanel />;
+  }
+
+  // 正常应用路由
   return (
     <div
       className="flex flex-col h-dvh overflow-hidden transition-colors duration-300"

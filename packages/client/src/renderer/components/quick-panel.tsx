@@ -29,16 +29,16 @@ export function QuickPanel() {
 
   // 快速操作
   const quickActions = [
-    { id: 'show-main', label: '显示主窗口', icon: <Home size={16} />, action: () => window.api?.quickPanel?.showMain() },
-    { id: 'tools', label: '打开工具商店', icon: <Grid size={16} />, action: () => window.api?.quickPanel?.navigateTo('/tools') },
-    { id: 'settings', label: '打开设置', icon: <Settings size={16} />, action: () => window.api?.quickPanel?.navigateTo('/settings') },
+    { id: 'show-main', label: '显示主窗口', icon: <Home size={16} />, action: () => window.quickPanel?.showMain() },
+    { id: 'tools', label: '打开工具商店', icon: <Grid size={16} />, action: () => window.quickPanel?.navigateTo('/tools') },
+    { id: 'settings', label: '打开设置', icon: <Settings size={16} />, action: () => window.quickPanel?.navigateTo('/settings') },
   ];
 
   // ESC 键关闭
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        window.api?.quickPanel?.hide();
+        window.quickPanel?.hide();
       }
     };
     window.addEventListener('keydown', handleEsc);
@@ -48,13 +48,13 @@ export function QuickPanel() {
   // 处理工具点击
   const handleToolClick = (toolId: string) => {
     openModule(toolId);
-    window.api?.quickPanel?.hide();
+    window.quickPanel?.hide();
   };
 
   // 处理快速操作点击
   const handleActionClick = (action: () => void) => {
     action();
-    window.api?.quickPanel?.hide();
+    window.quickPanel?.hide();
   };
 
   return (
