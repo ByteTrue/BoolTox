@@ -35,11 +35,23 @@ export function QuickPanel() {
 
   // 搜索过滤
   const filteredModules = useMemo(() => {
+    console.log('[QuickPanel] 搜索词:', query, '工具总数:', installedModules.length);
     if (!query) return [];
-    return installedModules.filter((module: any) =>
-      module.definition?.name?.toLowerCase().includes(query.toLowerCase()) ||
-      module.definition?.description?.toLowerCase().includes(query.toLowerCase())
-    );
+
+    const filtered = installedModules.filter((module: any) => {
+      const name = module.definition?.name?.toLowerCase() || '';
+      const desc = module.definition?.description?.toLowerCase() || '';
+      const matches = name.includes(query.toLowerCase()) || desc.includes(query.toLowerCase());
+
+      if (matches) {
+        console.log('[QuickPanel] 匹配到工具:', module.definition?.name);
+      }
+
+      return matches;
+    });
+
+    console.log('[QuickPanel] 搜索结果数量:', filtered.length);
+    return filtered;
   }, [query, installedModules]);
 
   // 快速操作
