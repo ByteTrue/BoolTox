@@ -215,14 +215,23 @@ export class ToolInstallerService {
    */
   async uninstallTool(pluginId: string): Promise<void> {
     const toolDir = path.join(this.toolsDir, pluginId);
-    
+
     const exists = await this.checkToolExists(toolDir);
     if (!exists) {
       throw new Error(`工具 ${pluginId} 未安装`);
     }
 
-    await fs.rm(toolDir, { recursive: true, force: true });
-    logger.info(`[ToolInstaller] 工具已卸载: ${pluginId}`);
+    // 检查是否为符号链接
+    const stat = await fs.lstat(toolDir);
+    if (stat.isSymbolicLink()) {
+      // 符号链接：只删除链接本身，不删除目标
+      await fs.unlink(toolDir);
+      logger.info(`[ToolInstaller] 符号链接已移除: ${pluginId}`);
+    } else {
+      // 普通目录：递归删除
+      await fs.rm(toolDir, { recursive: true, force: true });
+      logger.info(`[ToolInstaller] 工具已卸载: ${pluginId}`);
+    }
   }
 
   /**

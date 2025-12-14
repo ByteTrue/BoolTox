@@ -64,14 +64,12 @@ export class ToolManager {
       await this.scanDir(this.devToolsDir, true);
     }
 
-    // 开发模式：同时扫描 examples/ 和 tools/ 目录
+    // 开发模式：只扫描 examples/ 目录
     if (!app.isPackaged) {
       const examplesDir = path.resolve(process.cwd(), 'examples');
-      const devToolsDir = path.resolve(process.cwd(), 'tools');
 
-      logger.info(`[ToolManager] Dev mode - checking directories:`);
-      logger.info(`[ToolManager]   examplesDir: ${examplesDir}, exists: ${fsSync.existsSync(examplesDir)}, equals devToolsDir: ${examplesDir === this.devToolsDir}`);
-      logger.info(`[ToolManager]   devToolsDir: ${devToolsDir}, exists: ${fsSync.existsSync(devToolsDir)}, equals devToolsDir: ${devToolsDir === this.devToolsDir}`);
+      logger.info(`[ToolManager] Dev mode - checking examples directory:`);
+      logger.info(`[ToolManager]   examplesDir: ${examplesDir}, exists: ${fsSync.existsSync(examplesDir)}`);
 
       // 扫描示例工具
       if (fsSync.existsSync(examplesDir) && examplesDir !== this.devToolsDir) {
@@ -79,11 +77,11 @@ export class ToolManager {
         await this.scanDir(examplesDir, true);
       }
 
-      // 扫描官方工具
-      if (fsSync.existsSync(devToolsDir) && devToolsDir !== this.devToolsDir) {
-        logger.info(`[ToolManager] Scanning dev tools dir: ${devToolsDir}`);
-        await this.scanDir(devToolsDir, true);
-      }
+      // ⚠️ 不再扫描 tools/ 目录（避免扫描到残留目录或符号链接）
+      // tools/ 目录只用于：
+      // - 生产环境：用户安装的工具
+      // - 开发环境：符号链接（指向 booltox-plugins）
+      // 符号链接的工具会在 scanDir(this.toolsDir) 中正常加载
     }
 
     logger.info(`[ToolManager] Loaded ${this.tools.size} tools.`);
