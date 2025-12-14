@@ -56,6 +56,8 @@ class QuickPanelManager {
     // 加载快捷面板页面
     if (process.env.VITE_DEV_SERVER_URL) {
       this.window.loadURL(`${process.env.VITE_DEV_SERVER_URL}#/quick-panel`);
+      // 开发环境：打开开发者工具（方便调试）
+      this.window.webContents.openDevTools({ mode: 'detach' });
     } else {
       this.window.loadFile(path.join(__dirname, '../renderer/index.html'), {
         hash: '/quick-panel',

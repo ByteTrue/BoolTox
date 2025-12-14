@@ -30,7 +30,8 @@ export function AppShell() {
 
   // 监听快捷面板的导航事件
   useEffect(() => {
-    const handleNavigate = (_event: any, route: string) => {
+    const handleNavigate = (route: string) => {
+      console.log('[AppShell] 收到导航请求:', route);
       navigate(route);
     };
 
