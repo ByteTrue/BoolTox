@@ -502,7 +502,7 @@ export class GitOpsService {
     logger.info(`[GitOps] Tarball 下载完成: ${(tarballBuffer.length / 1024 / 1024).toFixed(2)} MB`);
 
     // 解压 tarball（只提取指定工具目录）
-    const tar = (await import('tar')).default;
+    const tar = await import('tar');
     const tempDir = path.join(app.getPath('temp'), `booltox-tool-${Date.now()}`);
 
     await fs.mkdir(tempDir, { recursive: true });
