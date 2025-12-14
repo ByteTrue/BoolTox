@@ -94,6 +94,8 @@ export interface ToolRegistryEntry {
   changelog?: string;
   /** ZIP包下载地址 (运行时生成,不保存在metadata.json) */
   downloadUrl?: string;
+  /** 工具在 Git 仓库中的路径（用于 GitOps 安装）*/
+  gitPath?: string;
   /** 标记是否为二进制工具 */
   isBinaryTool?: boolean;
   /** 二进制工具的多平台资源 */
