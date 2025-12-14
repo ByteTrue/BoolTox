@@ -39,12 +39,12 @@ export function QuickPanel() {
     if (!query) return [];
 
     const filtered = installedModules.filter((module: any) => {
-      const name = module.definition?.name?.toLowerCase() || '';
-      const desc = module.definition?.description?.toLowerCase() || '';
+      const name = module.manifest?.name?.toLowerCase() || '';
+      const desc = module.manifest?.description?.toLowerCase() || '';
       const matches = name.includes(query.toLowerCase()) || desc.includes(query.toLowerCase());
 
       if (matches) {
-        console.log('[QuickPanel] 匹配到工具:', module.definition?.name);
+        console.log('[QuickPanel] 匹配到工具:', module.manifest?.name);
       }
 
       return matches;
@@ -134,16 +134,16 @@ export function QuickPanel() {
                       onClick={() => handleToolClick(module.id)}
                       className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left group"
                     >
-                      <span className="text-3xl">{module.definition.icon}</span>
+                      <span className="text-3xl">{module.manifest.icon || '🔧'}</span>
                       <div className="flex-1">
                         <p className="text-white font-medium group-hover:text-blue-400 transition-colors">
-                          {module.definition.name}
+                          {module.manifest.name}
                         </p>
                         <p className="text-white/60 text-sm line-clamp-1">
-                          {module.definition.description}
+                          {module.manifest.description}
                         </p>
                       </div>
-                      {module.runtime?.launchState === 'running' && (
+                      {module.status === 'running' && (
                         <span className="flex items-center gap-1 text-xs text-green-400">
                           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                           运行中
@@ -181,10 +181,10 @@ export function QuickPanel() {
                           className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-white/10 transition-colors group"
                         >
                           <span className="text-4xl group-hover:scale-110 transition-transform">
-                            {module.definition.icon}
+                            {module.manifest.icon || '🔧'}
                           </span>
                           <span className="text-white text-sm text-center line-clamp-1">
-                            {module.definition.name}
+                            {module.manifest.name}
                           </span>
                         </button>
                       ))}
