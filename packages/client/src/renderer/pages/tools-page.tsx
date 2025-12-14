@@ -11,7 +11,7 @@ import { ModuleCenter } from '../components/module-center';
  */
 export function ToolsPage() {
   return (
-    <div className="h-full overflow-hidden px-8 py-6">
+    <div className="h-full w-full overflow-hidden">
       <ModuleCenter />
     </div>
   );

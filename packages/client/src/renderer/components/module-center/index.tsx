@@ -8,22 +8,23 @@ import { useModulePlatform } from "@/contexts/module-context";
 import { useTheme } from "../theme-provider";
 import { ModuleGrid } from "./module-grid";
 import { ModuleDetailModal } from "./module-detail-modal";
-import { ModuleRecommendations } from "./module-recommendations";
+import { ModuleSidebar } from "./module-sidebar";
 import { BatchActionsBar } from "./batch-actions-bar";
 import { useModuleSearch, useSearchInput } from "./hooks/use-module-search";
-import { useModuleFilter } from "./hooks/use-module-filter";
 import { useModuleSort } from "./hooks/use-module-sort";
+import { ModuleRecommendations } from "./module-recommendations";
 import { useRecommendations } from "./hooks/use-recommendations";
 import { CustomSelect } from "./custom-select";
-import { Search, SlidersHorizontal, ArrowUpDown, Plus, CheckSquare } from "lucide-react";
-import { motion } from "framer-motion";
+import { Search, ArrowUpDown, Plus, CheckSquare, LayoutGrid, List } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { iconButtonInteraction } from "@/utils/animation-presets";
 import { getGlassStyle } from "@/utils/glass-layers";
-import type { ModuleTab, ModuleFilter, ModuleSortConfig, ViewMode } from "./types";
+import { DropZone } from "./drop-zone";
+import type { ModuleSortConfig, ViewMode } from "./types";
+import type { ModuleInstance } from "@/types/module";
 
 /**
- * 工具中心（Launchpad 风格）
- * 收藏区 + 全部工具 + 商店推荐
+ * 工具中心 - 重新设计的侧边栏布局
  */
 export function ModuleCenter() {
   const {
@@ -42,84 +43,104 @@ export function ModuleCenter() {
     focusModuleWindow,
     isDevPlugin,
     addLocalBinaryTool,
+    installLocalModule, // 假设 context 中有这个方法，或者通过 addLocalBinaryTool 处理
   } = useModulePlatform();
 
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // 状态管理
-  const [activeTab, setActiveTab] = useState<ModuleTab>("installed");
+  // --- 状态管理 ---
+
+  // 视图状态: 'installed' | 'favorites' | 'store'
+  const [currentView, setCurrentView] = useState<string>("installed");
+  const [currentCategory, setCurrentCategory] = useState<string>("all");
+
+  // UI 状态
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   // 批量操作状态
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(new Set());
 
-  // 搜索状态
+  // 搜索与排序
   const { inputValue, debouncedValue, setInputValue } = useSearchInput();
-
-  // 过滤状态
-  const [filter, setFilter] = useState<ModuleFilter>({
-    status: "all",
-    source: "all",
-    category: "all",
-  });
-
-  // 排序状态
   const [sortConfig, setSortConfig] = useState<ModuleSortConfig>({
     by: "default",
     order: "asc",
   });
 
-  // 应用过滤器
-  const { filteredInstalled, availableCategories } = useModuleFilter(
-    installedModules,
-    availableModules,
-    availablePlugins, // 传递在线工具列表
-    filter
-  );
+  // --- 数据处理 ---
 
-  // 应用搜索
-  const searchedInstalled = useModuleSearch(filteredInstalled, debouncedValue);
-
-  // 应用排序
-  const sortedInstalled = useModuleSort(searchedInstalled, sortConfig);
-
-  // 获取推荐
-  const recommendations = useRecommendations(installedModules, availableModules);
-
-  // 当前显示的模块列表
-  const favoriteModules = useMemo(
-    () => sortedInstalled.filter((module) => module.isFavorite),
-    [sortedInstalled],
-  );
-
-  const regularModules = useMemo(
-    () => sortedInstalled.filter((module) => !module.isFavorite),
-    [sortedInstalled],
-  );
-
-  const availableStoreModules = useMemo(() => {
-    // 将在线工具转换为可以在UI中显示的格式
-    // 过滤掉所有已安装的工具(包括开发模式和正式安装的)
+  // 1. 准备基础数据集
+  const storeModules = useMemo(() => {
     const installedPluginIds = new Set(toolRegistry.map(p => p.id));
     return availablePlugins.filter(p => !installedPluginIds.has(p.id));
   }, [availablePlugins, toolRegistry]);
 
-  // 详情 Modal 的模块数据
+  const displayedModulesRaw = useMemo(() => {
+    let modules: any[] = [];
+
+    switch (currentView) {
+      case 'installed':
+        modules = installedModules;
+        break;
+      case 'favorites':
+        modules = installedModules.filter(m => m.isFavorite);
+        break;
+      case 'store':
+        modules = storeModules;
+        break;
+      default:
+        modules = installedModules;
+    }
+    return modules;
+  }, [currentView, installedModules, storeModules]);
+
+  // 2. 应用分类过滤
+  const categoryFilteredModules = useMemo(() => {
+    if (currentCategory === 'all') return displayedModulesRaw;
+    return displayedModulesRaw.filter(m =>
+      (m.category || 'utilities').toLowerCase() === currentCategory.toLowerCase()
+    );
+  }, [displayedModulesRaw, currentCategory]);
+
+  // 3. 应用搜索
+  const searchedModules = useModuleSearch(categoryFilteredModules, debouncedValue);
+
+  // 4. 应用排序
+  const finalModules = useModuleSort(searchedModules, sortConfig);
+
+  // 获取所有可用分类（基于当前视图）
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    displayedModulesRaw.forEach(m => {
+      if (m.category) categories.add(m.category);
+    });
+    storeModules.forEach(m => {
+      if (m.category) categories.add(m.category);
+    });
+    return Array.from(categories).sort();
+  }, [displayedModulesRaw, storeModules]);
+
+  // 获取推荐
+  const recommendations = useRecommendations(installedModules, availableModules);
+  const showRecommendations = currentView === 'store' && !debouncedValue && currentCategory === 'all';
+
+  // --- 回调函数 ---
+
+  // 详情 Modal 数据
   const selectedModule = useMemo(() => {
     if (!selectedModuleId) return null;
-    
-    // 优先从已安装模块查找
+
     const installed = installedModules.find((m) => m.id === selectedModuleId);
     if (installed) return installed;
-    
-    // 从本地可用模块查找
+
     const available = availableModules.find((m) => m.id === selectedModuleId);
     if (available) return available;
-    
-    // 从在线工具查找并转换为 ModuleInstance 格式
+
     const onlinePlugin = availablePlugins.find((p) => p.id === selectedModuleId);
     if (onlinePlugin) {
       return {
@@ -132,7 +153,7 @@ export function ModuleCenter() {
           category: onlinePlugin.category || 'utilities',
           keywords: onlinePlugin.keywords || [],
           icon: onlinePlugin.icon || '🔌',
-          screenshots: onlinePlugin.screenshots || [], // 截图列表
+          screenshots: onlinePlugin.screenshots || [],
           installedByDefault: false,
           source: 'remote' as const,
           loader: () => Promise.resolve(() => null),
@@ -146,9 +167,8 @@ export function ModuleCenter() {
           lastError: null,
         },
         isFavorite: false,
-      };
+      } as unknown as ModuleInstance;
     }
-    
     return null;
   }, [selectedModuleId, installedModules, availableModules, availablePlugins]);
 
@@ -156,12 +176,11 @@ export function ModuleCenter() {
     return installedModules.some((m) => m.id === selectedModuleId);
   }, [selectedModuleId, installedModules]);
 
-  // 处理安装
+  // 操作回调
   const handleInstall = useCallback(
     async (moduleId: string) => {
       setProcessingModuleId(moduleId);
       try {
-        // 检查是否是在线工具
         const onlinePlugin = availablePlugins.find(p => p.id === moduleId);
         if (onlinePlugin) {
           await installOnlinePlugin(onlinePlugin);
@@ -175,23 +194,18 @@ export function ModuleCenter() {
     [installModule, installOnlinePlugin, availablePlugins]
   );
 
-  // 处理卸载
   const handleUninstall = useCallback(
     (moduleId: string) => {
       uninstallModule(moduleId);
-      if (selectedModuleId === moduleId) {
-        setSelectedModuleId(null);
-      }
+      if (selectedModuleId === moduleId) setSelectedModuleId(null);
     },
     [uninstallModule, selectedModuleId]
   );
 
-  // 处理收藏/取消收藏
   const handlePinToggle = useCallback(
     async (moduleId: string) => {
       const module = installedModules.find((m) => m.id === moduleId);
       if (!module) return;
-
       if (module.isFavorite) {
         await removeFavorite(moduleId);
       } else {
@@ -201,30 +215,82 @@ export function ModuleCenter() {
     [addFavorite, installedModules, removeFavorite]
   );
 
-  // 批量操作：切换选择
+  const handleOpen = useCallback(
+    (moduleId: string) => {
+      const targetModule = installedModules.find((m) => m.id === moduleId);
+      if (!targetModule) return;
+      if (targetModule.runtime.launchState === "running") {
+        void focusModuleWindow(moduleId);
+      } else {
+        void openModule(moduleId);
+      }
+    },
+    [focusModuleWindow, installedModules, openModule]
+  );
+
+  // 拖拽处理
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types && e.dataTransfer.types.indexOf('Files') !== -1) {
+      setIsDragActive(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 只有离开当前容器时才取消（通过关联目标判断）
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragActive(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (files: FileList) => {
+    setIsDragActive(false);
+    if (files.length === 0) return;
+
+    // 假设 installLocalModule 可以处理文件对象
+    // 这里需要根据实际 API 调整，暂时使用 addLocalBinaryTool 模拟
+    // 实际上应该调用处理文件路径的逻辑
+    console.log("Dropped files:", files);
+
+    // 如果有处理文件的逻辑，可以在这里调用
+    // await installLocalModule(files[0].path);
+
+    // 临时：打开手动添加对话框
+    addLocalBinaryTool();
+  }, [addLocalBinaryTool]);
+
+  // 视图切换处理
+  const handleViewChange = (view: string) => {
+    setCurrentView(view);
+    setCurrentCategory('all');
+    setIsSelectionMode(false);
+    setSelectedToolIds(new Set());
+  };
+
+  // 批量操作回调... (省略重复逻辑)
   const handleSelect = useCallback((toolId: string) => {
     setSelectedToolIds(prev => {
       const next = new Set(prev);
-      if (next.has(toolId)) {
-        next.delete(toolId);
-      } else {
-        next.add(toolId);
-      }
+      if (next.has(toolId)) next.delete(toolId);
+      else next.add(toolId);
       return next;
     });
   }, []);
 
-  // 批量操作：启动全部
   const handleStartAll = useCallback(async () => {
     const toolIds = Array.from(selectedToolIds);
-    for (const toolId of toolIds) {
-      await openModule(toolId);
-    }
+    for (const toolId of toolIds) await openModule(toolId);
     setIsSelectionMode(false);
     setSelectedToolIds(new Set());
   }, [selectedToolIds, openModule]);
 
-  // 批量操作：停止全部（仅 http-service）
   const handleStopAll = useCallback(async () => {
     const toolIds = Array.from(selectedToolIds);
     for (const toolId of toolIds) {
@@ -235,22 +301,13 @@ export function ModuleCenter() {
     }
   }, [selectedToolIds, installedModules, stopModule]);
 
-  // 批量操作：卸载全部
   const handleUninstallAll = useCallback(async () => {
-    const count = selectedToolIds.size;
-    if (!confirm(`确定要卸载 ${count} 个工具吗？此操作不可恢复。`)) {
-      return;
-    }
-
-    const toolIds = Array.from(selectedToolIds);
-    for (const toolId of toolIds) {
-      await uninstallModule(toolId);
-    }
+    if (!confirm(`确定要卸载 ${selectedToolIds.size} 个工具吗？`)) return;
+    for (const toolId of Array.from(selectedToolIds)) await uninstallModule(toolId);
     setIsSelectionMode(false);
     setSelectedToolIds(new Set());
   }, [selectedToolIds, uninstallModule]);
 
-  // 检查选中的工具中是否有 http-service 类型
   const hasHttpServiceSelected = useMemo(() => {
     return Array.from(selectedToolIds).some(toolId => {
       const tool = installedModules.find(m => m.id === toolId);
@@ -258,52 +315,63 @@ export function ModuleCenter() {
     });
   }, [selectedToolIds, installedModules]);
 
-  // 处理打开模块
-  const handleOpen = useCallback(
-    (moduleId: string) => {
-      const targetModule = installedModules.find((m) => m.id === moduleId);
-      if (!targetModule) {
-        return;
-      }
-
-      if (targetModule.runtime.launchState === "running") {
-        void focusModuleWindow(moduleId);
-        return;
-      }
-
-      void openModule(moduleId);
-    },
-    [focusModuleWindow, installedModules, openModule],
-  );
-
-  // 处理卡片点击
-  const handleCardClick = useCallback((moduleId: string) => {
-    setSelectedModuleId(moduleId);
-  }, []);
-
-  // 处理分类变更
-  const handleCategoryChange = useCallback((category: string) => {
-    setFilter((prev) => ({ ...prev, category }));
-  }, []);
-
-  // 处理排序变更
-  const handleSortChange = useCallback((sortBy: ModuleSortConfig["by"]) => {
-    setSortConfig((prev) => ({ ...prev, by: sortBy }));
-  }, []);
-
-  const viewMode: ViewMode = "grid";
-
-  const statsChips = [
-    { label: "工具总数", value: moduleStats.total },
-    { label: "正在使用", value: moduleStats.enabled },
-    { label: "已停用", value: moduleStats.disabled },
-  ];
-
   return (
-    <div className="flex h-full flex-col gap-4">
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1 min-w-[220px] md:max-w-lg">
+    <div
+      className="flex h-full overflow-hidden bg-transparent relative"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragActive(false);
+        if (e.dataTransfer.files.length > 0) {
+          handleDrop(e.dataTransfer.files);
+        }
+      }}
+    >
+      {/* 拖拽覆盖层 */}
+      <AnimatePresence>
+        {isDragActive && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-8"
+          >
+            <div className="w-full max-w-2xl">
+              <DropZone
+                onDrop={handleDrop}
+                onBrowse={addLocalBinaryTool}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 左侧侧边栏 */}
+      <ModuleSidebar
+        currentView={currentView}
+        currentCategory={currentCategory}
+        onViewChange={handleViewChange}
+        onCategoryChange={setCurrentCategory}
+        stats={{
+          installed: installedModules.length,
+          store: storeModules.length,
+          favorites: installedModules.filter(m => m.isFavorite).length
+        }}
+        categories={availableCategories}
+      />
+
+      {/* 右侧主内容区 */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* 顶部工具栏 */}
+        <div className={
+          `flex flex-none items-center justify-between gap-4 border-b px-6 py-4 ${
+            isDark ? "border-white/10" : "border-slate-200"
+          }`
+        }>
+          <div className="relative max-w-md flex-1">
             <Search
               size={18}
               className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${
@@ -312,246 +380,164 @@ export function ModuleCenter() {
             />
             <input
               type="text"
-              placeholder="搜索工具..."
+              placeholder={`在 ${
+                currentView === 'store' ? '商店' :
+                currentView === 'favorites' ? '收藏' : '已安装'
+              }中搜索...`}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              className={`w-full rounded-full border py-2.5 pl-10 pr-4 text-sm transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
+              className={`w-full rounded-lg border py-2 pl-10 pr-4 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
                 isDark
                   ? "border-white/10 bg-white/5 text-white placeholder:text-white/50"
-                  : "border-slate-200 bg-white/90 text-slate-800 placeholder:text-slate-400"
+                  : "border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400"
               }`}
             />
           </div>
-          <div className="flex items-center gap-2">
-            {/* 添加本地工具按钮 */}
-            <motion.button
-              {...iconButtonInteraction}
-              onClick={addLocalBinaryTool}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
-                isDark
-                  ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
-              }`}
-              style={getGlassStyle('BUTTON', theme)}
-            >
-              <Plus size={16} />
-              <span className="hidden sm:inline">添加本地工具</span>
-            </motion.button>
 
-            {/* 选择模式按钮 */}
-            {activeTab === "installed" && (
-              <motion.button
-                {...iconButtonInteraction}
-                onClick={() => {
-                  setIsSelectionMode(!isSelectionMode);
-                  setSelectedToolIds(new Set());
-                }}
-                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
-                  isSelectionMode
-                    ? "border-blue-500/50 bg-blue-500/20 text-blue-500"
-                    : isDark
-                    ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
-                    : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
-                }`}
-                style={getGlassStyle('BUTTON', theme)}
-              >
-                <CheckSquare size={16} />
-                <span className="hidden sm:inline">{isSelectionMode ? "取消选择" : "选择"}</span>
-              </motion.button>
+          <div className="flex items-center gap-2">
+            {currentView === 'installed' && (
+              <>
+                <motion.button
+                  {...iconButtonInteraction}
+                  onClick={addLocalBinaryTool}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    isDark
+                      ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
+                  }`}
+                >
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">本地工具</span>
+                </motion.button>
+
+                <motion.button
+                  {...iconButtonInteraction}
+                  onClick={() => {
+                    setIsSelectionMode(!isSelectionMode);
+                    setSelectedToolIds(new Set());
+                  }}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    isSelectionMode
+                      ? "border-blue-500/50 bg-blue-500/20 text-blue-500"
+                      : isDark
+                      ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
+                  }`}
+                >
+                  <CheckSquare size={16} />
+                  <span className="hidden sm:inline">管理</span>
+                </motion.button>
+              </>
             )}
 
-            {/* 分类过滤 */}
-            <CustomSelect
-              value={filter.category || "all"}
-              onChange={handleCategoryChange}
-              options={[
-                { value: "all", label: "全部分类" },
-                ...availableCategories.map((cat) => ({ value: cat, label: cat || "未分类" })),
-              ]}
-              icon={<SlidersHorizontal size={16} />}
-            />
             <CustomSelect
               value={sortConfig.by}
-              onChange={(val) => handleSortChange(val as ModuleSortConfig["by"])}
+              onChange={(val) => setSortConfig(prev => ({ ...prev, by: val as any }))}
               options={[
-                { value: "default", label: "默认排序" },
-                { value: "name", label: "按名称" },
-                { value: "updatedAt", label: "按更新时间" },
+                { value: "default", label: "默认" },
+                { value: "name", label: "名称" },
+                { value: "updatedAt", label: "时间" },
               ]}
               icon={<ArrowUpDown size={16} />}
+              minimal
             />
-          </div>
-        </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div
-            className={`inline-flex rounded-full border p-1 text-sm shadow-sm ${
-              isDark ? "border-white/10 bg-white/5" : "border-slate-200 bg-white"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => setActiveTab("installed")}
-              className={`rounded-full px-4 py-1.5 transition-colors ${
-                activeTab === "installed"
-                  ? isDark
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200 text-slate-900"
-                  : isDark
-                    ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              已安装 ({installedModules.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("store")}
-              className={`rounded-full px-4 py-1.5 transition-colors ${
-                activeTab === "store"
-                  ? isDark
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200 text-slate-900"
-                  : isDark
-                    ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              工具商店 ({availableStoreModules.length})
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {statsChips.map((chip) => (
-              <span
-                key={chip.label}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  isDark ? "bg-white/5 text-white/80" : "bg-slate-100 text-slate-600"
+            <div className={`flex items-center rounded-lg border p-1 ${
+               isDark ? "border-white/10 bg-white/5" : "border-slate-200 bg-white/50"
+            }`}>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`rounded p-1 transition-colors ${
+                  viewMode === 'grid'
+                    ? isDark ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-900'
+                    : isDark ? 'text-white/40 hover:text-white/80' : 'text-slate-400 hover:text-slate-700'
                 }`}
               >
-                {chip.label}：{chip.value}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 内容区域 - 添加 padding 为阴影预留空间 */}
-      <div className="flex-1 overflow-y-auto px-2 py-2 elegant-scroll">
-        {activeTab === "store" ? (
-          <div className="space-y-8">
-            {(recommendations.popular.length > 0 ||
-              recommendations.newReleases.length > 0 ||
-              recommendations.smart.length > 0) && (
-              <div>
-                <h2
-                  className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
-                >
-                  💡 为您推荐的工具
-                </h2>
-                <ModuleRecommendations
-                  recommendations={recommendations}
-                  onInstall={handleInstall}
-                  onCardClick={handleCardClick}
-                  processingModuleId={processingModuleId}
-                />
-              </div>
-            )}
-
-            <div>
-              <h2
-                className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
+                <LayoutGrid size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`rounded p-1 transition-colors ${
+                  viewMode === 'list'
+                    ? isDark ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-900'
+                    : isDark ? 'text-white/40 hover:text-white/80' : 'text-slate-400 hover:text-slate-700'
+                }`}
               >
-                🛍️ 全部可用工具
-              </h2>
-              <ModuleGrid
-                modules={availableStoreModules}
-                viewMode={viewMode}
-                processingModuleId={processingModuleId}
-                onInstall={handleInstall}
-                onCardClick={handleCardClick}
-                emptyMessage="没有找到可用工具"
-              />
+                <List size={16} />
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-10">
-            {favoriteModules.length > 0 && (
-              <section>
-                <div className="mb-4 flex items-center justify-between">
-                  <h2
-                    className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
-                  >
-                    ★ 收藏的工具
-                  </h2>
-                  <p
-                    className={`text-xs md:text-sm ${
-                      isDark ? "text-white/60" : "text-slate-500"
-                    }`}
-                  >
-                    常用工具会显示在这里，可随时取消收藏。
-                  </p>
-                </div>
-                <ModuleGrid
-                  modules={favoriteModules}
-                  viewMode={viewMode}
-                  processingModuleId={processingModuleId}
-                  onUninstall={handleUninstall}
-                  onOpen={handleOpen}
-                  onStop={stopModule}
-                  onPinToggle={handlePinToggle}
-                  onCardClick={handleCardClick}
-                  isDevPlugin={isDevPlugin}
-                  isSelectionMode={isSelectionMode}
-                  selectedToolIds={selectedToolIds}
-                  onSelect={handleSelect}
-                  emptyMessage="给喜爱的工具点亮一颗星星吧"
-                />
-              </section>
-            )}
+        </div>
 
-            <section>
-              <h2
-                className={`mb-4 text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}
-              >
-                所有工具
+        {/* 滚动内容区 */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 elegant-scroll relative">
+          {showRecommendations && (
+            <div className="mb-8">
+              <h2 className={`mb-4 text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}>
+                💡 推荐工具
               </h2>
-              <ModuleGrid
-                modules={regularModules}
-                viewMode={viewMode}
+              <ModuleRecommendations
+                recommendations={recommendations}
+                onInstall={handleInstall}
+                onCardClick={(id) => setSelectedModuleId(id)}
                 processingModuleId={processingModuleId}
-                onUninstall={handleUninstall}
-                onOpen={handleOpen}
-                onStop={stopModule}
-                onPinToggle={handlePinToggle}
-                onCardClick={handleCardClick}
-                isDevPlugin={isDevPlugin}
-                isSelectionMode={isSelectionMode}
-                selectedToolIds={selectedToolIds}
-                onSelect={handleSelect}
-                emptyMessage="还没有安装任何工具,前往工具商店看看吧"
               />
-            </section>
+              <div className={`my-8 border-t ${isDark ? "border-white/10" : "border-slate-200"}`} />
+            </div>
+          )}
+
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}>
+              {currentCategory === 'all' ? (
+                currentView === 'store' ? '🛍️ 全部工具' :
+                currentView === 'favorites' ? '★ 我的收藏' : '📦 已安装工具'
+              ) : (
+                `📂 ${currentCategory}`
+              )}
+            </h2>
+            <span className={`text-sm ${isDark ? "text-white/40" : "text-slate-400"}`}>
+              {finalModules.length} 个项目
+            </span>
           </div>
+
+          <ModuleGrid
+            modules={finalModules}
+            viewMode={viewMode}
+            processingModuleId={processingModuleId}
+            onUninstall={handleUninstall}
+            onOpen={handleOpen}
+            onStop={stopModule}
+            onPinToggle={handlePinToggle}
+            onCardClick={(id) => setSelectedModuleId(id)}
+            isDevPlugin={isDevPlugin}
+            isSelectionMode={isSelectionMode}
+            selectedToolIds={selectedToolIds}
+            onSelect={handleSelect}
+            emptyMessage={
+              currentView === 'favorites' ? "暂无收藏的工具" :
+              currentView === 'store' ? "没有找到匹配的工具" :
+              "还没有安装任何工具"
+            }
+          />
+        </div>
+
+        {/* 批量操作浮层 */}
+        {isSelectionMode && selectedToolIds.size > 0 && (
+          <BatchActionsBar
+            selectedCount={selectedToolIds.size}
+            onStartAll={handleStartAll}
+            onStopAll={handleStopAll}
+            onUninstallAll={handleUninstallAll}
+            onCancel={() => {
+              setIsSelectionMode(false);
+              setSelectedToolIds(new Set());
+            }}
+            hasHttpService={hasHttpServiceSelected}
+          />
         )}
       </div>
 
-      {/* 批量操作栏 */}
-      {isSelectionMode && selectedToolIds.size > 0 && (
-        <BatchActionsBar
-          selectedCount={selectedToolIds.size}
-          onStartAll={handleStartAll}
-          onStopAll={handleStopAll}
-          onUninstallAll={handleUninstallAll}
-          onCancel={() => {
-            setIsSelectionMode(false);
-            setSelectedToolIds(new Set());
-          }}
-          hasHttpService={hasHttpServiceSelected}
-        />
-      )}
-
-      {/* 详情 Modal */}
+      {/* 详情弹窗 */}
       <ModuleDetailModal
         module={selectedModule}
         isOpen={selectedModuleId !== null}

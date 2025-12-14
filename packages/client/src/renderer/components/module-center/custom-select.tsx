@@ -20,6 +20,7 @@ interface CustomSelectProps {
   onChange: (value: string) => void;
   icon?: ReactNode;
   placeholder?: string;
+  minimal?: boolean; // 新增：是否使用极简样式
 }
 
 export function CustomSelect({
@@ -28,6 +29,7 @@ export function CustomSelect({
   onChange,
   icon,
   placeholder = "请选择",
+  minimal = false,
 }: CustomSelectProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -67,13 +69,19 @@ export function CustomSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-[background-color,box-shadow] duration-250 ease-swift focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
-          isDark ? "text-white hover:bg-white/10" : "text-slate-800 hover:bg-white/80"
+        className={`flex items-center gap-2 rounded-lg transition-all duration-200 focus:outline-none ${
+          minimal
+            ? `px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/10 ${
+                isDark ? "text-white/80" : "text-slate-700"
+              }`
+            : `border px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/50 ${
+                isDark ? "text-white hover:bg-white/10" : "text-slate-800 hover:bg-white/80"
+              }`
         }`}
-        style={getGlassStyle('BUTTON', theme)}
+        style={!minimal ? getGlassStyle('BUTTON', theme) : undefined}
       >
         {icon && <span className={isDark ? "text-white/60" : "text-slate-500"}>{icon}</span>}
-        <span>{selectedOption?.label || placeholder}</span>
+        <span className={minimal ? "text-sm" : ""}>{selectedOption?.label || placeholder}</span>
         <ChevronDown
           size={16}
           className={`transition-transform ${isOpen ? "rotate-180" : ""} ${
@@ -90,10 +98,10 @@ export function CustomSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 z-[9999] mt-2 min-w-[200px] rounded-2xl border"
+            className="absolute right-0 z-[9999] mt-2 min-w-[160px] rounded-xl border"
             style={dropdownStyle}
           >
-            <div className="max-h-[300px] overflow-y-auto p-2">
+            <div className="max-h-[300px] overflow-y-auto p-1.5">
               {options.map((option) => {
                 const isSelected = option.value === value;
                 return (
@@ -104,24 +112,16 @@ export function CustomSelect({
                       onChange(option.value);
                       setIsOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between gap-2 rounded-xl px-4 py-2.5 text-sm transition-[background-color,box-shadow] duration-150 ease-swift ${
+                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${
                       isSelected
-                        ? "bg-blue-500/30 text-blue-500 font-semibold shadow-lg"
+                        ? "bg-blue-500/10 text-blue-500 font-medium"
                         : isDark
-                          ? "text-white hover:bg-white/15 hover:shadow-md"
-                          : "text-slate-800 hover:bg-white/50 hover:shadow-md"
+                          ? "text-white/80 hover:bg-white/10"
+                          : "text-slate-700 hover:bg-slate-100"
                     }`}
-                    style={
-                      !isSelected
-                        ? {
-                            backdropFilter: "blur(8px)",
-                            WebkitBackdropFilter: "blur(8px)",
-                          }
-                        : undefined
-                    }
                   >
                     <span>{option.label}</span>
-                    {isSelected && <Check size={16} className="animate-in fade-in zoom-in duration-200" />}
+                    {isSelected && <Check size={14} className="animate-in fade-in zoom-in duration-200" />}
                   </button>
                 );
               })}
