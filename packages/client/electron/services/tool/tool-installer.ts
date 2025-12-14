@@ -13,6 +13,7 @@ import AdmZip from 'adm-zip';
 import axios from 'axios';
 import type { ToolRegistryEntry, ToolInstallProgress } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
+import { gitOpsService } from '../git-ops.service.js';
 
 const logger = createLogger('ToolInstaller');
 
@@ -44,16 +45,12 @@ export class ToolInstallerService {
     onProgress?: (progress: ToolInstallProgress) => void,
     window?: BrowserWindow
   ): Promise<string> {
-    // 新增：判断是否为二进制工具
+    // 判断是否为二进制工具
     if (entry.isBinaryTool) {
       return await this.installBinaryTool(entry, onProgress, window);
     }
 
-    const { id, version, hash, downloadUrl } = entry;
-
-    if (!downloadUrl) {
-      throw new Error(`工具 ${id} 缺少下载地址`);
-    }
+    const { id } = entry;
 
     // 检查是否已在下载
     if (this.downloadingTools.has(id)) {
@@ -61,11 +58,10 @@ export class ToolInstallerService {
     }
 
     const toolDir = path.join(this.toolsDir, id);
-    
+
     // 检查是否已安装
     const exists = await this.checkToolExists(toolDir);
     if (exists) {
-      // TODO: 检查版本,支持更新
       throw new Error(`工具 ${id} 已安装`);
     }
 
@@ -73,11 +69,72 @@ export class ToolInstallerService {
     this.downloadingTools.set(id, abortController);
 
     try {
-      // 1. 下载
-      this.reportProgress(onProgress, window, {
-        stage: 'downloading',
-        percent: 0,
-        message: '正在下载工具包...',
+      // 优先使用 GitOps 下载（从 Git 仓库直接拉取源码）
+      if (entry.gitPath && !entry.downloadUrl) {
+        return await this.installFromGitOps(entry, onProgress, window);
+      }
+
+      // 降级到 .zip 下载（兼容旧工具或有 Release 的工具）
+      if (entry.downloadUrl) {
+        return await this.installFromZip(entry, onProgress, window, abortController);
+      }
+
+      throw new Error(`工具 ${id} 缺少安装源（需要 gitPath 或 downloadUrl）`);
+    } finally {
+      this.downloadingTools.delete(id);
+    }
+  }
+
+  /**
+   * 从 GitOps 安装工具（直接从 Git 仓库下载源码）
+   */
+  private async installFromGitOps(
+    entry: ToolRegistryEntry,
+    onProgress?: (progress: ToolInstallProgress) => void,
+    window?: BrowserWindow
+  ): Promise<string> {
+    const { id, gitPath } = entry;
+
+    if (!gitPath) {
+      throw new Error(`工具 ${id} 缺少 gitPath`);
+    }
+
+    const toolDir = path.join(this.toolsDir, id);
+
+    this.reportProgress(onProgress, window, {
+      stage: 'downloading',
+      percent: 50,
+      message: '正在从 Git 仓库下载源码...',
+    });
+
+    // 使用 GitOpsService 下载
+    await gitOpsService.downloadToolSource(gitPath, toolDir);
+
+    this.reportProgress(onProgress, window, {
+      stage: 'completed',
+      percent: 100,
+      message: '安装完成',
+    });
+
+    return toolDir;
+  }
+
+  /**
+   * 从 .zip 文件安装工具（兼容旧流程）
+   */
+  private async installFromZip(
+    entry: ToolRegistryEntry,
+    onProgress?: (progress: ToolInstallProgress) => void,
+    window?: BrowserWindow,
+    abortController: AbortController
+  ): Promise<string> {
+    const { id, version, hash, downloadUrl } = entry;
+
+    if (!downloadUrl) {
+      throw new Error(`工具 ${id} 缺少下载地址`);
+    }
+
+    const toolDir = path.join(this.toolsDir, id);
       });
 
       const tempZipPath = path.join(this.tempDir, `${id}-${version}.zip`);

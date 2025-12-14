@@ -18,6 +18,7 @@ import type { ToolRegistryEntry } from '@booltox/shared';
 import { app } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import { createLogger } from '../utils/logger.js';
 
 export type GitProvider = 'github' | 'gitlab';
@@ -448,6 +449,103 @@ export class GitOpsService {
    */
   getFileUrl(filePath: string): string {
     return this.getRawUrl(filePath);
+  }
+
+  /**
+   * 下载工具源码（从 Git tarball）
+   * 支持 GitHub / GitLab / 私有化 GitLab
+   *
+   * @param toolPath - 工具在仓库中的路径（如 'uiautodev'）
+   * @param targetDir - 目标目录（如 '~/.booltox/tools/com.booltox.uiautodev'）
+   * @param config - 可选的仓库配置（默认使用 PLUGIN_REPO_CONFIG）
+   */
+  async downloadToolSource(
+    toolPath: string,
+    targetDir: string,
+    config: Partial<GitOpsConfig> = {}
+  ): Promise<void> {
+    const repoConfig = { ...PLUGIN_REPO_CONFIG, ...config };
+    const { provider, owner, repo, branch, baseUrl, token } = repoConfig;
+
+    logger.info(`[GitOps] 下载工具源码: ${toolPath} from ${provider}://${owner}/${repo}/${branch}`);
+
+    let tarballUrl = '';
+    const headers: Record<string, string> = {};
+
+    // 构建 tarball URL
+    if (provider === 'github') {
+      // GitHub API
+      tarballUrl = `https://api.github.com/repos/${owner}/${repo}/tarball/${branch}`;
+      if (token) {
+        headers['Authorization'] = `token ${token}`;
+      }
+      headers['Accept'] = 'application/vnd.github.v3+json';
+    } else {
+      // GitLab API
+      const host = baseUrl || 'https://gitlab.com';
+      const projectId = encodeURIComponent(`${owner}/${repo}`);
+      tarballUrl = `${host}/api/v4/projects/${projectId}/repository/archive.tar.gz?sha=${branch}`;
+      if (token) {
+        headers['PRIVATE-TOKEN'] = token;
+      }
+    }
+
+    // 下载 tarball
+    logger.info(`[GitOps] 下载 tarball: ${tarballUrl}`);
+    const response = await fetch(tarballUrl, { headers });
+
+    if (!response.ok) {
+      throw new Error(`下载失败: ${response.statusText}`);
+    }
+
+    const tarballBuffer = Buffer.from(await response.arrayBuffer());
+    logger.info(`[GitOps] Tarball 下载完成: ${(tarballBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+    // 解压 tarball（只提取指定工具目录）
+    const tar = (await import('tar')).default;
+    const tempDir = path.join(app.getPath('temp'), `booltox-tool-${Date.now()}`);
+
+    await fs.mkdir(tempDir, { recursive: true });
+
+    try {
+      // 写入临时文件（tar 需要从文件读取）
+      const tempTarPath = path.join(tempDir, 'temp.tar.gz');
+      await fs.writeFile(tempTarPath, tarballBuffer);
+
+      // 解压整个 tarball
+      await tar.extract({
+        file: tempTarPath,
+        cwd: tempDir,
+      });
+
+      // 删除临时 tar 文件
+      await fs.unlink(tempTarPath);
+
+      // 查找工具目录（tarball 顶层目录名不固定）
+      const entries = await fs.readdir(tempDir);
+      if (entries.length === 0) {
+        throw new Error('Tarball 解压后为空');
+      }
+
+      // 顶层目录（如 'ByteTrue-booltox-plugins-abc123'）
+      const topDir = entries[0];
+      const toolSourceDir = path.join(tempDir, topDir, toolPath);
+
+      if (!fsSync.existsSync(toolSourceDir)) {
+        throw new Error(`工具目录未找到: ${toolPath}`);
+      }
+
+      // 确保目标目录的父目录存在
+      await fs.mkdir(path.dirname(targetDir), { recursive: true });
+
+      // 移动到目标目录
+      await fs.rename(toolSourceDir, targetDir);
+
+      logger.info(`[GitOps] 工具源码已安装到: ${targetDir}`);
+    } finally {
+      // 清理临时目录
+      await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
   }
 }
 
