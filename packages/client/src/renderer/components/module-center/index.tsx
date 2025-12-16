@@ -3,11 +3,12 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useModulePlatform } from "@/contexts/module-context";
 import { useTheme } from "../theme-provider";
 import { ModuleGrid } from "./module-grid";
+import { ModuleStoreGrouped } from "./module-store-grouped";
 import { ModuleDetailModal } from "./module-detail-modal";
 import { ModuleSidebar } from "./module-sidebar";
 import { BatchActionsBar } from "./batch-actions-bar";
@@ -23,6 +24,7 @@ import { getGlassStyle } from "@/utils/glass-layers";
 import { DropZone } from "./drop-zone";
 import type { ModuleSortConfig, ViewMode } from "./types";
 import type { ModuleInstance } from "@/types/module";
+import type { ToolSourceConfig } from "@booltox/shared";
 
 /**
  * 工具中心 - 重新设计的侧边栏布局
@@ -73,6 +75,22 @@ export function ModuleCenter() {
     order: "asc",
   });
 
+  // 工具源列表（用于侧边栏显示）
+  const [toolSources, setToolSources] = useState<ToolSourceConfig[]>([]);
+
+  useEffect(() => {
+    const loadToolSources = async () => {
+      try {
+        const sources = await window.ipc.invoke('tool-sources:list') as ToolSourceConfig[] | undefined;
+        setToolSources(sources || []);
+      } catch (error) {
+        console.error('[ModuleCenter] Failed to load tool sources:', error);
+        setToolSources([]);
+      }
+    };
+    loadToolSources();
+  }, []);
+
   // --- 数据处理 ---
 
   // 1. 准备基础数据集
@@ -103,18 +121,19 @@ export function ModuleCenter() {
         lastError: null,
       },
       isFavorite: false,
-      _sourceId: (plugin as any).sourceId,
-    } as ModuleInstance & { _sourceId?: string }));
+      sourceId: plugin.sourceId || 'unknown',
+      sourceName: plugin.sourceName || '未知来源',
+    } as ModuleInstance));
   }, [availablePlugins, toolRegistry]);
 
   // 官方工具（来自官方工具源）
   const officialTools = useMemo(() => {
-    return allAvailableModules.filter((m: any) => m._sourceId === 'official');
+    return allAvailableModules.filter(m => m.sourceId === 'official');
   }, [allAvailableModules]);
 
   // 自定义工具（来自非官方工具源）
   const customTools = useMemo(() => {
-    return allAvailableModules.filter((m: any) => m._sourceId && m._sourceId !== 'official');
+    return allAvailableModules.filter(m => m.sourceId && m.sourceId !== 'official');
   }, [allAvailableModules]);
 
   // 未安装的工具（用于旧的 store 视图）
@@ -122,33 +141,65 @@ export function ModuleCenter() {
     return allAvailableModules.filter(m => !m.runtime.installed);
   }, [allAvailableModules]);
 
+  // 计算运行中的工具数
+  const runningCount = useMemo(() => {
+    return installedModules.filter(m => m.runtime.launchState === 'running').length;
+  }, [installedModules]);
+
+  // 计算每个工具源的可安装工具数量
+  const sourceToolCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allAvailableModules.forEach(m => {
+      if (!m.runtime.installed && m.sourceId) {
+        counts[m.sourceId] = (counts[m.sourceId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [allAvailableModules]);
+
   const displayedModulesRaw = useMemo(() => {
     let modules: any[] = [];
 
-    switch (currentView) {
-      case 'installed':
-        modules = installedModules;
-        break;
-      case 'favorites':
-        modules = installedModules.filter(m => m.isFavorite);
-        break;
-      case 'store':
-        // 旧的商店视图：只显示未安装的
-        modules = storeModules;
-        break;
-      case 'official':
-        // 官方工具商店：只显示未安装的官方工具
-        modules = officialTools.filter(m => !m.runtime.installed);
-        break;
-      case 'custom':
-        // 自定义工具：只显示未安装的自定义工具
-        modules = customTools.filter(m => !m.runtime.installed);
-        break;
-      default:
-        modules = installedModules;
+    // 检查是否为动态工具源视图（格式：source:sourceId）
+    if (currentView.startsWith('source:')) {
+      const sourceId = currentView.replace('source:', '');
+      modules = allAvailableModules.filter(m =>
+        m.sourceId === sourceId && !m.runtime.installed
+      );
+    } else {
+      switch (currentView) {
+        case 'installed':
+          modules = installedModules;
+          break;
+        case 'favorites':
+          modules = installedModules.filter(m => m.isFavorite);
+          break;
+        case 'running':
+          // 运行中的工具
+          modules = installedModules.filter(m => m.runtime.launchState === 'running');
+          break;
+        case 'store-grouped':
+          // 工具市场：按工具源分组展示（保留所有未安装工具用于分组）
+          modules = allAvailableModules.filter(m => !m.runtime.installed);
+          break;
+        case 'store':
+          // 旧的商店视图：只显示未安装的
+          modules = storeModules;
+          break;
+        case 'official':
+          // 官方工具商店：只显示未安装的官方工具
+          modules = officialTools.filter(m => !m.runtime.installed);
+          break;
+        case 'custom':
+          // 自定义工具：只显示未安装的自定义工具（来自远程工具源）
+          modules = customTools.filter(m => !m.runtime.installed);
+          break;
+        default:
+          modules = installedModules;
+      }
     }
     return modules;
-  }, [currentView, installedModules, storeModules, officialTools, customTools]);
+  }, [currentView, installedModules, storeModules, officialTools, customTools, allAvailableModules]);
 
   // 2. 应用分类过滤
   const categoryFilteredModules = useMemo(() => {
@@ -412,11 +463,14 @@ export function ModuleCenter() {
         stats={{
           installed: installedModules.length,
           store: storeModules.length,
-          official: officialTools.length,
-          custom: customTools.length,
-          favorites: installedModules.filter(m => m.isFavorite).length
+          official: officialTools.filter(m => !m.runtime.installed).length,
+          custom: customTools.filter(m => !m.runtime.installed).length,
+          favorites: installedModules.filter(m => m.isFavorite).length,
+          running: runningCount,
+          sourceCount: sourceToolCounts,
         }}
         categories={availableCategories}
+        toolSources={toolSources}
       />
 
       {/* 右侧主内容区 */}
@@ -545,10 +599,13 @@ export function ModuleCenter() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}>
               {currentCategory === 'all' ? (
+                currentView === 'running' ? '▶️ 运行中' :
                 currentView === 'store' ? '🛍️ 全部工具' :
-                currentView === 'official' ? '🏪 官方工具商店' :
-                currentView === 'custom' ? '📦 自定义工具' :
-                currentView === 'favorites' ? '★ 我的收藏' :
+                currentView === 'official' ? '🏪 官方工具库' :
+                currentView === 'custom' ? '🌐 社区工具' :
+                currentView === 'favorites' ? '⭐ 我的收藏' :
+                currentView.startsWith('source:') ?
+                  `📂 ${allAvailableModules.find(m => m.sourceId === currentView.replace('source:', ''))?.sourceName || '工具源'}` :
                 '📦 已安装工具'
               ) : (
                 `📂 ${currentCategory}`

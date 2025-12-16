@@ -50,6 +50,8 @@ export interface ModuleInstance {
   favoriteOrder?: number;
   favoritedAt?: string;
   isDev?: boolean;
+  sourceId?: string;      // 工具来源 ID（官方/自定义工具源）
+  sourceName?: string;    // 工具来源名称（用于 UI 显示）
 }
 
 export interface ModuleStats {

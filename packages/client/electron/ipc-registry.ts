@@ -346,6 +346,11 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
     // 如果是本地工具源，扫描工具并保存引用
     if (newRepo.type === 'local' && newRepo.localPath) {
       try {
+        // 确保 localToolRefs 已初始化
+        if (!config.localToolRefs) {
+          config.localToolRefs = [];
+        }
+
         const newRefs = await scanLocalToolSource(newRepo);
         config.localToolRefs.push(...newRefs);
         logger.info(`[IPC] Added ${newRefs.length} local tool references from ${newRepo.name}`);
@@ -355,7 +360,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
     }
 
     configService.set('toolSources', config);
-    logger.info(`[IPC] Added tool source: ${newRepo.name}`);
+    logger.info(`[IPC] Added tool source: ${newRepo.id}`);
 
     // 清除缓存，强制重新加载工具列表
     gitOpsService['cache']?.clear();
@@ -607,6 +612,88 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
     });
 
     return result.filePaths[0] || null;
+  });
+
+  // ==================== 文件系统（工具配置）====================
+
+  /**
+   * 检测工具配置文件
+   * 检查目录中是否存在 booltox.json 或 booltox-index.json
+   */
+  ipcMain.handle('fs:detectToolConfig', async (_event, localPath: string) => {
+    try {
+      const booltoxPath = path.join(localPath, 'booltox.json');
+      const indexPath = path.join(localPath, 'booltox-index.json');
+
+      const [hasBooltoxJson, hasBooltoxIndex] = await Promise.all([
+        fsPromises.access(booltoxPath).then(() => true).catch(() => false),
+        fsPromises.access(indexPath).then(() => true).catch(() => false),
+      ]);
+
+      let booltoxData = null;
+      let indexData = null;
+
+      if (hasBooltoxJson) {
+        try {
+          const content = await fsPromises.readFile(booltoxPath, 'utf-8');
+          booltoxData = JSON.parse(content);
+        } catch (error) {
+          logger.warn(`Failed to parse booltox.json: ${error}`);
+        }
+      }
+
+      if (hasBooltoxIndex) {
+        try {
+          const content = await fsPromises.readFile(indexPath, 'utf-8');
+          indexData = JSON.parse(content);
+        } catch (error) {
+          logger.warn(`Failed to parse booltox-index.json: ${error}`);
+        }
+      }
+
+      return {
+        hasBooltoxJson,
+        hasBooltoxIndex,
+        booltoxData,
+        indexData,
+      };
+    } catch (error) {
+      logger.error('Failed to detect tool config:', error);
+      return {
+        hasBooltoxJson: false,
+        hasBooltoxIndex: false,
+      };
+    }
+  });
+
+  /**
+   * 写入工具配置文件（booltox.json）
+   */
+  ipcMain.handle('fs:writeToolConfig', async (_event, localPath: string, config: any) => {
+    try {
+      const configPath = path.join(localPath, 'booltox.json');
+      await fsPromises.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+      logger.info(`Generated booltox.json at: ${configPath}`);
+      return { success: true };
+    } catch (error) {
+      logger.error('Failed to write tool config:', error);
+      throw new Error(error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  /**
+   * 写入工具索引文件（booltox-index.json）
+   */
+  ipcMain.handle('fs:writeToolIndex', async (_event, localPath: string, indexData: { tools: Array<{ id: string; path: string }> }) => {
+    try {
+      const indexPath = path.join(localPath, 'booltox-index.json');
+      await fsPromises.writeFile(indexPath, JSON.stringify(indexData, null, 2), 'utf-8');
+      logger.info(`Generated booltox-index.json at: ${indexPath}`);
+      return { success: true };
+    } catch (error) {
+      logger.error('Failed to write tool index:', error);
+      throw new Error(error instanceof Error ? error.message : String(error));
+    }
   });
 
   // ==================== Python 环境 ====================

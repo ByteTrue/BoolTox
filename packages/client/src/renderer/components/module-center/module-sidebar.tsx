@@ -13,9 +13,13 @@ import {
   Store,
   Package,
   Plus,
-  FolderOpen
+  FolderOpen,
+  Play,
+  Settings,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/theme-provider";
+import type { ToolSourceConfig } from "@booltox/shared";
 
 // 辅助函数：生成简单的类名合并
 function cn(...classes: (string | undefined | null | false)[]) {
@@ -69,20 +73,35 @@ function SidebarItem({ icon, label, active, count, onClick, isDark }: SidebarIte
   );
 }
 
+// 区域标题组件
+function SectionHeader({ children, isDark }: { children: React.ReactNode; isDark: boolean }) {
+  return (
+    <h3 className={cn(
+      "mb-2 px-3 text-xs font-semibold uppercase tracking-wider",
+      isDark ? "text-slate-500" : "text-slate-400"
+    )}>
+      {children}
+    </h3>
+  );
+}
+
 interface ModuleSidebarProps {
-  currentView: string; // 'installed' | 'store' | 'official' | 'custom' | 'favorites' | 'all'
+  currentView: string; // 'installed' | 'store' | 'official' | 'custom' | 'favorites' | 'running' | 'source:xxx'
   currentCategory: string; // 'all' | categoryName
   onViewChange: (view: string) => void;
   onCategoryChange: (category: string) => void;
-  onAddToolSource?: () => void; // 新增：添加工具源回调
+  onAddToolSource?: () => void;
   stats: {
     installed: number;
     store: number;
     official: number;
     custom: number;
     favorites: number;
+    running: number;                          // 新增
+    sourceCount?: Record<string, number>;     // 新增：每个源的工具数
   };
   categories: string[];
+  toolSources?: ToolSourceConfig[];          // 新增：工具源列表
 }
 
 export function ModuleSidebar({
@@ -93,76 +112,126 @@ export function ModuleSidebar({
   onAddToolSource,
   stats,
   categories,
+  toolSources = [],
 }: ModuleSidebarProps) {
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // 过滤自定义工具源（非官方的远程源）
+  const customSources = toolSources.filter(s =>
+    s.id !== 'official' && s.type === 'remote'
+  );
 
   return (
     <div className={cn(
       "flex h-full w-60 flex-col gap-6 border-r px-4 py-6",
       isDark ? "border-white/10" : "border-slate-200"
     )}>
-      {/* 核心导航 */}
+      {/* 区域 1: 我的工具 */}
       <div className="space-y-1">
-        <h3 className={cn(
-          "mb-2 px-3 text-xs font-semibold uppercase tracking-wider",
-          isDark ? "text-slate-500" : "text-slate-400"
-        )}>
-          库
-        </h3>
+        <SectionHeader isDark={isDark}>📦 我的工具</SectionHeader>
 
         <SidebarItem
           icon={<LayoutGrid size={18} />}
-          label="已安装"
+          label="全部已安装"
           active={currentView === 'installed'}
           count={stats.installed}
           onClick={() => onViewChange('installed')}
           isDark={isDark}
         />
+
         <SidebarItem
           icon={<Star size={18} />}
-          label="我的收藏"
+          label="收藏"
           active={currentView === 'favorites'}
           count={stats.favorites}
           onClick={() => onViewChange('favorites')}
           isDark={isDark}
         />
+
+        <SidebarItem
+          icon={<Play size={18} />}
+          label="运行中"
+          active={currentView === 'running'}
+          count={stats.running}
+          onClick={() => onViewChange('running')}
+          isDark={isDark}
+        />
       </div>
 
-      {/* 发现 */}
-      <div className="space-y-1">
-        <h3 className={cn(
-          "mb-2 px-3 text-xs font-semibold uppercase tracking-wider",
-          isDark ? "text-slate-500" : "text-slate-400"
+      {/* 区域 2: 工具市场 */}
+      <div className="space-y-1 border-t pt-4" style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}>
+        <SectionHeader isDark={isDark}>🛍️ 工具市场</SectionHeader>
+
+        {/* 浏览工具源子标题 */}
+        <div className={cn(
+          "px-3 mb-1 text-xs",
+          isDark ? "text-slate-600" : "text-slate-500"
         )}>
-          发现
-        </h3>
+          📂 浏览工具源
+        </div>
+
         <SidebarItem
           icon={<Store size={18} />}
-          label="官方工具商店"
+          label="官方工具库"
           active={currentView === 'official'}
           count={stats.official}
           onClick={() => onViewChange('official')}
           isDark={isDark}
         />
-        <SidebarItem
-          icon={<Package size={18} />}
-          label="自定义工具"
-          active={currentView === 'custom'}
-          count={stats.custom}
-          onClick={() => onViewChange('custom')}
-          isDark={isDark}
-        />
+
+        {/* 动态显示自定义工具源 */}
+        {customSources.map(source => (
+          <SidebarItem
+            key={source.id}
+            icon={<Package size={18} />}
+            label={source.name}
+            active={currentView === `source:${source.id}`}
+            count={stats.sourceCount?.[source.id] || 0}
+            onClick={() => onViewChange(`source:${source.id}`)}
+            isDark={isDark}
+          />
+        ))}
+
+        {/* 添加工具源按钮 */}
+        {onAddToolSource && (
+          <button
+            onClick={onAddToolSource}
+            className={cn(
+              "mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              isDark
+                ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+                : "bg-purple-100 text-purple-600 hover:bg-purple-200"
+            )}
+          >
+            <Plus size={18} />
+            <span>添加工具源</span>
+          </button>
+        )}
       </div>
 
-      {/* 分类 */}
-      <div className="flex-1 overflow-y-auto space-y-1 elegant-scroll pr-2">
-        <h3 className={cn(
-          "mb-2 px-3 text-xs font-semibold uppercase tracking-wider",
-          isDark ? "text-slate-500" : "text-slate-400"
-        )}>
-          分类
-        </h3>
+      {/* 区域 3: 工具源管理 */}
+      <div className="border-t pt-4" style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}>
+        <SectionHeader isDark={isDark}>管理</SectionHeader>
+
+        <button
+          onClick={() => navigate('/tools/sources')}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            isDark
+              ? "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          )}
+        >
+          <Settings size={18} />
+          <span>工具源</span>
+        </button>
+      </div>
+
+      {/* 分类过滤 */}
+      <div className="flex-1 overflow-y-auto space-y-1 elegant-scroll pr-2 border-t pt-4" style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}>
+        <SectionHeader isDark={isDark}>分类</SectionHeader>
 
         <SidebarItem
           icon={<Hash size={18} />}
@@ -183,24 +252,6 @@ export function ModuleSidebar({
           />
         ))}
       </div>
-
-      {/* 底部操作按钮 */}
-      {currentView === 'custom' && onAddToolSource && (
-        <div className="pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}>
-          <button
-            onClick={onAddToolSource}
-            className={cn(
-              "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-              isDark
-                ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
-                : "bg-purple-50 text-purple-600 hover:bg-purple-100"
-            )}
-          >
-            <Plus size={18} />
-            <span>添加工具源</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }

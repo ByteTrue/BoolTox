@@ -78,7 +78,8 @@ export function ModuleGrid({
   const isInstalledModule = (
     module: ModuleInstance | ModuleDefinition | ToolRegistryEntry
   ): module is ModuleInstance => {
-    return "runtime" in module;
+    // 不仅要有 runtime 属性，还要检查 runtime.installed 的值
+    return "runtime" in module && (module as ModuleInstance).runtime.installed !== false;
   };
 
   const isToolRegistryEntry = (
@@ -120,7 +121,29 @@ export function ModuleGrid({
                 />
               );
             }
-            
+
+            // 对于 ModuleInstance，如果未安装也使用 AvailableModuleCard
+            if ('runtime' in module && !isInstalledModule(module)) {
+              const moduleInstance = module as unknown as ModuleInstance;
+              const moduleData = {
+                id: moduleInstance.id,
+                name: moduleInstance.definition.name,
+                description: moduleInstance.definition.description,
+                version: moduleInstance.definition.version,
+                category: moduleInstance.definition.category,
+                icon: moduleInstance.definition.icon,
+              };
+              return (
+                <AvailableModuleCard
+                  key={module.id}
+                  module={moduleData}
+                  onInstall={onInstall || (() => {})}
+                  onClick={onCardClick}
+                  isInstalling={processingModuleId === module.id}
+                />
+              );
+            }
+
             return (
               <ModuleListItem
                 key={module.id}
@@ -139,13 +162,15 @@ export function ModuleGrid({
           // 网格视图: 使用不同的卡片组件
           if (isToolRegistryEntry(module) || !isInstalledModule(module)) {
             // 可用模块/工具卡片
+            // 处理不同的数据结构：ModuleInstance 的属性在 definition 里
+            const hasDefinition = 'definition' in module;
             const moduleData = {
               id: module.id,
-              name: module.name,
-              description: module.description,
-              version: module.version,
-              category: module.category,
-              icon: module.icon,
+              name: hasDefinition ? (module as unknown as ModuleInstance).definition.name : (module as unknown as ModuleDefinition).name,
+              description: hasDefinition ? (module as unknown as ModuleInstance).definition.description : (module as unknown as ModuleDefinition).description,
+              version: hasDefinition ? (module as unknown as ModuleInstance).definition.version : (module as unknown as ModuleDefinition).version,
+              category: hasDefinition ? (module as unknown as ModuleInstance).definition.category : (module as unknown as ModuleDefinition).category,
+              icon: hasDefinition ? (module as unknown as ModuleInstance).definition.icon : (module as unknown as ModuleDefinition).icon,
             };
 
             return (
