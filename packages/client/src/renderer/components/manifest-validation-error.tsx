@@ -31,7 +31,7 @@ export function ManifestValidationError({ errors, manifestPath }: ManifestValida
         <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" />
         <div className="flex-1">
           <h3 className={`font-semibold ${isDark ? "text-white" : "text-slate-800"}`}>
-            manifest.json 验证失败
+            booltox.json 验证失败
           </h3>
           <p className={`mt-1 text-sm ${isDark ? "text-white/70" : "text-slate-600"}`}>
             发现 {errors.length} 个配置错误，请修复后重试

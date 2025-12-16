@@ -14,3 +14,4 @@ export * from './types/tool.js';
 export * from './types/protocol.js';
 export type { PlatformSpecificEntry } from './types/protocol.js';
 export * from './types/jsonrpc.js';
+export * from './types/tool-source.js';

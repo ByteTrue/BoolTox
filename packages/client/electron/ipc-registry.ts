@@ -12,14 +12,16 @@
 import { ipcMain, BrowserWindow, app, dialog } from 'electron';
 import type { FileFilter, OpenDialogOptions } from 'electron';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { IpcChannel } from '../src/shared/constants/ipc-channels.js';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
-import type { ToolRegistryEntry, ToolManifest } from '@booltox/shared';
+import type { ToolRegistryEntry, ToolManifest, ToolSourceConfig, LocalToolRef } from '@booltox/shared';
 import type { GitOpsConfig } from './services/git-ops.service.js';
 import { moduleStoreService } from './services/module-store.service.js';
 import { gitOpsService } from './services/git-ops.service.js';
+import { configService } from './services/config.service.js';
 import { toolManager } from './services/tool/tool-manager.js';
 import { toolRunner } from './services/tool/tool-runner.js';
 import { toolInstaller } from './services/tool/tool-installer.js';
@@ -59,6 +61,62 @@ function getCpuUsage(): number {
 
   const usage = 100 - (100 * idleDiff / totalDiff);
   return Math.max(0, Math.min(100, Math.round(usage * 10) / 10));
+}
+
+/**
+ * 扫描本地工具源，返回工具引用列表
+ */
+async function scanLocalToolSource(source: ToolSourceConfig): Promise<LocalToolRef[]> {
+  if (!source.localPath) return [];
+
+  const refs: LocalToolRef[] = [];
+
+  // 尝试多工具模式（booltox-index.json）
+  const indexPath = path.join(source.localPath, 'booltox-index.json');
+  try {
+    const indexContent = await fsPromises.readFile(indexPath, 'utf-8');
+    const index = JSON.parse(indexContent) as { tools: Array<{ id: string; path: string }> };
+
+    for (const tool of index.tools) {
+      const toolPath = path.join(source.localPath, tool.path);
+      const booltoxPath = path.join(toolPath, 'booltox.json');
+
+      try {
+        const booltoxContent = await fsPromises.readFile(booltoxPath, 'utf-8');
+        const booltox = JSON.parse(booltoxContent) as { id: string };
+
+        refs.push({
+          id: booltox.id,
+          path: toolPath,
+          sourceId: source.id,
+        });
+      } catch (error) {
+        logger.warn(`[IPC] Failed to read ${tool.path}/booltox.json:`, error);
+      }
+    }
+
+    return refs;
+  } catch {
+    logger.debug(`[IPC] No booltox-index.json, trying single tool mode`);
+  }
+
+  // 尝试单工具模式（booltox.json）
+  try {
+    const booltoxPath = path.join(source.localPath, 'booltox.json');
+    const booltoxContent = await fsPromises.readFile(booltoxPath, 'utf-8');
+    const booltox = JSON.parse(booltoxContent) as { id: string };
+
+    refs.push({
+      id: booltox.id,
+      path: source.localPath,
+      sourceId: source.id,
+    });
+
+    return refs;
+  } catch (error) {
+    logger.error(`[IPC] Failed to read booltox.json from ${source.localPath}:`, error);
+    return [];
+  }
 }
 
 /**
@@ -272,6 +330,108 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
     return await gitOpsService.getPluginRegistry();
   });
 
+  // ==================== 仓库管理 ====================
+  ipcMain.handle(IpcChannel.ToolSources_List, () => {
+    return configService.get('toolSources', 'sources');
+  });
+
+  ipcMain.handle(IpcChannel.ToolSources_Add, async (_event, repo: Omit<ToolSourceConfig, 'id'>) => {
+    const config = configService.get('toolSources');
+    const newRepo: ToolSourceConfig = {
+      ...repo,
+      id: crypto.randomUUID(),
+    };
+    config.sources.push(newRepo);
+
+    // 如果是本地工具源，扫描工具并保存引用
+    if (newRepo.type === 'local' && newRepo.localPath) {
+      try {
+        const newRefs = await scanLocalToolSource(newRepo);
+        config.localToolRefs.push(...newRefs);
+        logger.info(`[IPC] Added ${newRefs.length} local tool references from ${newRepo.name}`);
+      } catch (error) {
+        logger.error(`[IPC] Failed to scan local tool source:`, error);
+      }
+    }
+
+    configService.set('toolSources', config);
+    logger.info(`[IPC] Added tool source: ${newRepo.name}`);
+
+    // 清除缓存，强制重新加载工具列表
+    gitOpsService['cache']?.clear();
+
+    // 刷新 ToolManager
+    await toolManager.loadTools();
+
+    return newRepo;
+  });
+
+  ipcMain.handle(IpcChannel.ToolSources_Update, async (_event, id: string, updates: Partial<ToolSourceConfig>) => {
+    const config = configService.get('toolSources');
+    const index = config.sources.findIndex(r => r.id === id);
+
+    if (index < 0) {
+      throw new Error(`仓库 ${id} 不存在`);
+    }
+
+    config.sources[index] = { ...config.sources[index], ...updates };
+    configService.set('toolSources', config);
+    logger.info(`[IPC] Updated tool source: ${config.sources[index].name}`);
+
+    // 清除缓存
+    gitOpsService['cache']?.clear();
+
+    // 刷新 ToolManager
+    await toolManager.loadTools();
+
+    return config.sources[index];
+  });
+
+  ipcMain.handle(IpcChannel.ToolSources_Delete, async (_event, id: string) => {
+    if (id === 'official') {
+      throw new Error('官方仓库不能删除');
+    }
+
+    const config = configService.get('toolSources');
+
+    // 删除工具源
+    config.sources = config.sources.filter(r => r.id !== id);
+
+    // 删除该工具源的所有本地工具引用
+    config.localToolRefs = config.localToolRefs.filter(ref => ref.sourceId !== id);
+
+    configService.set('toolSources', config);
+    logger.info(`[IPC] Deleted tool source: ${id}`);
+
+    // 清除缓存
+    gitOpsService['cache']?.clear();
+
+    // 刷新 ToolManager
+    await toolManager.loadTools();
+  });
+
+  ipcMain.handle(IpcChannel.ToolSources_Test, async (_event, repo: ToolSourceConfig) => {
+    try {
+      logger.info(`[IPC] Testing repository connection: ${repo.name}`);
+      const gitOps = new (await import('./services/git-ops.service.js')).GitOpsService();
+      gitOps.updateConfig(repo);
+
+      const registry = await gitOps.getPluginRegistry();
+
+      return {
+        success: true,
+        pluginCount: registry.plugins.length,
+        plugins: registry.plugins.slice(0, 5).map(p => ({ id: p.id, name: p.name })),
+      };
+    } catch (error) {
+      logger.error(`[IPC] Failed to test repository ${repo.name}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });
+
   // ==================== 日志系统 ====================
   ipcMain.handle(IpcChannel.Logger_GetLogPath, () => {
     return getLogPath();
@@ -403,7 +563,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
         const toolDir = path.join(pluginsDir, id);
         await fs.promises.mkdir(toolDir, { recursive: true });
 
-        // 生成 manifest.json
+        // 生成 booltox.json
         const manifest: ToolManifest = {
           id,
           version: '1.0.0',
@@ -420,7 +580,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
 
         // 写入 manifest
         await fs.promises.writeFile(
-          path.join(toolDir, 'manifest.json'),
+          path.join(toolDir, 'booltox.json'),
           JSON.stringify(manifest, null, 2)
         );
 

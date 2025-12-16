@@ -4,6 +4,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useModulePlatform } from "@/contexts/module-context";
 import { useTheme } from "../theme-provider";
 import { ModuleGrid } from "./module-grid";
@@ -27,6 +28,7 @@ import type { ModuleInstance } from "@/types/module";
  * 工具中心 - 重新设计的侧边栏布局
  */
 export function ModuleCenter() {
+  const navigate = useNavigate();
   const {
     moduleStats,
     installedModules,
@@ -43,7 +45,6 @@ export function ModuleCenter() {
     focusModuleWindow,
     isDevPlugin,
     addLocalBinaryTool,
-    installLocalModule, // 假设 context 中有这个方法，或者通过 addLocalBinaryTool 处理
   } = useModulePlatform();
 
   const { theme } = useTheme();
@@ -75,10 +76,51 @@ export function ModuleCenter() {
   // --- 数据处理 ---
 
   // 1. 准备基础数据集
-  const storeModules = useMemo(() => {
-    const installedPluginIds = new Set(toolRegistry.map(p => p.id));
-    return availablePlugins.filter(p => !installedPluginIds.has(p.id));
+  // 将 availablePlugins 转换为 ModuleInstance 格式（不过滤已安装）
+  const allAvailableModules = useMemo(() => {
+    return availablePlugins.map(plugin => ({
+      id: plugin.id,
+      definition: {
+        id: plugin.id,
+        name: plugin.name,
+        description: plugin.description || '',
+        version: plugin.version,
+        category: plugin.category || 'utilities',
+        keywords: plugin.keywords || [],
+        icon: plugin.icon || '🔌',
+        screenshots: plugin.screenshots || [],
+        installedByDefault: false,
+        source: 'remote' as const,
+        runtime: plugin.runtime,
+        runtimeMode: plugin.runtime?.type === 'standalone' ? 'standalone' : 'webview',
+      },
+      runtime: {
+        component: null,
+        loading: false,
+        error: null,
+        installed: toolRegistry.some(t => t.id === plugin.id), // 标记是否已安装
+        launchState: 'idle' as const,
+        lastError: null,
+      },
+      isFavorite: false,
+      _sourceId: (plugin as any).sourceId,
+    } as ModuleInstance & { _sourceId?: string }));
   }, [availablePlugins, toolRegistry]);
+
+  // 官方工具（来自官方工具源）
+  const officialTools = useMemo(() => {
+    return allAvailableModules.filter((m: any) => m._sourceId === 'official');
+  }, [allAvailableModules]);
+
+  // 自定义工具（来自非官方工具源）
+  const customTools = useMemo(() => {
+    return allAvailableModules.filter((m: any) => m._sourceId && m._sourceId !== 'official');
+  }, [allAvailableModules]);
+
+  // 未安装的工具（用于旧的 store 视图）
+  const storeModules = useMemo(() => {
+    return allAvailableModules.filter(m => !m.runtime.installed);
+  }, [allAvailableModules]);
 
   const displayedModulesRaw = useMemo(() => {
     let modules: any[] = [];
@@ -91,13 +133,22 @@ export function ModuleCenter() {
         modules = installedModules.filter(m => m.isFavorite);
         break;
       case 'store':
+        // 旧的商店视图：只显示未安装的
         modules = storeModules;
+        break;
+      case 'official':
+        // 官方工具商店：只显示未安装的官方工具
+        modules = officialTools.filter(m => !m.runtime.installed);
+        break;
+      case 'custom':
+        // 自定义工具：只显示未安装的自定义工具
+        modules = customTools.filter(m => !m.runtime.installed);
         break;
       default:
         modules = installedModules;
     }
     return modules;
-  }, [currentView, installedModules, storeModules]);
+  }, [currentView, installedModules, storeModules, officialTools, customTools]);
 
   // 2. 应用分类过滤
   const categoryFilteredModules = useMemo(() => {
@@ -117,17 +168,19 @@ export function ModuleCenter() {
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
     displayedModulesRaw.forEach(m => {
-      if (m.category) categories.add(m.category);
+      const cat = (m as any).definition?.category || (m as any).category;
+      if (cat) categories.add(cat);
     });
     storeModules.forEach(m => {
-      if (m.category) categories.add(m.category);
+      const cat = (m as any).definition?.category || (m as any).category;
+      if (cat) categories.add(cat);
     });
     return Array.from(categories).sort();
   }, [displayedModulesRaw, storeModules]);
 
   // 获取推荐
   const recommendations = useRecommendations(installedModules, availableModules);
-  const showRecommendations = currentView === 'store' && !debouncedValue && currentCategory === 'all';
+  const showRecommendations = (currentView === 'store' || currentView === 'official') && !debouncedValue && currentCategory === 'all';
 
   // --- 回调函数 ---
 
@@ -355,9 +408,12 @@ export function ModuleCenter() {
         currentCategory={currentCategory}
         onViewChange={handleViewChange}
         onCategoryChange={setCurrentCategory}
+        onAddToolSource={() => navigate('/tools/add-source')}
         stats={{
           installed: installedModules.length,
           store: storeModules.length,
+          official: officialTools.length,
+          custom: customTools.length,
           favorites: installedModules.filter(m => m.isFavorite).length
         }}
         categories={availableCategories}
@@ -490,7 +546,10 @@ export function ModuleCenter() {
             <h2 className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}>
               {currentCategory === 'all' ? (
                 currentView === 'store' ? '🛍️ 全部工具' :
-                currentView === 'favorites' ? '★ 我的收藏' : '📦 已安装工具'
+                currentView === 'official' ? '🏪 官方工具商店' :
+                currentView === 'custom' ? '📦 自定义工具' :
+                currentView === 'favorites' ? '★ 我的收藏' :
+                '📦 已安装工具'
               ) : (
                 `📂 ${currentCategory}`
               )}

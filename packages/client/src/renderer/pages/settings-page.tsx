@@ -11,7 +11,7 @@ import { SettingsPanel } from '../components/settings-panel';
 import { DeveloperSettings } from './settings/developer';
 import { AboutSettings } from './settings/about';
 
-// 设置菜单项（只保留有实际内容的）
+// 设置菜单项
 const SETTINGS_SECTIONS = [
   { key: 'general', label: '通用设置', path: '/settings/general' },
   { key: 'about', label: '关于', path: '/settings/about' },

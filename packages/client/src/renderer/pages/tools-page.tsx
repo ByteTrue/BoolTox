@@ -3,6 +3,9 @@
  * Licensed under CC-BY-NC-4.0
  */
 
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useModulePlatform } from '@/contexts/module-context';
 import { ModuleCenter } from '../components/module-center';
 
 /**
@@ -10,6 +13,16 @@ import { ModuleCenter } from '../components/module-center';
  * 直接复用现有的 ModuleCenter 组件
  */
 export function ToolsPage() {
+  const location = useLocation();
+  const { refreshAvailablePlugins } = useModulePlatform();
+
+  // 监听路由变化，从添加工具源页面返回时刷新
+  useEffect(() => {
+    if (location.pathname === '/tools') {
+      refreshAvailablePlugins();
+    }
+  }, [location.pathname, refreshAvailablePlugins]);
+
   return (
     <div className="h-full w-full overflow-hidden">
       <ModuleCenter />

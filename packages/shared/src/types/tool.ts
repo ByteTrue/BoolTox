@@ -98,6 +98,14 @@ export interface ToolRegistryEntry {
   gitPath?: string;
   /** 标记是否为二进制工具 */
   isBinaryTool?: boolean;
+  /** 工具来源 ID（运行时添加，用于区分不同工具源）*/
+  sourceId?: string;
+  /** 工具来源名称（运行时添加）*/
+  sourceName?: string;
+  /** 唯一标识（运行时添加，格式：sourceId:toolId）*/
+  _uniqueKey?: string;
+  /** 运行时配置（从 booltox.json 读取）*/
+  runtime?: ToolRuntimeConfig;
   /** 二进制工具的多平台资源 */
   binaryAssets?: {
     windows?: {

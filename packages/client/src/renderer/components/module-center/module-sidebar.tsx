@@ -9,7 +9,11 @@ import {
   ShoppingBag,
   Star,
   Hash,
-  ChevronRight
+  ChevronRight,
+  Store,
+  Package,
+  Plus,
+  FolderOpen
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 
@@ -66,13 +70,16 @@ function SidebarItem({ icon, label, active, count, onClick, isDark }: SidebarIte
 }
 
 interface ModuleSidebarProps {
-  currentView: string; // 'installed' | 'store' | 'favorites' | 'all'
+  currentView: string; // 'installed' | 'store' | 'official' | 'custom' | 'favorites' | 'all'
   currentCategory: string; // 'all' | categoryName
   onViewChange: (view: string) => void;
   onCategoryChange: (category: string) => void;
+  onAddToolSource?: () => void; // 新增：添加工具源回调
   stats: {
     installed: number;
     store: number;
+    official: number;
+    custom: number;
     favorites: number;
   };
   categories: string[];
@@ -83,6 +90,7 @@ export function ModuleSidebar({
   currentCategory,
   onViewChange,
   onCategoryChange,
+  onAddToolSource,
   stats,
   categories,
 }: ModuleSidebarProps) {
@@ -130,11 +138,19 @@ export function ModuleSidebar({
           发现
         </h3>
         <SidebarItem
-          icon={<ShoppingBag size={18} />}
-          label="工具商店"
-          active={currentView === 'store'}
-          count={stats.store}
-          onClick={() => onViewChange('store')}
+          icon={<Store size={18} />}
+          label="官方工具商店"
+          active={currentView === 'official'}
+          count={stats.official}
+          onClick={() => onViewChange('official')}
+          isDark={isDark}
+        />
+        <SidebarItem
+          icon={<Package size={18} />}
+          label="自定义工具"
+          active={currentView === 'custom'}
+          count={stats.custom}
+          onClick={() => onViewChange('custom')}
           isDark={isDark}
         />
       </div>
@@ -167,6 +183,24 @@ export function ModuleSidebar({
           />
         ))}
       </div>
+
+      {/* 底部操作按钮 */}
+      {currentView === 'custom' && onAddToolSource && (
+        <div className="pt-4 border-t" style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}>
+          <button
+            onClick={onAddToolSource}
+            className={cn(
+              "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+              isDark
+                ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+                : "bg-purple-50 text-purple-600 hover:bg-purple-100"
+            )}
+          >
+            <Plus size={18} />
+            <span>添加工具源</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

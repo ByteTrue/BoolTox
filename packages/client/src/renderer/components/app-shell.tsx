@@ -15,6 +15,7 @@ import { UpdateBanner } from './ui/update-banner';
 // 路由懒加载
 const HomePage = lazy(() => import('../pages/home-page').then(m => ({ default: m.HomePage })));
 const ToolsPage = lazy(() => import('../pages/tools-page').then(m => ({ default: m.ToolsPage })));
+const AddToolSourcePage = lazy(() => import('../pages/add-tool-source-page').then(m => ({ default: m.AddToolSourcePage })));
 const SettingsPage = lazy(() => import('../pages/settings-page').then(m => ({ default: m.SettingsPage })));
 
 // 页面切换动画
@@ -90,6 +91,22 @@ export function AppShell() {
                       className="h-full"
                     >
                       <ToolsPage />
+                    </motion.div>
+                  }
+                />
+                <Route
+                  path="/tools/add-source"
+                  element={
+                    <motion.div
+                      key="add-source"
+                      variants={pageVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      transition={{ duration: 0.2 }}
+                      className="h-full"
+                    >
+                      <AddToolSourcePage />
                     </motion.div>
                   }
                 />

@@ -10,6 +10,7 @@ import fsSync from 'fs';
 import { BOOLTOX_PROTOCOL_VERSION, ToolManifest, ToolRuntime, ToolRuntimeConfig } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import { inferManifest, validateSimplifiedManifest } from './manifest-infer.service.js';
+import { configService } from '../config.service.js';
 
 const logger = createLogger('ToolManager');
 const DEFAULT_PROTOCOL_RANGE = '^1.0.0';
@@ -56,15 +57,18 @@ export class ToolManager {
   async loadTools() {
     this.tools.clear();
 
-    // Load from userData
+    // 1. Load from userData (远程安装的工具)
     await this.scanDir(this.toolsDir, false);
 
-    // Load from dev dir (mark as dev tools)
+    // 2. Load from dev dir (标记为 dev)
     if (this.devToolsDir) {
       await this.scanDir(this.devToolsDir, true);
     }
 
-    // 开发模式：只扫描 examples/ 目录
+    // 3. Load from local tool references (本地工具源的工具，从配置恢复)
+    await this.loadLocalToolReferences();
+
+    // 开发模式：扫描 examples/ 目录
     if (!app.isPackaged) {
       const examplesDir = path.resolve(process.cwd(), 'examples');
 
@@ -76,15 +80,38 @@ export class ToolManager {
         logger.info(`[ToolManager] Scanning examples dir: ${examplesDir}`);
         await this.scanDir(examplesDir, true);
       }
-
-      // ⚠️ 不再扫描 tools/ 目录（避免扫描到残留目录或符号链接）
-      // tools/ 目录只用于：
-      // - 生产环境：用户安装的工具
-      // - 开发环境：符号链接（指向 booltox-plugins）
-      // 符号链接的工具会在 scanDir(this.toolsDir) 中正常加载
     }
 
     logger.info(`[ToolManager] Loaded ${this.tools.size} tools.`);
+  }
+
+  /**
+   * 从配置中加载本地工具引用
+   */
+  private async loadLocalToolReferences() {
+    try {
+      const config = configService.get('toolSources');
+      const localRefs = config.localToolRefs || [];
+
+      for (const ref of localRefs) {
+        try {
+          // 检查路径是否仍然存在
+          if (!fsSync.existsSync(ref.path)) {
+            logger.warn(`[ToolManager] Local tool path not found: ${ref.path}, skipping`);
+            continue;
+          }
+
+          await this.loadToolFromPath(ref.path, false);
+          logger.info(`[ToolManager] Loaded local tool: ${ref.id} from ${ref.path}`);
+        } catch (error) {
+          logger.warn(`[ToolManager] Failed to load local tool ${ref.id}:`, error);
+        }
+      }
+
+      logger.info(`[ToolManager] Loaded ${localRefs.length} local tool references`);
+    } catch (error) {
+      logger.error('[ToolManager] Failed to load local tool references:', error);
+    }
   }
 
   private async scanDir(dir: string, isDev = false) {
@@ -111,7 +138,7 @@ export class ToolManager {
 
   async loadToolFromPath(toolPath: string, isDev = false) {
     try {
-      const manifestPath = path.join(toolPath, 'manifest.json');
+      const manifestPath = path.join(toolPath, 'booltox.json');
       const manifestContent = await fs.readFile(manifestPath, 'utf-8');
       const rawManifest = JSON.parse(manifestContent) as ToolManifest;
 

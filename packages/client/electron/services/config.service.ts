@@ -10,6 +10,7 @@
  */
 
 import Store from 'electron-store';
+import type { ToolSourcesConfig } from '@booltox/shared';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('ConfigService');
@@ -30,6 +31,7 @@ interface AppConfig {
     };
     isMaximized?: boolean;
   };
+  toolSources: ToolSourcesConfig; // 新增：工具源配置
 }
 
 class ConfigService {
@@ -46,6 +48,23 @@ class ConfigService {
           language: 'zh-CN',
         },
         window: {},
+        toolSources: {
+          version: '1.0.0',
+          sources: [
+            {
+              id: 'official',
+              name: '官方工具库',
+              enabled: true,
+              type: 'remote',
+              provider: 'github',
+              owner: 'ByteTrue',
+              repo: 'booltox-plugins',
+              branch: 'main',
+              priority: 0,
+            },
+          ],
+          localToolRefs: [],  // 本地工具引用列表
+        },
       },
     });
 

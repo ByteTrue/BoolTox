@@ -38,6 +38,13 @@ export enum IpcChannel {
   GitOps_GetAnnouncements = 'git-ops:get-announcements',
   GitOps_GetTools = 'git-ops:get-tools',
 
+  // ==================== 工具源管理 ====================
+  ToolSources_List = 'tool-sources:list',
+  ToolSources_Add = 'tool-sources:add',
+  ToolSources_Update = 'tool-sources:update',
+  ToolSources_Delete = 'tool-sources:delete',
+  ToolSources_Test = 'tool-sources:test',
+
   // ==================== 日志系统 ====================
   Logger_GetLogPath = 'logger:get-log-path',
   Logger_OpenLogFolder = 'logger:open-log-folder',

@@ -14,6 +14,8 @@ import axios from 'axios';
 import type { ToolRegistryEntry, ToolInstallProgress } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import { gitOpsService } from '../git-ops.service.js';
+import { configService } from '../config.service.js';
+import { toolManager } from './tool-manager.js';
 
 const logger = createLogger('ToolInstaller');
 
@@ -93,7 +95,7 @@ export class ToolInstallerService {
     onProgress?: (progress: ToolInstallProgress) => void,
     window?: BrowserWindow
   ): Promise<string> {
-    const { id, gitPath } = entry;
+    const { id, gitPath, sourceId } = entry;
 
     if (!gitPath) {
       throw new Error(`工具 ${id} 缺少 gitPath`);
@@ -101,6 +103,40 @@ export class ToolInstallerService {
 
     const toolDir = path.join(this.toolsDir, id);
 
+    // 检查是否为本地工具源
+    if (sourceId) {
+      const sources = configService.get('toolSources', 'sources');
+      const source = sources.find(s => s.id === sourceId);
+
+      if (source && source.type === 'local' && source.localPath) {
+        // 本地工具源：创建符号链接
+        this.reportProgress(onProgress, window, {
+          stage: 'downloading',
+          percent: 50,
+          message: '正在创建符号链接...',
+        });
+
+        const sourcePath = path.join(source.localPath, gitPath);
+
+        // 确保父目录存在
+        await fs.mkdir(path.dirname(toolDir), { recursive: true });
+
+        // 创建符号链接
+        await fs.symlink(sourcePath, toolDir, 'dir');
+
+        logger.info(`[ToolInstaller] 本地工具符号链接创建成功: ${toolDir} → ${sourcePath}`);
+
+        this.reportProgress(onProgress, window, {
+          stage: 'complete',
+          percent: 100,
+          message: '安装完成',
+        });
+
+        return toolDir;
+      }
+    }
+
+    // 远程工具源：从 Git 下载
     this.reportProgress(onProgress, window, {
       stage: 'downloading',
       percent: 50,
@@ -111,7 +147,7 @@ export class ToolInstallerService {
     await gitOpsService.downloadToolSource(gitPath, toolDir);
 
     this.reportProgress(onProgress, window, {
-      stage: 'completed',
+      stage: 'complete',
       percent: 100,
       message: '安装完成',
     });
@@ -212,25 +248,45 @@ export class ToolInstallerService {
 
   /**
    * 卸载工具
+   * 通过路径判断来源：
+   * - 在 tools/ 目录中 → 远程工具，删除整个目录
+   * - 不在 tools/ 目录中 → 本地工具，只删除配置引用
    */
   async uninstallTool(pluginId: string): Promise<void> {
-    const toolDir = path.join(this.toolsDir, pluginId);
+    // 从 ToolManager 获取工具信息
+    const tool = toolManager.getAllTools().find(t => t.id === pluginId);
 
-    const exists = await this.checkToolExists(toolDir);
-    if (!exists) {
-      throw new Error(`工具 ${pluginId} 未安装`);
+    if (!tool) {
+      throw new Error(`工具 ${pluginId} 未找到`);
     }
 
-    // 检查是否为符号链接
-    const stat = await fs.lstat(toolDir);
-    if (stat.isSymbolicLink()) {
-      // 符号链接：只删除链接本身，不删除目标
-      await fs.unlink(toolDir);
-      logger.info(`[ToolInstaller] 符号链接已移除: ${pluginId}`);
+    const toolPath = tool.path;
+
+    // 判断是否为远程工具（在 tools/ 目录中）
+    if (toolPath.startsWith(this.toolsDir)) {
+      // 远程工具：删除整个目录
+      const exists = await this.checkToolExists(toolPath);
+      if (!exists) {
+        throw new Error(`工具 ${pluginId} 未安装`);
+      }
+
+      // 检查是否为符号链接
+      const stat = await fs.lstat(toolPath);
+      if (stat.isSymbolicLink()) {
+        // 符号链接：只删除链接本身
+        await fs.unlink(toolPath);
+        logger.info(`[ToolInstaller] 符号链接已移除: ${pluginId}`);
+      } else {
+        // 普通目录：递归删除
+        await fs.rm(toolPath, { recursive: true, force: true });
+        logger.info(`[ToolInstaller] 工具已卸载: ${pluginId}`);
+      }
     } else {
-      // 普通目录：递归删除
-      await fs.rm(toolDir, { recursive: true, force: true });
-      logger.info(`[ToolInstaller] 工具已卸载: ${pluginId}`);
+      // 本地工具：只删除配置引用
+      const config = configService.get('toolSources');
+      config.localToolRefs = config.localToolRefs.filter(ref => ref.id !== pluginId);
+      configService.set('toolSources', config);
+      logger.info(`[ToolInstaller] 本地工具引用已移除: ${pluginId}`);
     }
   }
 
@@ -360,7 +416,7 @@ export class ToolInstallerService {
   }
 
   /**
-   * 验证manifest.json
+   * 验证booltox.json
    */
   private async validateManifest(manifestPath: string, expectedId: string): Promise<void> {
     try {
@@ -376,7 +432,7 @@ export class ToolInstallerService {
         manifest.runtime?.type === 'standalone' && typeof manifest.runtime.entry === 'string';
 
       if (!manifest.id || !manifest.version || !manifest.name || (!hasWebEntry && !hasStandaloneEntry)) {
-        throw new Error('manifest.json 缺少必需字段（需要 main 或 standalone entry）');
+        throw new Error('booltox.json 缺少必需字段（需要 main 或 standalone entry）');
       }
 
       if (manifest.id !== expectedId) {
@@ -384,7 +440,7 @@ export class ToolInstallerService {
       }
     } catch (error) {
       if (error instanceof Error && error.message.includes('ENOENT')) {
-        throw new Error('工具包中缺少 manifest.json');
+        throw new Error('工具包中缺少 booltox.json');
       }
       throw error;
     }
@@ -521,7 +577,7 @@ export class ToolInstallerService {
         await fs.chmod(targetPath, 0o755);
       }
 
-      // 6. 生成 manifest.json
+      // 6. 生成 booltox.json
       const manifest = {
         id: entry.id,
         version: entry.version,
@@ -536,7 +592,7 @@ export class ToolInstallerService {
         },
       };
 
-      await fs.writeFile(path.join(toolDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+      await fs.writeFile(path.join(toolDir, 'booltox.json'), JSON.stringify(manifest, null, 2));
 
       this.reportProgress(onProgress, window, {
         stage: 'complete',
