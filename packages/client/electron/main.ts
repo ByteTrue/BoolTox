@@ -67,7 +67,8 @@ function createWindow() {
   };
 
   // 平台特定优化
-  const platformConfig = getPlatformWindowConfig({ frameless: true });
+  // macOS 需要显示红绿灯按钮，不使用 frameless 模式
+  const platformConfig = getPlatformWindowConfig({ frameless: false });
 
   mainWindow = new BrowserWindow({
     ...baseConfig,
@@ -78,10 +79,8 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
   mainWindow.setMenu(null);
 
-  // macOS 特定：隐藏系统窗口按钮
-  if (process.platform === 'darwin') {
-    mainWindow.setWindowButtonVisibility(false);
-  }
+  // macOS 使用系统原生按钮，Windows/Linux 使用自定义按钮
+  // 不需要隐藏 macOS 的红绿灯按钮，window-platform-config 已正确配置 trafficLightPosition
 
   // 加载页面
   if (VITE_DEV_SERVER_URL) {
