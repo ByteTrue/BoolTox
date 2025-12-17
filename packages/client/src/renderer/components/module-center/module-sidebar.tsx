@@ -118,9 +118,11 @@ export function ModuleSidebar({
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // 过滤自定义工具源（非官方的远程源）
+  // 过滤自定义工具源（非官方的远程源，排除本地源）
   const customSources = toolSources.filter(s =>
-    s.id !== 'official' && s.type === 'remote'
+    s.id !== 'official' &&
+    s.type === 'remote' &&
+    !s.localPath // 额外保险：排除有 localPath 的源
   );
 
   return (

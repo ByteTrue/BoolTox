@@ -61,6 +61,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      webviewTag: true, // 启用 webview 支持，用于嵌入工具前端
       v8CacheOptions: 'code',
       backgroundThrottling: false,
     },

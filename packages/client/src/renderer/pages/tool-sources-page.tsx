@@ -53,8 +53,8 @@ export function ToolSourcesPage() {
     }
   };
 
+  // 仅显示远程工具源，本地工具直接变为已安装状态，无需在此管理
   const remoteSources = sources.filter(s => s.type === 'remote');
-  const localSources = sources.filter(s => s.type === 'local');
 
   if (loading) {
     return (
@@ -81,37 +81,16 @@ export function ToolSourcesPage() {
         </h1>
       </div>
 
-      {/* 远程工具源 */}
+      {/* 工具源列表（仅显示远程源） */}
       <section className="mb-8">
         <h2 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-          远程工具源 ({remoteSources.length})
+          工具源 ({remoteSources.length})
         </h2>
         <div className="space-y-4">
           {remoteSources.length === 0 ? (
-            <EmptyPlaceholder text="暂无远程工具源" isDark={isDark} />
+            <EmptyPlaceholder text="暂无工具源" isDark={isDark} />
           ) : (
             remoteSources.map(source => (
-              <SourceCard
-                key={source.id}
-                source={source}
-                onDelete={() => handleDelete(source.id, source.name)}
-                isDark={isDark}
-              />
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* 本地工具源 */}
-      <section className="mb-8">
-        <h2 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-          本地工具源 ({localSources.length})
-        </h2>
-        <div className="space-y-4">
-          {localSources.length === 0 ? (
-            <EmptyPlaceholder text="暂无本地工具源" isDark={isDark} />
-          ) : (
-            localSources.map(source => (
               <SourceCard
                 key={source.id}
                 source={source}

@@ -214,28 +214,42 @@ export function ModuleCard({
 
       {/* 操作按钮 */}
       <div className="flex items-center gap-2">
-        {/* 启动/打开按钮 */}
+        {/* 启动/停止切换按钮 */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onOpen(module.id);
+            // 运行中且非外部工具（CLI/Binary）：停止
+            // 其他状态：启动
+            if (isRunning && !isExternalTool) {
+              onStop(module.id);
+            } else {
+              onOpen(module.id);
+            }
           }}
           disabled={isLaunching}
           className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 ${
-            isDark
-              ? "bg-white/5 text-white hover:bg-white/10"
-              : "bg-white/50 text-slate-700 hover:bg-white"
+            isRunning && !isExternalTool
+              ? isDark
+                ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/30"
+                : "bg-red-50 text-red-600 hover:bg-red-100 border-red-500/30"
+              : isDark
+                ? "bg-white/5 text-white hover:bg-white/10"
+                : "bg-white/50 text-slate-700 hover:bg-white"
           } ${isLaunching ? "cursor-wait opacity-70 hover:scale-100" : ""}`}
-          style={{
-            borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-          }}
+          style={
+            isRunning && !isExternalTool
+              ? {} // 停止按钮使用红色边框（通过 className）
+              : { borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT }
+          }
           title={
             isLaunching
               ? "工具正在启动…"
-              : isHttpService && isRunning
-                ? "打开浏览器"
-                : "启动工具"
+              : isRunning && !isExternalTool
+                ? "停止工具"
+                : isExternalTool && isRunning
+                  ? "工具在外部运行"
+                  : "启动工具"
           }
         >
           {isLaunching ? (
@@ -243,32 +257,12 @@ export function ModuleCard({
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
               启动中
             </span>
+          ) : isRunning && !isExternalTool ? (
+            <Square className="mx-auto" size={14} />
           ) : (
             <ExternalLink className="mx-auto" size={14} />
           )}
         </button>
-
-        {/* 停止按钮 - 仅 http-service 类型显示 */}
-        {isHttpService && isRunning && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onStop(module.id);
-            }}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 ${
-              isDark
-                ? "bg-white/5 text-white hover:bg-white/10"
-                : "bg-white/50 text-slate-700 hover:bg-white"
-            }`}
-            style={{
-              borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-            }}
-            title="停止服务"
-          >
-            <Square className="mx-auto" size={14} />
-          </button>
-        )}
 
         <button
           type="button"
