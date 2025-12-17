@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { LayoutDashboard, Compass, Boxes, Settings, User, LayoutTemplate } from "lucide-react";
+import { Home, Wrench, Compass, Download, Settings } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { SidebarNotification } from "@/components/sidebar-notification";
@@ -20,18 +20,23 @@ import {
 
 const data = {
   user: {
-    name: "BoolTox",
-    email: "you@example.com",
+    name: "BoolTox User",
+    email: "user@example.com",
     avatar: "",
   },
   navGroups: [
     {
-      label: "Workspace",
+      label: "主要功能",
       items: [
         {
-          title: "Home",
+          title: "首页",
           url: "/dashboard",
-          icon: LayoutDashboard,
+          icon: Home,
+        },
+        {
+          title: "工具箱",
+          url: "/dashboard/tools",
+          icon: Wrench,
         },
         {
           title: "资源导航",
@@ -39,38 +44,17 @@ const data = {
           icon: Compass,
         },
         {
-          title: "Toolbox",
-          url: "/dashboard/tools",
-          icon: Boxes,
-          items: [
-            {
-              title: "已安装工具",
-              url: "/dashboard/tools/installed",
-            },
-            {
-              title: "工具市场",
-              url: "/dashboard/tools/market",
-            },
-          ],
-        },
-        {
-          title: "Account",
-          url: "/settings/account",
-          icon: User,
+          title: "下载 Client",
+          url: "/dashboard/download",
+          icon: Download,
         },
       ],
     },
     {
-      label: "Public",
+      label: "设置",
       items: [
         {
-          title: "Landing",
-          url: "/landing",
-          target: "_blank",
-          icon: LayoutTemplate,
-        },
-        {
-          title: "Appearance",
+          title: "主题设置",
           url: "/settings/appearance",
           icon: Settings,
         },
@@ -91,8 +75,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Logo size={24} className="text-current" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">ShadcnStore</span>
-                  <span className="truncate text-xs">Admin Dashboard</span>
+                  <span className="truncate font-medium">BoolTox</span>
+                  <span className="truncate text-xs">工具箱平台</span>
                 </div>
               </Link>
             </SidebarMenuButton>
