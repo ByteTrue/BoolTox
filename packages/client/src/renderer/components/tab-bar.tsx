@@ -3,24 +3,33 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Grid, Settings, Plus, X, Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from './theme-provider';
 import WindowControls from './window-controls';
+import { useToolTabs } from '../contexts/tool-tab-context';
 
+/**
+ * 标签类型定义
+ */
 interface Tab {
   id: string;
-  path: string;
   label: string;
   icon: React.ReactNode;
   closable: boolean;
+  type: 'route' | 'tool'; // 路由标签 or 工具标签
+  path?: string; // 路由标签的路径
+  toolId?: string; // 工具标签的工具 ID
 }
 
-const DEFAULT_TABS: Tab[] = [
-  { id: 'home', path: '/', label: '首页', icon: <Home size={14} />, closable: false },
-  { id: 'tools', path: '/tools', label: '工具', icon: <Grid size={14} />, closable: false },
+/**
+ * 默认路由标签（首页、工具）
+ */
+const DEFAULT_ROUTE_TABS: Tab[] = [
+  { id: 'home', type: 'route', path: '/', label: '首页', icon: <Home size={14} />, closable: false },
+  { id: 'tools', type: 'route', path: '/tools', label: '工具', icon: <Grid size={14} />, closable: false },
 ];
 
 // 平台检测（渲染进程安全）
@@ -30,13 +39,29 @@ const isWin = userAgent.includes('win');
 const isLinux = userAgent.includes('linux') && !userAgent.includes('android');
 
 export function TabBar() {
-  const [tabs, setTabs] = useState<Tab[]>(DEFAULT_TABS);
   const [activeTabId, setActiveTabId] = useState('home');
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, themeMode, setThemeMode } = useTheme();
+  const { toolTabs, activeToolTabId, activateToolTab, closeToolTab } = useToolTabs();
 
-  // 根据路由同步激活标签
+  // 合并路由标签和工具标签
+  const allTabs = useMemo(() => {
+    const routeTabs: Tab[] = DEFAULT_ROUTE_TABS;
+
+    const toolTabsData: Tab[] = toolTabs.map(tt => ({
+      id: tt.id,
+      type: 'tool' as const,
+      toolId: tt.toolId,
+      label: tt.label,
+      icon: <Grid size={14} />, // 工具标签使用统一图标
+      closable: true,
+    }));
+
+    return [...routeTabs, ...toolTabsData];
+  }, [toolTabs]);
+
+  // 根据路由或工具标签激活状态同步激活标签
   useEffect(() => {
     const path = location.pathname;
 
@@ -46,38 +71,55 @@ export function TabBar() {
       return;
     }
 
-    const currentTab = tabs.find(tab => tab.path === path);
-    if (currentTab) {
-      setActiveTabId(currentTab.id);
+    // 如果有激活的工具标签，使用工具标签的 ID
+    if (activeToolTabId) {
+      setActiveTabId(activeToolTabId);
+    } else {
+      // 否则查找匹配的路由标签
+      const routeTab = DEFAULT_ROUTE_TABS.find(tab => tab.path === path);
+      if (routeTab) {
+        setActiveTabId(routeTab.id);
+      }
     }
-  }, [location.pathname, tabs]);
+  }, [location.pathname, activeToolTabId]);
+
+  // 点击标签
+  const handleTabClick = useCallback((tab: Tab) => {
+    if (tab.type === 'route') {
+      // 路由标签：导航到对应路径，并取消工具标签激活
+      navigate(tab.path!);
+      setActiveTabId(tab.id);
+      // 取消工具标签激活（如果有的话）
+      if (activeToolTabId) {
+        activateToolTab(null);
+      }
+    } else if (tab.type === 'tool') {
+      // 工具标签：激活工具标签
+      activateToolTab(tab.id);
+      setActiveTabId(tab.id);
+    }
+  }, [navigate, activateToolTab, activeToolTabId]);
 
   // 关闭标签
-  const closeTab = useCallback((tabId: string, e?: React.MouseEvent) => {
+  const handleCloseTab = useCallback((tab: Tab, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
 
-    const index = tabs.findIndex(tab => tab.id === tabId);
-    if (index === -1) return;
-
-    const newTabs = tabs.filter(tab => tab.id !== tabId);
-    setTabs(newTabs);
-
-    // 如果关闭的是当前标签，切换到最后一个
-    if (tabId === activeTabId) {
-      const lastTab = newTabs[newTabs.length - 1];
-      navigate(lastTab.path);
+    if (tab.type === 'tool') {
+      // 关闭工具标签
+      closeToolTab(tab.id);
     }
-  }, [tabs, activeTabId, navigate]);
+    // 路由标签不可关闭，不处理
+  }, [closeToolTab]);
 
   // 中键点击关闭标签
   const handleAuxClick = useCallback((tab: Tab, e: React.MouseEvent) => {
     if (e.button === 1 && tab.closable) { // 中键
       e.preventDefault();
-      closeTab(tab.id);
+      handleCloseTab(tab);
     }
-  }, [closeTab]);
+  }, [handleCloseTab]);
 
   // 循环切换主题：light → dark → system → light
   const handleToggleTheme = () => {
@@ -113,7 +155,7 @@ export function TabBar() {
         }}
       >
         <AnimatePresence mode="popLayout">
-          {tabs.map((tab) => {
+          {allTabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             return (
               <motion.button
@@ -122,7 +164,7 @@ export function TabBar() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.15 }}
-                onClick={() => navigate(tab.path)}
+                onClick={() => handleTabClick(tab)}
                 onAuxClick={(e) => handleAuxClick(tab, e)}
                 style={{
                   // @ts-ignore - 标签按钮禁用拖拽
@@ -142,7 +184,7 @@ export function TabBar() {
                 <span className="flex-1">{tab.label}</span>
                 {tab.closable && (
                   <button
-                    onClick={(e) => closeTab(tab.id, e)}
+                    onClick={(e) => handleCloseTab(tab, e)}
                     className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded p-0.5"
                   >
                     <X size={12} />

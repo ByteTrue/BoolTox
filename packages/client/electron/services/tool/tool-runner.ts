@@ -784,9 +784,16 @@ export class ToolRunner {
             });
           });
 
-          // 服务就绪，打开浏览器
-          logger.info(`[ToolRunner] HTTP 服务就绪，打开浏览器: ${url}`);
-          shell.openExternal(url);
+          // 服务就绪，发送 IPC 事件通知渲染进程创建标签页
+          logger.info(`[ToolRunner] HTTP 服务就绪，通知渲染进程创建标签页: ${url}`);
+          const targetWindow = state.parentWindow ?? BrowserWindow.getAllWindows().find((win) => win.isVisible());
+          if (targetWindow && !targetWindow.isDestroyed()) {
+            targetWindow.webContents.send('tool:open-in-tab', {
+              toolId,
+              url,
+              label: state.runtime.id, // 使用 toolId 作为初始标签名，后续会通过 onTitleUpdate 更新
+            });
+          }
 
           state.runtime.status = 'running';
           state.runtime.error = undefined;
