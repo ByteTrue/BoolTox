@@ -799,18 +799,18 @@ export class ToolRunner {
           state.runtime.error = undefined;
           this.emitState(state, 'running', { pid: child.pid, url, external: true });
 
-          // 启动器模式：启动后立即清理状态（500ms 后）
-          // 允许重复启动，不显示持久的"运行中"状态
-          setTimeout(() => {
-            const currentState = this.states.get(toolId);
-            if (currentState && currentState.runtime.status === 'running') {
-              logger.info(`[ToolRunner] HTTP 工具 ${toolId} 启动完成，清理状态（启动器模式）`);
-              currentState.runtime.status = 'stopped';
-              currentState.refCount = 0;
-              this.emitState(currentState, 'stopped', { external: true, launcher: true });
-              // 保留在 states 中以便跟踪进程（用于退出时清理）
-            }
-          }, 500);
+          // 注释掉启动器模式：不再自动清理状态
+          // 改为由标签页关闭时手动触发 stopTool
+          // setTimeout(() => {
+          //   const currentState = this.states.get(toolId);
+          //   if (currentState && currentState.runtime.status === 'running') {
+          //     logger.info(`[ToolRunner] HTTP 工具 ${toolId} 启动完成，清理状态（启动器模式）`);
+          //     currentState.runtime.status = 'stopped';
+          //     currentState.refCount = 0;
+          //     this.emitState(currentState, 'stopped', { external: true, launcher: true });
+          //     // 保留在 states 中以便跟踪进程（用于退出时清理）
+          //   }
+          // }, 500);
 
           return child.pid ?? -1;
         } catch (error) {
