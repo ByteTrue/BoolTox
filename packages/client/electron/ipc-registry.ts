@@ -418,7 +418,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
   ipcMain.handle(IpcChannel.ToolSources_Test, async (_event, repo: ToolSourceConfig) => {
     try {
       logger.info(`[IPC] Testing repository connection: ${repo.name}`);
-      const gitOps = new (await import('./services/git-ops.service.js')).GitOpsService();
+      const gitOps = new gitOpsService.constructor();
       gitOps.updateConfig(repo);
 
       const registry = await gitOps.getPluginRegistry();
