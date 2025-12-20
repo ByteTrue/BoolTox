@@ -5,10 +5,9 @@
 
 import { BrowserWindow, shell } from 'electron';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { toolManager } from './tool-manager';
 import { backendRunner } from './tool-backend-runner.js';
-import { ToolRuntime } from '@booltox/shared';
+import type { ToolBackendConfig, ToolRuntime } from '@booltox/shared';
 import { createLogger } from '../../utils/logger.js';
 import { resolveEntryPath } from '../../utils/platform-utils.js';
 import type { ChildProcess } from 'node:child_process';
@@ -20,7 +19,6 @@ import net from 'node:net';
 import { pythonManager } from '../python-manager.service.js';
 import http from 'node:http';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const logger = createLogger('ToolRunner');
 
 interface PluginState {
@@ -142,7 +140,7 @@ export class ToolRunner {
     const runtimeConfig = state.runtime.manifest.runtime;
     if (runtimeConfig && (runtimeConfig.type === 'http-service' || runtimeConfig.type === 'standalone' || runtimeConfig.type === 'cli')) {
       // 获取 backend 配置
-      let backend: any;
+      let backend: ToolBackendConfig | undefined;
       if (runtimeConfig.type === 'http-service' || runtimeConfig.type === 'cli') {
         backend = runtimeConfig.backend;
       } else if (runtimeConfig.type === 'standalone') {
@@ -813,7 +811,7 @@ export class ToolRunner {
           // }, 500);
 
           return child.pid ?? -1;
-        } catch (error) {
+        } catch {
           // 服务尚未就绪，继续等待
           await new Promise(resolve => setTimeout(resolve, checkInterval));
         }
@@ -1036,8 +1034,8 @@ export class ToolRunner {
    */
   private async ensureDependencies(
     runtime: ToolRuntime,
-    backend: any,
-    parentWindow: BrowserWindow
+    backend: ToolBackendConfig,
+    _parentWindow: BrowserWindow
   ): Promise<void> {
     const toolPath = runtime.path;
     const toolId = runtime.id;

@@ -46,7 +46,6 @@ export function ModuleCard({
 
   // 检查工具类型
   const runtimeType = module.definition.runtime?.type;
-  const isHttpService = runtimeType === 'http-service';
   const isExternalTool = runtimeType === 'cli' || runtimeType === 'binary';
 
   // 启动器模式：只在启动中或错误时显示状态标签

@@ -66,7 +66,8 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
         // 已存在，激活该标签
         tabId = existingTab.id;
         setActiveToolTabId(existingTab.id);
-        console.log('[ToolTabContext] 工具标签已存在，激活:', existingTab.id);
+        console.group('[ToolTabContext] 工具标签已存在，激活:', existingTab.id);
+        console.groupEnd();
         return prev; // 不修改标签列表
       }
 
@@ -84,7 +85,8 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
       };
 
       setActiveToolTabId(tabId);
-      console.log('[ToolTabContext] 创建工具标签:', { tabId, toolId, url });
+      console.group('[ToolTabContext] 创建工具标签:', { tabId, toolId, url });
+      console.groupEnd();
 
       return [...prev, newTab];
     });
@@ -103,10 +105,11 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
       // 如果关闭的是 http-service 工具的标签，通知后端停止工具
       // silent=true 时跳过（表示后端已经停止，前端只需关闭标签页）
       if (tab && !silent) {
-        console.log('[ToolTabContext] 关闭工具标签:', tabId, '工具ID:', tab.toolId);
+        console.group('[ToolTabContext] 关闭工具标签:', tabId, '工具ID:', tab.toolId);
+        console.groupEnd();
         // 通过 IPC 通知后端停止工具进程（使用 invoke 而不是 send）
         window.ipc.invoke('tool:stop', tab.toolId).catch((err: Error) => {
-          console.error('[ToolTabContext] 停止工具失败:', err);
+          console.warn('[ToolTabContext] 停止工具失败:', err);
         });
       }
 
@@ -128,7 +131,8 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
    */
   const activateToolTab = useCallback((tabId: string | null) => {
     setActiveToolTabId(tabId);
-    console.log('[ToolTabContext] 激活工具标签:', tabId);
+    console.group('[ToolTabContext] 激活工具标签:', tabId);
+    console.groupEnd();
   }, []);
 
   /**
@@ -168,7 +172,8 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
         // 查找该工具的标签并关闭
         const tab = toolTabs.find(t => t.toolId === payload.toolId);
         if (tab) {
-          console.log('[ToolTabContext] 工具停止，静默关闭标签（避免循环调用）:', tab.id);
+          console.group('[ToolTabContext] 工具停止，静默关闭标签（避免循环调用）:', tab.id);
+          console.groupEnd();
           closeToolTab(tab.id, true); // silent=true，避免重复调用 tool:stop
         }
       }
@@ -185,7 +190,8 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
     const handler = (...args: unknown[]) => {
       const payload = args[0] as { toolId: string; url: string; label: string };
       if (payload?.toolId && payload?.url && payload?.label) {
-        console.log('[ToolTabContext] 收到工具标签创建请求:', payload);
+        console.group('[ToolTabContext] 收到工具标签创建请求:', payload);
+        console.groupEnd();
         const tabId = createToolTab(payload.toolId, payload.label, payload.url);
         activateToolTab(tabId); // 自动激活新创建的标签
       }

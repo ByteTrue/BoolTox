@@ -5,13 +5,12 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import type { ElementType, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTheme } from './theme-provider';
 import { useUpdate } from '@/contexts/update-context';
 import { APP_VERSION } from '@/config/app-info';
-import { ADMIN_API_BASE, RELEASE_CHANNEL } from '@/config/api';
 import { getGlassStyle, getGlassShadow } from '@/utils/glass-layers';
 import { buttonInteraction, cardHover } from '@/utils/animation-presets';
 import { Modal } from './ui/modal';
@@ -25,11 +24,8 @@ import {
   CheckCircle2,
   Loader2,
   Package,
-  Server,
   FileText,
   Sliders,
-  ChevronDown,
-  ChevronUp,
   Sun,
   Moon,
   Rocket,
@@ -40,13 +36,10 @@ export function SettingsPanel() {
   const { theme, toggleTheme } = useTheme();
   const { state, details, retryCheck, downloadUpdate, installUpdate } = useUpdate();
   const [showNotes, setShowNotes] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [autoLaunch, setAutoLaunch] = useState(false);
   const [isLoadingAutoLaunch, setIsLoadingAutoLaunch] = useState(false);
   const [closeToTray, setCloseToTray] = useState(true);
   const [isLoadingCloseToTray, setIsLoadingCloseToTray] = useState(false);
-
-  const isDev = import.meta.env.MODE === 'development';
 
   // 加载开机启动状态
   useEffect(() => {

@@ -54,8 +54,8 @@ export function ModuleDetailModal({
   if (!module || !mounted) return null;
 
   const definition = "definition" in module ? module.definition : module;
-  const runtime = "runtime" in module ? module.runtime : undefined;
-  const launchState = module.runtime ? (module.runtime as any).launchState ?? 'idle' : 'idle';
+  const runtime = "definition" in module ? module.runtime : undefined;
+  const launchState = runtime?.launchState ?? "idle";
   const isLaunching = launchState === "launching";
   const isRunning = launchState === "running";
   const isLaunchError = launchState === "error";

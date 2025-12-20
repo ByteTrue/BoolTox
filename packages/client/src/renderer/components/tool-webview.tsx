@@ -38,8 +38,8 @@ export function ToolWebView({
 
     // 监听标题变化
     const handleTitleUpdate = (e: Event) => {
-      const title = (e as any).title;
-      onTitleUpdate?.(title);
+      const { title } = e as { title?: string };
+      onTitleUpdate?.(title ?? '');
     };
 
     // 监听导航事件
@@ -64,9 +64,9 @@ export function ToolWebView({
 
     // 监听加载失败
     const handleLoadError = (e: Event) => {
-      const event = e as any;
-      console.error('[ToolWebView] 加载失败:', event.errorDescription);
-      setError(`加载失败: ${event.errorDescription}`);
+      const { errorDescription } = e as { errorDescription?: string };
+      console.error('[ToolWebView] 加载失败:', errorDescription);
+      setError(`加载失败: ${errorDescription ?? 'Unknown error'}`);
       onLoadingChange?.(false);
     };
 
@@ -79,11 +79,8 @@ export function ToolWebView({
 
     // 监听新窗口请求（target="_blank" 等）
     const handleNewWindow = (e: Event) => {
-      const event = e as any;
-      const newUrl = event.url;
-      console.log('[ToolWebView] 新窗口请求:', newUrl);
-
-      // 在系统浏览器中打开
+      const { url: newUrl } = e as { url?: string };
+      if (!newUrl) return;
       window.ipc.invoke('shell:openExternal', newUrl);
     };
 
@@ -187,17 +184,14 @@ export function ToolWebView({
 
   return (
     <webview
-      ref={webviewRef as any}
+      ref={webviewRef}
       src={url}
       className="w-full h-full"
       // 安全配置：禁用 Node 集成，启用上下文隔离
-      // @ts-ignore webview 标签的类型定义不完整
       nodeintegration={false}
       enableremotemodule={false}
-      // @ts-ignore
       webpreferences="contextIsolation=true"
       // 允许弹出窗口（由 new-window 事件处理）
-      // @ts-ignore
       allowpopups={true}
     />
   );

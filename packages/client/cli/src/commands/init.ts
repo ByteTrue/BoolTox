@@ -21,19 +21,20 @@ const { prompt } = enquirer;
 export async function initCommand(options: { dir: string; force?: boolean }) {
   const { dir, force } = options;
 
-  console.log(chalk.blue('🚀 BoolTox 工具初始化\n'));
+  console.warn(chalk.blue('🚀 BoolTox 工具初始化\n'));
 
   // 检查 booltox.json 是否已存在
   const booltoxPath = path.join(dir, 'booltox.json');
   const exists = await fs.access(booltoxPath).then(() => true).catch(() => false);
 
   if (exists && !force) {
-    console.log(chalk.yellow('⚠️  booltox.json 已存在，使用 --force 覆盖'));
+    console.warn(chalk.yellow('⚠️  booltox.json 已存在，使用 --force 覆盖'));
     return;
   }
 
   // 交互式收集信息
-  console.log(chalk.gray('请填写工具基本信息:\n'));
+  console.group(chalk.gray('请填写工具基本信息:\n'));
+  console.groupEnd();
 
   const answers = await prompt<{
     id: string;
@@ -113,14 +114,21 @@ export async function initCommand(options: { dir: string; force?: boolean }) {
   // 写入文件
   await fs.writeFile(booltoxPath, JSON.stringify(manifest, null, 2) + '\n');
 
-  console.log(chalk.green('\n✓ booltox.json 已生成'));
-  console.log(chalk.gray(`  路径: ${booltoxPath}\n`));
+  console.group(chalk.green('\n✓ booltox.json 已生成'));
+  console.group(chalk.gray(`  路径: ${booltoxPath}\n`));
+  console.groupEnd();
+  console.groupEnd();
 
-  console.log(chalk.blue('📋 下一步:'));
-  console.log(chalk.gray('  1. 编辑 booltox.json，填写正确的入口文件和作者信息'));
-  console.log(chalk.gray('  2. 测试工具运行是否正常'));
-  console.log(chalk.gray('  3. git commit && git push'));
-  console.log(chalk.gray('  4. 在 BoolTox Client 中添加工具源\n'));
+  console.group(chalk.blue('📋 下一步:'));
+  console.group(chalk.gray('  1. 编辑 booltox.json，填写正确的入口文件和作者信息'));
+  console.group(chalk.gray('  2. 测试工具运行是否正常'));
+  console.group(chalk.gray('  3. git commit && git push'));
+  console.group(chalk.gray('  4. 在 BoolTox Client 中添加工具源\n'));
+  console.groupEnd();
+  console.groupEnd();
+  console.groupEnd();
+  console.groupEnd();
 
-  console.log(chalk.dim('提示: 模板中的某些字段（如 author、入口文件）需要您手动修改'));
+  console.group(chalk.dim('提示: 模板中的某些字段（如 author、入口文件）需要您手动修改'));
+  console.groupEnd();
 }

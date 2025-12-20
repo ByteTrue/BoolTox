@@ -6,14 +6,12 @@
 import React from "react";
 import {
   LayoutGrid,
-  ShoppingBag,
   Star,
   Hash,
   ChevronRight,
   Store,
   Package,
   Plus,
-  FolderOpen,
   Play,
   Settings,
 } from "lucide-react";

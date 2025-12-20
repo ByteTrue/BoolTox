@@ -16,9 +16,8 @@
  * - 用户确认后保存
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../components/theme-provider';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Github, FolderOpen } from 'lucide-react';
 import type { ToolSourceConfig } from '@booltox/shared';
@@ -26,7 +25,6 @@ import type { ToolSourceConfig } from '@booltox/shared';
 type SourceType = 'remote' | 'local';
 
 export function AddToolSourcePage() {
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const [step, setStep] = useState<'select-type' | 'fill-form'>('select-type');
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
@@ -290,8 +288,8 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
   const [existingConfig, setExistingConfig] = useState<{
     hasBooltoxJson: boolean;
     hasBooltoxIndex: boolean;
-    booltoxData?: any;
-    indexData?: any;
+    booltoxData?: unknown;
+    indexData?: unknown;
   } | null>(null);
 
   const handleSelectPath = async () => {
@@ -415,7 +413,6 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
   return (
     <ToolConfigWizard
       localPath={formData.localPath}
-      sourceName={formData.sourceName}
       existingConfig={existingConfig}
       onBack={() => setStep('select-path')}
       onFinish={handleFinishConfiguration}
@@ -437,18 +434,35 @@ async function detectToolConfig(localPath: string) {
 // 工具配置向导
 interface ToolConfigWizardProps {
   localPath: string;
-  sourceName: string;
   existingConfig: {
     hasBooltoxJson: boolean;
     hasBooltoxIndex: boolean;
-    booltoxData?: any;
-    indexData?: any;
+    booltoxData?: unknown;
+    indexData?: unknown;
   } | null;
   onBack: () => void;
   onFinish: () => void;
 }
 
-function ToolConfigWizard({ localPath, sourceName, existingConfig, onBack, onFinish }: ToolConfigWizardProps) {
+type ToolIndexData = { tools?: Array<{ id: string; path: string }> };
+
+interface ToolConfigDraftRuntime {
+  type?: string;
+  start?: string;
+  healthCheck?: { path?: string; port?: number };
+}
+
+interface ToolConfigDraft {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
+  category?: string;
+  runtime?: ToolConfigDraftRuntime;
+}
+
+function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolConfigWizardProps) {
   // 根据现有配置确定模式和步骤
   const initialMode = existingConfig?.hasBooltoxIndex
     ? 'index'
@@ -464,7 +478,7 @@ function ToolConfigWizard({ localPath, sourceName, existingConfig, onBack, onFin
   const [mode, setMode] = useState<'single' | 'index' | null>(initialMode);
   const [step, setStep] = useState<'mode-select' | 'index-list' | 'create-subtools'>(initialStep);
 
-  const [toolConfig, setToolConfig] = useState<any>(existingConfig?.booltoxData || {
+  const defaultToolConfig: ToolConfigDraft = {
     id: '',
     name: '',
     version: '1.0.0',
@@ -476,10 +490,33 @@ function ToolConfigWizard({ localPath, sourceName, existingConfig, onBack, onFin
       start: '',
       healthCheck: { path: '/', port: 8080 },
     },
+  };
+
+  const [toolConfig, setToolConfig] = useState<ToolConfigDraft>(() => {
+    const existing = existingConfig?.booltoxData;
+    if (!existing || typeof existing !== 'object') {
+      return defaultToolConfig;
+    }
+
+    const record = existing as Partial<ToolConfigDraft> & { runtime?: unknown };
+    const runtime = record.runtime;
+
+    return {
+      ...defaultToolConfig,
+      ...record,
+      runtime: {
+        ...defaultToolConfig.runtime,
+        ...(runtime && typeof runtime === 'object'
+          ? (runtime as Partial<ToolConfigDraftRuntime>)
+          : {}),
+      },
+    };
   });
-  const [indexTools, setIndexTools] = useState<Array<{ id: string; path: string }>>(
-    existingConfig?.indexData?.tools || []
-  );
+
+  const [indexTools, setIndexTools] = useState<Array<{ id: string; path: string }>>(() => {
+    const tools = (existingConfig?.indexData as ToolIndexData | null | undefined)?.tools;
+    return Array.isArray(tools) ? tools : [];
+  });
   const [subtoolsStatus, setSubtoolsStatus] = useState<Array<{ id: string; path: string; hasConfig: boolean }>>([]);
 
   const handleSaveConfig = async () => {

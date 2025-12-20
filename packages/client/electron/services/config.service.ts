@@ -92,11 +92,11 @@ class ConfigService {
   public get<K extends keyof AppConfig, T extends keyof AppConfig[K]>(
     key: K,
     subKey?: T
-  ): any {
-    if (subKey) {
-      return this.store.get(`${String(key)}.${String(subKey)}` as any);
+  ): AppConfig[K] | AppConfig[K][T] {
+    if (subKey !== undefined) {
+      return this.store.get(`${String(key)}.${String(subKey)}`) as unknown as AppConfig[K][T];
     }
-    return this.store.get(key);
+    return this.store.get(key) as AppConfig[K];
   }
 
   /**
@@ -114,7 +114,7 @@ class ConfigService {
     value?: AppConfig[K][T]
   ): void {
     if (value !== undefined) {
-      this.store.set(`${String(key)}.${String(subKeyOrValue)}` as any, value);
+      this.store.set(`${String(key)}.${String(subKeyOrValue)}`, value);
     } else {
       this.store.set(key, subKeyOrValue as AppConfig[K]);
     }

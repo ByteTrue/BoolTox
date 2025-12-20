@@ -7,7 +7,7 @@
  * Vitest 设置文件（渲染进程）
  */
 
-import { expect, afterEach } from 'vitest';
+import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
@@ -19,9 +19,11 @@ afterEach(() => {
   cleanup();
 });
 
+const globalWindow = (globalThis as unknown as { window: Record<string, unknown> }).window ?? {};
+(globalThis as unknown as { window: Record<string, unknown> }).window = globalWindow;
+
 // Mock window.ipc
-global.window = global.window || {};
-(global.window as any).ipc = {
+globalWindow.ipc = {
   invoke: vi.fn(),
   on: vi.fn(),
   off: vi.fn(),
@@ -29,7 +31,7 @@ global.window = global.window || {};
 };
 
 // Mock window.electron
-(global.window as any).electron = {
+globalWindow.electron = {
   window: {
     minimize: vi.fn(),
     toggleMaximize: vi.fn(),

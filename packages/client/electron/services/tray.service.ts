@@ -16,6 +16,7 @@ import { Tray, Menu, nativeImage, app, BrowserWindow } from 'electron';
 import type { NativeImage } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
+import * as fs from 'node:fs';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('TrayService');
@@ -178,11 +179,11 @@ export class TrayService {
 
     // 检查图标文件是否存在
     try {
-      const fs = require('fs');
       if (fs.existsSync(iconPath)) {
         return iconPath;
       }
-    } catch (error) {
+      logger.warn('Tray icon file not found, using placeholder icon');
+    } catch {
       logger.warn('Tray icon file not found, using placeholder icon');
     }
 

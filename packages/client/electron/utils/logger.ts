@@ -68,7 +68,7 @@ class LoggerService {
 
   // 当前模块名
   private module: string = '';
-  private context: Record<string, any> = {};
+  private context: Record<string, unknown> = {};
 
   private constructor() {
     // 日志目录
@@ -81,7 +81,7 @@ class LoggerService {
       // 日志级别：BOOLTOX_LOG_LEVEL=debug
       if (process.env.BOOLTOX_LOG_LEVEL && Object.values(LOG_LEVEL).includes(process.env.BOOLTOX_LOG_LEVEL as LogLevel)) {
         this.envLevel = process.env.BOOLTOX_LOG_LEVEL as LogLevel;
-        console.log(colorText(`[LoggerService] 环境变量 BOOLTOX_LOG_LEVEL: ${this.envLevel}`, 'BLUE'));
+        console.warn(colorText(`[LoggerService] 环境变量 BOOLTOX_LOG_LEVEL: ${this.envLevel}`, 'BLUE'));
       }
 
       // 模块过滤：BOOLTOX_LOG_MODULES=ToolManager,PythonManager
@@ -89,7 +89,7 @@ class LoggerService {
         this.envShowModules = process.env.BOOLTOX_LOG_MODULES.split(',')
           .map((m) => m.trim())
           .filter((m) => m !== '');
-        console.log(colorText(`[LoggerService] 环境变量 BOOLTOX_LOG_MODULES: ${this.envShowModules.join(', ')}`, 'BLUE'));
+        console.warn(colorText(`[LoggerService] 环境变量 BOOLTOX_LOG_MODULES: ${this.envShowModules.join(', ')}`, 'BLUE'));
       }
     }
 
@@ -160,7 +160,7 @@ class LoggerService {
   /**
    * 创建带命名空间的 logger
    */
-  public withContext(module: string, context?: Record<string, any>): LoggerService {
+  public withContext(module: string, context?: Record<string, unknown>): LoggerService {
     const newLogger = Object.create(this);
     newLogger.logger = this.logger;
     newLogger.module = module;
@@ -171,7 +171,7 @@ class LoggerService {
   /**
    * 处理日志
    */
-  private processLog(source: LogSource, level: LogLevel, message: string, meta: any[]): void {
+  private processLog(source: LogSource, level: LogLevel, message: string, meta: unknown[]): void {
     // 开发环境：彩色控制台输出 + 模块过滤
     if (!app.isPackaged) {
       // 环境变量过滤
@@ -199,7 +199,11 @@ class LoggerService {
 
       const levelStr = colorText(`<${level.toUpperCase()}>`, levelColors[level]);
 
-      console.log(`${time} ${levelStr}${moduleStr}${message}`, ...meta);
+      if (level === 'error') {
+        console.error(`${time} ${levelStr}${moduleStr}${message}`, ...meta);
+      } else {
+        console.warn(`${time} ${levelStr}${moduleStr}${message}`, ...meta);
+      }
     }
 
     // 写入文件
@@ -215,7 +219,7 @@ class LoggerService {
   /**
    * 处理渲染进程日志
    */
-  private processRendererLog(source: LogSource, level: LogLevel, message: string, meta: any[]): void {
+  private processRendererLog(source: LogSource, level: LogLevel, message: string, meta: unknown[]): void {
     this.processLog(source, level, `[Renderer] ${message}`, meta);
   }
 
@@ -223,7 +227,7 @@ class LoggerService {
    * 注册 IPC handler（渲染进程日志转发）
    */
   private registerIpcHandler(): void {
-    ipcMain.handle('app:log-to-main', (_event, source: LogSource, level: LogLevel, message: string, meta: any[]) => {
+    ipcMain.handle('app:log-to-main', (_event, source: LogSource, level: LogLevel, message: string, meta: unknown[]) => {
       this.processRendererLog(source, level, message, meta);
     });
   }
@@ -231,19 +235,19 @@ class LoggerService {
   /**
    * 公共日志方法
    */
-  public error(message: string, ...meta: any[]): void {
+  public error(message: string, ...meta: unknown[]): void {
     this.processLog({ process: 'main', module: this.module }, 'error', message, meta);
   }
 
-  public warn(message: string, ...meta: any[]): void {
+  public warn(message: string, ...meta: unknown[]): void {
     this.processLog({ process: 'main', module: this.module }, 'warn', message, meta);
   }
 
-  public info(message: string, ...meta: any[]): void {
+  public info(message: string, ...meta: unknown[]): void {
     this.processLog({ process: 'main', module: this.module }, 'info', message, meta);
   }
 
-  public debug(message: string, ...meta: any[]): void {
+  public debug(message: string, ...meta: unknown[]): void {
     this.processLog({ process: 'main', module: this.module }, 'debug', message, meta);
   }
 

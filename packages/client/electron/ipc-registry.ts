@@ -669,7 +669,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
   /**
    * 写入工具配置文件（booltox.json）
    */
-  ipcMain.handle('fs:writeToolConfig', async (_event, localPath: string, config: any) => {
+  ipcMain.handle('fs:writeToolConfig', async (_event, localPath: string, config: unknown) => {
     try {
       const configPath = path.join(localPath, 'booltox.json');
       await fsPromises.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');

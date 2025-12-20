@@ -8,7 +8,7 @@
  * 参考 Cherry Studio WindowService 设计
  */
 
-import { BrowserWindow, app } from 'electron';
+import { BrowserWindow } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import path from 'path';
 import { createLogger } from '../utils/logger.js';

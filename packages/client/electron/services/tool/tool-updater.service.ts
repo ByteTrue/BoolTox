@@ -56,7 +56,7 @@ export class ToolUpdaterService {
           continue;
         }
 
-        const online = onlineTools.find((t: any) => t.id === installed.id);
+        const online = onlineTools.find((t) => t.id === installed.id);
         if (!online) {
           logger.debug(`Tool ${installed.id} not found in online registry`);
           continue;
@@ -80,7 +80,7 @@ export class ToolUpdaterService {
 
             logger.info(`Update available for ${installed.id}: ${currentVersion} → ${latestVersion}`);
           }
-        } catch (error) {
+        } catch {
           logger.warn(`Failed to compare versions for ${installed.id}: ${currentVersion} vs ${latestVersion}`);
         }
       }
@@ -104,7 +104,7 @@ export class ToolUpdaterService {
 
       // 获取在线工具信息
       const registry = await gitOpsService.getPluginRegistry();
-      const tool = (registry.plugins || []).find((t: any) => t.id === toolId);
+      const tool = (registry.plugins || []).find((t) => t.id === toolId);
 
       if (!tool) {
         throw new Error(`工具 ${toolId} 在工具市场中未找到`);

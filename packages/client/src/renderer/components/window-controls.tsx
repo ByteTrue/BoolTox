@@ -47,7 +47,6 @@ export default function WindowControls() {
     <div
       className="flex items-center flex-shrink-0"
       style={{
-        // @ts-ignore
         WebkitAppRegion: 'no-drag',
       }}
     >

@@ -6,7 +6,7 @@
 import { motion } from "framer-motion";
 import { Play, Square, Trash2, X } from "lucide-react";
 import { useTheme } from "../theme-provider";
-import { getGlassStyle, GLASS_BORDERS } from "@/utils/glass-layers";
+import { getGlassStyle } from "@/utils/glass-layers";
 
 interface BatchActionsBarProps {
   selectedCount: number;

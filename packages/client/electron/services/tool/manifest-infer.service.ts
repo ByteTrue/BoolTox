@@ -166,7 +166,7 @@ export function inferManifest(manifest: ToolManifest, toolPath: string): ToolMan
 
     // Python 工具：添加 requirements.txt
     if (backendType === 'python') {
-      (backend as any).requirements = 'requirements.txt';
+      backend.requirements = 'requirements.txt';
     }
 
     const runtime: ToolRuntimeConfig = {
@@ -186,15 +186,11 @@ export function inferManifest(manifest: ToolManifest, toolPath: string): ToolMan
 
   // 无 port，检查是否为 GUI 应用
   if (isGuiApp(start)) {
-    const runtime: any = {
+    const runtime: ToolRuntimeConfig = {
       type: 'standalone',
       entry,
+      ...(backendType === 'python' ? { requirements: 'requirements.txt' } : {}),
     };
-
-    // Python 工具：添加 requirements.txt
-    if (backendType === 'python') {
-      runtime.requirements = 'requirements.txt';
-    }
 
     logger.info(`Inferred as standalone GUI application`);
 

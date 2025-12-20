@@ -3,7 +3,6 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTheme } from '../components/theme-provider';

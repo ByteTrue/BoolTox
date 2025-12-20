@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { useModulePlatform } from "@/contexts/module-context";
 import { useTheme } from "../theme-provider";
 import { ModuleGrid } from "./module-grid";
-import { ModuleStoreGrouped } from "./module-store-grouped";
 import { ModuleDetailModal } from "./module-detail-modal";
 import { ModuleSidebar } from "./module-sidebar";
 import { BatchActionsBar } from "./batch-actions-bar";
@@ -20,7 +19,6 @@ import { CustomSelect } from "./custom-select";
 import { Search, ArrowUpDown, Plus, CheckSquare, LayoutGrid, List } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { iconButtonInteraction } from "@/utils/animation-presets";
-import { getGlassStyle } from "@/utils/glass-layers";
 import { DropZone } from "./drop-zone";
 import type { ModuleSortConfig, ViewMode } from "./types";
 import type { ModuleInstance } from "@/types/module";
@@ -32,7 +30,6 @@ import type { ToolSourceConfig } from "@booltox/shared";
 export function ModuleCenter() {
   const navigate = useNavigate();
   const {
-    moduleStats,
     installedModules,
     toolRegistry,
     availableModules,
@@ -158,7 +155,7 @@ export function ModuleCenter() {
   }, [allAvailableModules]);
 
   const displayedModulesRaw = useMemo(() => {
-    let modules: any[] = [];
+    let modules: ModuleInstance[] = [];
 
     // 检查是否为动态工具源视图（格式：source:sourceId）
     if (currentView.startsWith('source:')) {
@@ -205,7 +202,7 @@ export function ModuleCenter() {
   const categoryFilteredModules = useMemo(() => {
     if (currentCategory === 'all') return displayedModulesRaw;
     return displayedModulesRaw.filter(m =>
-      (m.category || 'utilities').toLowerCase() === currentCategory.toLowerCase()
+      (m.definition.category || 'utilities').toLowerCase() === currentCategory.toLowerCase()
     );
   }, [displayedModulesRaw, currentCategory]);
 
@@ -219,11 +216,11 @@ export function ModuleCenter() {
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
     displayedModulesRaw.forEach(m => {
-      const cat = (m as any).definition?.category || (m as any).category;
+      const cat = m.definition.category;
       if (cat) categories.add(cat);
     });
     storeModules.forEach(m => {
-      const cat = (m as any).definition?.category || (m as any).category;
+      const cat = m.definition.category;
       if (cat) categories.add(cat);
     });
     return Array.from(categories).sort();
@@ -361,7 +358,6 @@ export function ModuleCenter() {
     // 假设 installLocalModule 可以处理文件对象
     // 这里需要根据实际 API 调整，暂时使用 addLocalBinaryTool 模拟
     // 实际上应该调用处理文件路径的逻辑
-    console.log("Dropped files:", files);
 
     // 如果有处理文件的逻辑，可以在这里调用
     // await installLocalModule(files[0].path);
@@ -542,7 +538,7 @@ export function ModuleCenter() {
 
             <CustomSelect
               value={sortConfig.by}
-              onChange={(val) => setSortConfig(prev => ({ ...prev, by: val as any }))}
+              onChange={(val) => setSortConfig(prev => ({ ...prev, by: val as ModuleSortConfig['by'] }))}
               options={[
                 { value: "default", label: "默认" },
                 { value: "name", label: "名称" },

@@ -7,7 +7,7 @@
  * ConfigService 单元测试
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { configService } from './config.service';
 
 describe('ConfigService', () => {

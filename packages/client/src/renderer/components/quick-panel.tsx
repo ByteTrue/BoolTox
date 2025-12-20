@@ -6,6 +6,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Zap, Grid, Settings, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { ToolRuntime } from '@booltox/shared';
+
+type QuickPanelTool = ToolRuntime & { isFavorite?: boolean };
 
 // 获取系统主题
 function getSystemTheme(): 'light' | 'dark' {
@@ -29,7 +32,7 @@ function resolveActualTheme(): 'light' | 'dark' {
 
 export function QuickPanel() {
   const [query, setQuery] = useState('');
-  const [installedModules, setInstalledModules] = useState<any[]>([]);
+  const [installedModules, setInstalledModules] = useState<QuickPanelTool[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => resolveActualTheme());
 
@@ -66,10 +69,8 @@ export function QuickPanel() {
   useEffect(() => {
     const loadModules = async () => {
       try {
-        console.log('[QuickPanel] 开始加载工具列表...');
-        const modules = await window.tool?.getAll();
-        console.log('[QuickPanel] 工具列表加载完成:', modules?.length, modules);
-        setInstalledModules(modules || []);
+        const modules = await (window.tool as unknown as { getAll?: () => Promise<QuickPanelTool[]> }).getAll?.();
+        setInstalledModules(modules ?? []);
       } catch (error) {
         console.error('[QuickPanel] 加载工具列表失败', error);
       }
@@ -80,29 +81,20 @@ export function QuickPanel() {
 
   // 收藏的工具（最多 6 个）
   const favorites = useMemo(
-    () => installedModules.filter((m: any) => m.isFavorite).slice(0, 6),
+    () => installedModules.filter((m) => m.isFavorite).slice(0, 6),
     [installedModules]
   );
 
   // 搜索过滤
   const filteredModules = useMemo(() => {
-    console.log('[QuickPanel] 搜索词:', query, '工具总数:', installedModules.length);
     if (!query) return [];
+    const lowerQuery = query.toLowerCase();
 
-    const filtered = installedModules.filter((module: any) => {
-      const name = module.manifest?.name?.toLowerCase() || '';
-      const desc = module.manifest?.description?.toLowerCase() || '';
-      const matches = name.includes(query.toLowerCase()) || desc.includes(query.toLowerCase());
-
-      if (matches) {
-        console.log('[QuickPanel] 匹配到工具:', module.manifest?.name);
-      }
-
-      return matches;
+    return installedModules.filter((module) => {
+      const name = module.manifest?.name?.toLowerCase() ?? '';
+      const desc = module.manifest?.description?.toLowerCase() ?? '';
+      return name.includes(lowerQuery) || desc.includes(lowerQuery);
     });
-
-    console.log('[QuickPanel] 搜索结果数量:', filtered.length);
-    return filtered;
   }, [query, installedModules]);
 
   // 快速操作
@@ -187,7 +179,7 @@ export function QuickPanel() {
                 className="space-y-2"
               >
                 {filteredModules.length > 0 ? (
-                  filteredModules.map((module: any) => (
+                  filteredModules.map((module) => (
                     <button
                       key={module.id}
                       onClick={() => handleToolClick(module.id)}
@@ -243,7 +235,7 @@ export function QuickPanel() {
                       ★ 收藏的工具
                     </h3>
                     <div className="grid grid-cols-3 gap-2">
-                      {favorites.map((module: any) => (
+                      {favorites.map((module) => (
                         <button
                           key={module.id}
                           onClick={() => handleToolClick(module.id)}

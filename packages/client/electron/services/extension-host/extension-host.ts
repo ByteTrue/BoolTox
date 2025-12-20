@@ -7,7 +7,6 @@ import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { BooltoxPermission, ToolRuntime } from '@booltox/shared';
-import { toolRunner } from '../tool/tool-runner.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('ExtensionHost');
@@ -91,7 +90,7 @@ export class ExtensionHost {
       // 窗口已销毁，这通常是正常的竞态条件（窗口关闭时还有异步 API 调用）
       // 不抛出错误，而是抛出一个特殊的可识别错误，调用者可以选择静默处理
       const error = new Error(`Tool window already destroyed for ${tool.id}`);
-      (error as any).code = 'WINDOW_DESTROYED';
+      (error as Error & { code: string }).code = 'WINDOW_DESTROYED';
       logger.debug(`[ExtensionHost] ${error.message} (this is usually a normal race condition)`);
       throw error;
     }
@@ -102,7 +101,7 @@ export class ExtensionHost {
     } catch (error) {
       if (error instanceof Error && error.message.includes('Object has been destroyed')) {
         const destroyedError = new Error(`Tool window already destroyed for ${tool.id}`);
-        (destroyedError as any).code = 'WINDOW_DESTROYED';
+        (destroyedError as Error & { code: string }).code = 'WINDOW_DESTROYED';
         logger.debug(`[ExtensionHost] ${destroyedError.message} (this is usually a normal race condition)`);
         throw destroyedError;
       }

@@ -7,7 +7,7 @@ import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Upload, FolderOpen, FileArchive } from "lucide-react";
 import { useTheme } from "../theme-provider";
-import { getGlassStyle, GLASS_BORDERS } from "@/utils/glass-layers";
+import { getGlassStyle } from "@/utils/glass-layers";
 
 interface DropZoneProps {
   onDrop: (files: FileList) => void;

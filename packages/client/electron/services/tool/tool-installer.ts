@@ -6,7 +6,6 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
-import fsSync from 'fs';
 import { createWriteStream } from 'fs';
 import { createHash } from 'crypto';
 import AdmZip from 'adm-zip';
@@ -499,7 +498,7 @@ export class ToolInstallerService {
     onProgress?: (progress: ToolInstallProgress) => void,
     window?: BrowserWindow
   ): Promise<string> {
-    const { id, binaryAssets } = entry;
+    const { id } = entry;
 
     const platform = this.getPlatform();
     const assetInfo = this.selectAssetForPlatform(entry, platform);

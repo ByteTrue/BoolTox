@@ -34,9 +34,9 @@ export function ModuleListItem({
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const isInstalled = "runtime" in module;
-  const definition = isInstalled ? (module as ModuleInstance).definition : (module as ModuleDefinition);
-  const launchState = isInstalled ? (module.runtime as any).launchState ?? "idle" : "idle";
+  const isInstalled = "definition" in module;
+  const definition = "definition" in module ? module.definition : module;
+  const launchState = "definition" in module ? module.runtime.launchState ?? "idle" : "idle";
   const isLaunching = launchState === "launching";
   const isRunning = launchState === "running";
   const isLaunchError = launchState === "error";

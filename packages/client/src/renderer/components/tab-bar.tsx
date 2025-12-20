@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Grid, Settings, Plus, X, Moon, Sun, Monitor } from 'lucide-react';
+import { Home, Grid, Settings, X, Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from './theme-provider';
 import WindowControls from './window-controls';
 import { useToolTabs } from '../contexts/tool-tab-context';
@@ -35,8 +35,6 @@ const DEFAULT_ROUTE_TABS: Tab[] = [
 // 平台检测（渲染进程安全）
 const userAgent = navigator.userAgent.toLowerCase();
 const isMac = userAgent.includes('mac');
-const isWin = userAgent.includes('win');
-const isLinux = userAgent.includes('linux') && !userAgent.includes('android');
 
 export function TabBar() {
   const [activeTabId, setActiveTabId] = useState('home');
@@ -136,7 +134,6 @@ export function TabBar() {
     <div
       className="flex items-center h-12 gap-2 px-4 border-b transition-colors duration-300"
       style={{
-        // @ts-ignore - webkit specific property
         WebkitAppRegion: 'drag',
         paddingLeft: isMac ? 'max(env(titlebar-area-x, 80px), 80px)' : '16px',
         borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
@@ -150,7 +147,6 @@ export function TabBar() {
       <div
         className="flex gap-1.5 flex-1 overflow-x-auto scrollbar-none"
         style={{
-          // @ts-ignore - 保持拖拽，只在按钮上禁用
           WebkitAppRegion: 'drag',
         }}
       >
@@ -167,7 +163,6 @@ export function TabBar() {
                 onClick={() => handleTabClick(tab)}
                 onAuxClick={(e) => handleAuxClick(tab, e)}
                 style={{
-                  // @ts-ignore - 标签按钮禁用拖拽
                   WebkitAppRegion: 'no-drag',
                 }}
                 className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 min-w-[90px] relative ${
@@ -209,7 +204,6 @@ export function TabBar() {
       <div
         className="flex items-center gap-1.5 flex-shrink-0"
         style={{
-          // @ts-ignore
           WebkitAppRegion: 'no-drag',
           paddingRight: isMac ? '12px' : '0',
         }}

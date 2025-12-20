@@ -130,10 +130,17 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
         const result = await window.tool.checkUpdates();
         if (result.success && Array.isArray(result.updates)) {
-          const updatesMap = new Map();
-          result.updates.forEach((update: any) => {
-            updatesMap.set(update.toolId, update);
-          });
+          const updatesMap = new Map<string, unknown>();
+          for (const update of result.updates) {
+            if (!update || typeof update !== 'object' || !('toolId' in update)) {
+              continue;
+            }
+            const toolId = (update as { toolId?: unknown }).toolId;
+            if (typeof toolId !== 'string') {
+              continue;
+            }
+            updatesMap.set(toolId, update);
+          }
           setToolUpdates(updatesMap);
 
           if (result.updates.length > 0) {

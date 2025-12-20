@@ -363,7 +363,7 @@ export class GitOpsService {
       // 1. 尝试加载 booltox-index.json（多工具模式）
       try {
         return await this.getPluginsFromIndexMode(source);
-      } catch (indexError) {
+      } catch {
         logger.debug(`[GitOps] No booltox-index.json found, trying single tool mode`);
         // 2. 降级到单工具模式（读取根目录 booltox.json）
         return await this.getPluginsFromSingleMode(source);
@@ -546,7 +546,7 @@ export class GitOpsService {
   /**
    * 获取 Tarball 下载 URL
    */
-  private getTarballUrl(source: ToolSourceConfig, toolPath: string): string {
+  private getTarballUrl(source: ToolSourceConfig, _toolPath: string): string {
     const { provider, owner, repo, branch } = source;
 
     if (provider === 'github') {

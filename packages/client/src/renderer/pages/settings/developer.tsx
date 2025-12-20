@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import { useTheme } from '../../components/theme-provider';
 import { motion } from 'framer-motion';
-import { Folder, RefreshCw, Trash2, FileText, Code, Database } from 'lucide-react';
+import { Folder, RefreshCw, Trash2, FileText } from 'lucide-react';
 
 export function DeveloperSettings() {
   const { theme } = useTheme();

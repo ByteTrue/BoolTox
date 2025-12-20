@@ -31,7 +31,7 @@ class RendererLogger {
   /**
    * 转发日志到主进程
    */
-  private async logToMain(level: LogLevel, message: string, ...meta: any[]): Promise<void> {
+  private async logToMain(level: LogLevel, message: string, ...meta: unknown[]): Promise<void> {
     const source: LogSource = {
       process: 'renderer',
       module: this.module,
@@ -43,7 +43,20 @@ class RendererLogger {
       if (import.meta.env.DEV) {
         const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
         const moduleStr = this.module ? ` [${this.module}]` : '';
-        console[level](`${timestamp} <${level.toUpperCase()}>${moduleStr} ${message}`, ...meta);
+        switch (level) {
+          case 'error':
+            console.error(`${timestamp} <${level.toUpperCase()}>${moduleStr} ${message}`, ...meta);
+            break;
+          case 'warn':
+            console.warn(`${timestamp} <${level.toUpperCase()}>${moduleStr} ${message}`, ...meta);
+            break;
+          case 'info':
+            console.warn(`${timestamp} <${level.toUpperCase()}>${moduleStr} ${message}`, ...meta);
+            break;
+          case 'debug':
+            console.warn(`${timestamp} <${level.toUpperCase()}>${moduleStr} ${message}`, ...meta);
+            break;
+        }
       }
 
       // 转发到主进程
@@ -51,26 +64,39 @@ class RendererLogger {
     } catch (error) {
       // IPC 失败时降级到控制台
       console.error('[Logger] 转发日志到主进程失败:', error);
-      console[level](message, ...meta);
+      switch (level) {
+        case 'error':
+          console.error(message, ...meta);
+          break;
+        case 'warn':
+          console.warn(message, ...meta);
+          break;
+        case 'info':
+          console.warn(message, ...meta);
+          break;
+        case 'debug':
+          console.warn(message, ...meta);
+          break;
+      }
     }
   }
 
   /**
    * 公共日志方法
    */
-  public error(message: string, ...meta: any[]): void {
+  public error(message: string, ...meta: unknown[]): void {
     void this.logToMain('error', message, ...meta);
   }
 
-  public warn(message: string, ...meta: any[]): void {
+  public warn(message: string, ...meta: unknown[]): void {
     void this.logToMain('warn', message, ...meta);
   }
 
-  public info(message: string, ...meta: any[]): void {
+  public info(message: string, ...meta: unknown[]): void {
     void this.logToMain('info', message, ...meta);
   }
 
-  public debug(message: string, ...meta: any[]): void {
+  public debug(message: string, ...meta: unknown[]): void {
     void this.logToMain('debug', message, ...meta);
   }
 
