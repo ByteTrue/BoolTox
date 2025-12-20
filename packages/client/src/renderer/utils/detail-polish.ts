@@ -5,14 +5,14 @@
 
 /**
  * 细节打磨工具 - Task 2.6
- * 
+ *
  * 实现 Apple 风格的细节优化：
  * 1. Scrollbar 样式优化
  * 2. Focus 状态环优化
  * 3. Loading 状态动画
  * 4. Skeleton 加载占位
  * 5. Empty 空状态
- * 
+ *
  * 参考标准：
  * - macOS scrollbar (overlay style)
  * - iOS focus ring (blue glow)
@@ -42,9 +42,9 @@ export interface ScrollbarConfig {
 
 /**
  * 获取自定义滚动条样式
- * 
+ *
  * macOS 风格：细窄、半透明、Hover 时显示
- * 
+ *
  * @example
  * <div style={getScrollbarStyle('dark')}>
  *   Content with custom scrollbar
@@ -67,13 +67,11 @@ export function getScrollbarStyle(
 
 /**
  * 获取滚动条 CSS 类名
- * 
+ *
  * 使用 Tailwind 自定义滚动条类
  */
 export function getScrollbarClassName(theme: ScrollbarTheme = 'dark'): string {
-  return theme === 'dark'
-    ? 'elegant-scroll'
-    : 'elegant-scroll-light';
+  return theme === 'dark' ? 'elegant-scroll' : 'elegant-scroll-light';
 }
 
 // ============================================
@@ -94,9 +92,9 @@ export interface FocusRingConfig {
 
 /**
  * 获取 Focus Ring 样式
- * 
+ *
  * Apple 风格：蓝色发光环，外围模糊
- * 
+ *
  * @example
  * <input style={getFocusRingStyle('light')} />
  */
@@ -119,7 +117,7 @@ export function getFocusRingStyle(
 
 /**
  * 获取 Focus Ring Tailwind 类名
- * 
+ *
  * 使用预定义的 focus-visible 样式
  */
 export function getFocusRingClassName(theme: ScrollbarTheme = 'dark'): string {
@@ -151,7 +149,7 @@ export interface LoadingConfig {
 
 /**
  * 获取 Spinner 动画样式
- * 
+ *
  * iOS 风格的旋转 Spinner
  */
 export function getSpinnerStyle(
@@ -184,7 +182,7 @@ export function getSpinnerStyle(
 
 /**
  * 获取 Dots 动画配置
- * 
+ *
  * 三点跳跃动画
  */
 export function getDotsAnimationConfig(speed = 1.2) {
@@ -206,7 +204,7 @@ export function getDotsAnimationConfig(speed = 1.2) {
 
 /**
  * 获取 Pulse 动画样式
- * 
+ *
  * 脉冲呼吸动画
  */
 export function getPulseStyle(
@@ -246,9 +244,9 @@ export interface SkeletonConfig {
 
 /**
  * 获取 Skeleton 样式
- * 
+ *
  * 闪烁渐变动画
- * 
+ *
  * @example
  * <div style={getSkeletonStyle('dark', { width: '100%', height: 20 })}>
  */
@@ -359,14 +357,14 @@ export const emptyStatePresets: Record<EmptyType, EmptyConfig> = {
     actionText: '重新连接',
     iconColor: '#EF4444',
   },
-  'error': {
+  error: {
     icon: '⚠️',
     title: '出错了',
     description: '发生了一些错误，请稍后重试',
     actionText: '重试',
     iconColor: '#F59E0B',
   },
-  'success': {
+  success: {
     icon: '✅',
     title: '完成',
     description: '操作已成功完成',
@@ -388,7 +386,7 @@ export function getEmptyStateConfig(type: EmptyType): EmptyConfig {
 
 /**
  * 生成 CSS 关键帧动画字符串
- * 
+ *
  * 需要在全局 CSS 中定义这些动画
  */
 export const cssAnimations = {
@@ -455,15 +453,12 @@ export function supportsCustomScrollbar(): boolean {
   const element = document.createElement('div');
   const style = element.style;
 
-  return (
-    'scrollbarWidth' in style ||
-    'WebkitOverflowScrolling' in style
-  );
+  return 'scrollbarWidth' in style || 'WebkitOverflowScrolling' in style;
 }
 
 /**
  * 生成随机 Skeleton 宽度
- * 
+ *
  * 用于模拟真实文本宽度变化
  */
 export function getRandomSkeletonWidth(min = 60, max = 100): string {
@@ -475,5 +470,5 @@ export function getRandomSkeletonWidth(min = 60, max = 100): string {
  * 延迟加载辅助函数
  */
 export function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

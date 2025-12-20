@@ -3,7 +3,15 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { AutoUpdateStatus } from '../../../electron/services/auto-update.service';
 import type { UpdateInfo } from 'electron-updater';
 import { useToast } from './toast-context';
@@ -56,13 +64,15 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
           const owner = 'ByteTrue';
           const repo = 'BoolTox';
           const tags = [`v${details.version}`, details.version];
-          
+
           for (const tag of tags) {
-            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`);
+            const res = await fetch(
+              `https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`
+            );
             if (res.ok) {
               const data = await res.json();
               if (data.body) {
-                setDetails((prev) => {
+                setDetails(prev => {
                   if (!prev || prev.version !== details.version) return prev;
                   return {
                     ...prev,
@@ -79,7 +89,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
           console.warn('Failed to fetch release notes from GitHub:', error);
         }
       };
-      
+
       void fetchNotes();
     }
   }, [state.phase, details?.version, details?.notes]);
@@ -99,7 +109,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       notes = releaseNotes;
     } else if (Array.isArray(releaseNotes)) {
       notes = releaseNotes
-        .map((note) => {
+        .map(note => {
           if (!note) return '';
           if (typeof note === 'string') return note;
           return note.note ?? '';
@@ -108,7 +118,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
         .join('\n');
     }
 
-    const sizeBytes = info.files?.find((file) => typeof file.size === 'number')?.size;
+    const sizeBytes = info.files?.find(file => typeof file.size === 'number')?.size;
 
     return {
       version: info.version,
@@ -124,7 +134,9 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     (status: AutoUpdateStatus): void => {
       switch (status.state) {
         case 'checking':
-          setState((prev) => (prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'checking' }));
+          setState(prev =>
+            prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'checking' }
+          );
           break;
         case 'available': {
           setBannerDismissed(false);
@@ -136,11 +148,12 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
         case 'downloading': {
           setBannerDismissed(false);
           const { transferred, total, percent } = status.progress;
-          const normalizedPercent = typeof percent === 'number'
-            ? Math.max(0, Math.min(100, percent))
-            : total && total > 0
-              ? Math.max(0, Math.min(100, (transferred / total) * 100))
-              : undefined;
+          const normalizedPercent =
+            typeof percent === 'number'
+              ? Math.max(0, Math.min(100, percent))
+              : total && total > 0
+                ? Math.max(0, Math.min(100, (transferred / total) * 100))
+                : undefined;
           setState({
             phase: 'downloading',
             progress: {
@@ -168,11 +181,13 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
           break;
         case 'idle':
         default:
-          setState((prev) => (prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'idle' }));
+          setState(prev =>
+            prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'idle' }
+          );
           break;
       }
     },
-    [extractDetails],
+    [extractDetails]
   );
 
   useEffect(() => {
@@ -193,11 +208,14 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('获取自动更新状态失败:', error);
         if (mounted) {
-          setState({ phase: 'error', error: error instanceof Error ? error.message : String(error) });
+          setState({
+            phase: 'error',
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
 
-      unsubscribe = window.update?.onStatus?.((status) => {
+      unsubscribe = window.update?.onStatus?.(status => {
         if (!mounted) return;
         handleStatus(status as AutoUpdateStatus);
       });
@@ -227,7 +245,10 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setState({ phase: 'downloading', progress: { downloadedBytes: 0, totalBytes: info.sizeBytes } });
+    setState({
+      phase: 'downloading',
+      progress: { downloadedBytes: 0, totalBytes: info.sizeBytes },
+    });
     try {
       await window.update.download();
     } catch (error) {
@@ -251,7 +272,10 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       await window.update.install();
       showToast({ message: '安装程序已启动，请按指引完成更新。', type: 'success' });
     } catch (error) {
-      showToast({ message: error instanceof Error ? error.message : '安装失败，请稍后重试。', type: 'error' });
+      showToast({
+        message: error instanceof Error ? error.message : '安装失败，请稍后重试。',
+        type: 'error',
+      });
     }
   }, [showToast]);
 
@@ -276,16 +300,28 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     }
   }, [showToast]);
 
-  const value = useMemo<UpdateContextValue>(() => ({
-    state,
-    details,
-    bannerDismissed,
-    downloadUpdate,
-    cancelDownload,
-    installUpdate,
-    dismissUpdate,
-    retryCheck,
-  }), [state, details, bannerDismissed, downloadUpdate, cancelDownload, installUpdate, dismissUpdate, retryCheck]);
+  const value = useMemo<UpdateContextValue>(
+    () => ({
+      state,
+      details,
+      bannerDismissed,
+      downloadUpdate,
+      cancelDownload,
+      installUpdate,
+      dismissUpdate,
+      retryCheck,
+    }),
+    [
+      state,
+      details,
+      bannerDismissed,
+      downloadUpdate,
+      cancelDownload,
+      installUpdate,
+      dismissUpdate,
+      retryCheck,
+    ]
+  );
 
   return <UpdateContext.Provider value={value}>{children}</UpdateContext.Provider>;
 }

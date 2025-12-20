@@ -38,7 +38,7 @@ export function SegmentedControl<T extends string>({
 
   return (
     <div className="inline-flex rounded-full border border-[var(--shell-border)] bg-[var(--shell-surface)] p-1 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
-      {options.map((option) => {
+      {options.map(option => {
         const isActive = value === option.value;
 
         return (

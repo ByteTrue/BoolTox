@@ -49,7 +49,7 @@ export function ActivityFeed() {
       <motion.div
         {...cardHover}
         className="relative flex min-h-[280px] flex-col overflow-hidden rounded-3xl border p-8 transition-shadow duration-250 ease-swift hover:shadow-lg"
-        style={glassStyle}  // 使用统一的玻璃样式
+        style={glassStyle} // 使用统一的玻璃样式
       >
         {!loading && latestItem?.priority === 'high' ? (
           <div
@@ -72,9 +72,7 @@ export function ActivityFeed() {
                   : 'border-red-200 bg-red-50 text-red-600'
               }`}
             >
-              {hasItems
-                ? '公告服务暂时不可用，当前展示缓存内容。'
-                : error}
+              {hasItems ? '公告服务暂时不可用，当前展示缓存内容。' : error}
             </div>
           ) : null}
 
@@ -137,7 +135,7 @@ function ActivityFeedSkeleton({ theme }: { theme: ThemeMode }) {
       <div
         className="mt-auto flex flex-wrap items-center gap-3 border-t pt-2"
         style={{
-          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
         }}
       >
         <div className={`h-9 w-28 rounded-lg ${block}`} />
@@ -179,9 +177,7 @@ function ActivityFeedContent({
         <div className="flex-1 min-w-0">
           <div className="mb-2 flex items-start justify-between gap-3">
             <h3
-              className={`text-xl font-bold ${
-                theme === 'dark' ? 'text-white' : 'text-slate-800'
-              }`}
+              className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
             >
               {latestItem.title}
             </h3>
@@ -222,33 +218,37 @@ function ActivityFeedContent({
             overflow: 'hidden',
           }}
         >
-          <ReactMarkdown 
+          <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
               // 预览模式下禁用图片和标题过大
               img: () => null,
-              h1: ({children}) => <p className="font-bold">{children}</p>,
-              h2: ({children}) => <p className="font-bold">{children}</p>,
-              h3: ({children}) => <p className="font-bold">{children}</p>,
-              code: ({className, children, ...props}) => {
+              h1: ({ children }) => <p className="font-bold">{children}</p>,
+              h2: ({ children }) => <p className="font-bold">{children}</p>,
+              h3: ({ children }) => <p className="font-bold">{children}</p>,
+              code: ({ className, children, ...props }) => {
                 const match = /language-(\w+)/.exec(className || '');
                 const isInline = !match && !String(children).includes('\n');
                 if (isInline) {
                   return (
-                    <code 
+                    <code
                       className={`rounded px-1 py-0.5 font-mono text-xs font-medium ${
-                        theme === 'dark' 
-                          ? 'bg-white/10 text-brand-blue-300' 
+                        theme === 'dark'
+                          ? 'bg-white/10 text-brand-blue-300'
                           : 'bg-slate-100 text-brand-blue-600'
-                      }`} 
+                      }`}
                       {...props}
                     >
                       {children}
                     </code>
                   );
                 }
-                return <code className={className} {...props}>{children}</code>;
-              }
+                return (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
             }}
           >
             {latestItem.content}
@@ -262,7 +262,7 @@ function ActivityFeedContent({
       <div
         className="flex flex-wrap items-center justify-between gap-3 border-t pt-2"
         style={{
-          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
         }}
       >
         <div className="flex items-center gap-2">
@@ -281,9 +281,10 @@ function ActivityFeedContent({
                 withInnerShadow: true,
               }),
               // 增强按钮的浮起感
-              boxShadow: theme === 'dark'
-                ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
             }}
           >
             <History className="h-4 w-4" />
@@ -306,9 +307,10 @@ function ActivityFeedContent({
                 withInnerShadow: true,
               }),
               // 增强按钮的浮起感
-              boxShadow: theme === 'dark'
-                ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
             }}
             title="刷新公告"
           >
@@ -336,12 +338,12 @@ function ActivityFeedContent({
                 withInnerShadow: true,
               }),
               // CTA 按钮额外的品牌色高光
-              background: theme === 'dark'
-                ? 'rgba(101, 187, 233, 0.20)'
-                : 'rgba(101, 187, 233, 0.18)',
-              boxShadow: theme === 'dark'
-                ? '0 2px 10px rgba(101, 187, 233, 0.25), 0 0.5px 0 0 rgba(101, 187, 233, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.15)'
-                : '0 2px 12px rgba(101, 187, 233, 0.2), 0 0.5px 0 0 rgba(101, 187, 233, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.7)',
+              background:
+                theme === 'dark' ? 'rgba(101, 187, 233, 0.20)' : 'rgba(101, 187, 233, 0.18)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 2px 10px rgba(101, 187, 233, 0.25), 0 0.5px 0 0 rgba(101, 187, 233, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.15)'
+                  : '0 2px 12px rgba(101, 187, 233, 0.2), 0 0.5px 0 0 rgba(101, 187, 233, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.7)',
             }}
           >
             {latestItem.ctaLabel ?? '立即查看'}
@@ -351,9 +353,7 @@ function ActivityFeedContent({
         {itemCount > 1 && (
           <div
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              theme === 'dark'
-                ? 'bg-white/10 text-white/70'
-                : 'bg-slate-100 text-slate-600'
+              theme === 'dark' ? 'bg-white/10 text-white/70' : 'bg-slate-100 text-slate-600'
             }`}
           >
             共 {itemCount} 条公告

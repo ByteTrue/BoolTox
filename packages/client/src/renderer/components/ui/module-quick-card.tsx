@@ -39,9 +39,10 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
         }),
         minHeight: '140px',
         // 增强卡片的浮起感
-        boxShadow: theme === 'dark'
-          ? '0 4px 12px rgba(0, 0, 0, 0.4), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-          : '0 4px 16px rgba(0, 0, 0, 0.08), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+        boxShadow:
+          theme === 'dark'
+            ? '0 4px 12px rgba(0, 0, 0, 0.4), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+            : '0 4px 16px rgba(0, 0, 0, 0.08), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
       }}
       onClick={onClick}
       initial={{ opacity: 0, y: 20 }}
@@ -52,9 +53,10 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
         damping: 20,
       }}
       whileHover={{
-        boxShadow: theme === 'dark'
-          ? '0 8px 24px rgba(0, 0, 0, 0.5), 0 0.5px 0 0 rgba(255, 255, 255, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.12)'
-          : '0 8px 32px rgba(0, 0, 0, 0.12), 0 0.5px 0 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.8)',
+        boxShadow:
+          theme === 'dark'
+            ? '0 8px 24px rgba(0, 0, 0, 0.5), 0 0.5px 0 0 rgba(255, 255, 255, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.12)'
+            : '0 8px 32px rgba(0, 0, 0, 0.12), 0 0.5px 0 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.8)',
       }}
     >
       {/* 背景渐变效果 */}
@@ -77,8 +79,8 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
               isRunning
                 ? 'bg-brand-gradient-secondary'
                 : theme === 'dark'
-                ? 'bg-white/10'
-                : 'bg-slate-200'
+                  ? 'bg-white/10'
+                  : 'bg-slate-200'
             }`}
           >
             {module.definition.icon}
@@ -132,12 +134,16 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
               isRunning
                 ? 'bg-green-500/20 text-green-600 border-green-500/30'
                 : theme === 'dark'
-                ? 'bg-white/10 text-white/60'
-                : 'bg-slate-200 text-slate-600'
+                  ? 'bg-white/10 text-white/60'
+                  : 'bg-slate-200 text-slate-600'
             }`}
-            style={!isRunning ? {
-              borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-            } : undefined}
+            style={
+              !isRunning
+                ? {
+                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+                  }
+                : undefined
+            }
           >
             {isLoading ? '加载中...' : isRunning ? '运行中' : '未启动'}
           </span>
@@ -146,9 +152,7 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
           {module.definition.category && (
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
-                theme === 'dark'
-                  ? 'bg-white/5 text-white/50'
-                  : 'bg-slate-100 text-slate-500'
+                theme === 'dark' ? 'bg-white/5 text-white/50' : 'bg-slate-100 text-slate-500'
               }`}
             >
               {getCategoryEmoji(module.definition.category)}{' '}

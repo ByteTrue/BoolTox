@@ -28,8 +28,22 @@ interface Tab {
  * 默认路由标签（首页、工具）
  */
 const DEFAULT_ROUTE_TABS: Tab[] = [
-  { id: 'home', type: 'route', path: '/', label: '首页', icon: <Home size={14} />, closable: false },
-  { id: 'tools', type: 'route', path: '/tools', label: '工具', icon: <Grid size={14} />, closable: false },
+  {
+    id: 'home',
+    type: 'route',
+    path: '/',
+    label: '首页',
+    icon: <Home size={14} />,
+    closable: false,
+  },
+  {
+    id: 'tools',
+    type: 'route',
+    path: '/tools',
+    label: '工具',
+    icon: <Grid size={14} />,
+    closable: false,
+  },
 ];
 
 // 平台检测（渲染进程安全）
@@ -82,42 +96,52 @@ export function TabBar() {
   }, [location.pathname, activeToolTabId]);
 
   // 点击标签
-  const handleTabClick = useCallback((tab: Tab) => {
-    if (tab.type === 'route') {
-      // 路由标签：导航到对应路径，并取消工具标签激活
-      navigate(tab.path!);
-      setActiveTabId(tab.id);
-      // 取消工具标签激活（如果有的话）
-      if (activeToolTabId) {
-        activateToolTab(null);
+  const handleTabClick = useCallback(
+    (tab: Tab) => {
+      if (tab.type === 'route') {
+        // 路由标签：导航到对应路径，并取消工具标签激活
+        navigate(tab.path!);
+        setActiveTabId(tab.id);
+        // 取消工具标签激活（如果有的话）
+        if (activeToolTabId) {
+          activateToolTab(null);
+        }
+      } else if (tab.type === 'tool') {
+        // 工具标签：激活工具标签
+        activateToolTab(tab.id);
+        setActiveTabId(tab.id);
       }
-    } else if (tab.type === 'tool') {
-      // 工具标签：激活工具标签
-      activateToolTab(tab.id);
-      setActiveTabId(tab.id);
-    }
-  }, [navigate, activateToolTab, activeToolTabId]);
+    },
+    [navigate, activateToolTab, activeToolTabId]
+  );
 
   // 关闭标签
-  const handleCloseTab = useCallback((tab: Tab, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
+  const handleCloseTab = useCallback(
+    (tab: Tab, e?: React.MouseEvent) => {
+      if (e) {
+        e.stopPropagation();
+      }
 
-    if (tab.type === 'tool') {
-      // 关闭工具标签
-      closeToolTab(tab.id);
-    }
-    // 路由标签不可关闭，不处理
-  }, [closeToolTab]);
+      if (tab.type === 'tool') {
+        // 关闭工具标签
+        closeToolTab(tab.id);
+      }
+      // 路由标签不可关闭，不处理
+    },
+    [closeToolTab]
+  );
 
   // 中键点击关闭标签
-  const handleAuxClick = useCallback((tab: Tab, e: React.MouseEvent) => {
-    if (e.button === 1 && tab.closable) { // 中键
-      e.preventDefault();
-      handleCloseTab(tab);
-    }
-  }, [handleCloseTab]);
+  const handleAuxClick = useCallback(
+    (tab: Tab, e: React.MouseEvent) => {
+      if (e.button === 1 && tab.closable) {
+        // 中键
+        e.preventDefault();
+        handleCloseTab(tab);
+      }
+    },
+    [handleCloseTab]
+  );
 
   // 循环切换主题：light → dark → system → light
   const handleToggleTheme = () => {
@@ -128,7 +152,14 @@ export function TabBar() {
   };
 
   // 主题图标
-  const themeIcon = themeMode === 'dark' ? <Moon size={16} /> : themeMode === 'light' ? <Sun size={16} /> : <Monitor size={16} />;
+  const themeIcon =
+    themeMode === 'dark' ? (
+      <Moon size={16} />
+    ) : themeMode === 'light' ? (
+      <Sun size={16} />
+    ) : (
+      <Monitor size={16} />
+    );
 
   return (
     <div
@@ -137,9 +168,7 @@ export function TabBar() {
         WebkitAppRegion: 'drag',
         paddingLeft: isMac ? 'max(env(titlebar-area-x, 80px), 80px)' : '16px',
         borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-        background: theme === 'dark'
-          ? 'rgba(28, 30, 35, 0.8)'
-          : 'rgba(255, 255, 255, 0.8)',
+        background: theme === 'dark' ? 'rgba(28, 30, 35, 0.8)' : 'rgba(255, 255, 255, 0.8)',
         backdropFilter: 'blur(12px)',
       }}
     >
@@ -151,7 +180,7 @@ export function TabBar() {
         }}
       >
         <AnimatePresence mode="popLayout">
-          {allTabs.map((tab) => {
+          {allTabs.map(tab => {
             const isActive = activeTabId === tab.id;
             return (
               <motion.button
@@ -161,7 +190,7 @@ export function TabBar() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.15 }}
                 onClick={() => handleTabClick(tab)}
-                onAuxClick={(e) => handleAuxClick(tab, e)}
+                onAuxClick={e => handleAuxClick(tab, e)}
                 style={{
                   WebkitAppRegion: 'no-drag',
                 }}
@@ -179,7 +208,7 @@ export function TabBar() {
                 <span className="flex-1">{tab.label}</span>
                 {tab.closable && (
                   <button
-                    onClick={(e) => handleCloseTab(tab, e)}
+                    onClick={e => handleCloseTab(tab, e)}
                     className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded p-0.5"
                   >
                     <X size={12} />
@@ -212,9 +241,7 @@ export function TabBar() {
         <button
           onClick={handleToggleTheme}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-            theme === 'dark'
-              ? 'hover:bg-white/10 text-white/80'
-              : 'hover:bg-gray-100 text-gray-700'
+            theme === 'dark' ? 'hover:bg-white/10 text-white/80' : 'hover:bg-gray-100 text-gray-700'
           }`}
           title="切换主题"
         >

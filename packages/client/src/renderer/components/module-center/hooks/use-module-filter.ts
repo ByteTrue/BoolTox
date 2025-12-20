@@ -3,10 +3,10 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useMemo } from "react";
-import type { ModuleDefinition, ModuleInstance } from "@/types/module";
-import type { ToolRegistryEntry } from "@booltox/shared";
-import type { ModuleFilter } from "../types";
+import { useMemo } from 'react';
+import type { ModuleDefinition, ModuleInstance } from '@/types/module';
+import type { ToolRegistryEntry } from '@booltox/shared';
+import type { ModuleFilter } from '../types';
 
 /**
  * 过滤 Hook - 提供多维度过滤功能
@@ -23,15 +23,15 @@ export function useModuleFilter(
     let result = installedModules;
 
     // 按来源过滤
-    if (filter.source && filter.source !== "all") {
-      result = result.filter((module) => {
+    if (filter.source && filter.source !== 'all') {
+      result = result.filter(module => {
         return module.definition.source === filter.source;
       });
     }
 
     // 按分类过滤
-    if (filter.category && filter.category !== "all") {
-      result = result.filter((module) => {
+    if (filter.category && filter.category !== 'all') {
+      result = result.filter(module => {
         return module.definition.category === filter.category;
       });
     }
@@ -41,19 +41,19 @@ export function useModuleFilter(
 
   // 过滤可用模块 (未安装的)
   const filteredAvailable = useMemo(() => {
-    const installedIds = new Set(installedModules.map((m) => m.id));
-    let result = availableModules.filter((def) => !installedIds.has(def.id));
+    const installedIds = new Set(installedModules.map(m => m.id));
+    let result = availableModules.filter(def => !installedIds.has(def.id));
 
     // 按来源过滤
-    if (filter.source && filter.source !== "all") {
-      result = result.filter((module) => {
+    if (filter.source && filter.source !== 'all') {
+      result = result.filter(module => {
         return module.source === filter.source;
       });
     }
 
     // 按分类过滤
-    if (filter.category && filter.category !== "all") {
-      result = result.filter((module) => {
+    if (filter.category && filter.category !== 'all') {
+      result = result.filter(module => {
         return module.category === filter.category;
       });
     }
@@ -66,21 +66,21 @@ export function useModuleFilter(
     const categories = new Set<string>();
 
     // 从已安装模块提取分类
-    installedModules.forEach((module) => {
+    installedModules.forEach(module => {
       if (module.definition.category) {
         categories.add(module.definition.category);
       }
     });
 
     // 从本地可用模块提取分类
-    availableModules.forEach((module) => {
+    availableModules.forEach(module => {
       if (module.category) {
         categories.add(module.category);
       }
     });
 
     // 从在线工具提取分类
-    availablePlugins.forEach((plugin) => {
+    availablePlugins.forEach(plugin => {
       if (plugin.category) {
         categories.add(plugin.category);
       }

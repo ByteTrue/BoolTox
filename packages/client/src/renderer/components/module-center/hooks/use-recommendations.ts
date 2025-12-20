@@ -3,9 +3,9 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useMemo } from "react";
-import type { ModuleDefinition, ModuleInstance } from "@/types/module";
-import type { RecommendedModules } from "../types";
+import { useMemo } from 'react';
+import type { ModuleDefinition, ModuleInstance } from '@/types/module';
+import type { RecommendedModules } from '../types';
 
 /**
  * 推荐 Hook - 提供智能推荐算法
@@ -17,8 +17,8 @@ export function useRecommendations(
 ): RecommendedModules {
   const recommendations = useMemo(() => {
     // 排除已安装的模块
-    const installedIds = new Set(installedModules.map((m) => m.id));
-    const uninstalledModules = availableModules.filter((def) => !installedIds.has(def.id));
+    const installedIds = new Set(installedModules.map(m => m.id));
+    const uninstalledModules = availableModules.filter(def => !installedIds.has(def.id));
 
     // 1. 热门推荐 - 简单取前10个
     // TODO: 未来可以基于下载量、使用量等指标
@@ -31,13 +31,11 @@ export function useRecommendations(
 
     // 3. 智能推荐 - 基于已安装模块的分类
     const installedCategories = new Set(
-      installedModules
-        .map((m) => m.definition.category)
-        .filter((c): c is string => Boolean(c))
+      installedModules.map(m => m.definition.category).filter((c): c is string => Boolean(c))
     );
 
     const smart = uninstalledModules
-      .filter((module) => {
+      .filter(module => {
         // 推荐相同分类的模块
         return module.category && installedCategories.has(module.category);
       })
@@ -45,10 +43,8 @@ export function useRecommendations(
 
     // 如果智能推荐不足,补充热门模块
     if (smart.length < 5) {
-      const smartIds = new Set(smart.map((m) => m.id));
-      const supplements = popular
-        .filter((m) => !smartIds.has(m.id))
-        .slice(0, 5 - smart.length);
+      const smartIds = new Set(smart.map(m => m.id));
+      const supplements = popular.filter(m => !smartIds.has(m.id)).slice(0, 5 - smart.length);
       smart.push(...supplements);
     }
 

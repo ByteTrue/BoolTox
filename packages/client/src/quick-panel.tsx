@@ -12,13 +12,13 @@ import './lib/setup-renderer-console-logging';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-import './globals.css';
-import RootLayout from './layout';
-import { QuickPanel } from './components/quick-panel';
-import { ErrorBoundary } from './components/error-boundary';
+import './renderer/globals.css';
+import RootLayout from './renderer/layout';
+import { QuickPanel } from './renderer/components/quick-panel';
+import { ErrorBoundary } from './renderer/components/error-boundary';
 
 // 快捷面板只需要基础 Provider
-import { ToastProvider } from './contexts/toast-context';
+import { ToastProvider } from './renderer/contexts/toast-context';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

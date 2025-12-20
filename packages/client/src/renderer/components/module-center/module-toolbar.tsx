@@ -3,13 +3,13 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { Search, SlidersHorizontal, ArrowUpDown, X, Plus, CheckSquare } from "lucide-react";
-import { motion } from "framer-motion";
-import { useTheme } from "../theme-provider";
-import { CustomSelect } from "./custom-select";
-import { getGlassStyle, getGlassShadow } from "@/utils/glass-layers";
-import { iconButtonInteraction } from "@/utils/animation-presets";
-import type { SortBy } from "./types";
+import { Search, SlidersHorizontal, ArrowUpDown, X, Plus, CheckSquare } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useTheme } from '../theme-provider';
+import { CustomSelect } from './custom-select';
+import { getGlassStyle, getGlassShadow } from '@/utils/glass-layers';
+import { iconButtonInteraction } from '@/utils/animation-presets';
+import type { SortBy } from './types';
 
 interface ModuleToolbarProps {
   searchQuery: string;
@@ -37,7 +37,7 @@ export function ModuleToolbar({
   onToggleSelectionMode,
 }: ModuleToolbarProps) {
   const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const isDark = theme === 'dark';
 
   return (
     <div
@@ -49,7 +49,7 @@ export function ModuleToolbar({
         <div className="relative flex-1 max-w-md">
           <Search
             className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-              isDark ? "text-white/60" : "text-slate-500"
+              isDark ? 'text-white/60' : 'text-slate-500'
             }`}
             size={18}
           />
@@ -57,11 +57,11 @@ export function ModuleToolbar({
             type="text"
             placeholder="搜索工具..."
             value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={e => onSearchChange(e.target.value)}
             className={`w-full rounded-full border py-2 pl-10 pr-10 text-sm transition-[background-color,border-color,box-shadow] duration-250 ease-swift focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
               isDark
-                ? "bg-white/5 text-white placeholder:text-white/60"
-                : "bg-white/50 text-slate-800 placeholder:text-slate-500"
+                ? 'bg-white/5 text-white placeholder:text-white/60'
+                : 'bg-white/50 text-slate-800 placeholder:text-slate-500'
             }`}
             style={getGlassStyle('BUTTON', theme)}
           />
@@ -69,9 +69,9 @@ export function ModuleToolbar({
             <motion.button
               {...iconButtonInteraction}
               type="button"
-              onClick={() => onSearchChange("")}
+              onClick={() => onSearchChange('')}
               className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 transition-[background-color,color] duration-250 ease-swift hover:bg-white/10 ${
-                isDark ? "text-white/60 hover:text-white" : "text-slate-500 hover:text-slate-800"
+                isDark ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <X size={14} />
@@ -88,15 +88,15 @@ export function ModuleToolbar({
               onClick={onToggleSelectionMode}
               className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
                 isSelectionMode
-                  ? "border-blue-500/50 bg-blue-500/20 text-blue-500"
+                  ? 'border-blue-500/50 bg-blue-500/20 text-blue-500'
                   : isDark
-                  ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
+                    ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
+                    : 'border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80'
               }`}
               style={getGlassStyle('BUTTON', theme)}
             >
               <CheckSquare size={16} />
-              <span>{isSelectionMode ? "取消选择" : "选择"}</span>
+              <span>{isSelectionMode ? '取消选择' : '选择'}</span>
             </motion.button>
           )}
 
@@ -107,8 +107,8 @@ export function ModuleToolbar({
               onClick={onAddLocalTool}
               className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
                 isDark
-                  ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  : "border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80"
+                  ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
+                  : 'border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80'
               }`}
               style={getGlassStyle('BUTTON', theme)}
             >
@@ -122,8 +122,8 @@ export function ModuleToolbar({
             value={selectedCategory}
             onChange={onCategoryChange}
             options={[
-              { value: "all", label: "全部分类" },
-              ...categories.map((cat) => ({ value: cat, label: cat || "未分类" })),
+              { value: 'all', label: '全部分类' },
+              ...categories.map(cat => ({ value: cat, label: cat || '未分类' })),
             ]}
             icon={<SlidersHorizontal size={16} />}
           />
@@ -131,11 +131,11 @@ export function ModuleToolbar({
           {/* 排序 */}
           <CustomSelect
             value={sortBy}
-            onChange={(val) => onSortChange(val as SortBy)}
+            onChange={val => onSortChange(val as SortBy)}
             options={[
-              { value: "default", label: "默认排序" },
-              { value: "name", label: "按名称" },
-              { value: "updatedAt", label: "按更新时间" },
+              { value: 'default', label: '默认排序' },
+              { value: 'name', label: '按名称' },
+              { value: 'updatedAt', label: '按更新时间' },
             ]}
             icon={<ArrowUpDown size={16} />}
           />

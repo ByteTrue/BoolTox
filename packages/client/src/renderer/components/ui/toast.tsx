@@ -5,7 +5,7 @@
 
 /**
  * Toast 通知组件
- * 
+ *
  * Apple 风格的 Toast 通知，支持：
  * - 从右侧滑入动画
  * - 4 种类型：info/success/warning/error
@@ -80,7 +80,7 @@ export function Toast({
       const now = Date.now();
       const remaining = Math.max(0, endTime - now);
       const newProgress = (remaining / duration) * 100;
-      
+
       setProgress(newProgress);
 
       if (remaining > 0) {
@@ -126,10 +126,7 @@ export function Toast({
       {/* 内容区 */}
       <div className="flex items-start gap-3 p-4 pt-5">
         {/* 图标 */}
-        <div
-          className="flex-shrink-0 mt-0.5"
-          style={{ color: iconColor }}
-        >
+        <div className="flex-shrink-0 mt-0.5" style={{ color: iconColor }}>
           <Icon size={20} />
         </div>
 
@@ -186,17 +183,13 @@ const POSITION_CLASSES = {
   'bottom-left': 'bottom-4 left-4',
 };
 
-export function ToastContainer({
-  toasts,
-  onRemove,
-  position = 'top-right',
-}: ToastContainerProps) {
+export function ToastContainer({ toasts, onRemove, position = 'top-right' }: ToastContainerProps) {
   return (
     <div
       className={`fixed ${POSITION_CLASSES[position]} z-[9999] flex flex-col gap-3 pointer-events-none`}
     >
       <AnimatePresence mode="popLayout">
-        {toasts.map((toast) => (
+        {toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto">
             <Toast {...toast} onClose={() => onRemove(toast.id)} />
           </div>
@@ -215,12 +208,12 @@ export function useToast() {
 
   const show = (options: Omit<ToastProps, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
-    setToasts((prev) => [...prev, { ...options, id }]);
+    setToasts(prev => [...prev, { ...options, id }]);
     return id;
   };
 
   const remove = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
   const info = (title: string, description?: string, duration?: number) =>

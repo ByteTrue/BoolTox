@@ -100,11 +100,7 @@ function ErrorFallback({
         </h2>
 
         {/* 错误描述 */}
-        <p
-          className={`mb-6 text-center text-sm ${
-            isDark ? 'text-white/70' : 'text-slate-600'
-          }`}
-        >
+        <p className={`mb-6 text-center text-sm ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
           应用程序遇到了一个意外错误。您可以尝试重新加载此组件，或返回首页继续使用。
         </p>
 
@@ -126,7 +122,9 @@ function ErrorFallback({
             查看错误详情
           </summary>
           <div className={`mt-3 text-xs ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-            <p className="mb-2 font-semibold">{error.name}: {error.message}</p>
+            <p className="mb-2 font-semibold">
+              {error.name}: {error.message}
+            </p>
             <pre className="overflow-auto whitespace-pre-wrap break-words">
               {errorInfo.componentStack}
             </pre>
@@ -163,7 +161,7 @@ function ErrorFallback({
               }`}
               style={{
                 ...getGlassStyle('BUTTON', theme),
-                borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
               }}
             >
               <Home size={16} />
@@ -178,13 +176,13 @@ function ErrorFallback({
 
 /**
  * 错误边界组件
- * 
+ *
  * 使用方式：
  * ```tsx
  * <ErrorBoundary name="App Root" showHomeButton={false}>
  *   <App />
  * </ErrorBoundary>
- * 
+ *
  * <ErrorBoundary name="Route: ModuleCenter">
  *   <ModuleCenter />
  * </ErrorBoundary>

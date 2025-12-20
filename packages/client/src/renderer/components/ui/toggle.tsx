@@ -5,13 +5,13 @@
 
 /**
  * Apple 风格 Toggle 开关组件
- * 
+ *
  * 特性：
  * - 流畅的 Spring 动画
  * - 支持 Dark/Light 模式
  * - 键盘无障碍支持
  * - 触觉反馈模拟
- * 
+ *
  * @version 2.0.0
  */
 
@@ -48,7 +48,7 @@ export interface ToggleProps {
 
 /**
  * Apple 风格 Toggle 开关
- * 
+ *
  * @example
  * ```tsx
  * <Toggle
@@ -116,9 +116,8 @@ export function Toggle({
           animate={checked ? 'on' : 'off'}
           variants={{
             off: {
-              backgroundColor: theme === 'dark' 
-                ? 'rgba(120, 120, 128, 0.32)' 
-                : 'rgba(120, 120, 128, 0.16)',
+              backgroundColor:
+                theme === 'dark' ? 'rgba(120, 120, 128, 0.32)' : 'rgba(120, 120, 128, 0.16)',
             },
             on: {
               backgroundColor: 'rgb(101, 187, 233)', // brand-blue-400
@@ -158,12 +157,8 @@ export function Toggle({
       {label && (
         <span
           className={`text-sm font-medium select-none ${
-            disabled 
-              ? 'opacity-50 cursor-not-allowed' 
-              : 'cursor-pointer'
-          } ${
-            theme === 'dark' ? 'text-white' : 'text-slate-800'
-          }`}
+            disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+          } ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
           onClick={handleToggle}
         >
           {label}

@@ -3,7 +3,7 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
 interface CommandPaletteContextValue {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 export function useCommandPalette() {
   const context = useContext(CommandPaletteContext);
   if (!context) {
-    throw new Error("useCommandPalette must be used within CommandPaletteProvider");
+    throw new Error('useCommandPalette must be used within CommandPaletteProvider');
   }
   return context;
 }

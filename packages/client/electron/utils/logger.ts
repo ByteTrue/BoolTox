@@ -288,5 +288,6 @@ export async function openLogFolder() {
   await shell.openPath(loggerService.getLogsDir());
 }
 
-// 导出类型
-export type { LogLevel, LogSource };
+// LogLevel 类型已在第 26 行导出
+// LogSource 类型导出
+export type { LogSource };

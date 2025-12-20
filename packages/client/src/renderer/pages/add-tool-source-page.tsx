@@ -59,9 +59,7 @@ export function AddToolSourcePage() {
       {/* 步骤 1：选择类型 */}
       {step === 'select-type' && (
         <div className="max-w-4xl mx-auto">
-          <p className="text-gray-500 mb-8 text-center">
-            选择要添加的工具源类型
-          </p>
+          <p className="text-gray-500 mb-8 text-center">选择要添加的工具源类型</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 远程仓库 */}
@@ -88,8 +86,12 @@ export function AddToolSourcePage() {
       {/* 步骤 2：填写表单 */}
       {step === 'fill-form' && selectedType && (
         <div className="max-w-2xl mx-auto">
-          {selectedType === 'remote' && <RemoteSourceForm onBack={handleBack} onSuccess={() => navigate('/tools')} />}
-          {selectedType === 'local' && <LocalSourceForm onBack={handleBack} onSuccess={() => navigate('/tools')} />}
+          {selectedType === 'remote' && (
+            <RemoteSourceForm onBack={handleBack} onSuccess={() => navigate('/tools')} />
+          )}
+          {selectedType === 'local' && (
+            <LocalSourceForm onBack={handleBack} onSuccess={() => navigate('/tools')} />
+          )}
         </div>
       )}
     </div>
@@ -109,7 +111,8 @@ function SourceTypeCard({ icon, title, description, color, onClick }: SourceType
   const colorClasses = {
     blue: 'border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20',
     green: 'border-green-200 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20',
-    orange: 'border-orange-200 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20',
+    orange:
+      'border-orange-200 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20',
   };
 
   return (
@@ -176,7 +179,7 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
         <input
           type="text"
           value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          onChange={e => setFormData({ ...formData, name: e.target.value })}
           className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
           placeholder="如：公司内部工具库"
           required
@@ -188,7 +191,9 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
           <label className="block text-sm font-medium mb-2">平台 *</label>
           <select
             value={formData.provider}
-            onChange={(e) => setFormData({ ...formData, provider: e.target.value as 'github' | 'gitlab' })}
+            onChange={e =>
+              setFormData({ ...formData, provider: e.target.value as 'github' | 'gitlab' })
+            }
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
           >
             <option value="github">GitHub</option>
@@ -200,7 +205,7 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
           <input
             type="text"
             value={formData.branch}
-            onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+            onChange={e => setFormData({ ...formData, branch: e.target.value })}
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             placeholder="main"
             required
@@ -214,7 +219,7 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
           <input
             type="text"
             value={formData.owner}
-            onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
+            onChange={e => setFormData({ ...formData, owner: e.target.value })}
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             placeholder="如：ByteTrue"
             required
@@ -225,7 +230,7 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
           <input
             type="text"
             value={formData.repo}
-            onChange={(e) => setFormData({ ...formData, repo: e.target.value })}
+            onChange={e => setFormData({ ...formData, repo: e.target.value })}
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             placeholder="如：my-tools"
             required
@@ -239,7 +244,7 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
           <input
             type="text"
             value={formData.baseUrl}
-            onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+            onChange={e => setFormData({ ...formData, baseUrl: e.target.value })}
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             placeholder="https://gitlab.company.com"
           />
@@ -252,7 +257,7 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
         <input
           type="password"
           value={formData.token}
-          onChange={(e) => setFormData({ ...formData, token: e.target.value })}
+          onChange={e => setFormData({ ...formData, token: e.target.value })}
           className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
           placeholder="ghp_xxx 或 glpat-xxx"
         />
@@ -300,7 +305,14 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
     if (result && typeof result === 'string') {
       // 检测配置文件
       const config = await detectToolConfig(result);
-      setExistingConfig(config);
+      setExistingConfig(
+        config as {
+          hasBooltoxJson: boolean;
+          hasBooltoxIndex: boolean;
+          booltoxData?: unknown;
+          indexData?: unknown;
+        }
+      );
 
       setFormData({
         ...formData,
@@ -349,7 +361,7 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
           <input
             type="text"
             value={formData.sourceName}
-            onChange={(e) => setFormData({ ...formData, sourceName: e.target.value })}
+            onChange={e => setFormData({ ...formData, sourceName: e.target.value })}
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             placeholder="如：我的本地工具"
           />
@@ -361,7 +373,7 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
             <input
               type="text"
               value={formData.localPath}
-              onChange={(e) => setFormData({ ...formData, localPath: e.target.value })}
+              onChange={e => setFormData({ ...formData, localPath: e.target.value })}
               className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
               placeholder="E:\Code\MyTool"
             />
@@ -376,13 +388,19 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
           {existingConfig && (
             <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm">
               {existingConfig.hasBooltoxIndex && (
-                <p className="text-blue-700 dark:text-blue-300">✓ 检测到 booltox-index.json（多工具模式）</p>
+                <p className="text-blue-700 dark:text-blue-300">
+                  ✓ 检测到 booltox-index.json（多工具模式）
+                </p>
               )}
               {existingConfig.hasBooltoxJson && !existingConfig.hasBooltoxIndex && (
-                <p className="text-blue-700 dark:text-blue-300">✓ 检测到 booltox.json（单工具模式）</p>
+                <p className="text-blue-700 dark:text-blue-300">
+                  ✓ 检测到 booltox.json（单工具模式）
+                </p>
               )}
               {!existingConfig.hasBooltoxJson && !existingConfig.hasBooltoxIndex && (
-                <p className="text-yellow-700 dark:text-yellow-300">⚠ 未检测到配置文件，将引导您创建</p>
+                <p className="text-yellow-700 dark:text-yellow-300">
+                  ⚠ 未检测到配置文件，将引导您创建
+                </p>
               )}
             </div>
           )}
@@ -467,12 +485,12 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
   const initialMode = existingConfig?.hasBooltoxIndex
     ? 'index'
     : existingConfig?.hasBooltoxJson
-    ? 'single'
-    : null;
+      ? 'single'
+      : null;
 
   const initialStep: 'mode-select' | 'index-list' | 'create-subtools' =
     initialMode === 'index'
-      ? 'index-list'  // 已有 index，直接到列表编辑
+      ? 'index-list' // 已有 index，直接到列表编辑
       : 'mode-select'; // 没有配置或只有单工具配置
 
   const [mode, setMode] = useState<'single' | 'index' | null>(initialMode);
@@ -517,7 +535,9 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
     const tools = (existingConfig?.indexData as ToolIndexData | null | undefined)?.tools;
     return Array.isArray(tools) ? tools : [];
   });
-  const [subtoolsStatus, setSubtoolsStatus] = useState<Array<{ id: string; path: string; hasConfig: boolean }>>([]);
+  const [subtoolsStatus, setSubtoolsStatus] = useState<
+    Array<{ id: string; path: string; hasConfig: boolean }>
+  >([]);
 
   const handleSaveConfig = async () => {
     try {
@@ -540,9 +560,11 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
 
       // 2. 检测每个子工具是否有配置
       const status = await Promise.all(
-        indexTools.map(async (tool) => {
+        indexTools.map(async tool => {
           const subPath = `${localPath}/${tool.path}`;
-          const result = await window.ipc?.invoke('fs:detectToolConfig', subPath);
+          const result = (await window.ipc?.invoke('fs:detectToolConfig', subPath)) as
+            | { hasBooltoxJson?: boolean }
+            | undefined;
           return {
             id: tool.id,
             path: tool.path,
@@ -587,9 +609,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
       await window.ipc?.invoke('fs:writeToolConfig', subPath, defaultConfig);
 
       // 更新状态
-      setSubtoolsStatus(prev =>
-        prev.map(s => (s.id === toolId ? { ...s, hasConfig: true } : s))
-      );
+      setSubtoolsStatus(prev => prev.map(s => (s.id === toolId ? { ...s, hasConfig: true } : s)));
 
       window.toast?.success(`已为 ${toolId} 生成配置模板`);
     } catch (error) {
@@ -601,7 +621,9 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
   const handleFinishSubtools = () => {
     const missingCount = subtoolsStatus.filter(s => !s.hasConfig).length;
     if (missingCount > 0) {
-      if (confirm(`还有 ${missingCount} 个子工具未配置，确定要继续吗？\n（未配置的工具将无法使用）`)) {
+      if (
+        confirm(`还有 ${missingCount} 个子工具未配置，确定要继续吗？\n（未配置的工具将无法使用）`)
+      ) {
         onFinish();
       }
     } else {
@@ -615,9 +637,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold mb-4">选择工具模式</h2>
-        <p className="text-gray-500 mb-6">
-          该目录还没有配置文件，请选择工具模式：
-        </p>
+        <p className="text-gray-500 mb-6">该目录还没有配置文件，请选择工具模式：</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
@@ -628,9 +648,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             className="border-2 border-blue-200 rounded-xl p-6 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
           >
             <h3 className="text-lg font-bold mb-2">单工具模式</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              该目录是一个完整的工具项目
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">该目录是一个完整的工具项目</p>
           </button>
 
           <button
@@ -641,9 +659,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             className="border-2 border-green-200 rounded-xl p-6 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
           >
             <h3 className="text-lg font-bold mb-2">多工具模式</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              该目录包含多个子工具项目
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">该目录包含多个子工具项目</p>
           </button>
         </div>
 
@@ -672,7 +688,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             <input
               type="text"
               value={toolConfig.id}
-              onChange={(e) => setToolConfig({ ...toolConfig, id: e.target.value })}
+              onChange={e => setToolConfig({ ...toolConfig, id: e.target.value })}
               className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
               placeholder="com.example.my-tool"
             />
@@ -683,7 +699,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             <input
               type="text"
               value={toolConfig.name}
-              onChange={(e) => setToolConfig({ ...toolConfig, name: e.target.value })}
+              onChange={e => setToolConfig({ ...toolConfig, name: e.target.value })}
               className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
               placeholder="我的工具"
             />
@@ -696,7 +712,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             <input
               type="text"
               value={toolConfig.version}
-              onChange={(e) => setToolConfig({ ...toolConfig, version: e.target.value })}
+              onChange={e => setToolConfig({ ...toolConfig, version: e.target.value })}
               className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
               placeholder="1.0.0"
             />
@@ -707,7 +723,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             <input
               type="text"
               value={toolConfig.author}
-              onChange={(e) => setToolConfig({ ...toolConfig, author: e.target.value })}
+              onChange={e => setToolConfig({ ...toolConfig, author: e.target.value })}
               className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
               placeholder="Your Name"
             />
@@ -718,7 +734,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
           <label className="block text-sm font-medium mb-2">描述</label>
           <textarea
             value={toolConfig.description}
-            onChange={(e) => setToolConfig({ ...toolConfig, description: e.target.value })}
+            onChange={e => setToolConfig({ ...toolConfig, description: e.target.value })}
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             rows={3}
             placeholder="工具功能描述"
@@ -730,10 +746,12 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             <label className="block text-sm font-medium mb-2">运行时类型 *</label>
             <select
               value={toolConfig.runtime?.type || 'http-service'}
-              onChange={(e) => setToolConfig({
-                ...toolConfig,
-                runtime: { ...toolConfig.runtime, type: e.target.value }
-              })}
+              onChange={e =>
+                setToolConfig({
+                  ...toolConfig,
+                  runtime: { ...toolConfig.runtime, type: e.target.value },
+                })
+              }
               className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             >
               <option value="http-service">HTTP Service</option>
@@ -748,7 +766,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             <input
               type="text"
               value={toolConfig.category}
-              onChange={(e) => setToolConfig({ ...toolConfig, category: e.target.value })}
+              onChange={e => setToolConfig({ ...toolConfig, category: e.target.value })}
               className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
               placeholder="utilities"
             />
@@ -760,10 +778,12 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
           <input
             type="text"
             value={toolConfig.runtime?.start || ''}
-            onChange={(e) => setToolConfig({
-              ...toolConfig,
-              runtime: { ...toolConfig.runtime, start: e.target.value }
-            })}
+            onChange={e =>
+              setToolConfig({
+                ...toolConfig,
+                runtime: { ...toolConfig.runtime, start: e.target.value },
+              })
+            }
             className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
             placeholder="python main.py 或 node server.js"
           />
@@ -795,9 +815,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold mb-4">配置工具列表</h2>
-        <p className="text-gray-500 mb-4">
-          请添加该目录下的工具子项目
-        </p>
+        <p className="text-gray-500 mb-4">请添加该目录下的工具子项目</p>
 
         <div className="space-y-3">
           {indexTools.map((tool, index) => (
@@ -805,7 +823,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
               <input
                 type="text"
                 value={tool.id}
-                onChange={(e) => {
+                onChange={e => {
                   const newTools = [...indexTools];
                   newTools[index].id = e.target.value;
                   setIndexTools(newTools);
@@ -816,7 +834,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
               <input
                 type="text"
                 value={tool.path}
-                onChange={(e) => {
+                onChange={e => {
                   const newTools = [...indexTools];
                   newTools[index].path = e.target.value;
                   setIndexTools(newTools);
@@ -869,12 +887,10 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold mb-4">配置子工具</h2>
-        <p className="text-gray-500 mb-4">
-          为没有配置的子工具生成配置模板（后续可手动编辑）
-        </p>
+        <p className="text-gray-500 mb-4">为没有配置的子工具生成配置模板（后续可手动编辑）</p>
 
         <div className="space-y-3">
-          {subtoolsStatus.map((tool) => (
+          {subtoolsStatus.map(tool => (
             <div
               key={tool.id}
               className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600"
@@ -902,7 +918,8 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
 
         <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            💡 提示：生成的配置模板只包含基本字段，请稍后手动编辑 booltox.json 添加详细信息（如描述、启动命令等）
+            💡 提示：生成的配置模板只包含基本字段，请稍后手动编辑 booltox.json
+            添加详细信息（如描述、启动命令等）
           </p>
         </div>
 
@@ -928,4 +945,3 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
 
   return null;
 }
-

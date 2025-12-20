@@ -5,7 +5,7 @@
 
 /**
  * TiltCard - 3D 倾斜卡片组件
- * 
+ *
  * 实现 Apple 风格的 3D 倾斜交互效果：
  * - 鼠标跟随倾斜
  * - 光泽效果
@@ -42,7 +42,7 @@ export interface TiltCardProps {
 
 /**
  * TiltCard 组件
- * 
+ *
  * @example
  * <TiltCard maxTilt={15} enableGlare>
  *   <div className="p-6">
@@ -66,7 +66,7 @@ export function TiltCard({
   const { theme } = useTheme();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
-  
+
   // 使用 Spring 动画创建平滑的鼠标跟随
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
@@ -156,7 +156,7 @@ export function TiltCard({
 
 /**
  * TiltCardGroup - 卡片组容器
- * 
+ *
  * 用于包裹多个 TiltCard，添加统一的交错动画
  */
 export interface TiltCardGroupProps {
@@ -187,9 +187,5 @@ export function TiltCardGroup({
     4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
   }[columns];
 
-  return (
-    <div className={`grid ${gridClass} ${gapClass} ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`grid ${gridClass} ${gapClass} ${className}`}>{children}</div>;
 }

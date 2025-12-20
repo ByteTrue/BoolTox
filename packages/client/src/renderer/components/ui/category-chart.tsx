@@ -63,10 +63,7 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
 
   if (total === 0) {
     return (
-      <div
-        className="flex items-center justify-center"
-        style={{ width: size, height: size }}
-      >
+      <div className="flex items-center justify-center" style={{ width: size, height: size }}>
         <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
           暂无数据
         </p>
@@ -141,7 +138,9 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
           >
             {total}
           </motion.p>
-          <p className={`text-xs uppercase tracking-wider ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
+          <p
+            className={`text-xs uppercase tracking-wider ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}
+          >
             已启用
           </p>
         </div>
@@ -200,21 +199,21 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
  */
 function getSegmentColor(index: number, theme: 'light' | 'dark'): string {
   const lightColors = [
-    'rgb(101, 187, 233)',  // brand-blue-400
-    'rgb(138, 206, 241)',  // brand-blue-300
-    'rgb(249, 193, 207)',  // brand-pink-300
-    '#FBCFE8',             // 浅粉色（保留）
-    '#A78BFA',             // 紫色（保留）
-    '#60A5FA',             // 天蓝色（保留）
+    'rgb(101, 187, 233)', // brand-blue-400
+    'rgb(138, 206, 241)', // brand-blue-300
+    'rgb(249, 193, 207)', // brand-pink-300
+    '#FBCFE8', // 浅粉色（保留）
+    '#A78BFA', // 紫色（保留）
+    '#60A5FA', // 天蓝色（保留）
   ];
 
   const darkColors = [
-    'rgb(101, 187, 233)',  // brand-blue-400
-    'rgb(138, 206, 241)',  // brand-blue-300
-    'rgb(249, 193, 207)',  // brand-pink-300
-    '#FBCFE8',             // 浅粉色（保留）
-    '#C4B5FD',             // 紫色（保留）
-    '#7DD3FC',             // 天蓝色（保留）
+    'rgb(101, 187, 233)', // brand-blue-400
+    'rgb(138, 206, 241)', // brand-blue-300
+    'rgb(249, 193, 207)', // brand-pink-300
+    '#FBCFE8', // 浅粉色（保留）
+    '#C4B5FD', // 紫色（保留）
+    '#7DD3FC', // 天蓝色（保留）
   ];
 
   const colors = theme === 'dark' ? darkColors : lightColors;

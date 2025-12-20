@@ -5,7 +5,7 @@
 
 /**
  * 可拖拽卡片组件
- * 
+ *
  * 集成触觉反馈的拖拽卡片，特性：
  * - 拖拽时缩小 + 旋转
  * - 释放时回弹 + 震动
@@ -41,11 +41,7 @@ export function DraggableCard({
   const rotate = useTransform(x, [-100, 0, 100], [-5, 0, 5]);
 
   // 根据拖拽距离计算透明度（模拟"抓取"效果）
-  const opacity = useTransform(
-    x,
-    [-200, 0, 200],
-    [0.6, 1, 0.6]
-  );
+  const opacity = useTransform(x, [-200, 0, 200], [0.6, 1, 0.6]);
 
   return (
     <motion.div

@@ -3,12 +3,12 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import type { ComponentType } from "react";
-import type { ToolRuntimeConfig } from "@booltox/shared";
+import type { ComponentType } from 'react';
+import type { ToolRuntimeConfig } from '@booltox/shared';
 
 export type ModuleLoader = () => Promise<ComponentType> | ComponentType;
 
-export type ModuleSource = "local" | "remote" | "dev";
+export type ModuleSource = 'local' | 'remote' | 'dev';
 
 export interface ModuleDefinition {
   id: string;
@@ -24,10 +24,10 @@ export interface ModuleDefinition {
   loader?: ModuleLoader;
   source?: ModuleSource;
   runtimeMode?: 'webview' | 'standalone';
-  runtime?: ToolRuntimeConfig;  // 新增：运行时配置（用于判断工具类型）
+  runtime?: ToolRuntimeConfig; // 新增：运行时配置（用于判断工具类型）
 }
 
-export type ModuleLaunchState = "idle" | "launching" | "running" | "stopping" | "error";
+export type ModuleLaunchState = 'idle' | 'launching' | 'running' | 'stopping' | 'error';
 
 export interface ModuleRuntime {
   loading: boolean;
@@ -50,8 +50,8 @@ export interface ModuleInstance {
   favoriteOrder?: number;
   favoritedAt?: string;
   isDev?: boolean;
-  sourceId?: string;      // 工具来源 ID（官方/自定义工具源）
-  sourceName?: string;    // 工具来源名称（用于 UI 显示）
+  sourceId?: string; // 工具来源 ID（官方/自定义工具源）
+  sourceName?: string; // 工具来源名称（用于 UI 显示）
 }
 
 export interface ModuleStats {

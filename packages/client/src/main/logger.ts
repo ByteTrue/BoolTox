@@ -20,7 +20,7 @@ export function createLogger(namespace: string): Logger {
   const log = (level: LogLevel, ...args: unknown[]) => {
     const timestamp = new Date().toLocaleTimeString();
     const prefix = `[${timestamp}] [${namespace}]`;
-    
+
     switch (level) {
       case 'debug':
         console.warn(prefix, ...args);

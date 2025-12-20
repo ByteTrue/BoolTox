@@ -190,7 +190,7 @@ export class MemoryMonitor {
     }
 
     // 计算内存使用趋势
-    const usages = this.snapshots.map((s) => s.memory.usedJSHeapSize);
+    const usages = this.snapshots.map(s => s.memory.usedJSHeapSize);
     const first = usages[0];
     const last = usages[usages.length - 1];
     const increase = last - first;
@@ -223,7 +223,8 @@ export class MemoryMonitor {
     const analysis = this.analyzeLeaks();
     const first = this.snapshots[0].memory;
     const last = this.snapshots[this.snapshots.length - 1].memory;
-    const duration = (this.snapshots[this.snapshots.length - 1].time - this.snapshots[0].time) / 1000;
+    const duration =
+      (this.snapshots[this.snapshots.length - 1].time - this.snapshots[0].time) / 1000;
 
     console.group('💾 Memory Usage Report');
     console.warn(`Duration: ${duration.toFixed(1)}s (${this.snapshots.length} samples)`);
@@ -253,7 +254,7 @@ export class MemoryMonitor {
   private drawTrend(): void {
     if (this.snapshots.length === 0) return;
 
-    const usages = this.snapshots.map((s) => s.memory.usedJSHeapSize / 1024 / 1024);
+    const usages = this.snapshots.map(s => s.memory.usedJSHeapSize / 1024 / 1024);
     const min = Math.min(...usages);
     const max = Math.max(...usages);
     const range = max - min || 1;

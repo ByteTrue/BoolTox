@@ -244,13 +244,13 @@ export function generateResponsiveCSSVariables(): Record<string, string> {
   const variables: Record<string, string> = {};
 
   // 字体变量
-  Object.keys(fontScalePresets).forEach((key) => {
+  Object.keys(fontScalePresets).forEach(key => {
     const preset = key as keyof typeof fontScalePresets;
     variables[`--font-${key}`] = getResponsiveClamp(fontScalePresets[preset]);
   });
 
   // 间距变量
-  Object.keys(spacingScalePresets).forEach((key) => {
+  Object.keys(spacingScalePresets).forEach(key => {
     const preset = key as keyof typeof spacingScalePresets;
     variables[`--spacing-${key}`] = getResponsiveClamp(spacingScalePresets[preset]);
   });

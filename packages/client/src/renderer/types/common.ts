@@ -40,7 +40,14 @@ export interface IpcEventData {
 /**
  * API 请求参数
  */
-export type ApiParams = Record<string, unknown> | unknown[] | string | number | boolean | null | undefined;
+export type ApiParams =
+  | Record<string, unknown>
+  | unknown[]
+  | string
+  | number
+  | boolean
+  | null
+  | undefined;
 
 /**
  * 错误详情
@@ -56,13 +63,7 @@ export interface ErrorDetails {
 /**
  * JSON 兼容的值类型
  */
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonObject
-  | JsonArray;
+export type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
 
 export interface JsonObject {
   [key: string]: JsonValue;

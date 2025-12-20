@@ -54,9 +54,7 @@ export function ActivityHistoryDrawer({ open, events, onClose }: ActivityHistory
             style={{
               ...getGlassStyle('CARD', theme),
               borderColor:
-                theme === 'dark'
-                  ? 'rgba(255, 255, 255, 0.2)'
-                  : 'rgba(101, 187, 233, 0.15)',
+                theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(101, 187, 233, 0.15)',
             }}
             role="dialog"
             aria-modal="true"
@@ -66,7 +64,7 @@ export function ActivityHistoryDrawer({ open, events, onClose }: ActivityHistory
             <div
               className="flex items-center justify-between border-b p-6"
               style={{
-                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
               }}
             >
               <h2
@@ -86,11 +84,7 @@ export function ActivityHistoryDrawer({ open, events, onClose }: ActivityHistory
                 }`}
                 aria-label="关闭"
               >
-                <X
-                  className={`h-5 w-5 ${
-                    theme === 'dark' ? 'text-white/70' : 'text-slate-600'
-                  }`}
-                />
+                <X className={`h-5 w-5 ${theme === 'dark' ? 'text-white/70' : 'text-slate-600'}`} />
               </motion.button>
             </div>
 
@@ -98,11 +92,7 @@ export function ActivityHistoryDrawer({ open, events, onClose }: ActivityHistory
             <div className="h-[calc(100%-100px)] overflow-y-auto elegant-scroll p-6">
               {events.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <p
-                    className={`text-sm ${
-                      theme === 'dark' ? 'text-white/50' : 'text-slate-400'
-                    }`}
-                  >
+                  <p className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}>
                     暂无操作记录
                   </p>
                 </div>
@@ -116,14 +106,10 @@ export function ActivityHistoryDrawer({ open, events, onClose }: ActivityHistory
               className="absolute bottom-0 left-0 right-0 border-t p-4 text-center"
               style={{
                 ...getGlassStyle('PANEL', theme),
-                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
               }}
             >
-              <p
-                className={`text-xs ${
-                  theme === 'dark' ? 'text-white/50' : 'text-slate-500'
-                }`}
-              >
+              <p className={`text-xs ${theme === 'dark' ? 'text-white/50' : 'text-slate-500'}`}>
                 共 {events.length} 条操作记录
               </p>
             </div>

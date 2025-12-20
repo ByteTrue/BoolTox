@@ -11,30 +11,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { windowService } from './window.service';
 import { BrowserWindow } from 'electron';
 
-// Mock Electron BrowserWindow
-vi.mock('electron', () => ({
-  BrowserWindow: vi.fn().mockImplementation(() => ({
-    show: vi.fn(),
-    hide: vi.fn(),
-    close: vi.fn(),
-    focus: vi.fn(),
-    isDestroyed: vi.fn(() => false),
-    loadURL: vi.fn(),
-    loadFile: vi.fn(),
-    setMenuBarVisibility: vi.fn(),
-    setMenu: vi.fn(),
-    setWindowButtonVisibility: vi.fn(),
-    webContents: {
-      openDevTools: vi.fn(),
-    },
-    on: vi.fn(),
-  })),
-  app: {
-    isPackaged: false,
-    getPath: vi.fn(() => '/test/path'),
-  },
-}));
-
 describe('WindowService', () => {
   afterEach(() => {
     vi.clearAllMocks();

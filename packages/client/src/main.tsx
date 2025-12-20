@@ -87,7 +87,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </BrowserRouter>
       )}
     </ErrorBoundary>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
 
 // 标记 React 渲染完成
@@ -99,7 +99,10 @@ requestAnimationFrame(async () => {
   profiler.mark('app-startup-end');
   profiler.measure('App Startup Time', 'app-startup-begin', 'app-startup-end');
 
-  console.warn('%c🚀 BoolTox Performance Report (New Architecture)', 'font-size: 16px; font-weight: bold; color: rgb(101, 187, 233);');
+  console.warn(
+    '%c🚀 BoolTox Performance Report (New Architecture)',
+    'font-size: 16px; font-weight: bold; color: rgb(101, 187, 233);'
+  );
   profiler.report('Phase 1: Startup Performance');
 
   // 开发环境：启动内存和 FPS 监控

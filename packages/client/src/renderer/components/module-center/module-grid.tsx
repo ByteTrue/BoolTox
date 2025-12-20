@@ -3,15 +3,15 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { AnimatePresence, motion } from "framer-motion";
-import { PackageOpen } from "lucide-react";
-import { EmptyState } from "../ui/empty-state";
-import { SkeletonLoader } from "../ui/skeleton-loader";
-import { ModuleCard, AvailableModuleCard } from "./module-card";
-import { ModuleListItem } from "./module-list-item";
-import type { ModuleInstance, ModuleDefinition } from "@/types/module";
-import type { ToolRegistryEntry } from "@booltox/shared";
-import type { ViewMode } from "./types";
+import { AnimatePresence, motion } from 'framer-motion';
+import { PackageOpen } from 'lucide-react';
+import { EmptyState } from '../ui/empty-state';
+import { SkeletonLoader } from '../ui/skeleton-loader';
+import { ModuleCard, AvailableModuleCard } from './module-card';
+import { ModuleListItem } from './module-list-item';
+import type { ModuleInstance, ModuleDefinition } from '@/types/module';
+import type { ToolRegistryEntry } from '@booltox/shared';
+import type { ViewMode } from './types';
 
 interface ModuleGridProps {
   modules: ModuleInstance[] | ModuleDefinition[] | ToolRegistryEntry[];
@@ -42,7 +42,7 @@ export function ModuleGrid({
   onStop,
   onPinToggle,
   onCardClick,
-  emptyMessage = "暂无工具",
+  emptyMessage = '暂无工具',
   isDevPlugin,
   isSelectionMode = false,
   selectedToolIds = new Set(),
@@ -53,9 +53,9 @@ export function ModuleGrid({
     return (
       <div
         className={`grid gap-6 ${
-          viewMode === "grid"
-            ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            : "grid-cols-1"
+          viewMode === 'grid'
+            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            : 'grid-cols-1'
         }`}
       >
         <SkeletonLoader type="module-card" count={8} />
@@ -79,28 +79,28 @@ export function ModuleGrid({
     module: ModuleInstance | ModuleDefinition | ToolRegistryEntry
   ): module is ModuleInstance => {
     // 不仅要有 runtime 属性，还要检查 runtime.installed 的值
-    return "runtime" in module && (module as ModuleInstance).runtime.installed !== false;
+    return 'runtime' in module && (module as ModuleInstance).runtime.installed !== false;
   };
 
   const isToolRegistryEntry = (
     module: ModuleInstance | ModuleDefinition | ToolRegistryEntry
   ): module is ToolRegistryEntry => {
-    return "downloadUrl" in module || ("hash" in module && !("loader" in module));
+    return 'downloadUrl' in module || ('hash' in module && !('loader' in module));
   };
 
   return (
     <motion.div
       layout
       className={`grid gap-6 ${
-        viewMode === "grid"
-          ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          : "grid-cols-1"
+        viewMode === 'grid'
+          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+          : 'grid-cols-1'
       }`}
     >
       <AnimatePresence mode="popLayout">
-        {modules.map((module) => {
+        {modules.map(module => {
           // 列表视图: 使用统一的列表项组件
-          if (viewMode === "list") {
+          if (viewMode === 'list') {
             // ToolRegistryEntry 不支持列表视图,跳过或使用卡片
             if (isToolRegistryEntry(module)) {
               const moduleData = {
@@ -166,11 +166,21 @@ export function ModuleGrid({
             const hasDefinition = 'definition' in module;
             const moduleData = {
               id: module.id,
-              name: hasDefinition ? (module as unknown as ModuleInstance).definition.name : (module as unknown as ModuleDefinition).name,
-              description: hasDefinition ? (module as unknown as ModuleInstance).definition.description : (module as unknown as ModuleDefinition).description,
-              version: hasDefinition ? (module as unknown as ModuleInstance).definition.version : (module as unknown as ModuleDefinition).version,
-              category: hasDefinition ? (module as unknown as ModuleInstance).definition.category : (module as unknown as ModuleDefinition).category,
-              icon: hasDefinition ? (module as unknown as ModuleInstance).definition.icon : (module as unknown as ModuleDefinition).icon,
+              name: hasDefinition
+                ? (module as unknown as ModuleInstance).definition.name
+                : (module as unknown as ModuleDefinition).name,
+              description: hasDefinition
+                ? (module as unknown as ModuleInstance).definition.description
+                : (module as unknown as ModuleDefinition).description,
+              version: hasDefinition
+                ? (module as unknown as ModuleInstance).definition.version
+                : (module as unknown as ModuleDefinition).version,
+              category: hasDefinition
+                ? (module as unknown as ModuleInstance).definition.category
+                : (module as unknown as ModuleDefinition).category,
+              icon: hasDefinition
+                ? (module as unknown as ModuleInstance).definition.icon
+                : (module as unknown as ModuleDefinition).icon,
             };
 
             return (

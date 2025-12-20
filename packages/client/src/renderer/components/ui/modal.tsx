@@ -5,7 +5,7 @@
 
 /**
  * Modal/Dialog 组件
- * 
+ *
  * Apple 风格的模态对话框，支持：
  * - 背景模糊动画（backdrop-filter: blur）
  * - 缩放进入动画
@@ -112,7 +112,7 @@ export function Modal({
               initial="initial"
               animate="animate"
               exit="exit"
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
               className={`relative w-full ${SIZE_CLASSES[size]} rounded-2xl border shadow-2xl ${className}`}
               style={getGlassStyle('MODAL', theme)}
             >
@@ -120,7 +120,9 @@ export function Modal({
               {(title || showCloseButton) && (
                 <div
                   className="flex items-center justify-between px-6 py-4 border-b"
-                  style={{ borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT }}
+                  style={{
+                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+                  }}
                 >
                   {title && (
                     <h2
@@ -148,15 +150,15 @@ export function Modal({
               )}
 
               {/* Body */}
-              <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
-                {children}
-              </div>
+              <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">{children}</div>
 
               {/* Footer */}
               {footer && (
                 <div
                   className="px-6 py-4 border-t"
-                  style={{ borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT }}
+                  style={{
+                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+                  }}
                 >
                   {footer}
                 </div>

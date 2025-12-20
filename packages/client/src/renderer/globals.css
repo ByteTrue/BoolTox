@@ -28,7 +28,7 @@
   --spacing-2xl: clamp(48px, 3rem + 1vw, 64px);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
   --titlebar-height: 44px;
 }
@@ -39,7 +39,14 @@ body {
 
 body {
   margin: 0;
-  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family:
+    var(--font-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Helvetica,
+    Arial,
+    sans-serif;
   letter-spacing: -0.01em;
 }
 
@@ -87,7 +94,7 @@ body.keyboard-navigation *:focus-visible {
 
 /* 禁用交互元素的焦点样式优化 */
 button:disabled:focus-visible,
-a[aria-disabled="true"]:focus-visible {
+a[aria-disabled='true']:focus-visible {
   outline-color: rgba(120, 125, 135, 0.5) !important;
 }
 
@@ -120,7 +127,7 @@ a {
 /* 为交互元素添加圆角光晕效果 - 增强版 */
 button:focus-visible,
 a:focus-visible,
-[role="button"]:focus-visible {
+[role='button']:focus-visible {
   box-shadow: 0 0 0 4px rgba(101, 187, 233, 0.4) !important;
   transition: box-shadow 0.2s ease-in-out;
 }
@@ -179,17 +186,17 @@ textarea:focus-visible {
 }
 
 /* 深色模式 */
-[data-theme="dark"] .elegant-scroll:hover::-webkit-scrollbar-thumb,
-[data-theme="dark"] .elegant-scroll.scrolling::-webkit-scrollbar-thumb {
+[data-theme='dark'] .elegant-scroll:hover::-webkit-scrollbar-thumb,
+[data-theme='dark'] .elegant-scroll.scrolling::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
 }
 
-[data-theme="dark"] .elegant-scroll:hover::-webkit-scrollbar-thumb:hover {
+[data-theme='dark'] .elegant-scroll:hover::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
-[data-theme="dark"] .elegant-scroll:hover,
-[data-theme="dark"] .elegant-scroll.scrolling {
+[data-theme='dark'] .elegant-scroll:hover,
+[data-theme='dark'] .elegant-scroll.scrolling {
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
@@ -212,7 +219,8 @@ textarea:focus-visible {
 
 /* 呼吸动画 */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.2;
   }
@@ -258,7 +266,7 @@ textarea:focus-visible {
     opacity: 1 !important;
     transform: none !important;
   }
-  
+
   /* Framer Motion 组件回退 */
   [data-framer-component] {
     animation: none !important;
@@ -271,8 +279,9 @@ textarea:focus-visible {
   * {
     border-width: 2px !important;
   }
-  
-  button, a {
+
+  button,
+  a {
     text-decoration: underline;
   }
 }
@@ -283,7 +292,8 @@ textarea:focus-visible {
 
 /* 网格渐变动画 - 柔和漂浮效果 */
 @keyframes blob-float-1 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   33% {
@@ -295,7 +305,8 @@ textarea:focus-visible {
 }
 
 @keyframes blob-float-2 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   33% {
@@ -307,7 +318,8 @@ textarea:focus-visible {
 }
 
 @keyframes blob-float-3 {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   50% {
@@ -394,8 +406,9 @@ textarea:focus-visible {
 /* 卡片 Hover 优化 */
 .card-hover-optimized {
   will-change: transform, box-shadow;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 按钮点击反馈优化 */
@@ -470,7 +483,8 @@ textarea:focus-visible {
 
 /* 阴影动画优化 - 使用 transform 模拟 */
 @keyframes shadow-pulse {
-  0%, 100% {
+  0%,
+  100% {
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
   }
   50% {

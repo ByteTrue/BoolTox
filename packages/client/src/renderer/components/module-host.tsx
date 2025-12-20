@@ -3,8 +3,8 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import type { ModuleInstance } from "@/types/module";
-import { useModulePlatform } from "@/contexts/module-context";
+import type { ModuleInstance } from '@/types/module';
+import { useModulePlatform } from '@/contexts/module-context';
 
 interface ModuleHostProps {
   module: ModuleInstance | null;
@@ -23,10 +23,10 @@ export function ModuleHost({ module }: ModuleHostProps) {
 
   // New Architecture: Plugin (BrowserView)
   // New plugins run inside dedicated windows, we keep an informative panel here.
-  if (module.id.startsWith("com.booltox.")) {
-    const launchState = module.runtime.launchState ?? "idle";
-    const isRunning = launchState === "running";
-    const isLaunching = launchState === "launching";
+  if (module.id.startsWith('com.booltox.')) {
+    const launchState = module.runtime.launchState ?? 'idle';
+    const isRunning = launchState === 'running';
+    const isLaunching = launchState === 'launching';
     const handleOpen = () => {
       if (isRunning) {
         void focusModuleWindow(module.id);
@@ -42,7 +42,8 @@ export function ModuleHost({ module }: ModuleHostProps) {
             {module.definition.name} 在独立窗口中运行
           </h3>
           <p className="text-sm text-[var(--text-secondary)]">
-            点击下方按钮即可{isRunning ? "聚焦" : isLaunching ? "等待启动完成后重试" : "在新窗口启动"}工具。
+            点击下方按钮即可
+            {isRunning ? '聚焦' : isLaunching ? '等待启动完成后重试' : '在新窗口启动'}工具。
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -51,17 +52,17 @@ export function ModuleHost({ module }: ModuleHostProps) {
             onClick={handleOpen}
             disabled={isLaunching}
             className={`rounded-full border border-blue-500/30 bg-blue-500/15 px-5 py-2 text-sm font-semibold text-blue-500 shadow-sm transition-[transform,background-color] duration-200 hover:bg-blue-500/25 hover:scale-[1.02] ${
-              isLaunching ? "cursor-wait opacity-70 hover:scale-100 hover:bg-blue-500/15" : ""
+              isLaunching ? 'cursor-wait opacity-70 hover:scale-100 hover:bg-blue-500/15' : ''
             }`}
           >
-            {isLaunching ? "启动中…" : isRunning ? "聚焦工具窗口" : "打开工具窗口"}
+            {isLaunching ? '启动中…' : isRunning ? '聚焦工具窗口' : '打开工具窗口'}
           </button>
           {isRunning && (
             <span className="rounded-full border border-green-500/30 bg-green-500/15 px-3 py-1 text-xs font-semibold text-green-500">
               窗口已运行
             </span>
           )}
-          {launchState === "error" && (
+          {launchState === 'error' && (
             <span className="rounded-full border border-red-500/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-500">
               启动失败，可重试
             </span>

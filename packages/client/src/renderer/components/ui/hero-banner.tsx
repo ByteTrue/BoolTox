@@ -46,11 +46,7 @@ export function HeroBanner({
       {/* 装饰图案 (可选) */}
       {pattern && (
         <div className="absolute inset-0 opacity-20">
-          <img 
-            src={pattern} 
-            alt="" 
-            className="w-full h-full object-cover mix-blend-overlay" 
-          />
+          <img src={pattern} alt="" className="w-full h-full object-cover mix-blend-overlay" />
         </div>
       )}
 
@@ -59,7 +55,14 @@ export function HeroBanner({
         <svg className="w-full h-full" viewBox="0 0 400 400" fill="none">
           <circle cx="350" cy="50" r="80" fill="white" />
           <circle cx="50" cy="350" r="100" fill="white" />
-          <rect x="200" y="200" width="150" height="150" fill="white" transform="rotate(45 275 275)" />
+          <rect
+            x="200"
+            y="200"
+            width="150"
+            height="150"
+            fill="white"
+            transform="rotate(45 275 275)"
+          />
         </svg>
       </div>
 
@@ -149,9 +152,7 @@ interface CategoryHeaderProps {
 export function CategoryHeader({ title, showAll }: CategoryHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-4">
-      <h2 className="text-[22px] font-semibold text-[var(--text-primary)]">
-        {title}
-      </h2>
+      <h2 className="text-[22px] font-semibold text-[var(--text-primary)]">{title}</h2>
       {showAll && (
         <motion.button
           {...buttonInteraction}
@@ -180,11 +181,13 @@ interface ScrollContainerProps {
 
 export function ScrollContainer({ children }: ScrollContainerProps) {
   return (
-    <div className="
+    <div
+      className="
       flex gap-4 overflow-x-auto pb-4 -mx-8 px-8
       scrollbar-hide
       snap-x snap-mandatory
-    ">
+    "
+    >
       {children}
     </div>
   );

@@ -52,37 +52,38 @@ export function useModuleStats(): ModuleStats {
 
   const stats = useMemo(() => {
     const installed = installedModules.length;
-    const enabled = 0;  // 不再使用 enabled/disabled 状态
+    const enabled = 0; // 不再使用 enabled/disabled 状态
     const disabled = 0;
-    
+
     // 过滤掉已安装的非开发工具
-    const installedToolIds = new Set(
-      toolRegistry
-        .filter(p => !p.isDev)
-        .map(p => p.id)
-    );
+    const installedToolIds = new Set(toolRegistry.filter(p => !p.isDev).map(p => p.id));
     const remote = availablePlugins.filter(p => !installedToolIds.has(p.id)).length;
 
     // 按分类统计已安装模块
-    const byCategory = installedModules
-      .reduce((acc, m) => {
+    const byCategory = installedModules.reduce(
+      (acc, m) => {
         const cat = m.definition.category;
         if (!cat) {
           return acc;
         }
         acc[cat] = (acc[cat] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>);
+      },
+      {} as Record<string, number>
+    );
 
     // 按分类统计所有已安装模块
-    const allByCategory = installedModules.reduce((acc, m) => {
-      const cat = m.definition.category;
-      if (!cat) {
+    const allByCategory = installedModules.reduce(
+      (acc, m) => {
+        const cat = m.definition.category;
+        if (!cat) {
+          return acc;
+        }
+        acc[cat] = (acc[cat] || 0) + 1;
         return acc;
-      }
-      acc[cat] = (acc[cat] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+      },
+      {} as Record<string, number>
+    );
 
     return {
       installed,

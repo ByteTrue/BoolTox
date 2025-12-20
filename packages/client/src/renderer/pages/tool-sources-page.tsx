@@ -22,7 +22,7 @@ export function ToolSourcesPage() {
 
   const loadSources = async () => {
     try {
-      const list = await window.ipc.invoke('tool-sources:list') as ToolSourceConfig[] | undefined;
+      const list = (await window.ipc.invoke('tool-sources:list')) as ToolSourceConfig[] | undefined;
       setSources(list || []);
     } catch (error) {
       console.error('Failed to load sources:', error);
@@ -118,9 +118,11 @@ export function ToolSourcesPage() {
 // 空状态占位
 function EmptyPlaceholder({ text, isDark }: { text: string; isDark: boolean }) {
   return (
-    <div className={`p-6 border-2 border-dashed rounded-lg text-center ${
-      isDark ? 'border-white/10' : 'border-slate-200'
-    }`}>
+    <div
+      className={`p-6 border-2 border-dashed rounded-lg text-center ${
+        isDark ? 'border-white/10' : 'border-slate-200'
+      }`}
+    >
       <p className="text-gray-500">{text}</p>
     </div>
   );
@@ -137,17 +139,21 @@ function SourceCard({ source, onDelete, isDark }: SourceCardProps) {
   const canDelete = source.id !== 'official';
 
   return (
-    <div className={`border rounded-xl p-6 transition-all ${
-      isDark ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-slate-200 bg-white/50 hover:bg-white/80'
-    }`}>
+    <div
+      className={`border rounded-xl p-6 transition-all ${
+        isDark
+          ? 'border-white/10 bg-white/5 hover:bg-white/10'
+          : 'border-slate-200 bg-white/50 hover:bg-white/80'
+      }`}
+    >
       <div className="flex items-start justify-between">
         {/* 左侧：图标 + 信息 */}
         <div className="flex items-start gap-4 flex-1">
-          <div className={`flex-shrink-0 p-3 rounded-lg ${
-            source.type === 'remote'
-              ? 'bg-blue-500/10'
-              : 'bg-green-500/10'
-          }`}>
+          <div
+            className={`flex-shrink-0 p-3 rounded-lg ${
+              source.type === 'remote' ? 'bg-blue-500/10' : 'bg-green-500/10'
+            }`}
+          >
             {source.type === 'remote' ? (
               <Github size={32} className="text-blue-500" />
             ) : (
@@ -160,11 +166,11 @@ function SourceCard({ source, onDelete, isDark }: SourceCardProps) {
               <h3 className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {source.name}
               </h3>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                source.enabled
-                  ? 'bg-green-500/20 text-green-600'
-                  : 'bg-gray-500/20 text-gray-500'
-              }`}>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${
+                  source.enabled ? 'bg-green-500/20 text-green-600' : 'bg-gray-500/20 text-gray-500'
+                }`}
+              >
                 {source.enabled ? '已启用' : '已禁用'}
               </span>
             </div>
@@ -189,7 +195,9 @@ function SourceCard({ source, onDelete, isDark }: SourceCardProps) {
             )}
 
             {/* 统计信息 */}
-            <div className={`mt-3 flex items-center gap-4 text-xs ${isDark ? 'text-white/50' : 'text-slate-500'}`}>
+            <div
+              className={`mt-3 flex items-center gap-4 text-xs ${isDark ? 'text-white/50' : 'text-slate-500'}`}
+            >
               <span>优先级: {source.priority}</span>
             </div>
           </div>
@@ -198,9 +206,11 @@ function SourceCard({ source, onDelete, isDark }: SourceCardProps) {
         {/* 右侧：操作按钮 */}
         <div className="flex gap-2">
           {!canDelete ? (
-            <div className={`px-4 py-2 rounded-lg border ${
-              isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50'
-            }`}>
+            <div
+              className={`px-4 py-2 rounded-lg border ${
+                isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50'
+              }`}
+            >
               <span className="text-sm text-gray-500">不可删除</span>
             </div>
           ) : (

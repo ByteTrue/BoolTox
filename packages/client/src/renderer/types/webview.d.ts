@@ -7,7 +7,6 @@ declare global {
       webview: DetailedHTMLProps<HTMLAttributes<WebviewTag>, WebviewTag> & {
         src?: string;
         nodeintegration?: boolean;
-        enableremotemodule?: boolean;
         webpreferences?: string;
         allowpopups?: boolean;
       };
@@ -16,4 +15,3 @@ declare global {
 }
 
 export {};
-

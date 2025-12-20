@@ -5,7 +5,7 @@
 
 /**
  * Skeleton - 加载占位组件
- * 
+ *
  * Apple 风格的骨架屏加载效果
  */
 
@@ -34,7 +34,7 @@ export interface SkeletonProps {
 
 /**
  * Skeleton 基础组件
- * 
+ *
  * @example
  * <Skeleton width="100%" height={20} />
  */
@@ -146,12 +146,10 @@ export function SkeletonCard({
   return (
     <motion.div
       className={`p-4 rounded-xl border ${
-        theme === 'dark'
-          ? 'bg-white/5'
-          : 'bg-white'
+        theme === 'dark' ? 'bg-white/5' : 'bg-white'
       } ${className}`}
       style={{
-        borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+        borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
       }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -227,11 +225,7 @@ export interface SkeletonTableProps {
   className?: string;
 }
 
-export function SkeletonTable({
-  rows = 5,
-  columns = 4,
-  className = '',
-}: SkeletonTableProps) {
+export function SkeletonTable({ rows = 5, columns = 4, className = '' }: SkeletonTableProps) {
   return (
     <div className={`space-y-3 ${className}`}>
       {/* 表头 */}
@@ -294,13 +288,7 @@ export function SkeletonImage({
       <Skeleton width="100%" height="100%" borderRadius={0} />
       {/* 图标占位 */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div
-          className={`text-4xl ${
-            theme === 'dark' ? 'text-white/20' : 'text-black/10'
-          }`}
-        >
-          🖼️
-        </div>
+        <div className={`text-4xl ${theme === 'dark' ? 'text-white/20' : 'text-black/10'}`}>🖼️</div>
       </div>
     </div>
   );

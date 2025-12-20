@@ -15,7 +15,9 @@ import { Folder, RefreshCw, Trash2, FileText } from 'lucide-react';
 
 export function DeveloperSettings() {
   const { theme } = useTheme();
-  const [localPluginsPath, setLocalPluginsPath] = useState('E:\\Code\\TS\\BoolTox\\booltox-plugins');
+  const [localPluginsPath, setLocalPluginsPath] = useState(
+    'E:\\Code\\TS\\BoolTox\\booltox-plugins'
+  );
 
   const handleOpenLogs = async () => {
     await window.ipc?.invoke('logger:open-log-folder');
@@ -35,11 +37,11 @@ export function DeveloperSettings() {
   };
 
   const handleSelectPluginsPath = async () => {
-    const path = await window.ipc?.invoke('dialog:openFile', {
+    const path = (await window.ipc?.invoke('dialog:openFile', {
       properties: ['openDirectory'],
-    });
+    })) as string | null | undefined;
 
-    if (path) {
+    if (path && typeof path === 'string') {
       setLocalPluginsPath(path);
       // TODO: 保存到配置
       window.toast?.success(`本地工具仓库路径已设置: ${path}`);
@@ -85,7 +87,9 @@ export function DeveloperSettings() {
       {/* 本地工具仓库路径 */}
       <section className="space-y-4">
         <div>
-          <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <h3
+            className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             本地工具仓库路径
           </h3>
           <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
@@ -97,7 +101,7 @@ export function DeveloperSettings() {
           <input
             type="text"
             value={localPluginsPath}
-            onChange={(e) => setLocalPluginsPath(e.target.value)}
+            onChange={e => setLocalPluginsPath(e.target.value)}
             placeholder="E:\Code\TS\BoolTox\booltox-plugins"
             className={`flex-1 px-4 py-3 rounded-lg border font-mono text-sm ${
               theme === 'dark'
@@ -126,19 +130,22 @@ export function DeveloperSettings() {
           }}
         >
           <p className={`text-sm ${theme === 'dark' ? 'text-blue-200' : 'text-blue-700'}`}>
-            💡 设置本地工具仓库路径后，开发模式下安装工具将创建符号链接。修改工具源码无需重新安装即可生效。
+            💡
+            设置本地工具仓库路径后，开发模式下安装工具将创建符号链接。修改工具源码无需重新安装即可生效。
           </p>
         </div>
       </section>
 
       {/* 快速操作 */}
       <section className="space-y-4">
-        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        <h3
+          className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+        >
           快速操作
         </h3>
 
         <div className="grid grid-cols-1 gap-3">
-          {actionButtons.map((action) => (
+          {actionButtons.map(action => (
             <motion.button
               key={action.label}
               whileHover={{ scale: 1.01 }}
@@ -188,7 +195,9 @@ export function DeveloperSettings() {
 
       {/* 环境信息 */}
       <section className="space-y-4">
-        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        <h3
+          className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+        >
           环境信息
         </h3>
 
@@ -212,8 +221,12 @@ export function DeveloperSettings() {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>本地工具路径:</span>
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{localPluginsPath}</span>
+            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>
+              本地工具路径:
+            </span>
+            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+              {localPluginsPath}
+            </span>
           </div>
         </div>
       </section>

@@ -77,7 +77,7 @@ export class ToolInstallerService {
 
       // 降级到 .zip 下载（兼容旧工具或有 Release 的工具）
       if (entry.downloadUrl) {
-        return await this.installFromZip(entry, onProgress, window, abortController);
+        return await this.installFromZip(entry, abortController, onProgress, window);
       }
 
       throw new Error(`工具 ${id} 缺少安装源（需要 gitPath 或 downloadUrl）`);
@@ -159,9 +159,9 @@ export class ToolInstallerService {
    */
   private async installFromZip(
     entry: ToolRegistryEntry,
+    abortController: AbortController,
     onProgress?: (progress: ToolInstallProgress) => void,
-    window?: BrowserWindow,
-    abortController: AbortController
+    window?: BrowserWindow
   ): Promise<string> {
     const { id, version, hash, downloadUrl } = entry;
 

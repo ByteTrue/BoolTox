@@ -5,7 +5,7 @@
 
 /**
  * LoadingSpinner - 加载动画组件
- * 
+ *
  * Apple 风格的加载指示器
  */
 
@@ -26,7 +26,7 @@ export interface LoadingSpinnerProps {
 
 /**
  * LoadingSpinner - 旋转 Spinner
- * 
+ *
  * @example
  * <LoadingSpinner size="md" />
  */
@@ -66,12 +66,7 @@ export interface LoadingDotsProps {
   className?: string;
 }
 
-export function LoadingDots({
-  size = 'md',
-  color,
-  speed = 1.2,
-  className = '',
-}: LoadingDotsProps) {
+export function LoadingDots({ size = 'md', color, speed = 1.2, className = '' }: LoadingDotsProps) {
   const { theme } = useTheme();
 
   const sizeMap = {
@@ -85,7 +80,7 @@ export function LoadingDots({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {[0, 1, 2].map((index) => (
+      {[0, 1, 2].map(index => (
         <motion.div
           key={index}
           animate={{
@@ -123,12 +118,7 @@ export interface LoadingPulseProps {
   className?: string;
 }
 
-export function LoadingPulse({
-  size = 40,
-  color,
-  speed = 1.5,
-  className = '',
-}: LoadingPulseProps) {
+export function LoadingPulse({ size = 40, color, speed = 1.5, className = '' }: LoadingPulseProps) {
   const { theme } = useTheme();
 
   return (
@@ -178,7 +168,8 @@ export function LoadingProgress({
   const { theme } = useTheme();
 
   const bgColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-  const barColor = color || (theme === 'dark' ? 'rgba(101, 187, 233, 0.8)' : 'rgba(0, 122, 255, 0.8)');
+  const barColor =
+    color || (theme === 'dark' ? 'rgba(101, 187, 233, 0.8)' : 'rgba(0, 122, 255, 0.8)');
 
   return (
     <div
@@ -264,11 +255,7 @@ export function LoadingOverlay({
         transition={{ delay: 0.1 }}
       >
         <LoadingSpinner size="lg" />
-        {text && (
-          <p className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>
-            {text}
-          </p>
-        )}
+        {text && <p className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>{text}</p>}
       </motion.div>
     </motion.div>
   );

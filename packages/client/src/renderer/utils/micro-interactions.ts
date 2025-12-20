@@ -5,10 +5,10 @@
 
 /**
  * Apple 风格微交互动画增强
- * 
+ *
  * 为常见 UI 组件提供精细的交互反馈动画
  * 参考：macOS Big Sur / iOS 17 设计规范
- * 
+ *
  * @version 2.0.0
  */
 
@@ -17,93 +17,93 @@ import { DURATION, SPRING, TRANSFORM, getSpring, getDuration } from '@/config/an
 
 /**
  * 按钮微交互动画 - 增强版
- * 
+ *
  * 特性：
  * - Hover: 微妙放大 (1.02) + 阴影增强
  * - Tap: 快速缩小 (0.96) 模拟按下
  * - Focus: 光晕效果（通过 CSS 实现）
  */
 export const buttonMicroInteraction: MotionProps = {
-  whileHover: { 
+  whileHover: {
     scale: 1.02,
-    transition: { 
-      type: 'spring', 
+    transition: {
+      type: 'spring',
       ...getSpring(SPRING.swift),
       duration: getDuration(DURATION.instant),
-    }
+    },
   },
-  whileTap: { 
+  whileTap: {
     scale: TRANSFORM.active.scale,
-    transition: { 
-      type: 'spring', 
+    transition: {
+      type: 'spring',
       ...getSpring(SPRING.swift),
       duration: getDuration(DURATION.instant),
-    }
+    },
   },
 };
 
 /**
  * 主要操作按钮（Primary）动画
- * 
+ *
  * 特性：
  * - Hover: 明显放大 (1.05) + 品牌色光晕
  * - Tap: 按下效果 (0.95)
  * - 适用于 CTA 按钮
  */
 export const primaryButtonInteraction: MotionProps = {
-  whileHover: { 
+  whileHover: {
     scale: 1.05,
-    transition: { 
-      type: 'spring', 
+    transition: {
+      type: 'spring',
       ...getSpring(SPRING.bouncy),
       duration: getDuration(DURATION.instant),
-    }
+    },
   },
-  whileTap: { 
+  whileTap: {
     scale: 0.95,
-    transition: { 
-      type: 'spring', 
+    transition: {
+      type: 'spring',
       ...getSpring(SPRING.swift),
       duration: getDuration(50),
-    }
+    },
   },
 };
 
 /**
  * 图标按钮脉冲动画
- * 
+ *
  * 特性：
  * - Hover: 旋转 + 缩放
  * - 适用于刷新、关闭等图标按钮
  */
 export const iconPulseInteraction: MotionProps = {
-  whileHover: { 
+  whileHover: {
     scale: 1.1,
     rotate: [0, -10, 10, 0],
-    transition: { 
+    transition: {
       scale: {
-        type: 'spring', 
+        type: 'spring',
         ...getSpring(SPRING.bouncy),
       },
       rotate: {
         duration: getDuration(DURATION.fast) / 1000,
         ease: 'easeInOut',
-      }
-    }
+      },
+    },
   },
-  whileTap: { 
+  whileTap: {
     scale: 0.9,
-    transition: { 
-      type: 'spring', 
+    transition: {
+      type: 'spring',
       ...getSpring(SPRING.swift),
       duration: getDuration(100),
-    }
+    },
   },
 };
 
 /**
  * Toggle 开关动画变体
- * 
+ *
  * 使用方式：
  * ```tsx
  * <motion.div
@@ -136,7 +136,7 @@ export const toggleVariants: Variants = {
 
 /**
  * 输入框 Focus 动画
- * 
+ *
  * 特性：
  * - Focus: 边框光晕 + 微妙放大
  * - Blur: 恢复原状
@@ -162,7 +162,7 @@ export const inputFocusVariants: Variants = {
 
 /**
  * Toast 通知进出场动画
- * 
+ *
  * 特性：
  * - 从右侧滑入 + 淡入
  * - 向右滑出 + 淡出
@@ -196,7 +196,7 @@ export const toastVariants: Variants = {
 
 /**
  * Modal/Dialog 进出场动画
- * 
+ *
  * 特性：
  * - 缩放 + 淡入
  * - 背景模糊渐变
@@ -253,7 +253,7 @@ export const modalBackdropVariants: Variants = {
 
 /**
  * Dropdown 菜单动画
- * 
+ *
  * 特性：
  * - 从上方滑下 + 淡入
  * - 向上滑出 + 淡出
@@ -287,7 +287,7 @@ export const dropdownVariants: Variants = {
 
 /**
  * 列表项交错动画（Stagger）
- * 
+ *
  * 使用方式：
  * ```tsx
  * <motion.ul variants={listContainerVariants} initial="hidden" animate="visible">
@@ -302,7 +302,7 @@ export const listContainerVariants: Variants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.05, // 每个子元素延迟 50ms
-      delayChildren: 0.1,    // 整体延迟 100ms
+      delayChildren: 0.1, // 整体延迟 100ms
     },
   },
 };
@@ -324,7 +324,7 @@ export const listItemVariants: Variants = {
 
 /**
  * 卡片 Flip 翻转动画
- * 
+ *
  * 用于卡片正反面切换
  */
 export const cardFlipVariants: Variants = {
@@ -348,7 +348,7 @@ export const cardFlipVariants: Variants = {
 
 /**
  * 数字计数器动画
- * 
+ *
  * 用于统计数字的变化动画
  */
 export const counterVariants: Variants = {
@@ -385,7 +385,7 @@ export const checkboxVariants: Variants = {
 
 /**
  * 进度条填充动画
- * 
+ *
  * 使用方式：
  * ```tsx
  * <motion.div
@@ -416,7 +416,7 @@ export const skeletonVariants: Variants = {
 
 /**
  * Badge 数字变化动画
- * 
+ *
  * 用于通知徽章等
  */
 export const badgeVariants: Variants = {

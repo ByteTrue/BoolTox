@@ -5,13 +5,13 @@
 
 /**
  * Apple 风格输入框组件
- * 
+ *
  * 特性：
  * - Focus 光晕动画
  * - 玻璃拟态背景
  * - 字符计数器
  * - 错误状态提示
- * 
+ *
  * @version 2.0.0
  */
 
@@ -63,7 +63,7 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 
 /**
  * Apple 风格输入框
- * 
+ *
  * @example
  * ```tsx
  * <Input
@@ -112,10 +112,10 @@ export function Input({
             hasError
               ? 'text-error-light dark:text-error-dark'
               : hasSuccess
-              ? 'text-success-light dark:text-success-dark'
-              : theme === 'dark'
-              ? 'text-white'
-              : 'text-slate-700'
+                ? 'text-success-light dark:text-success-dark'
+                : theme === 'dark'
+                  ? 'text-white'
+                  : 'text-slate-700'
           }`}
         >
           {label}
@@ -132,9 +132,7 @@ export function Input({
         {/* Left Icon */}
         {leftIcon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <div className={`text-sm ${
-              theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-            }`}>
+            <div className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
               {leftIcon}
             </div>
           </div>
@@ -147,11 +145,11 @@ export function Input({
           onChange={onChange}
           maxLength={maxLength}
           disabled={disabled}
-          onFocus={(e) => {
+          onFocus={e => {
             setIsFocused(true);
             props.onFocus?.(e);
           }}
-          onBlur={(e) => {
+          onBlur={e => {
             setIsFocused(false);
             props.onBlur?.(e);
           }}
@@ -166,10 +164,10 @@ export function Input({
               hasError
                 ? 'border-error-light dark:border-error-dark'
                 : hasSuccess
-                ? 'border-success-light dark:border-success-dark'
-                : isFocused
-                ? 'border-brand-blue-400 dark:border-brand-blue-400'
-                : ''
+                  ? 'border-success-light dark:border-success-dark'
+                  : isFocused
+                    ? 'border-brand-blue-400 dark:border-brand-blue-400'
+                    : ''
             }
             ${
               theme === 'dark'
@@ -187,9 +185,11 @@ export function Input({
               withBorderGlow: isFocused && !hasError,
               withInnerShadow: true,
             }),
-            ...(!hasError && !hasSuccess && !isFocused && {
-              borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-            })
+            ...(!hasError &&
+              !hasSuccess &&
+              !isFocused && {
+                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+              }),
           }}
         />
 
@@ -200,9 +200,7 @@ export function Input({
           ) : hasSuccess ? (
             <CheckCircle2 size={18} className="text-success-light dark:text-success-dark" />
           ) : rightIcon ? (
-            <div className={theme === 'dark' ? 'text-white/60' : 'text-slate-500'}>
-              {rightIcon}
-            </div>
+            <div className={theme === 'dark' ? 'text-white/60' : 'text-slate-500'}>{rightIcon}</div>
           ) : null}
         </div>
 
@@ -244,9 +242,7 @@ export function Input({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
               transition={{ duration: 0.15 }}
-              className={`text-xs ${
-                theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-              }`}
+              className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}
             >
               {helpText}
             </motion.p>
@@ -262,8 +258,8 @@ export function Input({
               currentLength > maxLength * 0.9
                 ? 'text-warning-light dark:text-warning-dark'
                 : theme === 'dark'
-                ? 'text-white/40'
-                : 'text-slate-400'
+                  ? 'text-white/40'
+                  : 'text-slate-400'
             }`}
             animate={
               currentLength === maxLength

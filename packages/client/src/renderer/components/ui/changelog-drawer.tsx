@@ -39,7 +39,7 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
   // 筛选消息
   const filteredItems = useMemo(() => {
     if (filter === 'all') return items;
-    return items.filter((item) => item.type === filter);
+    return items.filter(item => item.type === filter);
   }, [items, filter]);
 
   // 类型标签配置
@@ -89,9 +89,7 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
             style={{
               ...getGlassStyle('CARD', theme),
               borderColor:
-                theme === 'dark'
-                  ? 'rgba(255, 255, 255, 0.2)'
-                  : 'rgba(101, 187, 233, 0.15)',
+                theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(101, 187, 233, 0.15)',
               maxWidth: '1200px',
             }}
             role="dialog"
@@ -157,24 +155,26 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                         theme === 'dark' ? 'bg-white/5' : 'bg-white/50'
                       }`}
                       style={{
-                        borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                        borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                       }}
                     >
-                      <div className={`prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}>
-                        <ReactMarkdown 
+                      <div
+                        className={`prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}
+                      >
+                        <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            code: ({className, children, ...props}) => {
+                            code: ({ className, children, ...props }) => {
                               const match = /language-(\w+)/.exec(className || '');
                               const isInline = !match && !String(children).includes('\n');
                               if (isInline) {
                                 return (
-                                  <code 
+                                  <code
                                     className={`rounded px-1.5 py-0.5 font-mono text-sm font-medium not-prose ${
-                                      theme === 'dark' 
-                                        ? 'bg-white/10 text-brand-blue-300 border border-white/10' 
+                                      theme === 'dark'
+                                        ? 'bg-white/10 text-brand-blue-300 border border-white/10'
                                         : 'bg-slate-100 text-brand-blue-600 border border-slate-200'
-                                    }`} 
+                                    }`}
                                     {...props}
                                   >
                                     {children}
@@ -182,11 +182,14 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                                 );
                               }
                               return (
-                                <code className={`${className} ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-50'} rounded-lg p-1`} {...props}>
+                                <code
+                                  className={`${className} ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-50'} rounded-lg p-1`}
+                                  {...props}
+                                >
                                   {children}
                                 </code>
                               );
-                            }
+                            },
                           }}
                         >
                           {selectedItem.content}
@@ -197,9 +200,7 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                 ) : (
                   <div className="flex h-full items-center justify-center">
                     <p
-                      className={`text-sm ${
-                        theme === 'dark' ? 'text-white/50' : 'text-slate-400'
-                      }`}
+                      className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}
                     >
                       请从右侧选择一条公告查看详情
                     </p>
@@ -211,14 +212,14 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
               <div
                 className="w-80 border-l flex flex-col"
                 style={{
-                  borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                  borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                 }}
               >
                 {/* 标题栏 */}
                 <div
                   className="flex items-center justify-between border-b px-4 py-3"
                   style={{
-                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                   }}
                 >
                   <h2
@@ -234,16 +235,12 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                     type="button"
                     onClick={onClose}
                     className={`rounded-lg p-1.5 transition-[background-color,transform] duration-250 ease-swift ${
-                      theme === 'dark'
-                        ? 'hover:bg-white/10'
-                        : 'hover:bg-slate-100'
+                      theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-slate-100'
                     }`}
                     aria-label="关闭"
                   >
                     <X
-                      className={`h-4 w-4 ${
-                        theme === 'dark' ? 'text-white/70' : 'text-slate-600'
-                      }`}
+                      className={`h-4 w-4 ${theme === 'dark' ? 'text-white/70' : 'text-slate-600'}`}
                     />
                   </motion.button>
                 </div>
@@ -252,10 +249,10 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                 <div
                   className="flex flex-wrap gap-2 border-b p-3"
                   style={{
-                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                    borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                   }}
                 >
-                  {filters.map((f) => (
+                  {filters.map(f => (
                     <motion.button
                       {...buttonInteraction}
                       key={f.value}
@@ -267,8 +264,8 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                             ? 'bg-white/20 text-white'
                             : 'bg-brand-blue-400/20 text-slate-800'
                           : theme === 'dark'
-                          ? 'bg-white/5 text-white/60 hover:bg-white/10'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            ? 'bg-white/5 text-white/60 hover:bg-white/10'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       <span>{f.emoji}</span>
@@ -291,7 +288,7 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                     </div>
                   ) : (
                     <div className="p-3 space-y-2">
-                      {filteredItems.map((item) => (
+                      {filteredItems.map(item => (
                         <motion.button
                           {...buttonInteraction}
                           key={item.id}
@@ -302,33 +299,40 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                           className={`w-full text-left rounded-xl border p-3 transition-[background-color,border-color,transform,box-shadow] duration-250 ease-swift relative ${
                             selectedItem?.id === item.id
                               ? theme === 'dark'
-                                ? 'bg-brand-blue-400/10'  // 选中态背景高亮
+                                ? 'bg-brand-blue-400/10' // 选中态背景高亮
                                 : 'bg-brand-blue-400/5'
                               : theme === 'dark'
-                              ? 'bg-white/5 hover:bg-white/10'
-                              : 'bg-white/50 hover:bg-white/80'
+                                ? 'bg-white/5 hover:bg-white/10'
+                                : 'bg-white/50 hover:bg-white/80'
                           }`}
-                          style={selectedItem?.id === item.id ? {
-                            ...getGlassStyle('ACTIVE', theme, {
-                              withBorderGlow: true,
-                              withInnerShadow: true,
-                            }),
-                            // 增强选中态的浮起感
-                            boxShadow: theme === 'dark'
-                              ? '0 4px 12px rgba(101, 187, 233, 0.25), 0 0.5px 0 0 rgba(101, 187, 233, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)'
-                              : '0 4px 16px rgba(101, 187, 233, 0.2), 0 0.5px 0 0 rgba(101, 187, 233, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
-                          } : {
-                            borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-                          }}
+                          style={
+                            selectedItem?.id === item.id
+                              ? {
+                                  ...getGlassStyle('ACTIVE', theme, {
+                                    withBorderGlow: true,
+                                    withInnerShadow: true,
+                                  }),
+                                  // 增强选中态的浮起感
+                                  boxShadow:
+                                    theme === 'dark'
+                                      ? '0 4px 12px rgba(101, 187, 233, 0.25), 0 0.5px 0 0 rgba(101, 187, 233, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)'
+                                      : '0 4px 16px rgba(101, 187, 233, 0.2), 0 0.5px 0 0 rgba(101, 187, 233, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                                }
+                              : {
+                                  borderColor:
+                                    theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+                                }
+                          }
                         >
                           {/* 优先级指示器 */}
                           {item.priority === 'high' && (
                             <div
                               className="absolute -right-1 top-3 h-6 w-1 rounded-l-full"
                               style={{
-                                background: theme === 'dark'
-                                  ? 'rgba(101, 187, 233, 0.8)'
-                                  : 'rgba(101, 187, 233, 0.9)',
+                                background:
+                                  theme === 'dark'
+                                    ? 'rgba(101, 187, 233, 0.8)'
+                                    : 'rgba(101, 187, 233, 0.9)',
                               }}
                             />
                           )}
@@ -359,9 +363,7 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                               {typeConfig[item.type]?.label ?? '公告'}
                             </span>
                             <span
-                              className={`${
-                                theme === 'dark' ? 'text-white/50' : 'text-slate-500'
-                              }`}
+                              className={`${theme === 'dark' ? 'text-white/50' : 'text-slate-500'}`}
                             >
                               {formatRelativeTime(item.timestamp)}
                             </span>
@@ -384,6 +386,6 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
   if (typeof document === 'undefined') {
     return null;
   }
-  
+
   return createPortal(drawerContent, document.body);
 }

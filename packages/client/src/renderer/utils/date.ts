@@ -18,7 +18,7 @@ export function formatDistanceToNow(timestamp: number): string {
   const days = Math.floor(hours / 24);
 
   if (seconds < 60) {
-    return "刚刚";
+    return '刚刚';
   } else if (minutes < 60) {
     return `${minutes} 分钟前`;
   } else if (hours < 24) {
@@ -26,6 +26,6 @@ export function formatDistanceToNow(timestamp: number): string {
   } else if (days < 7) {
     return `${days} 天前`;
   } else {
-    return new Date(timestamp).toLocaleDateString("zh-CN");
+    return new Date(timestamp).toLocaleDateString('zh-CN');
   }
 }

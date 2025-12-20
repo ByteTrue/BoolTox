@@ -3,17 +3,17 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Settings, Download, Clock, Command } from "lucide-react";
-import Fuse from "fuse.js";
-import { useCommandPalette } from "@/contexts/command-palette-context";
-import { useModulePlatform } from "@/contexts/module-context";
-import { formatDistanceToNow } from "@/utils/date";
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Settings, Download, Clock, Command } from 'lucide-react';
+import Fuse from 'fuse.js';
+import { useCommandPalette } from '@/contexts/command-palette-context';
+import { useModulePlatform } from '@/contexts/module-context';
+import { formatDistanceToNow } from '@/utils/date';
 
 interface CommandItem {
   id: string;
-  type: "tool" | "action";
+  type: 'tool' | 'action';
   label: string;
   description?: string;
   icon?: string;
@@ -24,7 +24,7 @@ interface CommandItem {
 export function CommandPalette() {
   const { isOpen, close } = useCommandPalette();
   const { installedModules, openModule } = useModulePlatform();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -32,7 +32,7 @@ export function CommandPalette() {
   const commands = useMemo<CommandItem[]>(() => {
     const toolCommands: CommandItem[] = installedModules.map(tool => ({
       id: tool.id,
-      type: "tool" as const,
+      type: 'tool' as const,
       label: tool.definition.name,
       description: tool.definition.description,
       icon: tool.definition.icon,
@@ -45,10 +45,10 @@ export function CommandPalette() {
 
     const actionCommands: CommandItem[] = [
       {
-        id: "settings",
-        type: "action" as const,
-        label: "设置",
-        description: "打开应用设置",
+        id: 'settings',
+        type: 'action' as const,
+        label: '设置',
+        description: '打开应用设置',
         onSelect: () => {
           // TODO: 导航到设置页面
           close();
@@ -63,7 +63,7 @@ export function CommandPalette() {
   const fuse = useMemo(
     () =>
       new Fuse(commands, {
-        keys: ["label", "description"],
+        keys: ['label', 'description'],
         threshold: 0.3,
         includeScore: true,
       }),
@@ -85,16 +85,16 @@ export function CommandPalette() {
   // 键盘导航
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex(prev => Math.min(prev + 1, filteredCommands.length - 1));
-      } else if (e.key === "ArrowUp") {
+      } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex(prev => Math.max(prev - 1, 0));
-      } else if (e.key === "Enter" && filteredCommands[selectedIndex]) {
+      } else if (e.key === 'Enter' && filteredCommands[selectedIndex]) {
         e.preventDefault();
         filteredCommands[selectedIndex].onSelect();
-      } else if (e.key === "Escape") {
+      } else if (e.key === 'Escape') {
         e.preventDefault();
         close();
       }
@@ -106,7 +106,7 @@ export function CommandPalette() {
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
-      setQuery("");
+      setQuery('');
       setSelectedIndex(0);
     }
   }, [isOpen]);
@@ -135,7 +135,7 @@ export function CommandPalette() {
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="w-full max-w-2xl pointer-events-auto"
               onClick={e => e.stopPropagation()}
             >
@@ -161,9 +161,7 @@ export function CommandPalette() {
                 {/* 结果列表 */}
                 <div className="max-h-[60vh] overflow-y-auto elegant-scroll">
                   {filteredCommands.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-white/40">
-                      未找到匹配的工具
-                    </div>
+                    <div className="px-4 py-8 text-center text-white/40">未找到匹配的工具</div>
                   ) : (
                     <div className="py-2">
                       {filteredCommands.map((command, index) => (
@@ -172,16 +170,14 @@ export function CommandPalette() {
                           onClick={command.onSelect}
                           onMouseEnter={() => setSelectedIndex(index)}
                           className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                            index === selectedIndex
-                              ? "bg-white/10"
-                              : "hover:bg-white/5"
+                            index === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'
                           }`}
                         >
                           {/* 图标 */}
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
-                            {command.type === "tool" ? (
-                              <div className="text-2xl">{command.icon || "🔧"}</div>
-                            ) : command.id === "settings" ? (
+                            {command.type === 'tool' ? (
+                              <div className="text-2xl">{command.icon || '🔧'}</div>
+                            ) : command.id === 'settings' ? (
                               <Settings className="h-5 w-5 text-white/60" />
                             ) : (
                               <Download className="h-5 w-5 text-white/60" />
@@ -191,10 +187,8 @@ export function CommandPalette() {
                           {/* 信息 */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-white">
-                                {command.label}
-                              </span>
-                              {command.type === "tool" && (
+                              <span className="font-medium text-white">{command.label}</span>
+                              {command.type === 'tool' && (
                                 <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-white/60">
                                   工具
                                 </span>
@@ -208,9 +202,7 @@ export function CommandPalette() {
                             {command.lastUsed && (
                               <div className="mt-1 flex items-center gap-1 text-xs text-white/40">
                                 <Clock className="h-3 w-3" />
-                                <span>
-                                  上次使用: {formatDistanceToNow(command.lastUsed)}
-                                </span>
+                                <span>上次使用: {formatDistanceToNow(command.lastUsed)}</span>
                               </div>
                             )}
                           </div>

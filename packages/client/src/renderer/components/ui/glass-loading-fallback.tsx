@@ -32,12 +32,10 @@ export function GlassLoadingFallback() {
           <motion.div
             className="absolute inset-0 rounded-full border-4"
             style={{
-              borderColor: theme === 'dark' 
-                ? 'rgba(101, 187, 233, 0.3)' 
-                : 'rgba(101, 187, 233, 0.2)',
-              borderTopColor: theme === 'dark' 
-                ? 'rgba(101, 187, 233, 0.8)' 
-                : 'rgba(101, 187, 233, 0.6)',
+              borderColor:
+                theme === 'dark' ? 'rgba(101, 187, 233, 0.3)' : 'rgba(101, 187, 233, 0.2)',
+              borderTopColor:
+                theme === 'dark' ? 'rgba(101, 187, 233, 0.8)' : 'rgba(101, 187, 233, 0.6)',
             }}
             animate={{ rotate: 360 }}
             transition={{
@@ -46,14 +44,15 @@ export function GlassLoadingFallback() {
               ease: 'linear',
             }}
           />
-          
+
           {/* 内圈脉冲 */}
           <motion.div
             className="absolute inset-3 rounded-full"
             style={{
-              background: theme === 'dark'
-                ? 'radial-gradient(circle, rgba(101, 187, 233, 0.4), transparent 70%)'
-                : 'radial-gradient(circle, rgba(101, 187, 233, 0.3), transparent 70%)',
+              background:
+                theme === 'dark'
+                  ? 'radial-gradient(circle, rgba(101, 187, 233, 0.4), transparent 70%)'
+                  : 'radial-gradient(circle, rgba(101, 187, 233, 0.3), transparent 70%)',
             }}
             animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.5, 0.8, 0.5] }}
             transition={{
@@ -66,9 +65,7 @@ export function GlassLoadingFallback() {
 
         {/* 加载文本 */}
         <motion.p
-          className={`text-sm font-medium ${
-            theme === 'dark' ? 'text-white/80' : 'text-slate-700'
-          }`}
+          className={`text-sm font-medium ${theme === 'dark' ? 'text-white/80' : 'text-slate-700'}`}
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{
             duration: 1.5,

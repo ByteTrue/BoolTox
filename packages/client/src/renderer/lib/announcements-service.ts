@@ -22,7 +22,7 @@ const TYPE_MAP: Record<GitOpsAnnouncement['type'], AnnouncementType> = {
 };
 
 function normalize(items: GitOpsAnnouncement[]): Announcement[] {
-  return items.map((item) => ({
+  return items.map(item => ({
     id: item.id,
     title: item.title,
     content: item.content ?? '',
@@ -48,7 +48,7 @@ export async function fetchAnnouncements(limit = 5): Promise<Announcement[]> {
     if (!response.ok) {
       throw new Error(`Failed to fetch announcements: ${response.statusText}`);
     }
-    const payload = await response.json() as GitOpsAnnouncement[];
+    const payload = (await response.json()) as GitOpsAnnouncement[];
     return normalize(payload).slice(0, take);
   } catch (error) {
     console.error('公告本地回退读取失败:', error);

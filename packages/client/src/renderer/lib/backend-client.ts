@@ -3,7 +3,7 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { ADMIN_API_BASE, CLIENT_API_TOKEN } from "@/config/api";
+import { ADMIN_API_BASE, CLIENT_API_TOKEN } from '@/config/api';
 
 type RequestOptions = {
   method?: string;
@@ -13,12 +13,12 @@ type RequestOptions = {
 
 export async function apiFetch<T>(path: string, init: RequestOptions = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  const method = init.method?.toUpperCase() ?? "GET";
-  if (method !== "GET" && method !== "HEAD" && init.body !== undefined) {
-    headers.set("Content-Type", headers.get("Content-Type") ?? "application/json");
+  const method = init.method?.toUpperCase() ?? 'GET';
+  if (method !== 'GET' && method !== 'HEAD' && init.body !== undefined) {
+    headers.set('Content-Type', headers.get('Content-Type') ?? 'application/json');
   }
   if (CLIENT_API_TOKEN) {
-    headers.set("x-client-token", CLIENT_API_TOKEN);
+    headers.set('x-client-token', CLIENT_API_TOKEN);
   }
 
   const response = await fetch(`${ADMIN_API_BASE}${path}`, {

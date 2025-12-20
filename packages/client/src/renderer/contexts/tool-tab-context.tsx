@@ -97,34 +97,37 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
   /**
    * 关闭工具标签（支持静默模式，避免循环调用）
    */
-  const closeToolTab = useCallback((tabId: string, silent = false) => {
-    setToolTabs(prev => {
-      const tab = prev.find(t => t.id === tabId);
-      const filtered = prev.filter(t => t.id !== tabId);
+  const closeToolTab = useCallback(
+    (tabId: string, silent = false) => {
+      setToolTabs(prev => {
+        const tab = prev.find(t => t.id === tabId);
+        const filtered = prev.filter(t => t.id !== tabId);
 
-      // 如果关闭的是 http-service 工具的标签，通知后端停止工具
-      // silent=true 时跳过（表示后端已经停止，前端只需关闭标签页）
-      if (tab && !silent) {
-        console.group('[ToolTabContext] 关闭工具标签:', tabId, '工具ID:', tab.toolId);
-        console.groupEnd();
-        // 通过 IPC 通知后端停止工具进程（使用 invoke 而不是 send）
-        window.ipc.invoke('tool:stop', tab.toolId).catch((err: Error) => {
-          console.warn('[ToolTabContext] 停止工具失败:', err);
-        });
-      }
-
-      // 如果关闭的是当前激活的标签，切换到最后一个标签
-      if (activeToolTabId === tabId) {
-        if (filtered.length > 0) {
-          setActiveToolTabId(filtered[filtered.length - 1].id);
-        } else {
-          setActiveToolTabId(null);
+        // 如果关闭的是 http-service 工具的标签，通知后端停止工具
+        // silent=true 时跳过（表示后端已经停止，前端只需关闭标签页）
+        if (tab && !silent) {
+          console.group('[ToolTabContext] 关闭工具标签:', tabId, '工具ID:', tab.toolId);
+          console.groupEnd();
+          // 通过 IPC 通知后端停止工具进程（使用 invoke 而不是 send）
+          window.ipc.invoke('tool:stop', tab.toolId).catch((err: Error) => {
+            console.warn('[ToolTabContext] 停止工具失败:', err);
+          });
         }
-      }
 
-      return filtered;
-    });
-  }, [activeToolTabId]);
+        // 如果关闭的是当前激活的标签，切换到最后一个标签
+        if (activeToolTabId === tabId) {
+          if (filtered.length > 0) {
+            setActiveToolTabId(filtered[filtered.length - 1].id);
+          } else {
+            setActiveToolTabId(null);
+          }
+        }
+
+        return filtered;
+      });
+    },
+    [activeToolTabId]
+  );
 
   /**
    * 激活工具标签（传入 null 表示取消激活）
@@ -138,29 +141,32 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
   /**
    * 更新标签状态
    */
-  const updateToolTab = useCallback((tabId: string, updates: Partial<Omit<ToolTab, 'id' | 'toolId'>>) => {
-    setToolTabs(prev =>
-      prev.map(tab =>
-        tab.id === tabId
-          ? { ...tab, ...updates }
-          : tab
-      )
-    );
-  }, []);
+  const updateToolTab = useCallback(
+    (tabId: string, updates: Partial<Omit<ToolTab, 'id' | 'toolId'>>) => {
+      setToolTabs(prev => prev.map(tab => (tab.id === tabId ? { ...tab, ...updates } : tab)));
+    },
+    []
+  );
 
   /**
    * 检查工具是否已有标签
    */
-  const hasToolTab = useCallback((toolId: string): boolean => {
-    return toolTabs.some(tab => tab.toolId === toolId);
-  }, [toolTabs]);
+  const hasToolTab = useCallback(
+    (toolId: string): boolean => {
+      return toolTabs.some(tab => tab.toolId === toolId);
+    },
+    [toolTabs]
+  );
 
   /**
    * 根据工具 ID 获取标签
    */
-  const getToolTabByToolId = useCallback((toolId: string): ToolTab | undefined => {
-    return toolTabs.find(tab => tab.toolId === toolId);
-  }, [toolTabs]);
+  const getToolTabByToolId = useCallback(
+    (toolId: string): ToolTab | undefined => {
+      return toolTabs.find(tab => tab.toolId === toolId);
+    },
+    [toolTabs]
+  );
 
   /**
    * 监听工具状态变化，工具停止时自动关闭标签
@@ -212,11 +218,7 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
     getToolTabByToolId,
   };
 
-  return (
-    <ToolTabContext.Provider value={value}>
-      {children}
-    </ToolTabContext.Provider>
-  );
+  return <ToolTabContext.Provider value={value}>{children}</ToolTabContext.Provider>;
 }
 
 /**

@@ -32,9 +32,7 @@ export default function WindowControls() {
   };
 
   const buttonClass = `flex items-center justify-center w-12 h-12 transition-colors ${
-    theme === 'dark'
-      ? 'hover:bg-white/10 text-white/80'
-      : 'hover:bg-gray-200 text-gray-700'
+    theme === 'dark' ? 'hover:bg-white/10 text-white/80' : 'hover:bg-gray-200 text-gray-700'
   }`;
 
   const closeButtonClass = `flex items-center justify-center w-12 h-12 transition-colors ${
@@ -51,12 +49,7 @@ export default function WindowControls() {
       }}
     >
       {/* 最小化 */}
-      <button
-        onClick={handleMinimize}
-        className={buttonClass}
-        title="最小化"
-        aria-label="最小化"
-      >
+      <button onClick={handleMinimize} className={buttonClass} title="最小化" aria-label="最小化">
         <Minus size={14} />
       </button>
 
@@ -71,12 +64,7 @@ export default function WindowControls() {
       </button>
 
       {/* 关闭 */}
-      <button
-        onClick={handleClose}
-        className={closeButtonClass}
-        title="关闭"
-        aria-label="关闭"
-      >
+      <button onClick={handleClose} className={closeButtonClass} title="关闭" aria-label="关闭">
         <X size={17} />
       </button>
     </div>

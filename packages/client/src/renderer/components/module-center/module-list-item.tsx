@@ -3,12 +3,12 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { motion } from "framer-motion";
-import { Trash2, Download, ExternalLink, Square } from "lucide-react";
-import { useTheme } from "../theme-provider";
-import { getGlassStyle, getGlassShadow } from "@/utils/glass-layers";
-import { cardHover, iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
-import type { ModuleInstance, ModuleDefinition } from "@/types/module";
+import { motion } from 'framer-motion';
+import { Trash2, Download, ExternalLink, Square } from 'lucide-react';
+import { useTheme } from '../theme-provider';
+import { getGlassStyle, getGlassShadow } from '@/utils/glass-layers';
+import { cardHover, iconButtonInteraction, buttonInteraction } from '@/utils/animation-presets';
+import type { ModuleInstance, ModuleDefinition } from '@/types/module';
 
 interface ModuleListItemProps {
   module: ModuleInstance | ModuleDefinition;
@@ -32,14 +32,14 @@ export function ModuleListItem({
   isDev = false,
 }: ModuleListItemProps) {
   const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const isDark = theme === 'dark';
 
-  const isInstalled = "definition" in module;
-  const definition = "definition" in module ? module.definition : module;
-  const launchState = "definition" in module ? module.runtime.launchState ?? "idle" : "idle";
-  const isLaunching = launchState === "launching";
-  const isRunning = launchState === "running";
-  const isLaunchError = launchState === "error";
+  const isInstalled = 'definition' in module;
+  const definition = 'definition' in module ? module.definition : module;
+  const launchState = 'definition' in module ? (module.runtime.launchState ?? 'idle') : 'idle';
+  const isLaunching = launchState === 'launching';
+  const isRunning = launchState === 'running';
+  const isLaunchError = launchState === 'error';
 
   // 检查是否为外部工具（CLI/Binary）
   const runtimeType = definition.runtime?.type;
@@ -48,9 +48,9 @@ export function ModuleListItem({
   // 启动器模式：不显示运行状态（所有工具都不显示）
   const launchStateBadge = isInstalled
     ? isLaunching
-      ? { label: "启动中…", className: "border-yellow-500/30 bg-yellow-500/15 text-yellow-600" }
+      ? { label: '启动中…', className: 'border-yellow-500/30 bg-yellow-500/15 text-yellow-600' }
       : isLaunchError
-        ? { label: "启动失败", className: "border-red-500/30 bg-red-500/15 text-red-500" }
+        ? { label: '启动失败', className: 'border-red-500/30 bg-red-500/15 text-red-500' }
         : null
     : null;
 
@@ -68,7 +68,9 @@ export function ModuleListItem({
       {/* 左侧: 图标 */}
       <div
         className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${
-          isDark ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20" : "bg-gradient-to-br from-blue-400/20 to-purple-400/20"
+          isDark
+            ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20'
+            : 'bg-gradient-to-br from-blue-400/20 to-purple-400/20'
         }`}
       >
         {definition.icon && definition.icon.startsWith('http') ? (
@@ -77,16 +79,12 @@ export function ModuleListItem({
             alt={definition.name}
             className="h-9 w-9 rounded-lg"
             loading="lazy"
-            onError={(e) => {
+            onError={e => {
               e.currentTarget.style.display = 'none';
             }}
           />
         ) : (
-          <span
-            className={`text-xl font-bold ${
-              isDark ? "text-white" : "text-slate-700"
-            }`}
-          >
+          <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>
             {definition.name.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -101,7 +99,7 @@ export function ModuleListItem({
         <div className="flex items-center gap-2">
           <h3
             className={`text-base font-semibold transition-colors hover:text-blue-500 ${
-              isDark ? "text-white" : "text-slate-800"
+              isDark ? 'text-white' : 'text-slate-800'
             }`}
           >
             {definition.name}
@@ -114,16 +112,12 @@ export function ModuleListItem({
             </span>
           )}
         </div>
-        <p
-          className={`line-clamp-1 text-sm ${
-            isDark ? "text-white/70" : "text-slate-600"
-          }`}
-        >
-          {definition.description || "暂无描述"}
+        <p className={`line-clamp-1 text-sm ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
+          {definition.description || '暂无描述'}
         </p>
         <div
           className={`flex items-center gap-2 text-xs ${
-            isDark ? "text-white/60" : "text-slate-500"
+            isDark ? 'text-white/60' : 'text-slate-500'
           }`}
         >
           <span>v{definition.version}</span>
@@ -152,17 +146,15 @@ export function ModuleListItem({
             <motion.button
               {...iconButtonInteraction}
               type="button"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 onOpen?.(module.id);
               }}
               disabled={isLaunching}
               className={`rounded-lg border border-blue-500/30 bg-blue-500/20 p-2 text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
-                isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
+                isLaunching ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
               }`}
-              title={
-                isLaunching ? "工具正在启动…" : isRunning ? "聚焦已打开的窗口" : "打开工具"
-              }
+              title={isLaunching ? '工具正在启动…' : isRunning ? '聚焦已打开的窗口' : '打开工具'}
             >
               {isLaunching ? (
                 <span className="flex items-center justify-center">
@@ -178,12 +170,12 @@ export function ModuleListItem({
               <motion.button
                 {...iconButtonInteraction}
                 type="button"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   onStop?.(module.id);
                 }}
                 className={`rounded-lg border border-orange-500/30 bg-orange-500/20 p-2 text-orange-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-orange-500/30`}
-                title={isExternalTool ? "我已关闭工具（标记为已停止）" : "停止工具"}
+                title={isExternalTool ? '我已关闭工具（标记为已停止）' : '停止工具'}
               >
                 {isExternalTool ? (
                   <span className="text-xs px-1">已关闭</span>
@@ -198,7 +190,7 @@ export function ModuleListItem({
               <motion.button
                 {...iconButtonInteraction}
                 type="button"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   onUninstall?.(module.id);
                 }}
@@ -213,7 +205,7 @@ export function ModuleListItem({
           <motion.button
             {...buttonInteraction}
             type="button"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onInstall?.(module.id);
             }}

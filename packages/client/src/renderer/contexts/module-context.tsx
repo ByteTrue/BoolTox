@@ -3,21 +3,34 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type {
   ModuleDefinition,
   ModuleInstance,
   ModuleRuntime,
   ModuleStats,
   ModuleLaunchState,
-} from "@/types/module";
-import { logModuleEvent } from "@/utils/module-event-logger";
-import type { StoredModuleInfo } from "@shared/types/module-store.types";
-import type { ToolRuntime as PluginProcessRuntime, ToolRegistryEntry, ToolInstallProgress } from "@booltox/shared";
-import { useToast } from "./toast-context";
-import { createLogger } from "@/lib/logger";
+} from '@/types/module';
+import { logModuleEvent } from '@/utils/module-event-logger';
+import type { StoredModuleInfo } from '@shared/types/module-store.types';
+import type {
+  ToolRuntime as PluginProcessRuntime,
+  ToolRegistryEntry,
+  ToolInstallProgress,
+} from '@booltox/shared';
+import { useToast } from './toast-context';
+import { createLogger } from '@/lib/logger';
 
-const logger = createLogger("ModuleContext");
+const logger = createLogger('ModuleContext');
 
 interface ModuleContextValue {
   availableModules: ModuleDefinition[];
@@ -45,7 +58,7 @@ interface ModuleContextValue {
   runningPluginIds: string[];
 }
 
-type PluginChannelStatus = "launching" | "loading" | "running" | "stopping" | "stopped" | "error";
+type PluginChannelStatus = 'launching' | 'loading' | 'running' | 'stopping' | 'stopped' | 'error';
 
 interface PluginStatePayload {
   toolId: string;
@@ -66,7 +79,7 @@ function createRuntime(installed = true): ModuleRuntime {
     loading: false,
     error: null,
     installed,
-    launchState: "idle",
+    launchState: 'idle',
     lastError: null,
   };
 }
@@ -182,13 +195,12 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
   // 将 toolRegistry 转换为 ModuleDefinition (动态工具定义)
   const pluginDefinitions = useMemo<ModuleDefinition[]>(() => {
-    return toolRegistry.map((plugin) => {
+    return toolRegistry.map(plugin => {
       const manifest = plugin.manifest;
       const runtimeType = plugin.manifest.runtime?.type;
       // 新架构：http-service | standalone | binary
-      const runtimeMode = (runtimeType === 'standalone' || runtimeType === 'binary')
-        ? runtimeType
-        : 'http-service';
+      const runtimeMode =
+        runtimeType === 'standalone' || runtimeType === 'binary' ? runtimeType : 'http-service';
 
       return {
         id: manifest.id,
@@ -206,42 +218,45 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, [toolRegistry]);
 
   const isWindowPlugin = useCallback(
-    (moduleId: string) => pluginRuntimeModeMap.has(moduleId) || moduleId.startsWith("com.booltox."),
-    [pluginRuntimeModeMap],
+    (moduleId: string) => pluginRuntimeModeMap.has(moduleId) || moduleId.startsWith('com.booltox.'),
+    [pluginRuntimeModeMap]
   );
 
   // 检查是否为开发工具(不可卸载)
   const isDevPlugin = useCallback(
     (moduleId: string) => {
-      const plugin = toolRegistry.find((p) => p.id === moduleId);
+      const plugin = toolRegistry.find(p => p.id === moduleId);
       return plugin?.isDev === true;
     },
-    [toolRegistry],
+    [toolRegistry]
   );
 
   const mapStatusToLaunchState = useCallback((status: PluginChannelStatus): ModuleLaunchState => {
     switch (status) {
-      case "launching":
-      case "loading":
-        return "launching";
-      case "running":
-        return "running";
-      case "stopping":
-        return "stopping";
-      case "error":
-        return "error";
-      case "stopped":
+      case 'launching':
+      case 'loading':
+        return 'launching';
+      case 'running':
+        return 'running';
+      case 'stopping':
+        return 'stopping';
+      case 'error':
+        return 'error';
+      case 'stopped':
       default:
-        return "idle";
+        return 'idle';
     }
   }, []);
 
   const patchModuleRuntime = useCallback(
-    (moduleId: string, patch: Partial<ModuleRuntime> | ((runtime: ModuleRuntime) => Partial<ModuleRuntime>)) => {
-      setInstalledModules((current) =>
-        current.map((module) => {
+    (
+      moduleId: string,
+      patch: Partial<ModuleRuntime> | ((runtime: ModuleRuntime) => Partial<ModuleRuntime>)
+    ) => {
+      setInstalledModules(current =>
+        current.map(module => {
           if (module.id !== moduleId) return module;
-          const nextPatch = typeof patch === "function" ? patch(module.runtime) : patch;
+          const nextPatch = typeof patch === 'function' ? patch(module.runtime) : patch;
           return {
             ...module,
             runtime: {
@@ -249,24 +264,21 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
               ...nextPatch,
             },
           };
-        }),
+        })
       );
     },
-    [setInstalledModules],
+    [setInstalledModules]
   );
 
-  const shouldAnnounceToast = useCallback(
-    (key: string, interval = 1500) => {
-      const now = Date.now();
-      const last = toastHistoryRef.current.get(key);
-      if (last && now - last < interval) {
-        return false;
-      }
-      toastHistoryRef.current.set(key, now);
-      return true;
-    },
-    [],
-  );
+  const shouldAnnounceToast = useCallback((key: string, interval = 1500) => {
+    const now = Date.now();
+    const last = toastHistoryRef.current.get(key);
+    if (last && now - last < interval) {
+      return false;
+    }
+    toastHistoryRef.current.set(key, now);
+    return true;
+  }, []);
 
   useEffect(() => {
     const handler = (payload: PluginStatePayload) => {
@@ -274,36 +286,41 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       const { toolId, status, windowId, message } = payload;
       const launchState = mapStatusToLaunchState(status);
 
-      patchModuleRuntime(toolId, (runtime) => ({
+      patchModuleRuntime(toolId, runtime => ({
         launchState,
         runningWindowId:
-          status === "running"
-            ? windowId ?? runtime.runningWindowId
-            : status === "stopped"
+          status === 'running'
+            ? (windowId ?? runtime.runningWindowId)
+            : status === 'stopped'
               ? undefined
               : runtime.runningWindowId,
-        lastLaunchedAt: status === "running" ? Date.now() : runtime.lastLaunchedAt,
-        lastError: status === "error" ? (message ?? "工具启动失败") : status === "running" ? null : runtime.lastError,
+        lastLaunchedAt: status === 'running' ? Date.now() : runtime.lastLaunchedAt,
+        lastError:
+          status === 'error'
+            ? (message ?? '工具启动失败')
+            : status === 'running'
+              ? null
+              : runtime.lastError,
       }));
 
       const isFocusedUpdate = payload.focused === true;
 
-      if ((status === "running" && !isFocusedUpdate) || status === "error") {
-        const targetModule = installedModulesRef.current.find((module) => module.id === toolId);
+      if ((status === 'running' && !isFocusedUpdate) || status === 'error') {
+        const targetModule = installedModulesRef.current.find(module => module.id === toolId);
         const moduleName = targetModule?.definition.name ?? toolId;
-        if (status === "running" && !isFocusedUpdate) {
+        if (status === 'running' && !isFocusedUpdate) {
           if (shouldAnnounceToast(`running:${toolId}`)) {
             showToast({
               message: `${moduleName} 已在新窗口打开`,
-              type: "success",
+              type: 'success',
               duration: 2600,
             });
           }
-        } else if (status === "error") {
+        } else if (status === 'error') {
           if (shouldAnnounceToast(`error:${toolId}`, 2000)) {
             showToast({
-              message: `${moduleName} 启动失败: ${message ?? "未知错误"}`,
-              type: "error",
+              message: `${moduleName} 启动失败: ${message ?? '未知错误'}`,
+              type: 'error',
               duration: 4200,
             });
           }
@@ -311,106 +328,106 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    window.ipc.on("tool:state", handler as (...args: unknown[]) => void);
+    window.ipc.on('tool:state', handler as (...args: unknown[]) => void);
     return () => {
-      window.ipc.off("tool:state", handler as (...args: unknown[]) => void);
+      window.ipc.off('tool:state', handler as (...args: unknown[]) => void);
     };
-}, [mapStatusToLaunchState, patchModuleRuntime, shouldAnnounceToast, showToast]);
+  }, [mapStatusToLaunchState, patchModuleRuntime, shouldAnnounceToast, showToast]);
 
-const openModule = useCallback(
-  async (moduleId: string) => {
-    const module = installedModulesRef.current.find((item) => item.id === moduleId);
-    if (!module) {
-      return;
-    }
-
-    if (isWindowPlugin(moduleId)) {
-      patchModuleRuntime(moduleId, {
-        launchState: "launching",
-        lastError: null,
-        lastLaunchedAt: Date.now(), // 记录启动时间
-      });
-      try {
-        await window.ipc.invoke("tool:start", moduleId);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        patchModuleRuntime(moduleId, {
-          launchState: "error",
-          lastError: message,
-        });
-        showToast({
-          message: `${module.definition.name} 启动失败: ${message}`,
-          type: "error",
-          duration: 4200,
-        });
+  const openModule = useCallback(
+    async (moduleId: string) => {
+      const module = installedModulesRef.current.find(item => item.id === moduleId);
+      if (!module) {
+        return;
       }
-      return;
-    }
 
-    setActiveModuleId(moduleId);
-  },
-  [isWindowPlugin, patchModuleRuntime, setActiveModuleId, showToast],
-);
-
-const stopModule = useCallback(
-  async (moduleId: string) => {
-    const module = installedModulesRef.current.find((item) => item.id === moduleId);
-    if (!module) {
-      return;
-    }
-
-    if (isWindowPlugin(moduleId)) {
-      patchModuleRuntime(moduleId, {
-        launchState: "stopping",
-        lastError: null,
-      });
-      try {
-        await window.ipc.invoke("tool:stop", moduleId);
-        showToast({
-          message: `${module.definition.name} 已停止`,
-          type: "success",
-          duration: 2000,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+      if (isWindowPlugin(moduleId)) {
         patchModuleRuntime(moduleId, {
-          launchState: "error",
-          lastError: message,
+          launchState: 'launching',
+          lastError: null,
+          lastLaunchedAt: Date.now(), // 记录启动时间
         });
-        showToast({
-          message: `${module.definition.name} 停止失败: ${message}`,
-          type: "error",
-          duration: 4200,
-        });
+        try {
+          await window.ipc.invoke('tool:start', moduleId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          patchModuleRuntime(moduleId, {
+            launchState: 'error',
+            lastError: message,
+          });
+          showToast({
+            message: `${module.definition.name} 启动失败: ${message}`,
+            type: 'error',
+            duration: 4200,
+          });
+        }
+        return;
       }
-      return;
-    }
-  },
-  [isWindowPlugin, patchModuleRuntime, showToast],
-);
 
-const focusModuleWindow = useCallback(
-  async (moduleId: string) => {
-    if (!isWindowPlugin(moduleId)) {
       setActiveModuleId(moduleId);
-      return;
-    }
+    },
+    [isWindowPlugin, patchModuleRuntime, setActiveModuleId, showToast]
+  );
 
-    try {
-      await window.ipc.invoke("tool:focus", moduleId);
-    } catch (error) {
-      const module = installedModulesRef.current.find((item) => item.id === moduleId);
-      const moduleName = module?.definition.name ?? moduleId;
-      const message = error instanceof Error ? error.message : String(error);
-      showToast({
-        message: `${moduleName} 聚焦失败: ${message}`,
-        type: "error",
-        duration: 3800,
-      });
-    }
-  },
-  [isWindowPlugin, setActiveModuleId, showToast],
-);
+  const stopModule = useCallback(
+    async (moduleId: string) => {
+      const module = installedModulesRef.current.find(item => item.id === moduleId);
+      if (!module) {
+        return;
+      }
+
+      if (isWindowPlugin(moduleId)) {
+        patchModuleRuntime(moduleId, {
+          launchState: 'stopping',
+          lastError: null,
+        });
+        try {
+          await window.ipc.invoke('tool:stop', moduleId);
+          showToast({
+            message: `${module.definition.name} 已停止`,
+            type: 'success',
+            duration: 2000,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          patchModuleRuntime(moduleId, {
+            launchState: 'error',
+            lastError: message,
+          });
+          showToast({
+            message: `${module.definition.name} 停止失败: ${message}`,
+            type: 'error',
+            duration: 4200,
+          });
+        }
+        return;
+      }
+    },
+    [isWindowPlugin, patchModuleRuntime, showToast]
+  );
+
+  const focusModuleWindow = useCallback(
+    async (moduleId: string) => {
+      if (!isWindowPlugin(moduleId)) {
+        setActiveModuleId(moduleId);
+        return;
+      }
+
+      try {
+        await window.ipc.invoke('tool:focus', moduleId);
+      } catch (error) {
+        const module = installedModulesRef.current.find(item => item.id === moduleId);
+        const moduleName = module?.definition.name ?? moduleId;
+        const message = error instanceof Error ? error.message : String(error);
+        showToast({
+          message: `${moduleName} 聚焦失败: ${message}`,
+          type: 'error',
+          duration: 3800,
+        });
+      }
+    },
+    [isWindowPlugin, setActiveModuleId, showToast]
+  );
 
   // 从持久化存储恢复已安装工具（包含收藏信息等元数据）
   useEffect(() => {
@@ -431,7 +448,7 @@ const focusModuleWindow = useCallback(
         const orphanedIds: string[] = [];
 
         for (const stored of storedModules) {
-          const definition = pluginDefinitions.find((definition) => definition.id === stored.id);
+          const definition = pluginDefinitions.find(definition => definition.id === stored.id);
 
           if (!definition) {
             console.warn(`[ModuleContext] 无法找到工具定义: ${stored.id}，将从存储中清理`);
@@ -460,7 +477,7 @@ const focusModuleWindow = useCallback(
 
         setInstalledModules(restoredModules);
       } catch (error) {
-        console.error("[ModuleContext] 恢复工具失败:", error);
+        console.error('[ModuleContext] 恢复工具失败:', error);
         setInstalledModules([]);
       }
     };
@@ -478,7 +495,7 @@ const focusModuleWindow = useCallback(
         const storedModules = await window.moduleStore.getAll();
         const storedIds = new Set(storedModules.map(m => m.id));
 
-        setInstalledModules((current) => {
+        setInstalledModules(current => {
           const currentIds = new Set(current.map(m => m.id));
           const updates = [...current];
           const toStore: StoredModuleInfo[] = [];
@@ -518,8 +535,10 @@ const focusModuleWindow = useCallback(
             } else if (!currentIds.has(toolId)) {
               // 所有不在当前列表的工具都需要添加(开发工具或新安装的远程工具)
               const source = plugin.isDev ? 'dev' : 'remote';
-              logger.info(`[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}工具: ${toolId}`);
-              
+              logger.info(
+                `[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}工具: ${toolId}`
+              );
+
               updates.push({
                 id: toolId,
                 definition: pluginDef,
@@ -528,7 +547,7 @@ const focusModuleWindow = useCallback(
                 favoriteOrder: undefined,
                 favoritedAt: undefined,
               });
-              
+
               // 持久化到存储
               if (!storedIds.has(toolId)) {
                 toStore.push({
@@ -569,22 +588,21 @@ const focusModuleWindow = useCallback(
     void syncPlugins();
   }, [toolRegistry, pluginDefinitions]);
 
-
   const moduleStats = useMemo<ModuleStats>(() => {
     const stats = installedModules.reduce<ModuleStats>(
       (acc, module) => {
         acc.total += 1;
-        if (module.runtime.launchState === "running") {
+        if (module.runtime.launchState === 'running') {
           acc.enabled += 1;
         }
-        if (module.definition.source === "remote") {
+        if (module.definition.source === 'remote') {
           acc.remote += 1;
         } else {
           acc.local += 1;
         }
         return acc;
       },
-      { total: 0, enabled: 0, disabled: 0, local: 0, remote: 0 },
+      { total: 0, enabled: 0, disabled: 0, local: 0, remote: 0 }
     );
     stats.disabled = Math.max(stats.total - stats.enabled, 0);
     return stats;
@@ -593,22 +611,22 @@ const focusModuleWindow = useCallback(
   const runningPluginIds = useMemo(
     () =>
       installedModules
-        .filter((module) => module.runtime.launchState === "running")
-        .map((module) => module.id),
-    [installedModules],
+        .filter(module => module.runtime.launchState === 'running')
+        .map(module => module.id),
+    [installedModules]
   );
 
   const installModule = useCallback(
     async (moduleId: string) => {
-      const plugin = toolRegistry.find((item) => item.id === moduleId);
-      const definition = pluginDefinitions.find((item) => item.id === moduleId);
+      const plugin = toolRegistry.find(item => item.id === moduleId);
+      const definition = pluginDefinitions.find(item => item.id === moduleId);
 
       if (!plugin || !definition) {
         throw new Error(`未找到工具 ${moduleId}，请先在工具商店安装`);
       }
 
-      setInstalledModules((current) => {
-        if (current.some((module) => module.id === moduleId)) {
+      setInstalledModules(current => {
+        if (current.some(module => module.id === moduleId)) {
           return current;
         }
         return [
@@ -626,7 +644,7 @@ const focusModuleWindow = useCallback(
         installedAt: new Date().toISOString(),
         lastUsedAt: new Date().toISOString(),
         version: definition.version || '1.0.0',
-        source: plugin.isDev ? "dev" : "remote",
+        source: plugin.isDev ? 'dev' : 'remote',
         isFavorite: false,
         favoriteOrder: undefined,
         favoritedAt: undefined,
@@ -637,11 +655,11 @@ const focusModuleWindow = useCallback(
       logModuleEvent({
         moduleId,
         moduleName: definition.name,
-        action: "install",
-        category: definition.category || "unknown",
+        action: 'install',
+        category: definition.category || 'unknown',
       });
     },
-    [pluginDefinitions, toolRegistry],
+    [pluginDefinitions, toolRegistry]
   );
 
   // 安装在线工具
@@ -696,7 +714,7 @@ const focusModuleWindow = useCallback(
         throw error;
       }
     },
-    [refreshPluginRegistry, refreshAvailablePlugins, showToast],
+    [refreshPluginRegistry, refreshAvailablePlugins, showToast]
   );
 
   const uninstallModule = useCallback(
@@ -711,20 +729,20 @@ const focusModuleWindow = useCallback(
         return;
       }
 
-      const module = installedModules.find((m) => m.id === moduleId);
+      const module = installedModules.find(m => m.id === moduleId);
 
       if (module && isWindowPlugin(moduleId)) {
         try {
-          await window.ipc.invoke("tool:stop", moduleId);
+          await window.ipc.invoke('tool:stop', moduleId);
         } catch (error) {
           console.warn(`[ModuleContext] 停止工具失败: ${moduleId}`, error);
         }
         patchModuleRuntime(moduleId, {
-          launchState: "idle",
+          launchState: 'idle',
           runningWindowId: undefined,
         });
       }
-      
+
       // 记录卸载事件（在删除之前）
       if (module) {
         logModuleEvent({
@@ -738,7 +756,10 @@ const focusModuleWindow = useCallback(
       // 如果是工具,调用工具卸载 IPC 删除文件
       if (isWindowPlugin(moduleId)) {
         try {
-          const result = await window.ipc.invoke("tool:uninstall", moduleId) as { success: boolean; error?: string };
+          const result = (await window.ipc.invoke('tool:uninstall', moduleId)) as {
+            success: boolean;
+            error?: string;
+          };
           if (!result.success) {
             console.error(`[ModuleContext] 工具文件删除失败: ${result.error}`);
             showToast({
@@ -762,109 +783,80 @@ const focusModuleWindow = useCallback(
       // 从持久化存储删除
       await window.moduleStore.remove(moduleId);
 
-      setInstalledModules((current) => current.filter((module) => module.id !== moduleId));
-      setActiveModuleId((current) => (current === moduleId ? null : current));
+      setInstalledModules(current => current.filter(module => module.id !== moduleId));
+      setActiveModuleId(current => (current === moduleId ? null : current));
       void refreshPluginRegistry();
-      
+
       showToast({
         message: `${module?.definition.name || moduleId} 已卸载`,
         type: 'success',
         duration: 3000,
       });
     },
-    [installedModules, isWindowPlugin, isDevPlugin, patchModuleRuntime, refreshPluginRegistry, showToast],
+    [
+      installedModules,
+      isWindowPlugin,
+      isDevPlugin,
+      patchModuleRuntime,
+      refreshPluginRegistry,
+      showToast,
+    ]
   );
 
   const getModuleById = useCallback(
-    (moduleId: string) => installedModules.find((module) => module.id === moduleId),
-    [installedModules],
+    (moduleId: string) => installedModules.find(module => module.id === moduleId),
+    [installedModules]
   );
 
   // 收藏功能实现
   const favoriteModules = useMemo(() => {
     const favorites = installedModules
-      .filter((module) => module.isFavorite === true)
+      .filter(module => module.isFavorite === true)
       .sort((a, b) => {
         const orderA = a.favoriteOrder ?? 999;
         const orderB = b.favoriteOrder ?? 999;
         return orderA - orderB;
       });
-    
+
     return favorites;
   }, [installedModules]);
 
-  const addFavorite = useCallback(async (moduleId: string) => {
-    const module = installedModules.find((m) => m.id === moduleId);
-    if (!module) return;
+  const addFavorite = useCallback(
+    async (moduleId: string) => {
+      const module = installedModules.find(m => m.id === moduleId);
+      if (!module) return;
 
-    // 获取当前最大的 order 值
-    const maxOrder = Math.max(
-      0,
-      ...installedModules
-        .filter((m) => m.isFavorite)
-        .map((m) => m.favoriteOrder ?? 0)
-    );
+      // 获取当前最大的 order 值
+      const maxOrder = Math.max(
+        0,
+        ...installedModules.filter(m => m.isFavorite).map(m => m.favoriteOrder ?? 0)
+      );
 
-    const now = new Date().toISOString();
+      const now = new Date().toISOString();
 
-    // 更新存储
-    const stored = await window.moduleStore.get(moduleId);
-    
-    // 即使 stored 不存在（理论上不应该），我们也尝试更新或处理
-    if (stored) {
-      await window.moduleStore.update(moduleId, {
-        isFavorite: true,
-        favoriteOrder: maxOrder + 1,
-        favoritedAt: now,
-      });
-    } else {
-      console.warn(`[ModuleContext] Pin failed: Module ${moduleId} not found in store`);
-    }
+      // 更新存储
+      const stored = await window.moduleStore.get(moduleId);
 
-    // 无论存储是否成功，都更新本地状态以获得即时反馈
-    setInstalledModules((current) =>
-      current.map((m) =>
-        m.id === moduleId
-          ? {
-              ...m,
-              isFavorite: true,
-              favoriteOrder: maxOrder + 1,
-              favoritedAt: now,
-            }
-          : m
-      )
-    );
+      // 即使 stored 不存在（理论上不应该），我们也尝试更新或处理
+      if (stored) {
+        await window.moduleStore.update(moduleId, {
+          isFavorite: true,
+          favoriteOrder: maxOrder + 1,
+          favoritedAt: now,
+        });
+      } else {
+        console.warn(`[ModuleContext] Pin failed: Module ${moduleId} not found in store`);
+      }
 
-    logModuleEvent({
-      moduleId,
-      moduleName: module.definition.name,
-      action: 'pin-to-quick-access',
-      category: module.definition.category || 'unknown',
-    });
-  }, [installedModules]);
-
-  const removeFavorite = useCallback(async (moduleId: string) => {
-    const module = installedModules.find((m) => m.id === moduleId);
-    if (!module) return;
-
-    // 更新存储
-    const stored = await window.moduleStore.get(moduleId);
-    if (stored) {
-      await window.moduleStore.update(moduleId, {
-        isFavorite: false,
-        favoriteOrder: undefined,
-        favoritedAt: undefined,
-      });
-
-      // 更新本地状态
-      setInstalledModules((current) =>
-        current.map((m) =>
+      // 无论存储是否成功，都更新本地状态以获得即时反馈
+      setInstalledModules(current =>
+        current.map(m =>
           m.id === moduleId
             ? {
                 ...m,
-                isFavorite: false,
-                favoriteOrder: undefined,
-                favoritedAt: undefined,
+                isFavorite: true,
+                favoriteOrder: maxOrder + 1,
+                favoritedAt: now,
               }
             : m
         )
@@ -873,11 +865,51 @@ const focusModuleWindow = useCallback(
       logModuleEvent({
         moduleId,
         moduleName: module.definition.name,
-        action: 'unpin-from-quick-access',
+        action: 'pin-to-quick-access',
         category: module.definition.category || 'unknown',
       });
-    }
-  }, [installedModules]);
+    },
+    [installedModules]
+  );
+
+  const removeFavorite = useCallback(
+    async (moduleId: string) => {
+      const module = installedModules.find(m => m.id === moduleId);
+      if (!module) return;
+
+      // 更新存储
+      const stored = await window.moduleStore.get(moduleId);
+      if (stored) {
+        await window.moduleStore.update(moduleId, {
+          isFavorite: false,
+          favoriteOrder: undefined,
+          favoritedAt: undefined,
+        });
+
+        // 更新本地状态
+        setInstalledModules(current =>
+          current.map(m =>
+            m.id === moduleId
+              ? {
+                  ...m,
+                  isFavorite: false,
+                  favoriteOrder: undefined,
+                  favoritedAt: undefined,
+                }
+              : m
+          )
+        );
+
+        logModuleEvent({
+          moduleId,
+          moduleName: module.definition.name,
+          action: 'unpin-from-quick-access',
+          category: module.definition.category || 'unknown',
+        });
+      }
+    },
+    [installedModules]
+  );
 
   const updateFavoriteOrder = useCallback(async (orderedIds: string[]) => {
     // 批量更新排序
@@ -892,8 +924,8 @@ const focusModuleWindow = useCallback(
     }
 
     // 更新本地状态
-    setInstalledModules((current) =>
-      current.map((m) => {
+    setInstalledModules(current =>
+      current.map(m => {
         const newOrder = orderedIds.indexOf(m.id);
         if (newOrder >= 0) {
           return {
@@ -910,7 +942,7 @@ const focusModuleWindow = useCallback(
   const addLocalBinaryTool = useCallback(async () => {
     try {
       // 1. 打开文件选择对话框
-      const result = await window.ipc.invoke('dialog:openFile', {
+      const result = (await window.ipc.invoke('dialog:openFile', {
         filters: [
           {
             name: '可执行文件',
@@ -918,21 +950,25 @@ const focusModuleWindow = useCallback(
           },
         ],
         properties: ['openFile'],
-      }) as { canceled: boolean; filePaths: string[] };
+      })) as { canceled: boolean; filePaths: string[] };
 
       if (result.canceled || !result.filePaths[0]) {
         return;
       }
 
       const filePath = result.filePaths[0];
-      const fileName = filePath.split(/[\\/]/).pop()?.replace(/\.[^.]*$/, '') || '未命名工具';
+      const fileName =
+        filePath
+          .split(/[\\/]/)
+          .pop()
+          ?.replace(/\.[^.]*$/, '') || '未命名工具';
 
       // 2. 调用 IPC 添加工具
-      const response = await window.ipc.invoke('tool:add-local-binary', {
+      const response = (await window.ipc.invoke('tool:add-local-binary', {
         name: fileName,
         exePath: filePath,
         description: '从本地添加的工具',
-      }) as { success: boolean; toolId?: string; error?: string };
+      })) as { success: boolean; toolId?: string; error?: string };
 
       if (response.success && response.toolId) {
         // 3. 刷新工具列表
@@ -1014,7 +1050,7 @@ const focusModuleWindow = useCallback(
       removeFavorite,
       updateFavoriteOrder,
       runningPluginIds,
-    ],
+    ]
   );
 
   return <ModuleContext.Provider value={contextValue}>{children}</ModuleContext.Provider>;
@@ -1023,7 +1059,7 @@ const focusModuleWindow = useCallback(
 export function useModulePlatform() {
   const context = useContext(ModuleContext);
   if (!context) {
-    throw new Error("useModulePlatform 必须在 ModuleProvider 内使用");
+    throw new Error('useModulePlatform 必须在 ModuleProvider 内使用');
   }
   return context;
 }

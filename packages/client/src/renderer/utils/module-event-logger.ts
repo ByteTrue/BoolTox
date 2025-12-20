@@ -7,17 +7,23 @@
 // 用于记录模块的安装、卸载、启用、停用等操作，存储到 localStorage
 
 export interface ModuleEvent {
-  id: string;                    // 事件唯一ID
-  timestamp: number;             // 时间戳
-  moduleId: string;              // 模块ID
-  moduleName: string;            // 模块名称
-  action: 'install' | 'uninstall' | 'enable' | 'disable' | 'pin-to-quick-access' | 'unpin-from-quick-access';
-  category: string;              // 模块分类
+  id: string; // 事件唯一ID
+  timestamp: number; // 时间戳
+  moduleId: string; // 模块ID
+  moduleName: string; // 模块名称
+  action:
+    | 'install'
+    | 'uninstall'
+    | 'enable'
+    | 'disable'
+    | 'pin-to-quick-access'
+    | 'unpin-from-quick-access';
+  category: string; // 模块分类
 }
 
 const STORAGE_KEY = 'booltox:module-events';
 const MAX_EVENTS = 100; // 最多保存100条事件
-const MAX_DAYS = 30;    // 保留30天内的事件
+const MAX_DAYS = 30; // 保留30天内的事件
 
 /**
  * 生成唯一事件ID
@@ -137,9 +143,7 @@ export function getRecentlyActiveModuleIds(limit = 5): string[] {
   const enableEvents = events.filter(event => event.action === 'enable');
 
   // 去重并限制数量
-  const uniqueModuleIds = Array.from(
-    new Set(enableEvents.map(event => event.moduleId))
-  );
+  const uniqueModuleIds = Array.from(new Set(enableEvents.map(event => event.moduleId)));
 
   return uniqueModuleIds.slice(0, limit);
 }

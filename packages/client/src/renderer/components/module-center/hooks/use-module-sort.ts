@@ -3,9 +3,9 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useMemo } from "react";
-import type { ModuleDefinition, ModuleInstance } from "@/types/module";
-import type { ModuleSortConfig } from "../types";
+import { useMemo } from 'react';
+import type { ModuleDefinition, ModuleInstance } from '@/types/module';
+import type { ModuleSortConfig } from '../types';
 
 /**
  * 排序 Hook - 提供模块排序功能
@@ -23,35 +23,35 @@ export function useModuleSort<T extends ModuleDefinition | ModuleInstance>(
     const sorted = [...modules];
 
     sorted.sort((a, b) => {
-      const defA: ModuleDefinition = "definition" in a ? a.definition : a;
-      const defB: ModuleDefinition = "definition" in b ? b.definition : b;
+      const defA: ModuleDefinition = 'definition' in a ? a.definition : a;
+      const defB: ModuleDefinition = 'definition' in b ? b.definition : b;
 
       let comparison = 0;
 
       switch (sortConfig.by) {
-        case "name":
-          comparison = defA.name.localeCompare(defB.name, "zh-CN");
+        case 'name':
+          comparison = defA.name.localeCompare(defB.name, 'zh-CN');
           break;
 
-        case "updatedAt":
+        case 'updatedAt':
           // 暂时使用版本号排序(未来可以添加 updatedAt 字段)
           comparison = defA.version.localeCompare(defB.version);
           break;
 
-        case "downloads":
+        case 'downloads':
           // 预留下载量排序(未来可以添加 downloads 字段)
           // 目前按名称排序
-          comparison = defA.name.localeCompare(defB.name, "zh-CN");
+          comparison = defA.name.localeCompare(defB.name, 'zh-CN');
           break;
 
-        case "default":
+        case 'default':
         default:
           // 默认排序: 按名称排序
-          comparison = defA.name.localeCompare(defB.name, "zh-CN");
+          comparison = defA.name.localeCompare(defB.name, 'zh-CN');
           break;
       }
 
-      return sortConfig.order === "asc" ? comparison : -comparison;
+      return sortConfig.order === 'asc' ? comparison : -comparison;
     });
 
     return sorted;

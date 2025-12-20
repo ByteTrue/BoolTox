@@ -5,7 +5,7 @@
 
 /**
  * 触觉滚动容器
- * 
+ *
  * 带有橡皮筋边界效果的滚动容器
  * 模拟 iOS 原生滚动的触觉反馈
  */
@@ -71,15 +71,14 @@ export function HapticScrollContainer({
       style={{
         maxHeight,
         scrollbarWidth: showScrollbar ? 'thin' : 'none',
-        scrollbarColor: theme === 'dark' 
-          ? 'rgba(255, 255, 255, 0.3) transparent'
-          : 'rgba(0, 0, 0, 0.3) transparent',
+        scrollbarColor:
+          theme === 'dark'
+            ? 'rgba(255, 255, 255, 0.3) transparent'
+            : 'rgba(0, 0, 0, 0.3) transparent',
       }}
       animate={isOverscrolling ? { scale: [1, 0.98, 1] } : { scale: 1 }}
       transition={
-        isOverscrolling
-          ? { type: 'spring', stiffness: 300, damping: 30, duration: 0.3 }
-          : undefined
+        isOverscrolling ? { type: 'spring', stiffness: 300, damping: 30, duration: 0.3 } : undefined
       }
     >
       {/* 滚动进度指示器 */}
@@ -89,9 +88,8 @@ export function HapticScrollContainer({
           style={{
             scaleX: smoothProgress,
             transformOrigin: 'left',
-            backgroundColor: theme === 'dark' 
-              ? 'rgba(101, 187, 233, 0.6)'
-              : 'rgba(101, 187, 233, 0.8)',
+            backgroundColor:
+              theme === 'dark' ? 'rgba(101, 187, 233, 0.6)' : 'rgba(101, 187, 233, 0.8)',
           }}
         />
       )}
@@ -169,19 +167,11 @@ export function PullToRefresh({
         <motion.div
           className="w-8 h-8 rounded-full border-2 border-t-transparent"
           style={{
-            borderColor: theme === 'dark'
-              ? 'rgba(101, 187, 233, 0.6)'
-              : 'rgba(101, 187, 233, 0.8)',
+            borderColor: theme === 'dark' ? 'rgba(101, 187, 233, 0.6)' : 'rgba(101, 187, 233, 0.8)',
           }}
-          animate={
-            isRefreshing
-              ? { rotate: 360 }
-              : { rotate: pullProgress * 360 }
-          }
+          animate={isRefreshing ? { rotate: 360 } : { rotate: pullProgress * 360 }}
           transition={
-            isRefreshing
-              ? { duration: 1, repeat: Infinity, ease: 'linear' }
-              : { duration: 0 }
+            isRefreshing ? { duration: 1, repeat: Infinity, ease: 'linear' } : { duration: 0 }
           }
         />
       </motion.div>

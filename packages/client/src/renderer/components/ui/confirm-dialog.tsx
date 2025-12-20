@@ -66,7 +66,10 @@ export function ConfirmDialog({
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 id={dialogTitleId} className="text-lg font-semibold text-[var(--text-primary)]">
+                  <h2
+                    id={dialogTitleId}
+                    className="text-lg font-semibold text-[var(--text-primary)]"
+                  >
                     {title}
                   </h2>
                   {description && (

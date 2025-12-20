@@ -23,9 +23,8 @@ export function SettingsPage() {
   const location = useLocation();
 
   // 当前激活的设置项（默认开发者模式）
-  const activeSection = SETTINGS_SECTIONS.find(
-    section => section.path === location.pathname
-  )?.key || 'developer';
+  const activeSection =
+    SETTINGS_SECTIONS.find(section => section.path === location.pathname)?.key || 'developer';
 
   return (
     <div className="flex h-full">
@@ -34,13 +33,11 @@ export function SettingsPage() {
         className="w-56 border-r p-4 overflow-y-auto elegant-scroll"
         style={{
           borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-          background: theme === 'dark'
-            ? 'rgba(255, 255, 255, 0.02)'
-            : 'rgba(255, 255, 255, 0.5)',
+          background: theme === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.5)',
         }}
       >
         <nav className="space-y-1">
-          {SETTINGS_SECTIONS.map((section) => {
+          {SETTINGS_SECTIONS.map(section => {
             const isActive = activeSection === section.key;
             return (
               <button

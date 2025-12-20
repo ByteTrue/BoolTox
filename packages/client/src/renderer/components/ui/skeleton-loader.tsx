@@ -18,13 +18,13 @@ interface SkeletonLoaderProps {
 export function SkeletonLoader({
   type = 'module-card',
   count = 1,
-  className = ''
+  className = '',
 }: SkeletonLoaderProps) {
   const items = Array.from({ length: count }, (_, i) => i);
 
   return (
     <>
-      {items.map((index) => (
+      {items.map(index => (
         <div key={index} className={className}>
           {type === 'module-card' && <ModuleCardSkeleton />}
           {type === 'list-item' && <ListItemSkeleton />}

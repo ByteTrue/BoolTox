@@ -3,15 +3,15 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
-import { createPortal } from "react-dom";
-import { useTheme } from "../theme-provider";
-import { getGlassStyle, GLASS_BORDERS } from "@/utils/glass-layers";
-import { iconButtonInteraction, buttonInteraction } from "@/utils/animation-presets";
-import { ScreenshotCarousel } from "./screenshot-carousel";
-import type { ModuleInstance, ModuleDefinition } from "@/types/module";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { useTheme } from '../theme-provider';
+import { getGlassStyle, GLASS_BORDERS } from '@/utils/glass-layers';
+import { iconButtonInteraction, buttonInteraction } from '@/utils/animation-presets';
+import { ScreenshotCarousel } from './screenshot-carousel';
+import type { ModuleInstance, ModuleDefinition } from '@/types/module';
 
 interface ModuleDetailModalProps {
   module: ModuleInstance | ModuleDefinition | null;
@@ -23,7 +23,7 @@ interface ModuleDetailModalProps {
   isInstalled?: boolean;
 }
 
-type DetailTab = "details" | "changelog";
+type DetailTab = 'details' | 'changelog';
 
 export function ModuleDetailModal({
   module,
@@ -35,12 +35,12 @@ export function ModuleDetailModal({
   isInstalled = false,
 }: ModuleDetailModalProps) {
   const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const [activeTab, setActiveTab] = useState<DetailTab>("details");
+  const isDark = theme === 'dark';
+  const [activeTab, setActiveTab] = useState<DetailTab>('details');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === 'undefined') {
       return;
     }
     setMounted(true);
@@ -48,17 +48,17 @@ export function ModuleDetailModal({
   }, []);
 
   useEffect(() => {
-    setActiveTab("details");
+    setActiveTab('details');
   }, [module?.id]);
 
   if (!module || !mounted) return null;
 
-  const definition = "definition" in module ? module.definition : module;
-  const runtime = "definition" in module ? module.runtime : undefined;
-  const launchState = runtime?.launchState ?? "idle";
-  const isLaunching = launchState === "launching";
-  const isRunning = launchState === "running";
-  const isLaunchError = launchState === "error";
+  const definition = 'definition' in module ? module.definition : module;
+  const runtime = 'definition' in module ? module.runtime : undefined;
+  const launchState = runtime?.launchState ?? 'idle';
+  const isLaunching = launchState === 'launching';
+  const isRunning = launchState === 'running';
+  const isLaunchError = launchState === 'error';
 
   return createPortal(
     <AnimatePresence>
@@ -73,17 +73,17 @@ export function ModuleDetailModal({
             onClick={onClose}
           />
           <motion.div
-            initial={{ x: "100%" }}
+            initial={{ x: '100%' }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 260, damping: 32 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 260, damping: 32 }}
             className="fixed right-0 top-0 z-[9999] h-full w-full sm:w-[80vw]"
-            style={{ maxWidth: "1200px" }}
+            style={{ maxWidth: '1200px' }}
           >
             <div
-              className={`flex h-full flex-col border-l ${isDark ? "shadow-2xl shadow-blue-900/30" : "shadow-xl shadow-blue-200/30"}`}
-              style={getGlassStyle("CARD", theme)}
-              onClick={(event) => event.stopPropagation()}
+              className={`flex h-full flex-col border-l ${isDark ? 'shadow-2xl shadow-blue-900/30' : 'shadow-xl shadow-blue-200/30'}`}
+              style={getGlassStyle('CARD', theme)}
+              onClick={event => event.stopPropagation()}
             >
               <div
                 className="relative border-b px-6 py-6"
@@ -96,39 +96,33 @@ export function ModuleDetailModal({
                   type="button"
                   onClick={onClose}
                   className={`absolute right-6 top-6 z-10 rounded-lg p-1.5 transition-[background-color,transform] duration-250 ease-swift ${
-                    isDark ? "hover:bg-white/10" : "hover:bg-slate-100"
+                    isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
                   }`}
                   aria-label="关闭"
                 >
-                  <X
-                    className={`h-4 w-4 ${
-                      isDark ? "text-white/70" : "text-slate-600"
-                    }`}
-                  />
+                  <X className={`h-4 w-4 ${isDark ? 'text-white/70' : 'text-slate-600'}`} />
                 </motion.button>
 
                 <div className="grid grid-cols-[auto,1fr] gap-4 pr-12">
                   <div
                     className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
                       isDark
-                        ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20"
-                        : "bg-gradient-to-br from-blue-400/20 to-purple-400/20"
+                        ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20'
+                        : 'bg-gradient-to-br from-blue-400/20 to-purple-400/20'
                     }`}
                   >
-                    {definition.icon && definition.icon.startsWith("http") ? (
+                    {definition.icon && definition.icon.startsWith('http') ? (
                       <img
                         src={definition.icon}
                         alt={definition.name}
                         className="h-10 w-10 rounded-xl"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
+                        onError={event => {
+                          event.currentTarget.style.display = 'none';
                         }}
                       />
                     ) : (
                       <span
-                        className={`text-xl font-bold ${
-                          isDark ? "text-white" : "text-slate-700"
-                        }`}
+                        className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}
                       >
                         {definition.name.slice(0, 2).toUpperCase()}
                       </span>
@@ -139,7 +133,7 @@ export function ModuleDetailModal({
                     <div className="flex flex-wrap items-center gap-3">
                       <h2
                         className={`truncate text-2xl font-bold ${
-                          isDark ? "text-white" : "text-slate-800"
+                          isDark ? 'text-white' : 'text-slate-800'
                         }`}
                       >
                         {definition.name}
@@ -147,12 +141,10 @@ export function ModuleDetailModal({
                     </div>
                     <div
                       className={`flex flex-wrap items-center gap-2 text-xs ${
-                        isDark ? "text-white/70" : "text-slate-600"
+                        isDark ? 'text-white/70' : 'text-slate-600'
                       }`}
                     >
-                      <span className="rounded-full border px-2 py-0.5">
-                        ID {definition.id}
-                      </span>
+                      <span className="rounded-full border px-2 py-0.5">ID {definition.id}</span>
                       <span className="rounded-full border px-2 py-0.5">
                         版本 v{definition.version}
                       </span>
@@ -162,30 +154,28 @@ export function ModuleDetailModal({
                         </span>
                       )}
                       {definition.author && <span>作者：{definition.author}</span>}
-                      <span>
-                        来源：{definition.source === "remote" ? "远程工具" : "本地工具"}
-                      </span>
+                      <span>来源：{definition.source === 'remote' ? '远程工具' : '本地工具'}</span>
                       {runtime && (
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                             isRunning
-                              ? "border border-green-500/30 bg-green-500/15 text-green-500"
+                              ? 'border border-green-500/30 bg-green-500/15 text-green-500'
                               : isLaunching
-                              ? "border border-yellow-500/30 bg-yellow-500/15 text-yellow-600"
-                              : isLaunchError
-                              ? "border border-red-500/30 bg-red-500/15 text-red-500"
-                              : isDark
-                              ? "border border-white/10 text-white/70"
-                              : "border border-slate-200 text-slate-600"
+                                ? 'border border-yellow-500/30 bg-yellow-500/15 text-yellow-600'
+                                : isLaunchError
+                                  ? 'border border-red-500/30 bg-red-500/15 text-red-500'
+                                  : isDark
+                                    ? 'border border-white/10 text-white/70'
+                                    : 'border border-slate-200 text-slate-600'
                           }`}
                         >
                           {isRunning
-                            ? "窗口运行中"
+                            ? '窗口运行中'
                             : isLaunching
-                            ? "启动中…"
-                            : isLaunchError
-                            ? "启动失败"
-                            : "未运行"}
+                              ? '启动中…'
+                              : isLaunchError
+                                ? '启动失败'
+                                : '未运行'}
                         </span>
                       )}
                     </div>
@@ -201,10 +191,10 @@ export function ModuleDetailModal({
                             onClick={() => onOpen(module.id)}
                             disabled={isLaunching}
                             className={`rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
-                              isLaunching ? "cursor-wait opacity-70 hover:bg-blue-500/20" : ""
+                              isLaunching ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
                             }`}
                           >
-                            {isLaunching ? "启动中…" : isRunning ? "聚焦窗口" : "打开工具"}
+                            {isLaunching ? '启动中…' : isRunning ? '聚焦窗口' : '打开工具'}
                           </motion.button>
                         )}
                         {isInstalled && onUninstall && (
@@ -237,30 +227,30 @@ export function ModuleDetailModal({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setActiveTab("details")}
+                    onClick={() => setActiveTab('details')}
                     className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                      activeTab === "details"
+                      activeTab === 'details'
                         ? isDark
-                          ? "bg-white/15 text-white"
-                          : "bg-slate-200 text-slate-900"
+                          ? 'bg-white/15 text-white'
+                          : 'bg-slate-200 text-slate-900'
                         : isDark
-                        ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          ? 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                          : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     工具详情
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActiveTab("changelog")}
+                    onClick={() => setActiveTab('changelog')}
                     className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                      activeTab === "changelog"
+                      activeTab === 'changelog'
                         ? isDark
-                          ? "bg-white/15 text-white"
-                          : "bg-slate-200 text-slate-900"
+                          ? 'bg-white/15 text-white'
+                          : 'bg-slate-200 text-slate-900'
                         : isDark
-                        ? "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          ? 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                          : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     更新日志
@@ -269,18 +259,18 @@ export function ModuleDetailModal({
 
                 <div
                   className={`rounded-2xl border px-6 py-5 ${
-                    isDark ? "bg-white/10" : "bg-white/75"
+                    isDark ? 'bg-white/10' : 'bg-white/75'
                   }`}
                   style={{
                     borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                   }}
                 >
-                  {activeTab === "details" && (
+                  {activeTab === 'details' && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className={isDark ? "text-white/80" : "text-slate-700"}
+                      className={isDark ? 'text-white/80' : 'text-slate-700'}
                     >
                       {/* 截图轮播 */}
                       {definition.screenshots && definition.screenshots.length > 0 && (
@@ -292,14 +282,14 @@ export function ModuleDetailModal({
 
                       <h3 className="mb-3 text-lg font-semibold">工具描述</h3>
                       <p className="mb-6 leading-relaxed">
-                        {definition.description || "暂无详细描述"}
+                        {definition.description || '暂无详细描述'}
                       </p>
 
                       {definition.keywords && definition.keywords.length > 0 && (
                         <>
                           <h3 className="mb-3 text-lg font-semibold">关键词</h3>
                           <div className="mb-6 flex flex-wrap gap-2">
-                            {definition.keywords.map((keyword) => (
+                            {definition.keywords.map(keyword => (
                               <span
                                 key={keyword}
                                 className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-500"
@@ -314,14 +304,14 @@ export function ModuleDetailModal({
                       <h3 className="mb-3 text-lg font-semibold">工具信息</h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className={isDark ? "text-white/60" : "text-slate-500"}>
+                          <span className={isDark ? 'text-white/60' : 'text-slate-500'}>
                             版本号:
                           </span>
                           <span className="font-medium">{definition.version}</span>
                         </div>
                         {definition.author && (
                           <div className="flex justify-between">
-                            <span className={isDark ? "text-white/60" : "text-slate-500"}>
+                            <span className={isDark ? 'text-white/60' : 'text-slate-500'}>
                               作者:
                             </span>
                             <span className="font-medium">{definition.author}</span>
@@ -329,35 +319,31 @@ export function ModuleDetailModal({
                         )}
                         {definition.category && (
                           <div className="flex justify-between">
-                            <span className={isDark ? "text-white/60" : "text-slate-500"}>
+                            <span className={isDark ? 'text-white/60' : 'text-slate-500'}>
                               分类:
                             </span>
                             <span className="font-medium">{definition.category}</span>
                           </div>
                         )}
                         <div className="flex justify-between">
-                          <span className={isDark ? "text-white/60" : "text-slate-500"}>
-                            来源:
-                          </span>
+                          <span className={isDark ? 'text-white/60' : 'text-slate-500'}>来源:</span>
                           <span className="font-medium">
-                            {definition.source === "remote" ? "远程工具" : "本地工具"}
+                            {definition.source === 'remote' ? '远程工具' : '本地工具'}
                           </span>
                         </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {activeTab === "changelog" && (
+                  {activeTab === 'changelog' && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className={isDark ? "text-white/80" : "text-slate-700"}
+                      className={isDark ? 'text-white/80' : 'text-slate-700'}
                     >
                       <h3 className="mb-3 text-lg font-semibold">更新日志</h3>
-                      <p className={isDark ? "text-white/60" : "text-slate-500"}>
-                        暂无更新日志
-                      </p>
+                      <p className={isDark ? 'text-white/60' : 'text-slate-500'}>暂无更新日志</p>
                     </motion.div>
                   )}
                 </div>
@@ -367,6 +353,6 @@ export function ModuleDetailModal({
         </>
       )}
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 }

@@ -5,7 +5,7 @@
 
 /**
  * Dropdown 下拉菜单组件
- * 
+ *
  * Apple 风格的下拉菜单，支持：
  * - 向下滑入动画
  * - 玻璃态背景
@@ -70,7 +70,7 @@ export function Dropdown({
   useEffect(() => {
     if (!open) return;
 
-    const enabledItems = items.filter((item) => !item.disabled);
+    const enabledItems = items.filter(item => !item.disabled);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
@@ -79,14 +79,14 @@ export function Dropdown({
           break;
         case 'ArrowDown':
           e.preventDefault();
-          setFocusedIndex((prev) => {
+          setFocusedIndex(prev => {
             const nextIndex = prev + 1;
             return nextIndex >= enabledItems.length ? 0 : nextIndex;
           });
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setFocusedIndex((prev) => {
+          setFocusedIndex(prev => {
             const prevIndex = prev - 1;
             return prevIndex < 0 ? enabledItems.length - 1 : prevIndex;
           });
@@ -148,12 +148,12 @@ export function Dropdown({
                           ? 'text-white/30 cursor-not-allowed'
                           : 'text-slate-300 cursor-not-allowed'
                         : item.danger
-                        ? theme === 'dark'
-                          ? 'text-brand-red-400 hover:bg-brand-red-500/10'
-                          : 'text-brand-red-500 hover:bg-brand-red-50'
-                        : theme === 'dark'
-                        ? 'text-white hover:bg-white/10'
-                        : 'text-slate-700 hover:bg-black/5'
+                          ? theme === 'dark'
+                            ? 'text-brand-red-400 hover:bg-brand-red-500/10'
+                            : 'text-brand-red-500 hover:bg-brand-red-50'
+                          : theme === 'dark'
+                            ? 'text-white hover:bg-white/10'
+                            : 'text-slate-700 hover:bg-black/5'
                     } ${
                       focusedIndex === index && !item.disabled
                         ? theme === 'dark'
@@ -163,9 +163,7 @@ export function Dropdown({
                     }`}
                   >
                     {/* 图标 */}
-                    {item.icon && (
-                      <span className="flex-shrink-0">{item.icon}</span>
-                    )}
+                    {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
 
                     {/* 文本 */}
                     <span className="flex-1 text-left">{item.label}</span>
@@ -181,7 +179,7 @@ export function Dropdown({
                     <div
                       className="my-1 border-t"
                       style={{
-                        borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                        borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                       }}
                     />
                   )}
@@ -217,9 +215,9 @@ export function Select({
   className = '',
 }: SelectProps) {
   const { theme } = useTheme();
-  const selectedOption = options.find((opt) => opt.value === value);
+  const selectedOption = options.find(opt => opt.value === value);
 
-  const items: DropdownItem[] = options.map((opt) => ({
+  const items: DropdownItem[] = options.map(opt => ({
     id: opt.value,
     label: opt.label,
     disabled: opt.disabled,
@@ -240,13 +238,17 @@ export function Select({
                 ? 'bg-white/5 text-white/30 cursor-not-allowed'
                 : 'bg-black/5 text-slate-300 cursor-not-allowed'
               : theme === 'dark'
-              ? 'bg-white/5 text-white hover:bg-white/10'
-              : 'bg-black/5 text-slate-700 hover:bg-black/10'
+                ? 'bg-white/5 text-white hover:bg-white/10'
+                : 'bg-black/5 text-slate-700 hover:bg-black/10'
           }`}
-          style={disabled ? undefined : {
-            ...getGlassStyle('BUTTON', theme),
-            borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
-          }}
+          style={
+            disabled
+              ? undefined
+              : {
+                  ...getGlassStyle('BUTTON', theme),
+                  borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+                }
+          }
         >
           <span>{selectedOption?.label || placeholder}</span>
           <ChevronDown

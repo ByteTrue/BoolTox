@@ -58,7 +58,7 @@ export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProp
                   theme === 'dark' ? 'bg-slate-900' : 'bg-white'
                 }`}
                 style={{
-                  borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                  borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
                 }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -73,9 +73,7 @@ export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProp
               {/* 连接线 */}
               {index < displayEvents.length - 1 && (
                 <div
-                  className={`w-[2px] flex-1 ${
-                    theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'
-                  }`}
+                  className={`w-[2px] flex-1 ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`}
                   style={{ minHeight: '20px' }}
                 />
               )}
@@ -84,12 +82,10 @@ export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProp
             {/* 事件内容 */}
             <motion.div
               className={`flex-1 rounded-xl border px-4 py-3 backdrop-blur-sm transition-colors ${
-                theme === 'dark'
-                  ? 'bg-white/5 hover:bg-white/8'
-                  : 'bg-white/50 hover:bg-white/70'
+                theme === 'dark' ? 'bg-white/5 hover:bg-white/8' : 'bg-white/50 hover:bg-white/70'
               }`}
               style={{
-                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
               }}
               whileHover={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -123,9 +119,7 @@ export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProp
 
               {/* 时间戳 */}
               <p
-                className={`mt-2 text-xs ${
-                  theme === 'dark' ? 'text-white/50' : 'text-slate-500'
-                }`}
+                className={`mt-2 text-xs ${theme === 'dark' ? 'text-white/50' : 'text-slate-500'}`}
               >
                 {formatTimestamp(event.timestamp)}
               </p>

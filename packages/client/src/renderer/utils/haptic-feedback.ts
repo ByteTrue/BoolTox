@@ -5,7 +5,7 @@
 
 /**
  * 触觉反馈模拟系统
- * 
+ *
  * 通过视觉动画模拟物理触觉反馈，增强交互体验
  * 参考 Apple Taptic Engine 的反馈模式
  */
@@ -21,7 +21,13 @@ export type HapticIntensity = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft';
 /**
  * 触觉反馈模式
  */
-export type HapticPattern = 'impact' | 'selection' | 'notification' | 'success' | 'warning' | 'error';
+export type HapticPattern =
+  | 'impact'
+  | 'selection'
+  | 'notification'
+  | 'success'
+  | 'warning'
+  | 'error';
 
 /**
  * 按钮点击触觉反馈
@@ -29,7 +35,7 @@ export type HapticPattern = 'impact' | 'selection' | 'notification' | 'success' 
  */
 export const buttonTapFeedback: Variants = {
   initial: { scale: 1 },
-  tap: { 
+  tap: {
     scale: 0.95,
     transition: {
       type: 'spring',
@@ -52,7 +58,7 @@ export const buttonTapFeedback: Variants = {
  */
 export const iconButtonTapFeedback: Variants = {
   initial: { scale: 1 },
-  tap: { 
+  tap: {
     scale: 0.92,
     transition: {
       type: 'spring',
@@ -75,7 +81,7 @@ export const iconButtonTapFeedback: Variants = {
  */
 export const primaryButtonTapFeedback: Variants = {
   initial: { scale: 1 },
-  tap: { 
+  tap: {
     scale: 0.97,
     y: 1,
     transition: {
@@ -382,7 +388,7 @@ export function useTriggerHaptic() {
     // 在 Electron 中可以调用系统触觉反馈
     // 这里先用动画模拟
     console.warn(`[Haptic] Triggered: ${pattern}`);
-    
+
     // 未来可以集成 Electron API
     // if (window.electron?.haptic) {
     //   window.electron.haptic.trigger(pattern);

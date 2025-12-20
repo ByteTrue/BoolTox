@@ -74,31 +74,31 @@ export function HorizontalScroll({
           }
 
           &::-webkit-scrollbar-track {
-            background: ${theme === 'dark'
-              ? 'rgba(255, 255, 255, 0.05)'
-              : 'rgba(0, 0, 0, 0.05)'};
+            background: ${theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
             border-radius: 4px;
           }
 
           &::-webkit-scrollbar-thumb {
-            background: ${theme === 'dark'
-              ? 'rgba(101, 187, 233, 0.5)'
-              : 'rgba(101, 187, 233, 0.6)'};
+            background: ${
+              theme === 'dark' ? 'rgba(101, 187, 233, 0.5)' : 'rgba(101, 187, 233, 0.6)'
+            };
             border-radius: 4px;
             transition: background 0.3s ease;
           }
 
           &::-webkit-scrollbar-thumb:hover {
-            background: ${theme === 'dark'
-              ? 'rgba(101, 187, 233, 0.7)'
-              : 'rgba(101, 187, 233, 0.8)'};
+            background: ${
+              theme === 'dark' ? 'rgba(101, 187, 233, 0.7)' : 'rgba(101, 187, 233, 0.8)'
+            };
           }
 
           /* Firefox 滚动条样式 */
           scrollbar-width: thin;
-          scrollbar-color: ${theme === 'dark'
-            ? 'rgba(101, 187, 233, 0.5) rgba(255, 255, 255, 0.05)'
-            : 'rgba(101, 187, 233, 0.6) rgba(0, 0, 0, 0.05)'};
+          scrollbar-color: ${
+            theme === 'dark'
+              ? 'rgba(101, 187, 233, 0.5) rgba(255, 255, 255, 0.05)'
+              : 'rgba(101, 187, 233, 0.6) rgba(0, 0, 0, 0.05)'
+          };
         }
 
         .scrollbar-hide {

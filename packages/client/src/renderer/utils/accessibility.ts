@@ -293,7 +293,15 @@ export function useKeyboardNavigation(options: {
   onArrowRight?: () => void;
   enabled?: boolean;
 }) {
-  const { onEscape, onEnter, onArrowUp, onArrowDown, onArrowLeft, onArrowRight, enabled = true } = options;
+  const {
+    onEscape,
+    onEnter,
+    onArrowUp,
+    onArrowDown,
+    onArrowLeft,
+    onArrowRight,
+    enabled = true,
+  } = options;
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {

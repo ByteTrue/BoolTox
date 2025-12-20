@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 export function SettingsPanel() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setThemeMode } = useTheme();
   const { state, details, retryCheck, downloadUpdate, installUpdate } = useUpdate();
   const [showNotes, setShowNotes] = useState(false);
   const [autoLaunch, setAutoLaunch] = useState(false);
@@ -44,22 +44,28 @@ export function SettingsPanel() {
   // 加载开机启动状态
   useEffect(() => {
     if (window.appSettings) {
-      window.appSettings.getAutoLaunch().then(enabled => {
-        setAutoLaunch(enabled);
-      }).catch(err => {
-        console.error('Failed to load auto launch status:', err);
-      });
+      window.appSettings
+        .getAutoLaunch()
+        .then(enabled => {
+          setAutoLaunch(enabled);
+        })
+        .catch(err => {
+          console.error('Failed to load auto launch status:', err);
+        });
     }
   }, []);
 
   // 加载关闭到托盘状态
   useEffect(() => {
     if (window.appSettings) {
-      window.appSettings.getCloseToTray().then(enabled => {
-        setCloseToTray(enabled);
-      }).catch(err => {
-        console.error('Failed to load close to tray status:', err);
-      });
+      window.appSettings
+        .getCloseToTray()
+        .then(enabled => {
+          setCloseToTray(enabled);
+        })
+        .catch(err => {
+          console.error('Failed to load close to tray status:', err);
+        });
     }
   }, []);
 
@@ -170,15 +176,8 @@ export function SettingsPanel() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* 标题 */}
       <div className="flex items-center gap-3">
-        <SettingsIcon
-          className={theme === 'dark' ? 'text-white' : 'text-slate-800'}
-          size={28}
-        />
-        <h1
-          className={`text-2xl font-bold ${
-            theme === 'dark' ? 'text-white' : 'text-slate-800'
-          }`}
-        >
+        <SettingsIcon className={theme === 'dark' ? 'text-white' : 'text-slate-800'} size={28} />
+        <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
           设置
         </h1>
       </div>
@@ -202,10 +201,10 @@ export function SettingsPanel() {
               description={theme === 'dark' ? '深色' : '浅色'}
               icon={theme === 'dark' ? Moon : Sun}
               checked={theme === 'dark'}
-              onChange={toggleTheme}
+              onChange={() => setThemeMode(theme === 'dark' ? 'light' : 'dark')}
               theme={theme}
             />
-            
+
             {/* 开机启动 */}
             <SettingToggle
               label="开机启动"
@@ -244,9 +243,7 @@ export function SettingsPanel() {
                 更新状态
               </p>
               <p
-                className={`text-xs mt-1 ${
-                  theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-                }`}
+                className={`text-xs mt-1 ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}
               >
                 {state.phase === 'idle' && '当前版本已是最新'}
                 {state.phase === 'checking' && '正在检查更新...'}
@@ -266,9 +263,7 @@ export function SettingsPanel() {
                   size={20}
                 />
               )}
-              {state.phase === 'idle' && (
-                <CheckCircle2 className="text-green-500" size={20} />
-              )}
+              {state.phase === 'idle' && <CheckCircle2 className="text-green-500" size={20} />}
               {state.phase === 'available' && (
                 <Download className="text-brand-blue-400" size={20} />
               )}
@@ -291,9 +286,10 @@ export function SettingsPanel() {
                       withBorderGlow: true,
                       withInnerShadow: true,
                     }),
-                    boxShadow: theme === 'dark'
-                      ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                      : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                        : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
                   }}
                 >
                   <FileText className="h-4 w-4" />
@@ -316,9 +312,10 @@ export function SettingsPanel() {
                     withBorderGlow: true,
                     withInnerShadow: true,
                   }),
-                  boxShadow: theme === 'dark'
-                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                  boxShadow:
+                    theme === 'dark'
+                      ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                      : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
                 }}
               >
                 <PrimaryIcon
@@ -330,11 +327,7 @@ export function SettingsPanel() {
           </div>
 
           {details && (
-            <div
-              className={`p-4 rounded-lg ${
-                theme === 'dark' ? 'bg-white/5' : 'bg-slate-50'
-              }`}
-            >
+            <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-50'}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <p
@@ -346,9 +339,7 @@ export function SettingsPanel() {
                   </p>
                   {details.notes && (
                     <p
-                      className={`text-xs ${
-                        theme === 'dark' ? 'text-white/70' : 'text-slate-600'
-                      }`}
+                      className={`text-xs ${theme === 'dark' ? 'text-white/70' : 'text-slate-600'}`}
                     >
                       {details.notes}
                     </p>
@@ -357,9 +348,7 @@ export function SettingsPanel() {
                 {details.sizeBytes && (
                   <div className="text-right">
                     <p
-                      className={`text-xs ${
-                        theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-                      }`}
+                      className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}
                     >
                       安装包大小
                     </p>
@@ -383,7 +372,6 @@ export function SettingsPanel() {
         <LogManager />
       </SettingCard>
 
-
       <Modal
         open={showNotes}
         onClose={() => setShowNotes(false)}
@@ -395,10 +383,13 @@ export function SettingsPanel() {
               关闭
             </GlassButton>
             {state.phase === 'available' && (
-              <GlassButton variant="primary" onClick={() => {
-                setShowNotes(false);
-                downloadUpdate();
-              }}>
+              <GlassButton
+                variant="primary"
+                onClick={() => {
+                  setShowNotes(false);
+                  downloadUpdate();
+                }}
+              >
                 立即更新
               </GlassButton>
             )}
@@ -440,15 +431,8 @@ function SettingCard({
       style={getGlassStyle('CARD', theme)}
     >
       <div className="flex items-center gap-2 mb-4">
-        <Icon
-          className="text-brand-blue-500 dark:text-brand-blue-300"
-          size={18}
-        />
-        <h3
-          className={`text-base font-bold ${
-            theme === 'dark' ? 'text-white' : 'text-slate-800'
-          }`}
-        >
+        <Icon className="text-brand-blue-500 dark:text-brand-blue-300" size={18} />
+        <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
           {title}
         </h3>
       </div>
@@ -462,18 +446,10 @@ function SettingItem({ label, value }: { label: string; value: string }) {
 
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span
-        className={`text-xs ${
-          theme === 'dark' ? 'text-white/70' : 'text-slate-600'
-        }`}
-      >
+      <span className={`text-xs ${theme === 'dark' ? 'text-white/70' : 'text-slate-600'}`}>
         {label}
       </span>
-      <span
-        className={`text-xs font-medium ${
-          theme === 'dark' ? 'text-white' : 'text-slate-800'
-        }`}
-      >
+      <span className={`text-xs font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
         {value}
       </span>
     </div>
@@ -500,11 +476,7 @@ function SettingToggle({
   return (
     <div className="flex items-center justify-between py-1">
       <div className="flex items-center gap-2.5">
-        <Icon
-          className={`h-4 w-4 ${
-            theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-          }`}
-        />
+        <Icon className={`h-4 w-4 ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`} />
         <div>
           <p
             className={`text-xs font-medium ${
@@ -513,26 +485,18 @@ function SettingToggle({
           >
             {label}
           </p>
-          <p
-            className={`text-xs ${
-              theme === 'dark' ? 'text-white/50' : 'text-slate-500'
-            }`}
-          >
+          <p className={`text-xs ${theme === 'dark' ? 'text-white/50' : 'text-slate-500'}`}>
             {description}
           </p>
         </div>
       </div>
-      
+
       <button
         type="button"
         onClick={onChange}
         disabled={disabled}
         className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-          checked
-            ? 'bg-brand-blue-500'
-            : theme === 'dark'
-            ? 'bg-white/20'
-            : 'bg-slate-300'
+          checked ? 'bg-brand-blue-500' : theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'
         }`}
         role="switch"
         aria-checked={checked}

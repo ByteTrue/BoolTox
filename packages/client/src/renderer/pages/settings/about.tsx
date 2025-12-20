@@ -28,7 +28,9 @@ export function AboutSettings() {
           <div className="inline-flex rounded-xl bg-brand-gradient p-3 shadow-lg mb-4">
             <span className="text-5xl">📦</span>
           </div>
-          <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <h1
+            className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             BoolTox
           </h1>
           <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
@@ -47,14 +49,16 @@ export function AboutSettings() {
           <p className={`text-center ${theme === 'dark' ? 'text-white/80' : 'text-gray-700'}`}>
             开源、可扩展的工具箱平台
           </p>
-          <p className={`text-center text-sm mt-2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
+          <p
+            className={`text-center text-sm mt-2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}
+          >
             Web 优先 · 工具生态 · 本地 Agent · 隐私优先
           </p>
         </div>
 
         {/* 链接 */}
         <div className="space-y-2">
-          {links.map((link) => (
+          {links.map(link => (
             <a
               key={link.label}
               href={link.url}
@@ -66,8 +70,13 @@ export function AboutSettings() {
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
             >
-              <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{link.label}</span>
-              <ExternalLink size={16} className={theme === 'dark' ? 'text-white/60' : 'text-gray-400'} />
+              <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+                {link.label}
+              </span>
+              <ExternalLink
+                size={16}
+                className={theme === 'dark' ? 'text-white/60' : 'text-gray-400'}
+              />
             </a>
           ))}
         </div>

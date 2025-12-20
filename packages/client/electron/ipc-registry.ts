@@ -19,8 +19,8 @@ import { IpcChannel } from '../src/shared/constants/ipc-channels.js';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
 import type { ToolRegistryEntry, ToolManifest, ToolSourceConfig, LocalToolRef } from '@booltox/shared';
 import type { GitOpsConfig } from './services/git-ops.service.js';
+import { GitOpsService, gitOpsService } from './services/git-ops.service.js';
 import { moduleStoreService } from './services/module-store.service.js';
-import { gitOpsService } from './services/git-ops.service.js';
 import { configService } from './services/config.service.js';
 import { toolManager } from './services/tool/tool-manager.js';
 import { toolRunner } from './services/tool/tool-runner.js';
@@ -418,7 +418,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
   ipcMain.handle(IpcChannel.ToolSources_Test, async (_event, repo: ToolSourceConfig) => {
     try {
       logger.info(`[IPC] Testing repository connection: ${repo.name}`);
-      const gitOps = new gitOpsService.constructor();
+      const gitOps = new GitOpsService();
       gitOps.updateConfig(repo);
 
       const registry = await gitOps.getPluginRegistry();
@@ -426,7 +426,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
       return {
         success: true,
         pluginCount: registry.plugins.length,
-        plugins: registry.plugins.slice(0, 5).map(p => ({ id: p.id, name: p.name })),
+        plugins: registry.plugins.slice(0, 5).map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })),
       };
     } catch (error) {
       logger.error(`[IPC] Failed to test repository ${repo.name}:`, error);

@@ -5,7 +5,7 @@
 
 /**
  * ShineButton - 光泽扫过按钮组件
- * 
+ *
  * 实现 Apple 风格的按钮光泽扫过效果：
  * - Hover 时光泽横扫
  * - 可配置扫过方向和速度
@@ -42,7 +42,7 @@ export interface ShineButtonProps {
 
 /**
  * ShineButton 组件
- * 
+ *
  * @example
  * <ShineButton variant="primary" shinePreset="fast">
  *   Click Me
@@ -61,7 +61,7 @@ export function ShineButton({
   onClick,
 }: ShineButtonProps) {
   const { theme } = useTheme();
-  
+
   // 获取光泽动画配置
   const shineConfig = buttonShinePresets[shinePreset];
 
@@ -89,11 +89,10 @@ export function ShineButton({
     secondary: {
       background: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
       color: theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-      border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.1)',
+      border:
+        theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.1)',
       boxShadow:
-        theme === 'dark'
-          ? '0 2px 8px rgba(0, 0, 0, 0.2)'
-          : '0 2px 8px rgba(0, 0, 0, 0.05)',
+        theme === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.05)',
     },
     ghost: {
       background: 'transparent',
@@ -181,9 +180,5 @@ export function ShineButtonGroup({
     lg: 'gap-4',
   }[gap];
 
-  return (
-    <div className={`flex ${directionClass} ${gapClass} ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`flex ${directionClass} ${gapClass} ${className}`}>{children}</div>;
 }

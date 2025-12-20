@@ -17,9 +17,15 @@ import { ToolWebView } from './tool-webview';
 // 路由懒加载
 const HomePage = lazy(() => import('../pages/home-page').then(m => ({ default: m.HomePage })));
 const ToolsPage = lazy(() => import('../pages/tools-page').then(m => ({ default: m.ToolsPage })));
-const AddToolSourcePage = lazy(() => import('../pages/add-tool-source-page').then(m => ({ default: m.AddToolSourcePage })));
-const ToolSourcesPage = lazy(() => import('../pages/tool-sources-page').then(m => ({ default: m.ToolSourcesPage })));
-const SettingsPage = lazy(() => import('../pages/settings-page').then(m => ({ default: m.SettingsPage })));
+const AddToolSourcePage = lazy(() =>
+  import('../pages/add-tool-source-page').then(m => ({ default: m.AddToolSourcePage }))
+);
+const ToolSourcesPage = lazy(() =>
+  import('../pages/tool-sources-page').then(m => ({ default: m.ToolSourcesPage }))
+);
+const SettingsPage = lazy(() =>
+  import('../pages/settings-page').then(m => ({ default: m.SettingsPage }))
+);
 
 // 页面切换动画
 const pageVariants = {
@@ -38,8 +44,11 @@ function AppShellContent() {
 
   // 监听快捷面板的导航事件
   useEffect(() => {
-    const handleNavigate = (route: string) => {
-      navigate(route);
+    const handleNavigate = (...args: unknown[]) => {
+      const route = args[0];
+      if (typeof route === 'string') {
+        navigate(route);
+      }
     };
 
     window.ipc?.on('navigate-to', handleNavigate);
@@ -159,20 +168,15 @@ function AppShellContent() {
         {/* 工具 webview 区域（当有激活工具标签时显示） */}
         <div className={activeToolTabId ? 'h-full' : 'hidden'}>
           {toolTabs.map(tab => (
-            <div
-              key={tab.id}
-              className={tab.id === activeToolTabId ? 'h-full' : 'hidden'}
-            >
+            <div key={tab.id} className={tab.id === activeToolTabId ? 'h-full' : 'hidden'}>
               <ToolWebView
                 url={tab.url}
                 toolId={tab.toolId}
-                onTitleUpdate={(title) => updateToolTab(tab.id, { label: title })}
+                onTitleUpdate={title => updateToolTab(tab.id, { label: title })}
                 onNavigate={(url, canGoBack, canGoForward) =>
                   updateToolTab(tab.id, { url, canGoBack, canGoForward })
                 }
-                onLoadingChange={(isLoading) =>
-                  updateToolTab(tab.id, { isLoading })
-                }
+                onLoadingChange={isLoading => updateToolTab(tab.id, { isLoading })}
               />
             </div>
           ))}

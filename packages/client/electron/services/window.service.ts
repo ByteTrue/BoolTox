@@ -12,7 +12,6 @@ import { BrowserWindow } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import path from 'path';
 import { createLogger } from '../utils/logger.js';
-import { getPlatformWindowConfig } from '../utils/platform-utils.js';
 
 const logger = createLogger('WindowService');
 
@@ -62,15 +61,14 @@ class WindowService {
         v8CacheOptions: 'code',
         backgroundThrottling: false,
       },
+      // 平台特定优化
+      ...(process.platform === 'darwin' ? {
+        titleBarStyle: 'hiddenInset',
+        trafficLightPosition: { x: 20, y: 20 },
+      } : {}),
     };
 
-    // 平台特定优化
-    const platformConfig = getPlatformWindowConfig({ frameless: true });
-
-    this.mainWindow = new BrowserWindow({
-      ...baseConfig,
-      ...platformConfig,
-    });
+    this.mainWindow = new BrowserWindow(baseConfig);
 
     // 隐藏菜单栏
     this.mainWindow.setMenuBarVisibility(false);

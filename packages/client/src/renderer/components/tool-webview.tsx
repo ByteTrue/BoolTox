@@ -24,7 +24,7 @@ export function ToolWebView({
   toolId,
   onTitleUpdate,
   onNavigate,
-  onLoadingChange
+  onLoadingChange,
 }: ToolWebViewProps) {
   const webviewRef = useRef<Electron.WebviewTag>(null);
   const [crashed, setCrashed] = useState(false);
@@ -45,11 +45,7 @@ export function ToolWebView({
     // 监听导航事件
     const handleNavigate = () => {
       const currentUrl = webview.getURL();
-      onNavigate?.(
-        currentUrl,
-        webview.canGoBack(),
-        webview.canGoForward()
-      );
+      onNavigate?.(currentUrl, webview.canGoBack(), webview.canGoForward());
     };
 
     // 监听加载状态
@@ -128,13 +124,13 @@ export function ToolWebView({
   // 显示崩溃提示
   if (crashed) {
     return (
-      <div className={`flex flex-col items-center justify-center h-full gap-4 ${
-        isDark ? 'bg-slate-900' : 'bg-gray-50'
-      }`}>
+      <div
+        className={`flex flex-col items-center justify-center h-full gap-4 ${
+          isDark ? 'bg-slate-900' : 'bg-gray-50'
+        }`}
+      >
         <AlertCircle size={48} className="text-red-500" />
-        <p className={`text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>
-          工具页面已崩溃
-        </p>
+        <p className={`text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>工具页面已崩溃</p>
         <div className="flex gap-2">
           <button
             onClick={handleReload}
@@ -162,13 +158,13 @@ export function ToolWebView({
   // 显示错误提示
   if (error) {
     return (
-      <div className={`flex flex-col items-center justify-center h-full gap-4 ${
-        isDark ? 'bg-slate-900' : 'bg-gray-50'
-      }`}>
+      <div
+        className={`flex flex-col items-center justify-center h-full gap-4 ${
+          isDark ? 'bg-slate-900' : 'bg-gray-50'
+        }`}
+      >
         <AlertCircle size={48} className="text-orange-500" />
-        <p className={`text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>
-          {error}
-        </p>
+        <p className={`text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>{error}</p>
         <div className="flex gap-2">
           <button
             onClick={handleReload}
@@ -189,8 +185,7 @@ export function ToolWebView({
       className="w-full h-full"
       // 安全配置：禁用 Node 集成，启用上下文隔离
       nodeintegration={false}
-      enableremotemodule={false}
-      webpreferences="contextIsolation=true"
+      webpreferences="contextIsolation=true,enableRemoteModule=false"
       // 允许弹出窗口（由 new-window 事件处理）
       allowpopups={true}
     />

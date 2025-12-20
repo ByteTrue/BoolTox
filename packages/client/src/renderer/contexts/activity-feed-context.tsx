@@ -3,7 +3,15 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import { type ActivityFeedItem, sortByPriority } from '@/content/activity-feed';
 import { fetchAnnouncements, type Announcement } from '@/lib/announcements-service';
 
@@ -39,11 +47,11 @@ export function ActivityFeedProvider({ children }: { children: ReactNode }) {
 
       const data: CachedData = JSON.parse(cached);
       const now = Date.now();
-      
+
       if (now - data.timestamp < CACHE_DURATION) {
         return data;
       }
-      
+
       localStorage.removeItem(CACHE_KEY);
       return null;
     } catch (error) {
@@ -70,7 +78,7 @@ export function ActivityFeedProvider({ children }: { children: ReactNode }) {
 
     try {
       const announcements = await fetchAnnouncements(6);
-      announcements.forEach((announcement) => {
+      announcements.forEach(announcement => {
         const type = mapAnnouncementType(announcement.type);
         remoteItems.push({
           id: announcement.id,
@@ -121,27 +129,29 @@ export function ActivityFeedProvider({ children }: { children: ReactNode }) {
 
     const initialize = async () => {
       const cached = loadFromCache();
-      
+
       if (cached) {
         if (!cancelled) {
           setItems(cached.items);
           setLoading(false);
           setError(null);
         }
-        
+
         // 后台静默刷新
-        fetchRemoteData().then((freshItems) => {
-          if (!cancelled) {
-            setItems(freshItems);
-            saveToCache(freshItems);
-            setError(null);
-          }
-        }).catch((error) => {
-          console.error('Failed to silently refresh activity feed:', error);
-          if (!cancelled) {
-            setError(NETWORK_ERROR_MESSAGE);
-          }
-        });
+        fetchRemoteData()
+          .then(freshItems => {
+            if (!cancelled) {
+              setItems(freshItems);
+              saveToCache(freshItems);
+              setError(null);
+            }
+          })
+          .catch(error => {
+            console.error('Failed to silently refresh activity feed:', error);
+            if (!cancelled) {
+              setError(NETWORK_ERROR_MESSAGE);
+            }
+          });
       } else {
         try {
           const freshItems = await fetchRemoteData();
@@ -180,11 +190,7 @@ export function ActivityFeedProvider({ children }: { children: ReactNode }) {
     [items, loading, refreshing, refresh, error]
   );
 
-  return (
-    <ActivityFeedContext.Provider value={value}>
-      {children}
-    </ActivityFeedContext.Provider>
-  );
+  return <ActivityFeedContext.Provider value={value}>{children}</ActivityFeedContext.Provider>;
 }
 
 export function useActivityFeed() {

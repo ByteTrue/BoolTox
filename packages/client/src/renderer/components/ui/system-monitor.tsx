@@ -32,16 +32,10 @@ export function SystemMonitor() {
     return (
       <div
         className={`rounded-xl border p-6 text-center ${
-          theme === 'dark'
-            ? 'border-red-500/30 bg-red-500/10'
-            : 'border-red-300 bg-red-50'
+          theme === 'dark' ? 'border-red-500/30 bg-red-500/10' : 'border-red-300 bg-red-50'
         }`}
       >
-        <p
-          className={`text-sm mb-3 ${
-            theme === 'dark' ? 'text-red-400' : 'text-red-600'
-          }`}
-        >
+        <p className={`text-sm mb-3 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
           {error || '无法获取系统信息'}
         </p>
         <button
@@ -81,7 +75,7 @@ export function SystemMonitor() {
       .replace(/\s+Processor/gi, '')
       .replace(/\s+@.*$/g, '') // 移除频率信息（我们单独显示）
       .trim();
-    
+
     // 如果还是太长，智能截取
     if (simplified.length > 25) {
       // 尝试保留品牌和型号主要部分
@@ -91,7 +85,7 @@ export function SystemMonitor() {
         simplified = parts.slice(0, 3).join(' ');
       }
     }
-    
+
     return simplified;
   };
 
@@ -99,11 +93,9 @@ export function SystemMonitor() {
     <div className="space-y-4">
       {/* 系统基本信息卡片 */}
       <motion.div
-        className={`rounded-xl border p-5 ${
-          theme === 'dark' ? 'bg-white/5' : 'bg-white/50'
-        }`}
+        className={`rounded-xl border p-5 ${theme === 'dark' ? 'bg-white/5' : 'bg-white/50'}`}
         style={{
-          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
         }}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -115,11 +107,7 @@ export function SystemMonitor() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">{getOSIcon(systemInfo.os.platform)}</span>
             <div>
-              <p
-                className={`text-xs ${
-                  theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-                }`}
-              >
+              <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
                 操作系统
               </p>
               <p
@@ -136,11 +124,7 @@ export function SystemMonitor() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">⚡</span>
             <div className="min-w-0 flex-1">
-              <p
-                className={`text-xs ${
-                  theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-                }`}
-              >
+              <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
                 处理器
               </p>
               <p
@@ -165,11 +149,7 @@ export function SystemMonitor() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">🧠</span>
             <div>
-              <p
-                className={`text-xs ${
-                  theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-                }`}
-              >
+              <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
                 内存
               </p>
               <p
@@ -193,11 +173,7 @@ export function SystemMonitor() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">⏱️</span>
             <div>
-              <p
-                className={`text-xs ${
-                  theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-                }`}
-              >
+              <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
                 运行时长
               </p>
               <p
@@ -216,22 +192,15 @@ export function SystemMonitor() {
       {systemInfo.disks.map((disk, index) => (
         <motion.div
           key={disk.name}
-          className={`rounded-xl border p-4 ${
-            theme === 'dark' ? 'bg-white/5' : 'bg-white/50'
-          }`}
+          className={`rounded-xl border p-4 ${theme === 'dark' ? 'bg-white/5' : 'bg-white/50'}`}
           style={{
-            borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+            borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
           }}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 + index * 0.05 }}
         >
-          <ProgressBar
-            label={`磁盘 ${disk.name}`}
-            used={disk.used}
-            total={disk.total}
-            icon="💾"
-          />
+          <ProgressBar label={`磁盘 ${disk.name}`} used={disk.used} total={disk.total} icon="💾" />
         </motion.div>
       ))}
     </div>

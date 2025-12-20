@@ -91,9 +91,7 @@ export function ProgressBar({ label, used, total, icon }: ProgressBarProps) {
 
       {/* 百分比 */}
       <div className="flex justify-end">
-        <span className={`text-xs font-bold ${currentColor.text}`}>
-          {percentage.toFixed(1)}%
-        </span>
+        <span className={`text-xs font-bold ${currentColor.text}`}>{percentage.toFixed(1)}%</span>
       </div>
     </div>
   );

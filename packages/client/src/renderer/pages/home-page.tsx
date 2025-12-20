@@ -33,19 +33,22 @@ export function HomePage() {
   return (
     <div className="h-full overflow-y-auto px-8 py-6 space-y-8 elegant-scroll">
       {/* Hero 区域 */}
-      <section className="rounded-2xl border p-8" style={{
-        background: theme === 'dark'
-          ? 'rgba(255, 255, 255, 0.05)'
-          : 'rgba(255, 255, 255, 0.7)',
-        backdropFilter: 'blur(12px)',
-        borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-      }}>
+      <section
+        className="rounded-2xl border p-8"
+        style={{
+          background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(12px)',
+          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        }}
+      >
         <div className="flex items-center justify-between">
           {/* 问候语 */}
           <div className="flex items-center gap-4">
             <span className="text-5xl">{getTimeEmoji()}</span>
             <div>
-              <h1 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              <h1
+                className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+              >
                 {getGreeting()}
               </h1>
               <p className={`text-sm mt-2 ${theme === 'dark' ? 'text-white/70' : 'text-gray-600'}`}>
@@ -66,16 +69,15 @@ export function HomePage() {
       {/* 最近使用 */}
       {recentModules.length > 0 && (
         <section>
-          <h2 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <h2
+            className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             🚀 最近使用
           </h2>
           <HorizontalScroll gap={16}>
-            {recentModules.map((module) => (
+            {recentModules.map(module => (
               <div key={module.id} className="w-[280px] flex-shrink-0">
-                <ModuleQuickCard
-                  module={module}
-                  onClick={() => openModule(module.id)}
-                />
+                <ModuleQuickCard module={module} onClick={() => openModule(module.id)} />
               </div>
             ))}
           </HorizontalScroll>
@@ -88,14 +90,17 @@ export function HomePage() {
         <ActivityFeed />
 
         {/* 操作记录 */}
-        <div className="rounded-2xl border p-6" style={{
-          background: theme === 'dark'
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(12px)',
-          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-        }}>
-          <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        <div
+          className="rounded-2xl border p-6"
+          style={{
+            background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.7)',
+            backdropFilter: 'blur(12px)',
+            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          <h3
+            className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             📝 操作记录
           </h3>
           {recentEvents.length > 0 ? (
@@ -109,14 +114,17 @@ export function HomePage() {
       </section>
 
       {/* 系统监控 */}
-      <section className="rounded-2xl border p-6" style={{
-        background: theme === 'dark'
-          ? 'rgba(255, 255, 255, 0.05)'
-          : 'rgba(255, 255, 255, 0.7)',
-        backdropFilter: 'blur(12px)',
-        borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-      }}>
-        <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+      <section
+        className="rounded-2xl border p-6"
+        style={{
+          background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(12px)',
+          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <h3
+          className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+        >
           💻 系统监控
         </h3>
         <SystemMonitor />
@@ -154,10 +162,14 @@ function StatCard({
       <div className="flex items-center gap-3">
         <span className="text-2xl">{icon}</span>
         <div>
-          <p className={`text-xs uppercase tracking-wider ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
+          <p
+            className={`text-xs uppercase tracking-wider ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}
+          >
             {label}
           </p>
-          <p className={`text-2xl font-bold mt-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <p
+            className={`text-2xl font-bold mt-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             {value}
           </p>
         </div>

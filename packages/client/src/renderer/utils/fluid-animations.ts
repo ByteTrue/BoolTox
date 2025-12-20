@@ -5,13 +5,13 @@
 
 /**
  * 流体动画系统 - Task 2.5
- * 
+ *
  * 实现 Apple 风格的流畅动画效果：
  * 1. 路由切换过渡动画
  * 2. 列表项交错动画 (Stagger)
  * 3. 卡片 3D 倾斜效果
  * 4. 按钮光泽扫过效果
- * 
+ *
  * 参考标准：
  * - iOS UIView animations (spring damping)
  * - macOS NSAnimation (timing functions)
@@ -42,7 +42,7 @@ export interface PageTransitionConfig {
 
 /**
  * 获取页面切换动画变体
- * 
+ *
  * @example
  * <motion.div
  *   variants={getPageTransitionVariants('right')}
@@ -114,19 +114,19 @@ export function getPageTransitionVariants(
 export const pageTransitionPresets = {
   // 从右滑入（默认）
   slideRight: getPageTransitionVariants('right'),
-  
+
   // 从左滑入
   slideLeft: getPageTransitionVariants('left'),
-  
+
   // 从下滑入
   slideUp: getPageTransitionVariants('up'),
-  
+
   // 淡入
   fade: getPageTransitionVariants('fade'),
-  
+
   // 快速滑动（iOS 风格）
   swiftSlide: getPageTransitionVariants('right', { duration: 0.25, stiffness: 400, damping: 35 }),
-  
+
   // 柔和滑动（macOS 风格）
   smoothSlide: getPageTransitionVariants('right', { duration: 0.45, stiffness: 250, damping: 28 }),
 };
@@ -155,7 +155,7 @@ export interface StaggerConfig {
 
 /**
  * 获取列表容器动画变体
- * 
+ *
  * @example
  * <motion.ul variants={getStaggerContainerVariants()}>
  *   {items.map(item => (
@@ -183,12 +183,7 @@ export function getStaggerContainerVariants(config?: StaggerConfig): Variants {
  * 获取列表项动画变体
  */
 export function getStaggerItemVariants(config?: StaggerConfig): Variants {
-  const {
-    duration = 0.4,
-    direction = 'top',
-    fade = true,
-    blur = true,
-  } = config || {};
+  const { duration = 0.4, direction = 'top', fade = true, blur = true } = config || {};
 
   // 方向映射
   const directionMap = {
@@ -235,19 +230,19 @@ export const staggerPresets = {
     container: getStaggerContainerVariants({ staggerDelay: 0.03 }),
     item: getStaggerItemVariants({ duration: 0.3, direction: 'top' }),
   },
-  
+
   // 标准交错（导航项）
   default: {
     container: getStaggerContainerVariants({ staggerDelay: 0.05 }),
     item: getStaggerItemVariants({ duration: 0.4, direction: 'top' }),
   },
-  
+
   // 缓慢交错（主内容区）
   slow: {
     container: getStaggerContainerVariants({ staggerDelay: 0.08, initialDelay: 0.1 }),
     item: getStaggerItemVariants({ duration: 0.5, direction: 'bottom' }),
   },
-  
+
   // 缩放交错（图标网格）
   scale: {
     container: getStaggerContainerVariants({ staggerDelay: 0.04 }),
@@ -279,15 +274,15 @@ export interface CardTiltConfig {
 
 /**
  * 计算卡片倾斜样式
- * 
+ *
  * @param mouseX 鼠标 X 坐标 (0-1)
  * @param mouseY 鼠标 Y 坐标 (0-1)
  * @param config 倾斜配置
  * @returns CSS 样式对象
- * 
+ *
  * @example
  * const [tilt, setTilt] = useState({ x: 0.5, y: 0.5 });
- * 
+ *
  * <motion.div
  *   style={getCardTiltStyle(tilt.x, tilt.y)}
  *   onMouseMove={(e) => {
@@ -300,16 +295,8 @@ export interface CardTiltConfig {
  *   onMouseLeave={() => setTilt({ x: 0.5, y: 0.5 })}
  * >
  */
-export function getCardTiltStyle(
-  mouseX: number,
-  mouseY: number,
-  config?: CardTiltConfig
-) {
-  const {
-    maxTilt = 12,
-    maxScale = 1.05,
-    perspective = 1000,
-  } = config || {};
+export function getCardTiltStyle(mouseX: number, mouseY: number, config?: CardTiltConfig) {
+  const { maxTilt = 12, maxScale = 1.05, perspective = 1000 } = config || {};
 
   // 中心点为 0，边缘为 ±1
   const centerX = (mouseX - 0.5) * 2;
@@ -328,11 +315,7 @@ export function getCardTiltStyle(
  * 获取卡片倾斜动画变体
  */
 export function getCardTiltVariants(config?: CardTiltConfig): Variants {
-  const {
-    maxScale = 1.05,
-    perspective = 1000,
-    transitionDuration = 0.15,
-  } = config || {};
+  const { maxScale = 1.05, perspective = 1000, transitionDuration = 0.15 } = config || {};
 
   return {
     initial: {
@@ -358,11 +341,7 @@ export function getCardTiltVariants(config?: CardTiltConfig): Variants {
 /**
  * 计算卡片光泽位置
  */
-export function getCardGlareStyle(
-  mouseX: number,
-  mouseY: number,
-  config?: CardTiltConfig
-) {
+export function getCardGlareStyle(mouseX: number, mouseY: number, config?: CardTiltConfig) {
   const { glareIntensity = 0.3 } = config || {};
 
   return {
@@ -395,7 +374,7 @@ export interface ButtonShineConfig {
 
 /**
  * 获取按钮光泽动画变体
- * 
+ *
  * @example
  * <motion.button style={{ position: 'relative', overflow: 'hidden' }}>
  *   <motion.div
@@ -412,10 +391,7 @@ export interface ButtonShineConfig {
  * </motion.button>
  */
 export function getButtonShineVariants(config?: ButtonShineConfig): Variants {
-  const {
-    duration = 0.6,
-    delay = 0,
-  } = config || {};
+  const { duration = 0.6, delay = 0 } = config || {};
 
   return {
     initial: {
@@ -460,25 +436,25 @@ export const buttonShinePresets = {
     variants: getButtonShineVariants({ duration: 0.5 }),
     gradient: getButtonShineGradient({ width: 25, color: 'rgba(255, 255, 255, 0.5)' }),
   },
-  
+
   // 标准扫过（次要按钮）
   default: {
     variants: getButtonShineVariants({ duration: 0.6 }),
     gradient: getButtonShineGradient({ width: 30, color: 'rgba(255, 255, 255, 0.4)' }),
   },
-  
+
   // 缓慢扫过（大按钮）
   slow: {
     variants: getButtonShineVariants({ duration: 0.8, delay: 0.1 }),
     gradient: getButtonShineGradient({ width: 40, color: 'rgba(255, 255, 255, 0.3)' }),
   },
-  
+
   // 对角扫过
   diagonal: {
     variants: getButtonShineVariants({ duration: 0.65 }),
     gradient: getButtonShineGradient({ width: 35, angle: 45, color: 'rgba(255, 255, 255, 0.35)' }),
   },
-  
+
   // 垂直扫过
   vertical: {
     variants: getButtonShineVariants({ duration: 0.55 }),
@@ -493,11 +469,7 @@ export const buttonShinePresets = {
 /**
  * 创建统一的弹簧动画配置
  */
-export function createSpringTransition(
-  stiffness = 300,
-  damping = 30,
-  mass = 1
-): Transition {
+export function createSpringTransition(stiffness = 300, damping = 30, mass = 1): Transition {
   return {
     type: 'spring',
     stiffness,
@@ -525,12 +497,9 @@ export function createEaseTransition(
  */
 export function supportsTransform3D(): boolean {
   if (typeof window === 'undefined') return false;
-  
+
   const element = document.createElement('div');
-  const transforms = [
-    'perspective(1px)',
-    '-webkit-perspective(1px)',
-  ];
+  const transforms = ['perspective(1px)', '-webkit-perspective(1px)'];
 
   for (const transform of transforms) {
     element.style.transform = transform;
@@ -556,10 +525,7 @@ export function getElementCenter(element: HTMLElement) {
 /**
  * 计算鼠标相对于元素的位置 (0-1)
  */
-export function getMousePosition(
-  event: ReactMouseEvent<HTMLElement>,
-  element: HTMLElement
-) {
+export function getMousePosition(event: ReactMouseEvent<HTMLElement>, element: HTMLElement) {
   const rect = element.getBoundingClientRect();
   return {
     x: (event.clientX - rect.left) / rect.width,

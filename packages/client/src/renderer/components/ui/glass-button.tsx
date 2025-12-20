@@ -6,7 +6,7 @@
 /**
  * 玻璃拟态按钮组件
  * 从 glassmorphism-demo 提取的可复用按钮样式
- * 
+ *
  * v2.0: 增强微交互动画，符合 Apple 设计规范
  */
 
@@ -68,7 +68,7 @@ export interface GlassButtonProps {
 
 /**
  * 玻璃拟态按钮
- * 
+ *
  * @example
  * ```tsx
  * <GlassButton variant="primary" icon={<Star />}>主要按钮</GlassButton>
@@ -90,7 +90,7 @@ export function GlassButton({
   type = 'button',
 }: GlassButtonProps) {
   const { theme } = useTheme();
-  
+
   // 尺寸映射
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-xs',
@@ -106,53 +106,61 @@ export function GlassButton({
 
   // 变体样式
   const getVariantStyles = () => {
-    const baseStyle = getGlassStyle('BUTTON', theme, { withBorderGlow: true, withInnerShadow: true });
-    
+    const baseStyle = getGlassStyle('BUTTON', theme, {
+      withBorderGlow: true,
+      withInnerShadow: true,
+    });
+
     switch (variant) {
       case 'primary':
         return {
-          className: 'text-brand-blue-400 dark:text-brand-blue-400 hover:bg-brand-blue-400/20 shadow-unified-md dark:shadow-unified-md-dark hover:shadow-unified-lg dark:hover:shadow-unified-lg-dark',
-          style: baseStyle,  // 使用统一的玻璃边框
+          className:
+            'text-brand-blue-400 dark:text-brand-blue-400 hover:bg-brand-blue-400/20 shadow-unified-md dark:shadow-unified-md-dark hover:shadow-unified-lg dark:hover:shadow-unified-lg-dark',
+          style: baseStyle, // 使用统一的玻璃边框
         };
-      
+
       case 'secondary':
         return {
-          className: theme === 'dark'
-            ? 'text-white/80 hover:bg-white/10 shadow-unified-sm-dark hover:shadow-unified-md-dark'
-            : 'text-slate-700 hover:bg-slate-200/60 shadow-unified-sm hover:shadow-unified-md',
+          className:
+            theme === 'dark'
+              ? 'text-white/80 hover:bg-white/10 shadow-unified-sm-dark hover:shadow-unified-md-dark'
+              : 'text-slate-700 hover:bg-slate-200/60 shadow-unified-sm hover:shadow-unified-md',
           style: baseStyle,
         };
-      
+
       case 'success':
         return {
-          className: theme === 'dark'
-            ? 'text-green-400 hover:bg-green-500/20 shadow-unified-md-dark hover:shadow-unified-lg-dark'
-            : 'text-green-600 hover:bg-green-500/20 shadow-unified-md hover:shadow-unified-lg',
+          className:
+            theme === 'dark'
+              ? 'text-green-400 hover:bg-green-500/20 shadow-unified-md-dark hover:shadow-unified-lg-dark'
+              : 'text-green-600 hover:bg-green-500/20 shadow-unified-md hover:shadow-unified-lg',
           style: {
             ...baseStyle,
             borderColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(22, 163, 74, 0.4)',
           },
         };
-      
+
       case 'danger':
         return {
-          className: theme === 'dark'
-            ? 'text-red-400 hover:bg-red-500/20 shadow-unified-md-dark hover:shadow-unified-lg-dark'
-            : 'text-red-600 hover:bg-red-500/20 shadow-unified-md hover:shadow-unified-lg',
+          className:
+            theme === 'dark'
+              ? 'text-red-400 hover:bg-red-500/20 shadow-unified-md-dark hover:shadow-unified-lg-dark'
+              : 'text-red-600 hover:bg-red-500/20 shadow-unified-md hover:shadow-unified-lg',
           style: {
             ...baseStyle,
             borderColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(220, 38, 38, 0.4)',
           },
         };
-      
+
       case 'ghost':
         return {
-          className: theme === 'dark'
-            ? 'text-white/60 hover:text-white/80 hover:bg-white/5 shadow-unified-sm-dark hover:shadow-unified-md-dark'
-            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/60 shadow-unified-sm hover:shadow-unified-md',
+          className:
+            theme === 'dark'
+              ? 'text-white/60 hover:text-white/80 hover:bg-white/5 shadow-unified-sm-dark hover:shadow-unified-md-dark'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/60 shadow-unified-sm hover:shadow-unified-md',
           style: baseStyle,
         };
-      
+
       default:
         return {
           className: '',
@@ -162,9 +170,10 @@ export function GlassButton({
   };
 
   const variantStyles = getVariantStyles();
-  
+
   // 根据变体选择不同的交互动画
-  const interactionAnimation = variant === 'primary' ? primaryButtonInteraction : buttonMicroInteraction;
+  const interactionAnimation =
+    variant === 'primary' ? primaryButtonInteraction : buttonMicroInteraction;
 
   return (
     <motion.button
@@ -181,21 +190,21 @@ export function GlassButton({
         ${sizeClasses[size]}
         ${variantStyles.className}
         ${className}
-      `.trim().replace(/\s+/g, ' ')}
+      `
+        .trim()
+        .replace(/\s+/g, ' ')}
       style={variantStyles.style}
       disabled={disabled}
     >
       {icon && (
-        <span className={`inline-flex transition-transform group-hover:rotate-12 gpu-accelerated ${iconSizeClasses[size]}`}>
+        <span
+          className={`inline-flex transition-transform group-hover:rotate-12 gpu-accelerated ${iconSizeClasses[size]}`}
+        >
           {icon}
         </span>
       )}
       {children && <span>{children}</span>}
-      {iconRight && (
-        <span className={`inline-flex ${iconSizeClasses[size]}`}>
-          {iconRight}
-        </span>
-      )}
+      {iconRight && <span className={`inline-flex ${iconSizeClasses[size]}`}>{iconRight}</span>}
     </motion.button>
   );
 }

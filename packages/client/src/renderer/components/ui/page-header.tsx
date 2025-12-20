@@ -18,12 +18,7 @@ interface PageHeaderProps {
  * Apple-style 页面头部 - 超大标题 + 滚动收缩效果
  * 参考 Safari、App Store、系统设置的大标题设计
  */
-export function PageHeader({
-  title,
-  subtitle,
-  actions,
-  scrollRef,
-}: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, scrollRef }: PageHeaderProps) {
   const defaultRef = useRef<HTMLDivElement>(null);
   const targetRef = scrollRef || defaultRef;
 
@@ -34,10 +29,10 @@ export function PageHeader({
 
   // 标题缩放: 1 → 0.7 (滚动 0-300px)
   const titleScale = useTransform(scrollY, [0, 300], [1, 0.7]);
-  
+
   // 标题透明度: 1 → 0 (滚动 0-200px)
   const titleOpacity = useTransform(scrollY, [0, 200], [1, 0]);
-  
+
   // 副标题透明度: 1 → 0 (滚动 0-150px)
   const subtitleOpacity = useTransform(scrollY, [0, 150], [1, 0]);
 
@@ -56,7 +51,7 @@ export function PageHeader({
           >
             {title}
           </motion.h1>
-          
+
           {subtitle && (
             <motion.p
               style={{ opacity: subtitleOpacity }}
@@ -68,11 +63,7 @@ export function PageHeader({
         </div>
 
         {/* 右侧: 操作区 */}
-        {actions && (
-          <div className="flex-none">
-            {actions}
-          </div>
-        )}
+        {actions && <div className="flex-none">{actions}</div>}
       </div>
     </header>
   );
@@ -91,18 +82,14 @@ export function Toolbar({ title, show, children }: ToolbarProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
-      animate={{ 
+      animate={{
         opacity: show ? 1 : 0,
         y: show ? 0 : -10,
       }}
       transition={{ duration: 0.2 }}
       className="h-12 px-8 flex items-center justify-between border-b border-[var(--shell-border)] bg-[var(--shell-background)]/95 backdrop-blur-xl"
     >
-      {title && (
-        <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">
-          {title}
-        </h2>
-      )}
+      {title && <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">{title}</h2>}
       {children}
     </motion.div>
   );

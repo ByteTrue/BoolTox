@@ -22,7 +22,7 @@ export function LogManager() {
   const getLogPath = async () => {
     try {
       setLoading(true);
-      const path = await window.ipc.invoke('logger:get-log-path') as string;
+      const path = (await window.ipc.invoke('logger:get-log-path')) as string;
       setLogPath(path);
       setMessage({ type: 'success', text: '日志路径获取成功' });
     } catch (error) {
@@ -69,11 +69,7 @@ export function LogManager() {
                 : 'border-red-500/30 bg-red-50 text-red-700'
           }`}
         >
-          {message.type === 'success' ? (
-            <CheckCircle size={16} />
-          ) : (
-            <AlertCircle size={16} />
-          )}
+          {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
           <span>{message.text}</span>
         </div>
       )}
@@ -86,10 +82,7 @@ export function LogManager() {
           }`}
         >
           <div className="flex items-start gap-3">
-            <FileText
-              size={20}
-              className={isDark ? 'text-blue-400' : 'text-blue-600'}
-            />
+            <FileText size={20} className={isDark ? 'text-blue-400' : 'text-blue-600'} />
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 日志文件路径
@@ -148,7 +141,8 @@ export function LogManager() {
           <li>• 日志文件自动按日期归档,单个文件最大 10MB</li>
           <li>• 开发环境日志级别: DEBUG,记录所有信息</li>
           <li>• 生产环境日志级别: INFO,仅记录重要信息</li>
-          <li>• 日志文件位置:
+          <li>
+            • 日志文件位置:
             <ul className="ml-4 mt-1 space-y-0.5">
               <li>- Windows: %APPDATA%/Roaming/BoolTox/logs/</li>
               <li>- macOS: ~/Library/Application Support/BoolTox/logs/</li>

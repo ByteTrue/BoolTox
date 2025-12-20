@@ -55,7 +55,7 @@ export function OverviewPanel() {
       <section className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* 左侧：公告 */}
         <ActivityFeed />
-        
+
         {/* 右侧：操作记录 */}
         <ActivityRecordBrief events={recentEvents} theme={theme} />
       </section>
@@ -67,7 +67,7 @@ export function OverviewPanel() {
       {recentModules.length > 0 && (
         <RecentModulesSection
           modules={recentModules}
-          onModuleClick={(id) => {
+          onModuleClick={id => {
             void openModule(id);
           }}
           theme={theme}
@@ -100,9 +100,7 @@ function HeroSection({
         {/* 左侧：问候语 */}
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-4xl">
-              {getTimeEmoji()}
-            </span>
+            <span className="text-4xl">{getTimeEmoji()}</span>
             <div>
               <h1
                 className={`text-3xl font-bold ${
@@ -112,9 +110,7 @@ function HeroSection({
                 {getGreeting()}
               </h1>
               <p
-                className={`text-sm mt-1 ${
-                  theme === 'dark' ? 'text-white/70' : 'text-slate-600'
-                }`}
+                className={`text-sm mt-1 ${theme === 'dark' ? 'text-white/70' : 'text-slate-600'}`}
               >
                 {getShortDate()}
               </p>
@@ -124,25 +120,9 @@ function HeroSection({
 
         {/* 右侧：核心统计卡片 */}
         <div className="flex flex-wrap gap-4">
-          <StatCard
-            label="已安装"
-            value={stats.installed}
-            icon="📦"
-            theme={theme}
-          />
-          <StatCard
-            label="运行中"
-            value={stats.enabled}
-            icon="✅"
-            theme={theme}
-            highlight
-          />
-          <StatCard
-            label="远程可用"
-            value={stats.remote}
-            icon="🌐"
-            theme={theme}
-          />
+          <StatCard label="已安装" value={stats.installed} icon="📦" theme={theme} />
+          <StatCard label="运行中" value={stats.enabled} icon="✅" theme={theme} highlight />
+          <StatCard label="远程可用" value={stats.remote} icon="🌐" theme={theme} />
         </div>
       </div>
 
@@ -171,9 +151,7 @@ function StatCard({
     <motion.div
       {...cardHover}
       className={`rounded-2xl border px-6 py-4 min-w-[120px] transition-[shadow,transform] duration-250 ease-swift hover:scale-[1.03] ${
-        highlight
-          ? 'bg-gradient-to-br from-brand-blue-300/20 to-brand-blue-400/20'
-          : ''
+        highlight ? 'bg-gradient-to-br from-brand-blue-300/20 to-brand-blue-400/20' : ''
       }`}
       style={{
         ...getGlassStyle('BUTTON', theme, {
@@ -181,14 +159,16 @@ function StatCard({
           withInnerShadow: true,
         }),
         // 增强统计卡片的浮起感
-        boxShadow: theme === 'dark'
-          ? '0 3px 10px rgba(0, 0, 0, 0.35), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-          : '0 3px 14px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+        boxShadow:
+          theme === 'dark'
+            ? '0 3px 10px rgba(0, 0, 0, 0.35), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+            : '0 3px 14px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
       }}
       whileHover={{
-        boxShadow: theme === 'dark'
-          ? '0 6px 20px rgba(0, 0, 0, 0.45), 0 0.5px 0 0 rgba(255, 255, 255, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.12)'
-          : '0 6px 24px rgba(0, 0, 0, 0.14), 0 0.5px 0 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.8)',
+        boxShadow:
+          theme === 'dark'
+            ? '0 6px 20px rgba(0, 0, 0, 0.45), 0 0.5px 0 0 rgba(255, 255, 255, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.12)'
+            : '0 6px 24px rgba(0, 0, 0, 0.14), 0 0.5px 0 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.8)',
       }}
     >
       <div className="flex items-center gap-3">
@@ -229,19 +209,14 @@ function RecentModulesSection({
   return (
     <section>
       <h2
-        className={`text-xl font-bold mb-4 ${
-          theme === 'dark' ? 'text-white' : 'text-slate-800'
-        }`}
+        className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
       >
         🚀 最近使用
       </h2>
       <HorizontalScroll gap={16}>
-        {modules.map((module) => (
+        {modules.map(module => (
           <div key={module.id} className="w-[280px] flex-shrink-0">
-            <ModuleQuickCard
-              module={module}
-              onClick={() => onModuleClick(module.id)}
-            />
+            <ModuleQuickCard module={module} onClick={() => onModuleClick(module.id)} />
           </div>
         ))}
       </HorizontalScroll>
@@ -261,7 +236,7 @@ function ActivityRecordBrief({
   theme: 'light' | 'dark';
 }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  
+
   const latestEvent = events[0];
 
   if (!latestEvent) {
@@ -272,18 +247,12 @@ function ActivityRecordBrief({
         style={getGlassStyle('PANEL', theme)}
       >
         <h3
-          className={`text-lg font-bold mb-4 ${
-            theme === 'dark' ? 'text-white' : 'text-slate-800'
-          }`}
+          className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
         >
           📝 操作记录
         </h3>
         <div className="flex-1 flex items-center justify-center">
-          <p
-            className={`text-sm ${
-              theme === 'dark' ? 'text-white/60' : 'text-slate-500'
-            }`}
-          >
+          <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
             暂无操作记录
           </p>
         </div>
@@ -299,11 +268,7 @@ function ActivityRecordBrief({
         style={getGlassStyle('PANEL', theme)}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3
-            className={`text-lg font-bold ${
-              theme === 'dark' ? 'text-white' : 'text-slate-800'
-            }`}
-          >
+          <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
             📝 操作记录
           </h3>
           <button
@@ -320,9 +285,10 @@ function ActivityRecordBrief({
                 withInnerShadow: true,
               }),
               // 增强按钮的浮起感
-              boxShadow: theme === 'dark'
-                ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
             }}
           >
             <History className="h-3 w-3" />
@@ -358,11 +324,7 @@ function ActivityRecordBrief({
 /**
  * 系统监控区域（独占）
  */
-function SystemMonitorSection({
-  theme,
-}: {
-  theme: 'light' | 'dark';
-}) {
+function SystemMonitorSection({ theme }: { theme: 'light' | 'dark' }) {
   return (
     <section>
       <motion.div
@@ -371,9 +333,7 @@ function SystemMonitorSection({
         style={getGlassStyle('PANEL', theme)}
       >
         <h3
-          className={`text-lg font-bold mb-4 ${
-            theme === 'dark' ? 'text-white' : 'text-slate-800'
-          }`}
+          className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
         >
           💻 系统监控
         </h3>

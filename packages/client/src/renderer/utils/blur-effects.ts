@@ -5,7 +5,7 @@
 
 /**
  * 背景模糊增强工具
- * 
+ *
  * 提供统一的背景模糊效果，遵循 Apple 设计规范
  * 支持多层级模糊、动态模糊、性能优化
  */
@@ -20,19 +20,19 @@ export type BlurIntensity = 'subtle' | 'light' | 'medium' | 'strong' | 'ultra';
 /**
  * 模糊层级类型
  */
-export type BlurLayer = 
-  | 'titlebar'     // 标题栏模糊
-  | 'sidebar'      // 侧边栏模糊
-  | 'panel'        // 面板模糊
-  | 'modal'        // 模态框模糊
-  | 'dropdown'     // 下拉菜单模糊
-  | 'tooltip'      // 提示框模糊
-  | 'card'         // 卡片模糊
-  | 'overlay';     // 遮罩层模糊
+export type BlurLayer =
+  | 'titlebar' // 标题栏模糊
+  | 'sidebar' // 侧边栏模糊
+  | 'panel' // 面板模糊
+  | 'modal' // 模态框模糊
+  | 'dropdown' // 下拉菜单模糊
+  | 'tooltip' // 提示框模糊
+  | 'card' // 卡片模糊
+  | 'overlay'; // 遮罩层模糊
 
 /**
  * 模糊配置映射
- * 
+ *
  * 参考 Apple Design Resources:
  * - macOS: systemUltraThinMaterial (blur: 80px)
  * - macOS: systemThinMaterial (blur: 60px)
@@ -40,12 +40,15 @@ export type BlurLayer =
  * - macOS: systemThickMaterial (blur: 30px)
  * - iOS: ultraThinMaterial (blur: 40-60px)
  */
-const BLUR_CONFIG: Record<BlurLayer, {
-  blur: number;
-  brightness: { light: number; dark: number };
-  saturation: number;
-  opacity: { light: number; dark: number };
-}> = {
+const BLUR_CONFIG: Record<
+  BlurLayer,
+  {
+    blur: number;
+    brightness: { light: number; dark: number };
+    saturation: number;
+    opacity: { light: number; dark: number };
+  }
+> = {
   titlebar: {
     blur: 60,
     brightness: { light: 1.05, dark: 1.1 },
@@ -109,7 +112,7 @@ const INTENSITY_MULTIPLIER: Record<BlurIntensity, number> = {
 
 /**
  * 获取背景模糊样式
- * 
+ *
  * @param layer - 模糊层级
  * @param theme - 主题模式
  * @param intensity - 模糊强度（可选）
@@ -124,7 +127,7 @@ export function getBlurStyle(
 ): CSSProperties {
   const config = BLUR_CONFIG[layer];
   const multiplier = INTENSITY_MULTIPLIER[intensity];
-  
+
   const blur = customBlur ?? config.blur * multiplier;
   const brightness = config.brightness[theme];
   const saturation = config.saturation;
@@ -133,15 +136,14 @@ export function getBlurStyle(
   return {
     backdropFilter: `blur(${blur}px) brightness(${brightness}) saturate(${saturation})`,
     WebkitBackdropFilter: `blur(${blur}px) brightness(${brightness}) saturate(${saturation})`,
-    backgroundColor: theme === 'dark'
-      ? `rgba(28, 30, 35, ${opacity})`
-      : `rgba(255, 255, 255, ${opacity})`,
+    backgroundColor:
+      theme === 'dark' ? `rgba(28, 30, 35, ${opacity})` : `rgba(255, 255, 255, ${opacity})`,
   };
 }
 
 /**
  * 获取模态框遮罩模糊样式
- * 
+ *
  * @param theme - 主题模式
  * @param intensity - 模糊强度
  * @returns CSS 样式对象
@@ -152,39 +154,37 @@ export function getModalBackdropBlur(
 ): CSSProperties {
   return {
     ...getBlurStyle('overlay', theme, intensity),
-    backgroundColor: theme === 'dark'
-      ? 'rgba(0, 0, 0, 0.6)'
-      : 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)',
   };
 }
 
 /**
  * 获取下拉菜单模糊样式
- * 
+ *
  * @param theme - 主题模式
  * @returns CSS 样式对象
  */
 export function getDropdownBlur(theme: 'light' | 'dark'): CSSProperties {
   return {
     ...getBlurStyle('dropdown', theme, 'medium'),
-    boxShadow: theme === 'dark'
-      ? '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-      : '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+    boxShadow:
+      theme === 'dark'
+        ? '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+        : '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)',
   };
 }
 
 /**
  * 获取提示框模糊样式
- * 
+ *
  * @param theme - 主题模式
  * @returns CSS 样式对象
  */
 export function getTooltipBlur(theme: 'light' | 'dark'): CSSProperties {
   return {
     ...getBlurStyle('tooltip', theme, 'strong'),
-    boxShadow: theme === 'dark'
-      ? '0 4px 16px rgba(0, 0, 0, 0.4)'
-      : '0 4px 16px rgba(0, 0, 0, 0.15)',
+    boxShadow:
+      theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.4)' : '0 4px 16px rgba(0, 0, 0, 0.15)',
   };
 }
 
@@ -192,12 +192,9 @@ export function getTooltipBlur(theme: 'light' | 'dark'): CSSProperties {
  * 动态模糊 CSS 类名生成器
  * 用于 Tailwind CSS
  */
-export function getBlurClasses(
-  layer: BlurLayer,
-  intensity: BlurIntensity = 'medium'
-): string {
+export function getBlurClasses(layer: BlurLayer, intensity: BlurIntensity = 'medium'): string {
   const baseClasses = 'backdrop-blur backdrop-brightness backdrop-saturate';
-  
+
   // 根据层级和强度生成 Tailwind 类名
   const intensityMap = {
     subtle: 'backdrop-blur-sm',
@@ -215,7 +212,7 @@ export function getBlurClasses(
  */
 export function supportsBackdropFilter(): boolean {
   if (typeof window === 'undefined') return false;
-  
+
   return (
     CSS.supports('backdrop-filter', 'blur(1px)') ||
     CSS.supports('-webkit-backdrop-filter', 'blur(1px)')
@@ -225,10 +222,7 @@ export function supportsBackdropFilter(): boolean {
 /**
  * 为不支持 backdrop-filter 的浏览器提供降级方案
  */
-export function getBlurFallbackStyle(
-  layer: BlurLayer,
-  theme: 'light' | 'dark'
-): CSSProperties {
+export function getBlurFallbackStyle(layer: BlurLayer, theme: 'light' | 'dark'): CSSProperties {
   const config = BLUR_CONFIG[layer];
   const opacity = config.opacity[theme];
 
@@ -236,9 +230,10 @@ export function getBlurFallbackStyle(
   const fallbackOpacity = Math.min(opacity + 0.15, 0.98);
 
   return {
-    backgroundColor: theme === 'dark'
-      ? `rgba(28, 30, 35, ${fallbackOpacity})`
-      : `rgba(255, 255, 255, ${fallbackOpacity})`,
+    backgroundColor:
+      theme === 'dark'
+        ? `rgba(28, 30, 35, ${fallbackOpacity})`
+        : `rgba(255, 255, 255, ${fallbackOpacity})`,
   };
 }
 
@@ -276,9 +271,7 @@ export function getLayeredBlurStyle(
 } {
   return {
     base: getBlurStyle(config.base, theme, config.intensity),
-    overlay: config.overlay
-      ? getBlurStyle(config.overlay, theme, config.intensity)
-      : undefined,
+    overlay: config.overlay ? getBlurStyle(config.overlay, theme, config.intensity) : undefined,
   };
 }
 

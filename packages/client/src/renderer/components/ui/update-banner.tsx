@@ -55,7 +55,7 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
       className={`mb-4 rounded-2xl border px-5 py-4 shadow-unified-md ${
         theme === 'dark' ? 'bg-[#0b1625]/60 text-white' : 'bg-white/80 text-slate-800'
       }`}
-      style={baseStyle}  // 使用统一的玻璃边框
+      style={baseStyle} // 使用统一的玻璃边框
     >
       {state.phase === 'available' && details ? (
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -63,10 +63,14 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
             <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-blue-400">
               <Download size={16} />
               发现新版本
-              <span className="text-white/70 dark:text-white/70 text-xs font-normal">{details.version}</span>
+              <span className="text-white/70 dark:text-white/70 text-xs font-normal">
+                {details.version}
+              </span>
             </div>
             <p className={`text-sm ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}>
-              {details.notes ? truncateText(details.notes, 120) : '可立即下载安装最新版本以获取最新功能和修复。'}
+              {details.notes
+                ? truncateText(details.notes, 120)
+                : '可立即下载安装最新版本以获取最新功能和修复。'}
               {sizeLabel ? ` · 安装包大小约 ${sizeLabel}` : ''}
             </p>
           </div>
@@ -76,14 +80,16 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
               type="button"
               className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
               style={{
-                boxShadow: theme === 'dark'
-                  ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                  : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
+                    : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
               }}
               whileHover={{
-                boxShadow: theme === 'dark'
-                  ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                  : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
+                    : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
               }}
               onClick={handleGoToSettings}
             >
@@ -100,9 +106,10 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
                   withBorderGlow: true,
                   withInnerShadow: true,
                 }),
-                boxShadow: theme === 'dark'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
               }}
               onClick={dismissUpdate}
               disabled={details.mandatory}
@@ -118,7 +125,9 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
           <div className="flex items-center gap-2 text-sm font-medium">
             <Loader2 size={18} className="animate-spin" />
             正在下载更新包
-            {sizeLabel ? <span className="text-xs text-white/60 dark:text-white/60">（约 {sizeLabel}）</span> : null}
+            {sizeLabel ? (
+              <span className="text-xs text-white/60 dark:text-white/60">（约 {sizeLabel}）</span>
+            ) : null}
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
             <div
@@ -130,7 +139,8 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
             <span>{progressPercent}%</span>
             {state.progress?.totalBytes ? (
               <span>
-                {formatBytes(state.progress.downloadedBytes)} / {formatBytes(state.progress.totalBytes)}
+                {formatBytes(state.progress.downloadedBytes)} /{' '}
+                {formatBytes(state.progress.totalBytes)}
               </span>
             ) : null}
           </div>
@@ -146,9 +156,10 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
                   withBorderGlow: true,
                   withInnerShadow: true,
                 }),
-                boxShadow: theme === 'dark'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
               }}
               onClick={cancelDownload}
             >
@@ -175,14 +186,16 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
               type="button"
               className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
               style={{
-                boxShadow: theme === 'dark'
-                  ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                  : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
+                    : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
               }}
               whileHover={{
-                boxShadow: theme === 'dark'
-                  ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                  : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
+                    : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
               }}
               onClick={handleGoToSettings}
             >
@@ -199,9 +212,10 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
                   withBorderGlow: true,
                   withInnerShadow: true,
                 }),
-                boxShadow: theme === 'dark'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
               }}
               onClick={dismissUpdate}
             >
@@ -229,14 +243,16 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
                 type="button"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
                 style={{
-                  boxShadow: theme === 'dark'
-                    ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                    : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
+                  boxShadow:
+                    theme === 'dark'
+                      ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
+                      : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
                 }}
                 whileHover={{
-                  boxShadow: theme === 'dark'
-                    ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                    : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
+                  boxShadow:
+                    theme === 'dark'
+                      ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
+                      : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
                 }}
                 onClick={downloadUpdate}
               >
@@ -248,14 +264,16 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
                 type="button"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
                 style={{
-                  boxShadow: theme === 'dark'
-                    ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                    : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
+                  boxShadow:
+                    theme === 'dark'
+                      ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
+                      : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
                 }}
                 whileHover={{
-                  boxShadow: theme === 'dark'
-                    ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                    : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
+                  boxShadow:
+                    theme === 'dark'
+                      ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
+                      : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
                 }}
                 onClick={retryCheck}
               >
@@ -273,9 +291,10 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
                   withBorderGlow: true,
                   withInnerShadow: true,
                 }),
-                boxShadow: theme === 'dark'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                boxShadow:
+                  theme === 'dark'
+                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
+                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
               }}
               onClick={dismissUpdate}
             >
@@ -284,7 +303,6 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
           </div>
         </div>
       )}
-
     </div>
   );
 }

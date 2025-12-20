@@ -4,7 +4,11 @@
  */
 
 /* eslint-disable no-console */
-import { IPC_CHANNELS, type RendererConsoleLevel, type RendererConsolePayload } from '@shared/constants/ipc-channels';
+import {
+  IPC_CHANNELS,
+  type RendererConsoleLevel,
+  type RendererConsolePayload,
+} from '@shared/constants/ipc-channels';
 
 const PATCH_FLAG = '__BOOLTOX_CONSOLE_PATCHED__';
 const consoleMethods: RendererConsoleLevel[] = ['log', 'info', 'warn', 'error', 'debug'];
@@ -84,7 +88,7 @@ const forwardToMain = (payload: RendererConsolePayload, warn?: (...args: unknown
     warn?.('[RendererConsole] 序列化日志失败,使用字符串回退', error);
     const fallbackPayload: RendererConsolePayload = {
       level: payload.level,
-      args: payload.args.map((item) => stringifyFallback(item)),
+      args: payload.args.map(item => stringifyFallback(item)),
     };
     try {
       if (typeof window.ipc.send === 'function') {
@@ -120,12 +124,12 @@ const forwardToMain = (payload: RendererConsolePayload, warn?: (...args: unknown
 
   const patchedConsole = console as Record<RendererConsoleLevel, (...args: unknown[]) => void>;
 
-  consoleMethods.forEach((level) => {
+  consoleMethods.forEach(level => {
     patchedConsole[level] = (...args: unknown[]) => {
       originalConsole[level](...args);
       const payload: RendererConsolePayload = {
         level,
-        args: args.map((arg) => normalizeArg(arg)),
+        args: args.map(arg => normalizeArg(arg)),
       };
       forwardToMain(payload, originalConsole.warn);
     };

@@ -24,11 +24,7 @@ interface BatchActionBarProps {
  * 批量操作栏组件 - 选中多项时显示
  * 从底部滑入,提供批量操作快捷方式
  */
-export function BatchActionBar({
-  selectedCount,
-  actions,
-  onClear,
-}: BatchActionBarProps) {
+export function BatchActionBar({ selectedCount, actions, onClear }: BatchActionBarProps) {
   const isVisible = selectedCount > 0;
 
   return (
@@ -57,9 +53,7 @@ export function BatchActionBar({
                   {selectedCount}
                 </span>
               </motion.div>
-              <span className="text-sm font-medium text-[var(--text-secondary)]">
-                已选中
-              </span>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">已选中</span>
             </div>
 
             {/* 分隔线 */}
@@ -68,10 +62,7 @@ export function BatchActionBar({
             {/* 操作按钮组 */}
             <div className="flex-1 flex items-center gap-2">
               {actions.map((action, index) => (
-                <BatchActionButton
-                  key={index}
-                  action={action}
-                />
+                <BatchActionButton key={index} action={action} />
               ))}
             </div>
 
@@ -99,7 +90,8 @@ function BatchActionButton({ action }: { action: BatchAction }) {
   const variantClasses = {
     default: 'glass-button text-[var(--text-primary)]',
     primary: 'glass-button bg-[var(--accent-strong)] text-white hover:bg-[var(--accent-contrast)]',
-    danger: 'glass-button text-[var(--status-negative-strong)] hover:bg-[var(--status-negative-soft)]',
+    danger:
+      'glass-button text-[var(--status-negative-strong)] hover:bg-[var(--status-negative-soft)]',
   };
 
   return (

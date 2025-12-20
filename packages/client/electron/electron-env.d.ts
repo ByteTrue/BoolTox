@@ -47,4 +47,27 @@ import type { AutoUpdateStatus } from './services/auto-update.service';
     showMain: () => Promise<void>;
     navigateTo: (route: string) => Promise<void>;
   };
+  appSettings: {
+    getAutoLaunch: () => Promise<boolean>;
+    setAutoLaunch: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+    getCloseToTray: () => Promise<boolean>;
+    setCloseToTray: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+  };
+  toast: {
+    success: (message: string) => void;
+    error: (message: string) => void;
+    info: (message: string) => void;
+    warning: (message: string) => void;
+  };
+  tool: {
+    start: (toolId: string) => Promise<void>;
+    stop: (toolId: string) => Promise<void>;
+    focus: (toolId: string) => Promise<void>;
+    install: (entry: unknown) => Promise<{ success: boolean; path?: string; error?: string }>;
+    uninstall: (toolId: string) => Promise<{ success: boolean; error?: string }>;
+    cancelInstall: (toolId: string) => Promise<{ success: boolean }>;
+    checkUpdates: () => Promise<{ success: boolean; updates: unknown[]; error?: string }>;
+    update: (toolId: string) => Promise<{ success: boolean; error?: string }>;
+    updateAllTools: (toolIds: string[]) => Promise<{ success: boolean; updated: string[]; failed: string[]; error?: string }>;
+  };
 }

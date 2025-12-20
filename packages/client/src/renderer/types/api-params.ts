@@ -6,7 +6,7 @@
 /**
  * Host API 参数类型定义
  * 消除 any 类型，提供完整的类型安全喵～
- * 
+ *
  * 用于替换 api-handlers.ts 中的 any 类型参数
  */
 
@@ -230,11 +230,7 @@ export interface DialogOpenParams {
     extensions: string[];
   }>;
   properties?: Array<
-    | 'openFile'
-    | 'openDirectory'
-    | 'multiSelections'
-    | 'showHiddenFiles'
-    | 'createDirectory'
+    'openFile' | 'openDirectory' | 'multiSelections' | 'showHiddenFiles' | 'createDirectory'
   >;
 }
 

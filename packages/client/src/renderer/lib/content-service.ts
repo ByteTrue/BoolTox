@@ -6,7 +6,13 @@
 // 内容服务封装：当前直接返回本地静态配置；后续可替换为远程 CMS / API。
 // 设计目标：统一访问层 + 轻量缓存 + 失败回退（fallback to static）。
 
-import { overviewContent, serviceStatus, collectionContent, themeContent, marketplaceContent } from '../content/home-content';
+import {
+  overviewContent,
+  serviceStatus,
+  collectionContent,
+  themeContent,
+  marketplaceContent,
+} from '../content/home-content';
 import { createLogger } from './logger';
 
 type HomeContentResponse = {
@@ -44,7 +50,7 @@ export function getStaticHomeContent(): HomeContentBundle {
 export async function fetchHomeContent(): Promise<HomeContentBundle> {
   if (typeof window.ipc === 'undefined') return getStaticHomeContent();
   try {
-    const result = await window.ipc.invoke('get-home-content') as HomeContentResponse;
+    const result = (await window.ipc.invoke('get-home-content')) as HomeContentResponse;
     if (!result.success) throw new Error(result.error || 'IPC error');
     return { ...result.data, source: 'api' };
   } catch (error) {

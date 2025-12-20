@@ -69,7 +69,9 @@ export function QuickPanel() {
   useEffect(() => {
     const loadModules = async () => {
       try {
-        const modules = await (window.tool as unknown as { getAll?: () => Promise<QuickPanelTool[]> }).getAll?.();
+        const modules = await (
+          window.tool as unknown as { getAll?: () => Promise<QuickPanelTool[]> }
+        ).getAll?.();
         setInstalledModules(modules ?? []);
       } catch (error) {
         console.error('[QuickPanel] 加载工具列表失败', error);
@@ -81,7 +83,7 @@ export function QuickPanel() {
 
   // 收藏的工具（最多 6 个）
   const favorites = useMemo(
-    () => installedModules.filter((m) => m.isFavorite).slice(0, 6),
+    () => installedModules.filter(m => m.isFavorite).slice(0, 6),
     [installedModules]
   );
 
@@ -90,7 +92,7 @@ export function QuickPanel() {
     if (!query) return [];
     const lowerQuery = query.toLowerCase();
 
-    return installedModules.filter((module) => {
+    return installedModules.filter(module => {
       const name = module.manifest?.name?.toLowerCase() ?? '';
       const desc = module.manifest?.description?.toLowerCase() ?? '';
       return name.includes(lowerQuery) || desc.includes(lowerQuery);
@@ -99,9 +101,24 @@ export function QuickPanel() {
 
   // 快速操作
   const quickActions = [
-    { id: 'show-main', label: '显示主窗口', icon: <Home size={16} />, action: () => window.quickPanel?.showMain() },
-    { id: 'tools', label: '打开工具商店', icon: <Grid size={16} />, action: () => window.quickPanel?.navigateTo('/tools') },
-    { id: 'settings', label: '打开设置', icon: <Settings size={16} />, action: () => window.quickPanel?.navigateTo('/settings') },
+    {
+      id: 'show-main',
+      label: '显示主窗口',
+      icon: <Home size={16} />,
+      action: () => window.quickPanel?.showMain(),
+    },
+    {
+      id: 'tools',
+      label: '打开工具商店',
+      icon: <Grid size={16} />,
+      action: () => window.quickPanel?.navigateTo('/tools'),
+    },
+    {
+      id: 'settings',
+      label: '打开设置',
+      icon: <Settings size={16} />,
+      action: () => window.quickPanel?.navigateTo('/settings'),
+    },
   ];
 
   // ESC 键关闭
@@ -139,24 +156,28 @@ export function QuickPanel() {
         transition={{ duration: 0.15 }}
         className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
         style={{
-          background: theme === 'dark'
-            ? 'rgba(17, 24, 39, 0.98)'
-            : 'rgba(255, 255, 255, 0.98)',
+          background: theme === 'dark' ? 'rgba(17, 24, 39, 0.98)' : 'rgba(255, 255, 255, 0.98)',
           backdropFilter: 'blur(20px)',
-          border: theme === 'dark'
-            ? '1px solid rgba(255, 255, 255, 0.1)'
-            : '1px solid rgba(0, 0, 0, 0.1)',
+          border:
+            theme === 'dark'
+              ? '1px solid rgba(255, 255, 255, 0.1)'
+              : '1px solid rgba(0, 0, 0, 0.1)',
         }}
       >
         {/* 搜索框 */}
-        <div className={`relative p-6 border-b ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
-          <Search className={`absolute left-9 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-400'}`} size={20} />
+        <div
+          className={`relative p-6 border-b ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}
+        >
+          <Search
+            className={`absolute left-9 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-400'}`}
+            size={20}
+          />
           <input
             ref={inputRef}
             type="text"
             placeholder="搜索工具或操作..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={e => setQuery(e.target.value)}
             className={`w-full border rounded-xl pl-12 pr-4 py-3.5 text-lg focus:outline-none transition-colors ${
               theme === 'dark'
                 ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-500'
@@ -179,7 +200,7 @@ export function QuickPanel() {
                 className="space-y-2"
               >
                 {filteredModules.length > 0 ? (
-                  filteredModules.map((module) => (
+                  filteredModules.map(module => (
                     <button
                       key={module.id}
                       onClick={() => handleToolClick(module.id)}
@@ -189,16 +210,20 @@ export function QuickPanel() {
                     >
                       <span className="text-3xl">{module.manifest.icon || '🔧'}</span>
                       <div className="flex-1">
-                        <p className={`font-medium transition-colors ${
-                          theme === 'dark'
-                            ? 'text-white group-hover:text-blue-400'
-                            : 'text-gray-900 group-hover:text-blue-600'
-                        }`}>
+                        <p
+                          className={`font-medium transition-colors ${
+                            theme === 'dark'
+                              ? 'text-white group-hover:text-blue-400'
+                              : 'text-gray-900 group-hover:text-blue-600'
+                          }`}
+                        >
                           {module.manifest.name}
                         </p>
-                        <p className={`text-sm line-clamp-1 ${
-                          theme === 'dark' ? 'text-white/60' : 'text-gray-500'
-                        }`}>
+                        <p
+                          className={`text-sm line-clamp-1 ${
+                            theme === 'dark' ? 'text-white/60' : 'text-gray-500'
+                          }`}
+                        >
                           {module.manifest.description}
                         </p>
                       </div>
@@ -212,7 +237,9 @@ export function QuickPanel() {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <p className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>没有找到匹配的工具</p>
+                    <p className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>
+                      没有找到匹配的工具
+                    </p>
                   </div>
                 )}
               </motion.div>
@@ -229,13 +256,15 @@ export function QuickPanel() {
                 {/* 收藏的工具 */}
                 {favorites.length > 0 && (
                   <div>
-                    <h3 className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
-                      theme === 'dark' ? 'text-white/80' : 'text-gray-600'
-                    }`}>
+                    <h3
+                      className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
+                        theme === 'dark' ? 'text-white/80' : 'text-gray-600'
+                      }`}
+                    >
                       ★ 收藏的工具
                     </h3>
                     <div className="grid grid-cols-3 gap-2">
-                      {favorites.map((module) => (
+                      {favorites.map(module => (
                         <button
                           key={module.id}
                           onClick={() => handleToolClick(module.id)}
@@ -246,9 +275,11 @@ export function QuickPanel() {
                           <span className="text-4xl group-hover:scale-110 transition-transform">
                             {module.manifest.icon || '🔧'}
                           </span>
-                          <span className={`text-sm text-center line-clamp-1 ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
-                          }`}>
+                          <span
+                            className={`text-sm text-center line-clamp-1 ${
+                              theme === 'dark' ? 'text-white' : 'text-gray-900'
+                            }`}
+                          >
                             {module.manifest.name}
                           </span>
                         </button>
@@ -259,14 +290,16 @@ export function QuickPanel() {
 
                 {/* 快速操作 */}
                 <div>
-                  <h3 className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
-                    theme === 'dark' ? 'text-white/80' : 'text-gray-600'
-                  }`}>
+                  <h3
+                    className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
+                      theme === 'dark' ? 'text-white/80' : 'text-gray-600'
+                    }`}
+                  >
                     <Zap size={14} />
                     快速操作
                   </h3>
                   <div className="space-y-1">
-                    {quickActions.map((action) => (
+                    {quickActions.map(action => (
                       <button
                         key={action.id}
                         onClick={() => handleActionClick(action.action)}
@@ -284,11 +317,21 @@ export function QuickPanel() {
                 </div>
 
                 {/* 提示 */}
-                <div className={`pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
-                  <p className={`text-xs text-center ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>
-                    按 <kbd className={`px-2 py-0.5 rounded ${
-                      theme === 'dark' ? 'bg-white/10 text-white/60' : 'bg-gray-200 text-gray-600'
-                    }`}>ESC</kbd> 关闭
+                <div
+                  className={`pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}
+                >
+                  <p
+                    className={`text-xs text-center ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}
+                  >
+                    按{' '}
+                    <kbd
+                      className={`px-2 py-0.5 rounded ${
+                        theme === 'dark' ? 'bg-white/10 text-white/60' : 'bg-gray-200 text-gray-600'
+                      }`}
+                    >
+                      ESC
+                    </kbd>{' '}
+                    关闭
                   </p>
                 </div>
               </motion.div>

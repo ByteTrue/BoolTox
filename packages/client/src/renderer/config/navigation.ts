@@ -48,5 +48,5 @@ function flagEnabled(flag?: string): boolean {
 }
 
 export function getPrimaryNav(): NavConfigItem[] {
-  return baseNav.filter((item) => (item.enabled ?? true) && flagEnabled(item.flag));
+  return baseNav.filter(item => (item.enabled ?? true) && flagEnabled(item.flag));
 }

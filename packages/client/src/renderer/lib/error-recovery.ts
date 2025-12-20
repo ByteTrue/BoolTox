@@ -5,7 +5,7 @@
 
 /**
  * 错误恢复和重试机制工具
- * 
+ *
  * 提供统一的错误处理、重试策略和降级方案
  */
 
@@ -55,8 +55,7 @@ const DEFAULT_RETRY_OPTIONS: Required<Omit<RetryOptions, 'shouldRetry'>> = {
 /**
  * 延迟函数
  */
-const delay = (ms: number): Promise<void> => 
-  new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * 计算指数退避延迟
@@ -81,17 +80,21 @@ const defaultShouldRetry = (error: Error, attempt: number): boolean => {
   }
 
   // 网络错误重试
-  if (error.message.includes('network') || 
-      error.message.includes('fetch') ||
-      error.message.includes('timeout') ||
-      error.message.includes('ECONNREFUSED')) {
+  if (
+    error.message.includes('network') ||
+    error.message.includes('fetch') ||
+    error.message.includes('timeout') ||
+    error.message.includes('ECONNREFUSED')
+  ) {
     return true;
   }
 
   // 临时性错误重试
-  if (error.message.includes('temporary') || 
-      error.message.includes('busy') ||
-      error.message.includes('locked')) {
+  if (
+    error.message.includes('temporary') ||
+    error.message.includes('busy') ||
+    error.message.includes('locked')
+  ) {
     return true;
   }
 
@@ -100,18 +103,18 @@ const defaultShouldRetry = (error: Error, attempt: number): boolean => {
 
 /**
  * 带重试机制的异步函数执行
- * 
+ *
  * @param fn - 要执行的异步函数
  * @param options - 重试配置选项
  * @returns 执行结果
- * 
+ *
  * @example
  * ```ts
  * const result = await withRetry(
  *   async () => fetch('/api/data'),
  *   { maxRetries: 3, initialDelay: 1000 }
  * );
- * 
+ *
  * if (result.success) {
  *   console.log('Data:', result.data);
  * } else {
@@ -132,7 +135,7 @@ export async function withRetry<T>(
   while (attempt <= config.maxRetries) {
     try {
       const result = await fn();
-      
+
       if (attempt > 0 && config.logRetries) {
         logger.info(`Operation succeeded after ${attempt} retries`);
       }
@@ -144,7 +147,7 @@ export async function withRetry<T>(
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       // 检查是否应该重试
       if (!shouldRetry(lastError, attempt)) {
         if (config.logRetries) {
@@ -165,7 +168,7 @@ export async function withRetry<T>(
         if (config.logRetries) {
           logger.warn(
             `Attempt ${attempt + 1}/${config.maxRetries + 1} failed: ${lastError.message}. ` +
-            `Retrying in ${delayTime}ms...`
+              `Retrying in ${delayTime}ms...`
           );
         }
 
@@ -185,12 +188,12 @@ export async function withRetry<T>(
 
 /**
  * 带降级方案的函数执行
- * 
+ *
  * @param fn - 主要函数
  * @param fallbackFn - 降级函数
  * @param options - 重试配置
  * @returns 执行结果
- * 
+ *
  * @example
  * ```ts
  * const data = await withFallback(
@@ -212,7 +215,7 @@ export async function withFallback<T>(
   }
 
   logger.warn('Primary operation failed, using fallback:', result.error?.message);
-  
+
   try {
     return await fallbackFn();
   } catch (fallbackError) {
@@ -224,11 +227,11 @@ export async function withFallback<T>(
 /**
  * 错误边界包装器
  * 捕获错误并转换为安全的默认值
- * 
+ *
  * @param fn - 函数
  * @param defaultValue - 默认值
  * @returns 结果或默认值
- * 
+ *
  * @example
  * ```ts
  * const modules = await withDefault(
@@ -237,10 +240,7 @@ export async function withFallback<T>(
  * );
  * ```
  */
-export async function withDefault<T>(
-  fn: () => Promise<T>,
-  defaultValue: T
-): Promise<T> {
+export async function withDefault<T>(fn: () => Promise<T>, defaultValue: T): Promise<T> {
   try {
     return await fn();
   } catch (error) {
@@ -251,11 +251,11 @@ export async function withDefault<T>(
 
 /**
  * 超时包装器
- * 
+ *
  * @param fn - 函数
  * @param timeoutMs - 超时时间（毫秒）
  * @returns 执行结果
- * 
+ *
  * @example
  * ```ts
  * const data = await withTimeout(
@@ -264,10 +264,7 @@ export async function withDefault<T>(
  * );
  * ```
  */
-export async function withTimeout<T>(
-  fn: () => Promise<T>,
-  timeoutMs: number
-): Promise<T> {
+export async function withTimeout<T>(fn: () => Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([
     fn(),
     new Promise<T>((_, reject) =>
@@ -296,14 +293,14 @@ export interface CircuitBreakerOptions {
 /**
  * 电路断路器
  * 防止级联失败，在服务不可用时快速失败
- * 
+ *
  * @example
  * ```ts
  * const breaker = new CircuitBreaker({
  *   failureThreshold: 5,
  *   resetTimeout: 60000
  * });
- * 
+ *
  * const result = await breaker.execute(async () => {
  *   return await fetch('/api/data');
  * });

@@ -58,15 +58,11 @@ export function ModuleStoreGrouped({
   if (modules.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-96">
-        <div className={`text-6xl mb-4 ${isDark ? 'opacity-20' : 'opacity-10'}`}>
-          📦
-        </div>
+        <div className={`text-6xl mb-4 ${isDark ? 'opacity-20' : 'opacity-10'}`}>📦</div>
         <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
           暂无可安装的工具
         </h3>
-        <p className="text-gray-500 text-sm">
-          尝试添加新的工具源
-        </p>
+        <p className="text-gray-500 text-sm">尝试添加新的工具源</p>
       </div>
     );
   }
@@ -80,9 +76,7 @@ export function ModuleStoreGrouped({
             <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
               📂 {group.sourceName}
             </h3>
-            <span className="text-sm text-gray-500">
-              ({group.count} 个可安装)
-            </span>
+            <span className="text-sm text-gray-500">({group.count} 个可安装)</span>
           </div>
 
           {/* 工具网格 */}
