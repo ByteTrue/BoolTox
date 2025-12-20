@@ -15,9 +15,9 @@ import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import os from 'node:os';
-import net from 'node:net';
 import { pythonManager } from '../python-manager.service.js';
 import http from 'node:http';
+import { isPortAvailable, cleanupPort } from '../../utils/port-utils.js';
 
 const logger = createLogger('ToolRunner');
 
@@ -625,65 +625,13 @@ export class ToolRunner {
 
       logger.info(`[ToolRunner] 启动 HTTP 服务工具 ${toolId} (${url})`);
 
-      // 启动前检查端口是否被占用
-      const isPortInUse = await new Promise<boolean>((resolve) => {
-        const server = net.createServer();
-        server.once('error', (err: NodeJS.ErrnoException) => {
-          if (err.code === 'EADDRINUSE') {
-            resolve(true); // 端口被占用
-          } else {
-            resolve(false);
-          }
-        });
-        server.once('listening', () => {
-          server.close();
-          resolve(false); // 端口可用
-        });
-        server.listen(port, host);
-      });
+      const available = await isPortAvailable(port, host);
 
-      if (isPortInUse) {
+      if (!available) {
         logger.warn(`[ToolRunner] 端口 ${port} 已被占用，尝试清理...`);
-
-        // Windows: 杀死占用端口的进程
-        if (os.platform() === 'win32') {
-          try {
-            // 获取占用端口的 PID
-            const netstatOutput = execSync(`netstat -ano | findstr :${port} | findstr LISTENING`, {
-              encoding: 'utf8',
-              timeout: 5000,
-            }).trim();
-
-            const lines = netstatOutput.split('\n');
-            const pidSet = new Set<string>();
-
-            for (const line of lines) {
-              const parts = line.trim().split(/\s+/);
-              const pid = parts[parts.length - 1];
-              if (pid && pid !== '0') {
-                pidSet.add(pid);
-              }
-            }
-
-            if (pidSet.size > 0) {
-              logger.info(`[ToolRunner] 发现 ${pidSet.size} 个进程占用端口 ${port}，正在清理: ${Array.from(pidSet).join(', ')}`);
-
-              for (const pid of pidSet) {
-                try {
-                  execSync(`taskkill /F /T /PID ${pid}`, { timeout: 5000 });
-                  logger.info(`[ToolRunner] 已清理进程 ${pid}`);
-                } catch (error) {
-                  logger.warn(`[ToolRunner] 清理进程 ${pid} 失败`, error);
-                }
-              }
-
-              // 等待端口释放
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              logger.info(`[ToolRunner] 端口清理完成，继续启动...`);
-            }
-          } catch (error) {
-            logger.warn(`[ToolRunner] 端口检查失败，继续尝试启动`, error);
-          }
+        const cleaned = await cleanupPort(port, host);
+        if (!cleaned) {
+          throw new Error(`工具 ${toolId} 启动失败：端口 ${host}:${port} 已被占用且清理失败`);
         }
       }
 
