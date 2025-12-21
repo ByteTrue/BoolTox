@@ -22,9 +22,9 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 当前激活的设置项（默认开发者模式）
+  // 当前激活的设置项（默认通用设置）
   const activeSection =
-    SETTINGS_SECTIONS.find(section => section.path === location.pathname)?.key || 'developer';
+    SETTINGS_SECTIONS.find(section => section.path === location.pathname)?.key || 'general';
 
   return (
     <div className="flex h-full">
