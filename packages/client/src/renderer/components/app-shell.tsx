@@ -4,7 +4,7 @@
  */
 
 import { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TabBar } from './tab-bar';
 import { useTheme } from './theme-provider';
@@ -26,6 +26,9 @@ const ToolSourcesPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('../pages/settings-page').then(m => ({ default: m.SettingsPage }))
 );
+const DetachedWindowPage = lazy(() =>
+  import('../pages/detached-window-page').then(m => ({ default: m.DetachedWindowPage }))
+);
 
 // 页面切换动画
 const pageVariants = {
@@ -40,7 +43,9 @@ const pageVariants = {
 function AppShellContent() {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toolTabs, activeToolTabId, updateToolTab } = useToolTabs();
+  const isDetachedWindowRoute = location.pathname.startsWith('/detached/');
 
   // 监听快捷面板的导航事件
   useEffect(() => {
@@ -57,6 +62,18 @@ function AppShellContent() {
       window.ipc?.off('navigate-to', handleNavigate);
     };
   }, [navigate]);
+
+  if (isDetachedWindowRoute) {
+    return (
+      <ErrorBoundary name="DetachedWindow">
+        <Suspense fallback={<GlassLoadingFallback />}>
+          <Routes>
+            <Route path="/detached/:windowId" element={<DetachedWindowPage />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <div
@@ -167,19 +184,21 @@ function AppShellContent() {
 
         {/* 工具 webview 区域（当有激活工具标签时显示） */}
         <div className={activeToolTabId ? 'h-full' : 'hidden'}>
-          {toolTabs.map(tab => (
-            <div key={tab.id} className={tab.id === activeToolTabId ? 'h-full' : 'hidden'}>
-              <ToolWebView
-                url={tab.url}
-                toolId={tab.toolId}
-                onTitleUpdate={title => updateToolTab(tab.id, { label: title })}
-                onNavigate={(url, canGoBack, canGoForward) =>
-                  updateToolTab(tab.id, { url, canGoBack, canGoForward })
-                }
-                onLoadingChange={isLoading => updateToolTab(tab.id, { isLoading })}
-              />
-            </div>
-          ))}
+          {toolTabs
+            .filter(tab => tab.windowId === 'main')
+            .map(tab => (
+              <div key={tab.id} className={tab.id === activeToolTabId ? 'h-full' : 'hidden'}>
+                <ToolWebView
+                  url={tab.url}
+                  toolId={tab.toolId}
+                  onTitleUpdate={title => updateToolTab(tab.id, { label: title })}
+                  onNavigate={(url, canGoBack, canGoForward) =>
+                    updateToolTab(tab.id, { url, canGoBack, canGoForward })
+                  }
+                  onLoadingChange={isLoading => updateToolTab(tab.id, { isLoading })}
+                />
+              </div>
+            ))}
         </div>
 
         {/* 更新横幅（固定在内容区顶部） */}

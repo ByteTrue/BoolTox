@@ -6,7 +6,7 @@
 import './renderer/lib/setup-renderer-console-logging';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
 
 // Import styles
 import './renderer/globals.css';
@@ -57,6 +57,14 @@ profiler.mark('react-render-begin');
 // 检测是否为快捷面板窗口
 const isQuickPanel = window.location.hash === '#/quick-panel';
 
+// 检测是否为分离窗口（使用 HashRouter）
+// 分离窗口的 URL 格式：index.html#/detached/{windowId}
+const isDetachedWindow = window.location.hash.startsWith('#/detached/');
+
+// 路由选择：分离窗口使用 HashRouter，主窗口使用 BrowserRouter
+// 注意：快捷面板有独立的渲染逻辑，不使用 Router
+const Router = isDetachedWindow ? HashRouter : BrowserRouter;
+
 // 渲染
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -68,7 +76,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </RootLayout>
       ) : (
         // 主窗口：完整的 Provider 树
-        <BrowserRouter>
+        <Router>
           <ToastProvider>
             <SpotlightProvider>
               <ModuleProvider>
@@ -84,7 +92,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               </ModuleProvider>
             </SpotlightProvider>
           </ToastProvider>
-        </BrowserRouter>
+        </Router>
       )}
     </ErrorBoundary>
   </React.StrictMode>

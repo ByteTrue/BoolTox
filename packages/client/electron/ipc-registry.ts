@@ -9,7 +9,7 @@
  * 参考 Cherry Studio ipc.ts 设计
  */
 
-import { ipcMain, BrowserWindow, app, dialog } from 'electron';
+import { ipcMain, BrowserWindow, app, dialog, screen } from 'electron';
 import type { FileFilter, OpenDialogOptions } from 'electron';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
@@ -30,6 +30,7 @@ import { pythonManager } from './services/python-manager.service.js';
 import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
 import { getLogPath, openLogFolder } from './utils/logger.js';
 import { createLogger } from './utils/logger.js';
+import { detachedWindowManager } from './windows/detached-window-manager.js';
 
 const logger = createLogger('IPC');
 
@@ -146,6 +147,63 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
         senderWindow.close();
         break;
     }
+  });
+
+  ipcMain.handle(IpcChannel.Window_GetMainWindowBounds, () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return null;
+    const bounds = mainWindow.getBounds();
+    return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+  });
+
+  ipcMain.handle(IpcChannel.Window_GetCursorScreenPoint, () => {
+    const point = screen.getCursorScreenPoint();
+    return { x: point.x, y: point.y };
+  });
+
+  // 获取所有窗口边界（用于跨窗口拖拽检测）
+  ipcMain.handle(IpcChannel.Window_GetAllWindowsBounds, () => {
+    const result: Array<{ windowId: string; bounds: { x: number; y: number; width: number; height: number } }> = [];
+
+    // 主窗口
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const bounds = mainWindow.getBounds();
+      result.push({
+        windowId: 'main',
+        bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+      });
+    }
+
+    // 分离窗口
+    const detachedWindowIds = detachedWindowManager.getAllWindowIds();
+    for (const windowId of detachedWindowIds) {
+      const win = detachedWindowManager.getWindow(windowId);
+      if (win && !win.isDestroyed()) {
+        const bounds = win.getBounds();
+        result.push({
+          windowId,
+          bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+        });
+      }
+    }
+
+    return result;
+  });
+
+  // 聚焦指定窗口
+  ipcMain.handle(IpcChannel.Window_FocusWindow, (_event, windowId: string) => {
+    if (windowId === 'main') {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.focus();
+        return { success: true };
+      }
+    } else {
+      const win = detachedWindowManager.getWindow(windowId);
+      if (win && !win.isDestroyed()) {
+        win.focus();
+        return { success: true };
+      }
+    }
+    return { success: false };
   });
 
   // ==================== 应用设置 ====================

@@ -12,6 +12,15 @@
 export enum IpcChannel {
   // ==================== 窗口管理 ====================
   Window_Control = 'window:control',
+  Window_CreateDetached = 'window:create-detached',
+  Window_CloseDetached = 'window:close-detached',
+  Window_MoveTab = 'window:move-tab',
+  Window_GetMainWindowBounds = 'window:get-main-window-bounds',
+  Window_GetAllWindowsBounds = 'window:get-all-windows-bounds',
+  Window_GetCursorScreenPoint = 'window:get-cursor-screen-point',
+  Window_GetDetachedBootState = 'window:get-detached-boot-state',
+  Window_FocusWindow = 'window:focus-window',
+  Window_RendererReady = 'window:renderer-ready', // 渲染进程准备就绪握手信号
 
   // ==================== 应用设置 ====================
   AppSettings_GetAutoLaunch = 'app-settings:get-auto-launch',
