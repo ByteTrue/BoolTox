@@ -8,16 +8,12 @@
  * 包含调试工具和开发配置
  */
 
-import { useState } from 'react';
 import { useTheme } from '../../components/theme-provider';
 import { motion } from 'framer-motion';
-import { Folder, RefreshCw, Trash2, FileText } from 'lucide-react';
+import { Trash2, FileText, RefreshCw } from 'lucide-react';
 
 export function DeveloperSettings() {
   const { theme } = useTheme();
-  const [localPluginsPath, setLocalPluginsPath] = useState(
-    'E:\\Code\\TS\\BoolTox\\booltox-plugins'
-  );
 
   const handleOpenLogs = async () => {
     await window.ipc?.invoke('logger:open-log-folder');
@@ -34,18 +30,6 @@ export function DeveloperSettings() {
   const handleReloadTools = async () => {
     // 刷新页面重新加载工具
     window.location.reload();
-  };
-
-  const handleSelectPluginsPath = async () => {
-    const path = (await window.ipc?.invoke('dialog:openFile', {
-      properties: ['openDirectory'],
-    })) as string | null | undefined;
-
-    if (path && typeof path === 'string') {
-      setLocalPluginsPath(path);
-      // TODO: 保存到配置
-      window.toast?.success(`本地工具仓库路径已设置: ${path}`);
-    }
   };
 
   const actionButtons = [
@@ -83,58 +67,6 @@ export function DeveloperSettings() {
           调试工具和开发配置
         </p>
       </div>
-
-      {/* 本地工具仓库路径 */}
-      <section className="space-y-4">
-        <div>
-          <h3
-            className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-          >
-            本地工具仓库路径
-          </h3>
-          <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
-            开发模式下，工具将通过符号链接安装（修改代码立即生效）
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={localPluginsPath}
-            onChange={e => setLocalPluginsPath(e.target.value)}
-            placeholder="E:\Code\TS\BoolTox\booltox-plugins"
-            className={`flex-1 px-4 py-3 rounded-lg border font-mono text-sm ${
-              theme === 'dark'
-                ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40'
-                : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400'
-            }`}
-          />
-          <button
-            onClick={handleSelectPluginsPath}
-            className={`px-4 py-3 rounded-lg flex items-center gap-2 font-medium transition-colors ${
-              theme === 'dark'
-                ? 'bg-white/10 hover:bg-white/15 text-white'
-                : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
-            }`}
-          >
-            <Folder size={18} />
-            选择目录
-          </button>
-        </div>
-
-        <div
-          className="rounded-lg border p-4"
-          style={{
-            background: theme === 'dark' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
-            borderColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
-          }}
-        >
-          <p className={`text-sm ${theme === 'dark' ? 'text-blue-200' : 'text-blue-700'}`}>
-            💡
-            设置本地工具仓库路径后，开发模式下安装工具将创建符号链接。修改工具源码无需重新安装即可生效。
-          </p>
-        </div>
-      </section>
 
       {/* 快速操作 */}
       <section className="space-y-4">
@@ -218,14 +150,6 @@ export function DeveloperSettings() {
             <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>Electron:</span>
             <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
               {typeof window !== 'undefined' && window.electron ? '已启用' : '未启用'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>
-              本地工具路径:
-            </span>
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
-              {localPluginsPath}
             </span>
           </div>
         </div>
