@@ -3,7 +3,7 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { BrowserWindow, shell } from 'electron';
+import { BrowserWindow } from 'electron';
 import path from 'path';
 import { toolManager } from './tool-manager';
 import { backendRunner } from './tool-backend-runner.js';
@@ -172,10 +172,21 @@ export class ToolRunner {
       const url = `http://${host}:${port}${urlPath}`;
 
       if (state.runtime.status === 'running' && state.process && !state.process.killed) {
-        // 即使已经运行，也重新打开浏览器（用户可能关闭了标签页）
-        logger.info(`[ToolRunner] 工具已运行，重新打开浏览器: ${url}`);
-        shell.openExternal(url);
-        this.emitState(state, 'running', { pid: state.process.pid, url, external: true });
+        // 即使已经运行，也重新打开标签页（用户可能关闭了标签页）
+        logger.info(`[ToolRunner] 工具已运行，重新打开标签页: ${url}`);
+        const targetWindow = state.parentWindow ?? BrowserWindow.getAllWindows().find((win) => win.isVisible());
+        if (targetWindow && !targetWindow.isDestroyed()) {
+          targetWindow.webContents.send('tool:open-in-tab', {
+            toolId,
+            url,
+            label: state.runtime.id,
+          });
+          targetWindow.show();
+          targetWindow.focus();
+        } else {
+          logger.warn(`[ToolRunner] 未找到可用窗口，无法重新打开标签页: ${toolId}`);
+        }
+        this.emitState(state, 'running', { pid: state.process.pid, url, external: false, focused: true });
         return state.process.pid ?? -1;
       }
       state.runtime.status = 'loading';
@@ -211,11 +222,18 @@ export class ToolRunner {
     const state = this.states.get(toolId);
     if (!state) return;
 
+    // 原子操作：先减后检查，避免 TOCTOU 竞态
     state.refCount--;
+
+    if (state.refCount < 0) {
+      state.refCount = 0;
+      logger.debug(`[ToolRunner] stopTool ${toolId}: refCount went negative, resetting to 0`);
+      return;
+    }
+
     logger.info(`[ToolRunner] stopTool ${toolId}, refCount: ${state.refCount}`);
 
-    if (state.refCount <= 0) {
-      state.refCount = 0;
+    if (state.refCount === 0) {
 
       if (state.destroyTimer) clearTimeout(state.destroyTimer);
 
@@ -325,9 +343,20 @@ export class ToolRunner {
       const port = runtimeConfig.backend.port;
       const urlPath = runtimeConfig.path || '/';
       const url = `http://${host}:${port}${urlPath}`;
-      logger.info(`[ToolRunner] focusTool for http-service ${toolId}, opening browser: ${url}`);
-      shell.openExternal(url);
-      this.emitState(state, 'running', { pid: state.process?.pid, url, external: true });
+      logger.info(`[ToolRunner] focusTool for http-service ${toolId}, opening tab: ${url}`);
+      const targetWindow = state.parentWindow ?? BrowserWindow.getAllWindows().find((win) => win.isVisible());
+      if (targetWindow && !targetWindow.isDestroyed()) {
+        targetWindow.webContents.send('tool:open-in-tab', {
+          toolId,
+          url,
+          label: state.runtime.id,
+        });
+        targetWindow.show();
+        targetWindow.focus();
+      } else {
+        logger.warn(`[ToolRunner] 未找到可用窗口，无法聚焦工具标签页: ${toolId}`);
+      }
+      this.emitState(state, 'running', { pid: state.process?.pid, url, external: false, focused: true });
       return;
     }
 
