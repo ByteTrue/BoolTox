@@ -40,6 +40,7 @@ export function ModuleCard({
   const isDark = theme === 'dark';
   const launchState = module.runtime.launchState ?? 'idle';
   const isLaunching = launchState === 'launching';
+  const isStopping = launchState === 'stopping';
   const isRunning = launchState === 'running';
   const isLaunchError = launchState === 'error';
   const isStandalone = module.definition.runtimeMode === 'standalone';
@@ -51,9 +52,11 @@ export function ModuleCard({
   // 启动器模式：只在启动中或错误时显示状态标签
   const launchStateBadge = isLaunching
     ? { label: '启动中…', tone: 'warning' as const }
-    : isLaunchError
-      ? { label: '启动失败', tone: 'danger' as const }
-      : null;
+    : isStopping
+      ? { label: '停止中…', tone: 'warning' as const }
+      : isLaunchError
+        ? { label: '启动失败', tone: 'danger' as const }
+        : null;
 
   return (
     <motion.div
@@ -212,7 +215,7 @@ export function ModuleCard({
               onOpen(module.id);
             }
           }}
-          disabled={isLaunching}
+          disabled={isLaunching || isStopping}
           className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-[transform,background-color,brightness] duration-150 ease-swift hover:scale-[1.02] hover:brightness-110 ${
             isRunning && !isExternalTool
               ? isDark
@@ -221,7 +224,7 @@ export function ModuleCard({
               : isDark
                 ? 'bg-white/5 text-white hover:bg-white/10'
                 : 'bg-white/50 text-slate-700 hover:bg-white'
-          } ${isLaunching ? 'cursor-wait opacity-70 hover:scale-100' : ''}`}
+          } ${isLaunching || isStopping ? 'cursor-wait opacity-70 hover:scale-100 hover:brightness-100' : ''}`}
           style={
             isRunning && !isExternalTool
               ? {} // 停止按钮使用红色边框（通过 className）
@@ -230,17 +233,24 @@ export function ModuleCard({
           title={
             isLaunching
               ? '工具正在启动…'
-              : isRunning && !isExternalTool
-                ? '停止工具'
-                : isExternalTool && isRunning
-                  ? '工具在外部运行'
-                  : '启动工具'
+              : isStopping
+                ? '工具正在停止…'
+                : isRunning && !isExternalTool
+                  ? '停止工具'
+                  : isExternalTool && isRunning
+                    ? '工具在外部运行'
+                    : '启动工具'
           }
         >
           {isLaunching ? (
             <span className="mx-auto flex items-center gap-2">
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
               启动中
+            </span>
+          ) : isStopping ? (
+            <span className="mx-auto flex items-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              停止中
             </span>
           ) : isRunning && !isExternalTool ? (
             <Square className="mx-auto" size={14} />

@@ -38,6 +38,7 @@ export function ModuleListItem({
   const definition = 'definition' in module ? module.definition : module;
   const launchState = 'definition' in module ? (module.runtime.launchState ?? 'idle') : 'idle';
   const isLaunching = launchState === 'launching';
+  const isStopping = launchState === 'stopping';
   const isRunning = launchState === 'running';
   const isLaunchError = launchState === 'error';
 
@@ -49,9 +50,11 @@ export function ModuleListItem({
   const launchStateBadge = isInstalled
     ? isLaunching
       ? { label: '启动中…', className: 'border-yellow-500/30 bg-yellow-500/15 text-yellow-600' }
-      : isLaunchError
-        ? { label: '启动失败', className: 'border-red-500/30 bg-red-500/15 text-red-500' }
-        : null
+      : isStopping
+        ? { label: '停止中…', className: 'border-yellow-500/30 bg-yellow-500/15 text-yellow-600' }
+        : isLaunchError
+          ? { label: '启动失败', className: 'border-red-500/30 bg-red-500/15 text-red-500' }
+          : null
     : null;
 
   return (
@@ -150,13 +153,21 @@ export function ModuleListItem({
                 e.stopPropagation();
                 onOpen?.(module.id);
               }}
-              disabled={isLaunching}
+              disabled={isLaunching || isStopping}
               className={`rounded-lg border border-blue-500/30 bg-blue-500/20 p-2 text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
-                isLaunching ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
+                isLaunching || isStopping ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
               }`}
-              title={isLaunching ? '工具正在启动…' : isRunning ? '聚焦已打开的窗口' : '打开工具'}
+              title={
+                isLaunching
+                  ? '工具正在启动…'
+                  : isStopping
+                    ? '工具正在停止…'
+                    : isRunning
+                      ? '聚焦已打开的窗口'
+                      : '打开工具'
+              }
             >
-              {isLaunching ? (
+              {isLaunching || isStopping ? (
                 <span className="flex items-center justify-center">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 </span>

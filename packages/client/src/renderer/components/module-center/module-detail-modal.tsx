@@ -57,6 +57,7 @@ export function ModuleDetailModal({
   const runtime = 'definition' in module ? module.runtime : undefined;
   const launchState = runtime?.launchState ?? 'idle';
   const isLaunching = launchState === 'launching';
+  const isStopping = launchState === 'stopping';
   const isRunning = launchState === 'running';
   const isLaunchError = launchState === 'error';
 
@@ -162,10 +163,12 @@ export function ModuleDetailModal({
                               ? 'border border-green-500/30 bg-green-500/15 text-green-500'
                               : isLaunching
                                 ? 'border border-yellow-500/30 bg-yellow-500/15 text-yellow-600'
-                                : isLaunchError
-                                  ? 'border border-red-500/30 bg-red-500/15 text-red-500'
-                                  : isDark
-                                    ? 'border border-white/10 text-white/70'
+                                : isStopping
+                                  ? 'border border-yellow-500/30 bg-yellow-500/15 text-yellow-600'
+                                  : isLaunchError
+                                    ? 'border border-red-500/30 bg-red-500/15 text-red-500'
+                                    : isDark
+                                      ? 'border border-white/10 text-white/70'
                                     : 'border border-slate-200 text-slate-600'
                           }`}
                         >
@@ -173,6 +176,8 @@ export function ModuleDetailModal({
                             ? '窗口运行中'
                             : isLaunching
                               ? '启动中…'
+                              : isStopping
+                                ? '停止中…'
                               : isLaunchError
                                 ? '启动失败'
                                 : '未运行'}
@@ -189,12 +194,12 @@ export function ModuleDetailModal({
                             {...buttonInteraction}
                             type="button"
                             onClick={() => onOpen(module.id)}
-                            disabled={isLaunching}
+                            disabled={isLaunching || isStopping}
                             className={`rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
-                              isLaunching ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
+                              isLaunching || isStopping ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
                             }`}
                           >
-                            {isLaunching ? '启动中…' : isRunning ? '聚焦窗口' : '打开工具'}
+                            {isLaunching ? '启动中…' : isStopping ? '停止中…' : isRunning ? '聚焦窗口' : '打开工具'}
                           </motion.button>
                         )}
                         {isInstalled && onUninstall && (
