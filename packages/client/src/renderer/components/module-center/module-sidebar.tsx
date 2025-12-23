@@ -4,6 +4,15 @@
  */
 
 import React from 'react';
+import Box from '@mui/material/Box';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import {
   LayoutGrid,
   Star,
@@ -16,13 +25,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '@/components/theme-provider';
 import type { ToolSourceConfig } from '@booltox/shared';
-
-// 辅助函数：生成简单的类名合并
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -30,60 +33,77 @@ interface SidebarItemProps {
   active: boolean;
   count?: number;
   onClick: () => void;
-  isDark: boolean;
 }
 
-function SidebarItem({ icon, label, active, count, onClick, isDark }: SidebarItemProps) {
+function SidebarItem({ icon, label, active, count, onClick }: SidebarItemProps) {
   return (
-    <button
+    <ListItemButton
       onClick={onClick}
-      className={cn(
-        'group flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
-        active
-          ? isDark
-            ? 'bg-blue-500/20 text-blue-400'
-            : 'bg-blue-50 text-blue-600'
-          : isDark
-            ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-      )}
+      selected={active}
+      sx={{
+        borderRadius: 2,
+        mb: 0.5,
+        '&.Mui-selected': {
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          '&:hover': {
+            bgcolor: 'primary.dark',
+          },
+          '& .MuiListItemIcon-root': {
+            color: 'primary.contrastText',
+          },
+        },
+      }}
     >
-      <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            'transition-colors',
-            active ? 'text-blue-500' : 'text-slate-400 group-hover:text-slate-500'
-          )}
-        >
-          {icon}
-        </span>
-        <span>{label}</span>
-      </div>
+      <ListItemIcon
+        sx={{
+          minWidth: 36,
+          color: active ? 'inherit' : 'text.secondary',
+          '& svg': {
+            strokeWidth: 2.5,
+          },
+        }}
+      >
+        {icon}
+      </ListItemIcon>
+      <ListItemText
+        primary={label}
+        primaryTypographyProps={{
+          color: active ? 'inherit' : 'text.primary',
+        }}
+      />
       {count !== undefined && (
-        <span
-          className={cn(
-            'text-xs',
-            active ? 'text-blue-500' : isDark ? 'text-slate-600' : 'text-slate-400'
-          )}
-        >
-          {count}
-        </span>
+        <Chip
+          label={count}
+          size="small"
+          sx={{
+            height: 20,
+            fontSize: '0.75rem',
+            bgcolor: active ? 'primary.contrastText' : 'action.selected',
+            color: active ? 'primary.main' : 'text.secondary',
+          }}
+        />
       )}
-    </button>
+    </ListItemButton>
   );
 }
 
 // 区域标题组件
-function SectionHeader({ children, isDark }: { children: React.ReactNode; isDark: boolean }) {
+function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3
-      className={cn(
-        'mb-2 px-3 text-xs font-semibold uppercase tracking-wider',
-        isDark ? 'text-slate-500' : 'text-slate-400'
-      )}
+    <Typography
+      variant="overline"
+      sx={{
+        px: 2,
+        py: 1,
+        display: 'block',
+        color: 'text.secondary',
+        fontWeight: 700,
+        letterSpacing: 1,
+      }}
     >
       {children}
-    </h3>
+    </Typography>
   );
 }
 
@@ -117,8 +137,6 @@ export function ModuleSidebar({
   toolSources = [],
 }: ModuleSidebarProps) {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   // 过滤自定义工具源（非官方的远程源，排除本地源）
   const customSources = toolSources.filter(
@@ -126,142 +144,150 @@ export function ModuleSidebar({
   );
 
   return (
-    <div
-      className={cn(
-        'flex h-full w-60 flex-col gap-6 border-r px-4 py-6',
-        isDark ? 'border-white/10' : 'border-slate-200'
-      )}
+    <Box
+      sx={{
+        width: 240,
+        height: '100%',
+        borderRight: 1,
+        borderColor: 'divider',
+        display: 'flex',
+        flexDirection: 'column',
+        py: 3,
+        px: 2,
+      }}
     >
       {/* 区域 1: 我的工具 */}
-      <div className="space-y-1">
-        <SectionHeader isDark={isDark}>📦 我的工具</SectionHeader>
+      <Box>
+        <SectionHeader>📦 我的工具</SectionHeader>
+        <List disablePadding>
+          <SidebarItem
+            icon={<LayoutGrid size={20} />}
+            label="全部已安装"
+            active={currentView === 'installed'}
+            count={stats.installed}
+            onClick={() => onViewChange('installed')}
+          />
 
-        <SidebarItem
-          icon={<LayoutGrid size={18} />}
-          label="全部已安装"
-          active={currentView === 'installed'}
-          count={stats.installed}
-          onClick={() => onViewChange('installed')}
-          isDark={isDark}
-        />
+          <SidebarItem
+            icon={<Star size={20} />}
+            label="收藏"
+            active={currentView === 'favorites'}
+            count={stats.favorites}
+            onClick={() => onViewChange('favorites')}
+          />
 
-        <SidebarItem
-          icon={<Star size={18} />}
-          label="收藏"
-          active={currentView === 'favorites'}
-          count={stats.favorites}
-          onClick={() => onViewChange('favorites')}
-          isDark={isDark}
-        />
+          <SidebarItem
+            icon={<Play size={20} />}
+            label="运行中"
+            active={currentView === 'running'}
+            count={stats.running}
+            onClick={() => onViewChange('running')}
+          />
+        </List>
+      </Box>
 
-        <SidebarItem
-          icon={<Play size={18} />}
-          label="运行中"
-          active={currentView === 'running'}
-          count={stats.running}
-          onClick={() => onViewChange('running')}
-          isDark={isDark}
-        />
-      </div>
+      <Divider sx={{ my: 2 }} />
 
       {/* 区域 2: 工具市场 */}
-      <div
-        className="space-y-1 border-t pt-4"
-        style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
-      >
-        <SectionHeader isDark={isDark}>🛍️ 工具市场</SectionHeader>
+      <Box>
+        <SectionHeader>🛍️ 工具市场</SectionHeader>
 
         {/* 浏览工具源子标题 */}
-        <div className={cn('px-3 mb-1 text-xs', isDark ? 'text-slate-600' : 'text-slate-500')}>
+        <Typography variant="caption" color="text.disabled" sx={{ px: 2, py: 1, display: 'block' }}>
           📂 浏览工具源
-        </div>
+        </Typography>
 
-        <SidebarItem
-          icon={<Store size={18} />}
-          label="官方工具库"
-          active={currentView === 'official'}
-          count={stats.official}
-          onClick={() => onViewChange('official')}
-          isDark={isDark}
-        />
-
-        {/* 动态显示自定义工具源 */}
-        {customSources.map(source => (
+        <List disablePadding>
           <SidebarItem
-            key={source.id}
-            icon={<Package size={18} />}
-            label={source.name}
-            active={currentView === `source:${source.id}`}
-            count={stats.sourceCount?.[source.id] || 0}
-            onClick={() => onViewChange(`source:${source.id}`)}
-            isDark={isDark}
+            icon={<Store size={20} />}
+            label="官方工具库"
+            active={currentView === 'official'}
+            count={stats.official}
+            onClick={() => onViewChange('official')}
           />
-        ))}
+
+          {/* 动态显示自定义工具源 */}
+          {customSources.map(source => (
+            <SidebarItem
+              key={source.id}
+              icon={<Package size={20} />}
+              label={source.name}
+              active={currentView === `source:${source.id}`}
+              count={stats.sourceCount?.[source.id] || 0}
+              onClick={() => onViewChange(`source:${source.id}`)}
+            />
+          ))}
+        </List>
 
         {/* 添加工具源按钮 */}
         {onAddToolSource && (
-          <button
+          <Button
             onClick={onAddToolSource}
-            className={cn(
-              'mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-              isDark
-                ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
-                : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
-            )}
+            variant="contained"
+            color="secondary"
+            startIcon={<Plus size={18} />}
+            fullWidth
+            sx={{
+              mt: 2,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
           >
-            <Plus size={18} />
-            <span>添加工具源</span>
-          </button>
+            添加工具源
+          </Button>
         )}
-      </div>
+      </Box>
+
+      <Divider sx={{ my: 2 }} />
 
       {/* 区域 3: 工具源管理 */}
-      <div
-        className="border-t pt-4"
-        style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
-      >
-        <SectionHeader isDark={isDark}>管理</SectionHeader>
+      <Box>
+        <SectionHeader>管理</SectionHeader>
 
-        <button
-          onClick={() => navigate('/tools/sources')}
-          className={cn(
-            'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-            isDark
-              ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          )}
-        >
-          <Settings size={18} />
-          <span>工具源</span>
-        </button>
-      </div>
+        <List disablePadding>
+          <ListItemButton
+            onClick={() => navigate('/tools/sources')}
+            sx={{ borderRadius: 2 }}
+          >
+            <ListItemIcon sx={{ minWidth: 36, color: 'text.secondary', '& svg': { strokeWidth: 2.5 } }}>
+              <Settings size={20} />
+            </ListItemIcon>
+            <ListItemText
+              primary="工具源"
+              primaryTypographyProps={{
+                color: 'text.primary',
+              }}
+            />
+          </ListItemButton>
+        </List>
+      </Box>
+
+      <Divider sx={{ my: 2 }} />
 
       {/* 分类过滤 */}
-      <div
-        className="flex-1 overflow-y-auto space-y-1 elegant-scroll pr-2 border-t pt-4"
-        style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
-      >
-        <SectionHeader isDark={isDark}>分类</SectionHeader>
+      <Box className="elegant-scroll" sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+        <SectionHeader>分类</SectionHeader>
 
-        <SidebarItem
-          icon={<Hash size={18} />}
-          label="全部"
-          active={currentCategory === 'all'}
-          onClick={() => onCategoryChange('all')}
-          isDark={isDark}
-        />
-
-        {categories.map(category => (
+        <List disablePadding>
           <SidebarItem
-            key={category}
-            icon={<ChevronRight size={16} />}
-            label={category}
-            active={currentCategory === category}
-            onClick={() => onCategoryChange(category)}
-            isDark={isDark}
+            icon={<Hash size={20} />}
+            label="全部"
+            active={currentCategory === 'all'}
+            onClick={() => onCategoryChange('all')}
           />
-        ))}
-      </div>
-    </div>
+
+          {categories.map(category => (
+            <SidebarItem
+              key={category}
+              icon={<ChevronRight size={18} />}
+              label={category}
+              active={currentCategory === category}
+              onClick={() => onCategoryChange(category)}
+            />
+          ))}
+        </List>
+      </Box>
+    </Box>
   );
 }

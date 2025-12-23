@@ -3,64 +3,49 @@
  * Licensed under CC-BY-NC-4.0
  */
 
+import { useMemo } from 'react';
 import Box from '@mui/material/Box';
 import { PackageOpen } from 'lucide-react';
 import { EmptyState } from '../ui/empty-state';
 import { SkeletonLoader } from '../ui/skeleton-loader';
-import { ModuleCard, AvailableModuleCard } from './module-card';
+import { AvailableModuleCard } from './module-card';
 import { ModuleListItem } from './module-list-item';
+import { toModuleViewModels } from './module-view-model';
 import type { ModuleInstance, ModuleDefinition } from '@/types/module';
 import type { ToolRegistryEntry } from '@booltox/shared';
-import type { ViewMode } from './types';
 
 interface ModuleGridProps {
   modules: ModuleInstance[] | ModuleDefinition[] | ToolRegistryEntry[];
-  viewMode: ViewMode;
   isLoading?: boolean;
   processingModuleId?: string | null;
   onUninstall?: (moduleId: string) => void;
   onInstall?: (moduleId: string) => void;
   onOpen?: (moduleId: string) => void;
   onStop?: (moduleId: string) => void;
-  onPinToggle?: (moduleId: string) => void;
   onCardClick: (moduleId: string) => void;
   emptyMessage?: string;
   isDevPlugin?: (moduleId: string) => boolean;
-  isSelectionMode?: boolean;
-  selectedToolIds?: Set<string>;
-  onSelect?: (moduleId: string) => void;
 }
 
 export function ModuleGrid({
   modules,
-  viewMode,
   isLoading = false,
   processingModuleId,
   onUninstall,
   onInstall,
   onOpen,
   onStop,
-  onPinToggle,
   onCardClick,
   emptyMessage = '暂无工具',
   isDevPlugin,
-  isSelectionMode = false,
-  selectedToolIds = new Set(),
-  onSelect,
 }: ModuleGridProps) {
+  // 统一转换为 ViewModel - 消除类型判断逻辑（必须在所有 hooks 之前）
+  const viewModels = useMemo(() => toModuleViewModels(modules), [modules]);
+
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns:
-            viewMode === 'grid'
-              ? { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }
-              : '1fr',
-        }}
-      >
-        <SkeletonLoader type="module-card" count={8} />
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr' }}>
+        <SkeletonLoader type="list-item" count={8} />
       </Box>
     );
   }
@@ -75,131 +60,39 @@ export function ModuleGrid({
     );
   }
 
-  const isInstalledModule = (
-    module: ModuleInstance | ModuleDefinition | ToolRegistryEntry
-  ): module is ModuleInstance => {
-    return 'runtime' in module && (module as ModuleInstance).runtime.installed !== false;
-  };
-
-  const isToolRegistryEntry = (
-    module: ModuleInstance | ModuleDefinition | ToolRegistryEntry
-  ): module is ToolRegistryEntry => {
-    return 'downloadUrl' in module || ('hash' in module && !('loader' in module));
-  };
-
   return (
-    <Box
-      sx={{
-        display: 'grid',
-        gap: 3,
-        gridTemplateColumns:
-          viewMode === 'grid'
-            ? { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }
-            : '1fr',
-      }}
-    >
-      {modules.map(module => {
-        if (viewMode === 'list') {
-          if (isToolRegistryEntry(module)) {
-            const moduleData = {
-              id: module.id,
-              name: module.name,
-              description: module.description,
-              version: module.version,
-              category: module.category,
-              icon: module.icon,
-            };
-            return (
-              <AvailableModuleCard
-                key={module.id}
-                module={moduleData}
-                onInstall={onInstall || (() => {})}
-                onClick={onCardClick}
-                isInstalling={processingModuleId === module.id}
-              />
-            );
-          }
-
-          if ('runtime' in module && !isInstalledModule(module)) {
-            const moduleInstance = module as unknown as ModuleInstance;
-            const moduleData = {
-              id: moduleInstance.id,
-              name: moduleInstance.definition.name,
-              description: moduleInstance.definition.description,
-              version: moduleInstance.definition.version,
-              category: moduleInstance.definition.category,
-              icon: moduleInstance.definition.icon,
-            };
-            return (
-              <AvailableModuleCard
-                key={module.id}
-                module={moduleData}
-                onInstall={onInstall || (() => {})}
-                onClick={onCardClick}
-                isInstalling={processingModuleId === module.id}
-              />
-            );
-          }
-
+    <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr' }}>
+      {viewModels.map(vm => {
+        if (vm.type === 'installed') {
           return (
             <ModuleListItem
-              key={module.id}
-              module={module}
+              key={vm.id}
+              module={modules.find(m => m.id === vm.id)!}
               onUninstall={onUninstall}
               onOpen={onOpen}
               onStop={onStop}
               onInstall={onInstall}
               onClick={onCardClick}
-              isProcessing={processingModuleId === module.id}
-              isDev={isDevPlugin?.(module.id) || false}
-            />
-          );
-        }
-
-        if (isToolRegistryEntry(module) || !isInstalledModule(module)) {
-          const hasDefinition = 'definition' in module;
-          const moduleData = {
-            id: module.id,
-            name: hasDefinition
-              ? (module as unknown as ModuleInstance).definition.name
-              : (module as unknown as ModuleDefinition).name,
-            description: hasDefinition
-              ? (module as unknown as ModuleInstance).definition.description
-              : (module as unknown as ModuleDefinition).description,
-            version: hasDefinition
-              ? (module as unknown as ModuleInstance).definition.version
-              : (module as unknown as ModuleDefinition).version,
-            category: hasDefinition
-              ? (module as unknown as ModuleInstance).definition.category
-              : (module as unknown as ModuleDefinition).category,
-            icon: hasDefinition
-              ? (module as unknown as ModuleInstance).definition.icon
-              : (module as unknown as ModuleDefinition).icon,
-          };
-
-          return (
-            <AvailableModuleCard
-              key={module.id}
-              module={moduleData}
-              onInstall={onInstall || (() => {})}
-              onClick={onCardClick}
-              isInstalling={processingModuleId === module.id}
+              isProcessing={processingModuleId === vm.id}
+              isDev={isDevPlugin?.(vm.id) || false}
             />
           );
         } else {
+          // available 或 registry
           return (
-            <ModuleCard
-              key={module.id}
-              module={module}
-              onUninstall={onUninstall || (() => {})}
-              onOpen={onOpen || (() => {})}
-              onStop={onStop || (() => {})}
-              onPinToggle={onPinToggle || (() => {})}
+            <AvailableModuleCard
+              key={vm.id}
+              module={{
+                id: vm.id,
+                name: vm.name,
+                description: vm.description,
+                version: vm.version,
+                category: vm.category,
+                icon: vm.icon,
+              }}
+              onInstall={onInstall || (() => {})}
               onClick={onCardClick}
-              isDev={isDevPlugin?.(module.id) || false}
-              isSelectionMode={isSelectionMode}
-              isSelected={selectedToolIds.has(module.id)}
-              onSelect={onSelect}
+              isInstalling={processingModuleId === vm.id}
             />
           );
         }

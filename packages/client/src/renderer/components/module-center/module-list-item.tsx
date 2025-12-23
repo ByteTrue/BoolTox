@@ -80,8 +80,7 @@ export function ModuleListItem({
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: 2,
-          bgcolor: 'primary.main',
-          opacity: 0.1,
+          bgcolor: 'action.selected',
         }}
       >
         {definition.icon && definition.icon.startsWith('http') ? (
@@ -89,14 +88,14 @@ export function ModuleListItem({
             component="img"
             src={definition.icon}
             alt={definition.name}
-            sx={{ width: 36, height: 36, borderRadius: 1 }}
+            sx={{ width: 40, height: 40, borderRadius: 1 }}
             loading="lazy"
             onError={e => {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
         ) : (
-          <Typography variant="h6" fontWeight="bold" color="text.primary">
+          <Typography variant="h5" fontWeight="bold" sx={{ fontSize: '1.25rem' }}>
             {definition.name.slice(0, 2).toUpperCase()}
           </Typography>
         )}
@@ -122,6 +121,7 @@ export function ModuleListItem({
           <Typography
             variant="subtitle1"
             fontWeight={600}
+            color="text.primary"
             sx={{ '&:hover': { color: 'primary.main' } }}
           >
             {definition.name}

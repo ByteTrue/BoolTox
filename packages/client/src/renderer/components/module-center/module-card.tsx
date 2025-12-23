@@ -92,8 +92,7 @@ export function ModuleCard({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 2,
-                bgcolor: 'primary.main',
-                opacity: 0.1,
+                bgcolor: 'action.selected',
                 position: 'relative',
               }}
             >
@@ -117,14 +116,14 @@ export function ModuleCard({
                   component="img"
                   src={module.definition.icon}
                   alt={module.definition.name}
-                  sx={{ width: 32, height: 32, borderRadius: 1 }}
+                  sx={{ width: 36, height: 36, borderRadius: 1 }}
                   loading="lazy"
                   onError={e => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
               ) : (
-                <Typography variant="body1" fontWeight="bold" color="text.primary">
+                <Typography variant="h6" fontWeight="bold">
                   {module.definition.name.slice(0, 2).toUpperCase()}
                 </Typography>
               )}
@@ -153,6 +152,7 @@ export function ModuleCard({
           <Typography
             variant="subtitle1"
             fontWeight={600}
+            color="text.primary"
             sx={{ mb: 0.5, '&:hover': { color: 'primary.main' } }}
           >
             {module.definition.name}
@@ -298,8 +298,7 @@ export function AvailableModuleCard({
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 2,
-              bgcolor: 'primary.main',
-              opacity: 0.1,
+              bgcolor: 'action.selected',
             }}
           >
             {module.icon && module.icon.startsWith('http') ? (
@@ -307,14 +306,14 @@ export function AvailableModuleCard({
                 component="img"
                 src={module.icon}
                 alt={module.name}
-                sx={{ width: 32, height: 32, borderRadius: 1 }}
+                sx={{ width: 36, height: 36, borderRadius: 1 }}
                 loading="lazy"
                 onError={e => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
             ) : (
-              <Typography variant="body1" fontWeight="bold" color="text.primary">
+              <Typography variant="h6" fontWeight="bold">
                 {module.name.slice(0, 2).toUpperCase()}
               </Typography>
             )}
@@ -338,6 +337,7 @@ export function AvailableModuleCard({
           <Typography
             variant="subtitle1"
             fontWeight={600}
+            color="text.primary"
             sx={{ mb: 0.5, '&:hover': { color: 'primary.main' } }}
           >
             {module.name}

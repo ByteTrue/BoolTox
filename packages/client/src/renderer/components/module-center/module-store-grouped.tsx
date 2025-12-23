@@ -4,9 +4,14 @@
  */
 
 import { useMemo } from 'react';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { AvailableModuleCard } from './module-card';
+import { EmptyState } from '../ui/empty-state';
+import { getGridColumns, GRID_BREAKPOINTS } from '@/theme/grid-config';
 import type { ModuleInstance } from '@/types/module';
-import { useTheme } from '../theme-provider';
+import { PackageOpen } from 'lucide-react';
 
 interface ModuleStoreGroupedProps {
   modules: ModuleInstance[];
@@ -24,9 +29,6 @@ export function ModuleStoreGrouped({
   onInstall,
   onCardClick,
 }: ModuleStoreGroupedProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   // 按 sourceId 分组
   const groupedBySource = useMemo(() => {
     const groups = new Map<string, ModuleInstance[]>();
@@ -57,33 +59,41 @@ export function ModuleStoreGrouped({
   // 空状态
   if (modules.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-96">
-        <div className={`text-6xl mb-4 ${isDark ? 'opacity-20' : 'opacity-10'}`}>📦</div>
-        <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-          暂无可安装的工具
-        </h3>
-        <p className="text-gray-500 text-sm">尝试添加新的工具源</p>
-      </div>
+      <EmptyState
+        icon={<PackageOpen size={64} strokeWidth={1.5} />}
+        title="暂无可安装的工具"
+        description="尝试添加新的工具源"
+      />
     );
   }
 
   return (
-    <div className="space-y-12">
+    <Stack spacing={6}>
       {groupedBySource.map(group => (
-        <div key={group.sourceId}>
+        <Box key={group.sourceId}>
           {/* 分组标题 */}
-          <div className="flex items-baseline gap-3 mb-6">
-            <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+          <Stack direction="row" spacing={2} alignItems="baseline" sx={{ mb: 3 }}>
+            <Typography variant="h5" fontWeight={700}>
               📂 {group.sourceName}
-            </h3>
-            <span className="text-sm text-gray-500">({group.count} 个可安装)</span>
-          </div>
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              ({group.count} 个可安装)
+            </Typography>
+          </Stack>
 
           {/* 工具网格 */}
           {group.count === 0 ? (
-            <p className="text-gray-500 text-sm pl-4">暂无未安装的工具</p>
+            <Typography variant="body2" color="text.secondary" sx={{ pl: 2 }}>
+              暂无未安装的工具
+            </Typography>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 3,
+                gridTemplateColumns: getGridColumns(GRID_BREAKPOINTS.MODULE_CARD),
+              }}
+            >
               {group.tools.map(tool => {
                 const moduleData = {
                   id: tool.id,
@@ -103,10 +113,10 @@ export function ModuleStoreGrouped({
                   />
                 );
               })}
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
       ))}
-    </div>
+    </Stack>
   );
 }

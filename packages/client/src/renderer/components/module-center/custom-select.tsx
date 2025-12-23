@@ -3,8 +3,7 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useState, useRef, useEffect, type ReactNode } from 'react';
-import Box from '@mui/material/Box';
+import { useState, type ReactNode } from 'react';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';

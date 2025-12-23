@@ -8,9 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
 import Fade from '@mui/material/Fade';
@@ -24,9 +21,9 @@ import { useModuleSort } from './hooks/use-module-sort';
 import { ModuleRecommendations } from './module-recommendations';
 import { useRecommendations } from './hooks/use-recommendations';
 import { CustomSelect } from './custom-select';
-import { Search, ArrowUpDown, Plus, CheckSquare, LayoutGrid, List } from 'lucide-react';
+import { Search, ArrowUpDown, Plus, CheckSquare } from 'lucide-react';
 import { DropZone } from './drop-zone';
-import type { ModuleSortConfig, ViewMode } from './types';
+import type { ModuleSortConfig } from './types';
 import type { ModuleInstance } from '@/types/module';
 import type { ToolSourceConfig } from '@booltox/shared';
 
@@ -43,8 +40,6 @@ export function ModuleCenter() {
     uninstallModule,
     installModule,
     installOnlinePlugin,
-    addFavorite,
-    removeFavorite,
     openModule,
     stopModule,
     focusModuleWindow,
@@ -55,7 +50,6 @@ export function ModuleCenter() {
   // --- 状态管理 ---
   const [currentView, setCurrentView] = useState<string>('installed');
   const [currentCategory, setCurrentCategory] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -286,19 +280,6 @@ export function ModuleCenter() {
     [uninstallModule, selectedModuleId]
   );
 
-  const handlePinToggle = useCallback(
-    async (moduleId: string) => {
-      const module = installedModules.find(m => m.id === moduleId);
-      if (!module) return;
-      if (module.isFavorite) {
-        await removeFavorite(moduleId);
-      } else {
-        await addFavorite(moduleId);
-      }
-    },
-    [addFavorite, installedModules, removeFavorite]
-  );
-
   const handleOpen = useCallback(
     (moduleId: string) => {
       const targetModule = installedModules.find(m => m.id === moduleId);
@@ -347,15 +328,6 @@ export function ModuleCenter() {
     setIsSelectionMode(false);
     setSelectedToolIds(new Set());
   };
-
-  const handleSelect = useCallback((toolId: string) => {
-    setSelectedToolIds(prev => {
-      const next = new Set(prev);
-      if (next.has(toolId)) next.delete(toolId);
-      else next.add(toolId);
-      return next;
-    });
-  }, []);
 
   const handleStartAll = useCallback(async () => {
     const toolIds = Array.from(selectedToolIds);
@@ -545,20 +517,6 @@ export function ModuleCenter() {
               icon={<ArrowUpDown size={16} />}
               minimal
             />
-
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={(_, value) => value && setViewMode(value)}
-              size="small"
-            >
-              <ToggleButton value="grid">
-                <LayoutGrid size={16} />
-              </ToggleButton>
-              <ToggleButton value="list">
-                <List size={16} />
-              </ToggleButton>
-            </ToggleButtonGroup>
           </Box>
         </Box>
 
@@ -566,7 +524,7 @@ export function ModuleCenter() {
         <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 3, position: 'relative' }}>
           {showRecommendations && (
             <Box sx={{ mb: 4 }}>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+              <Typography variant="h6" fontWeight="bold" color="text.primary" sx={{ mb: 2 }}>
                 💡 推荐工具
               </Typography>
               <ModuleRecommendations
@@ -580,7 +538,7 @@ export function ModuleCenter() {
           )}
 
           <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6" fontWeight="bold">
+            <Typography variant="h6" fontWeight="bold" color="text.primary">
               {getViewTitle()}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -590,17 +548,12 @@ export function ModuleCenter() {
 
           <ModuleGrid
             modules={finalModules}
-            viewMode={viewMode}
             processingModuleId={processingModuleId}
             onUninstall={handleUninstall}
             onOpen={handleOpen}
             onStop={stopModule}
-            onPinToggle={handlePinToggle}
             onCardClick={id => setSelectedModuleId(id)}
             isDevPlugin={isDevPlugin}
-            isSelectionMode={isSelectionMode}
-            selectedToolIds={selectedToolIds}
-            onSelect={handleSelect}
             emptyMessage={
               currentView === 'favorites'
                 ? '暂无收藏的工具'
