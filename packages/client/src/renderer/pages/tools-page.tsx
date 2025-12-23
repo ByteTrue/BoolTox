@@ -7,17 +7,15 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import { useModulePlatform } from '@/contexts/module-context';
-import { ModuleCenter } from '../components/module-center';
+import { ModuleCenterV3 } from '../components/module-center/index-v3';
 
 /**
- * 工具页（全屏网格布局）
- * 直接复用现有的 ModuleCenter 组件
+ * 工具页 - V3 极简设计
  */
 export function ToolsPage() {
   const location = useLocation();
   const { refreshAvailablePlugins } = useModulePlatform();
 
-  // 监听路由变化，从添加工具源页面返回时刷新
   useEffect(() => {
     if (location.pathname === '/tools') {
       refreshAvailablePlugins();
@@ -26,7 +24,7 @@ export function ToolsPage() {
 
   return (
     <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
-      <ModuleCenter />
+      <ModuleCenterV3 />
     </Box>
   );
 }

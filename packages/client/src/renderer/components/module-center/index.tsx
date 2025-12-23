@@ -6,45 +6,45 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import Fade from '@mui/material/Fade';
+import { Search, Add, CheckBox } from '@mui/icons-material';
 import { useModulePlatform } from '@/contexts/module-context';
-import { ModuleGrid } from './module-grid';
 import { ModuleDetailModal } from './module-detail-modal';
 import { ModuleSidebar } from './module-sidebar';
 import { BatchActionsBar } from './batch-actions-bar';
 import { useModuleSearch, useSearchInput } from './hooks/use-module-search';
 import { useModuleSort } from './hooks/use-module-sort';
-import { ModuleRecommendations } from './module-recommendations';
-import { useRecommendations } from './hooks/use-recommendations';
-import { CustomSelect } from './custom-select';
-import { Search, ArrowUpDown, Plus, CheckSquare } from 'lucide-react';
+import { ToolCard } from './tool-card';
 import { DropZone } from './drop-zone';
 import type { ModuleSortConfig } from './types';
 import type { ModuleInstance } from '@/types/module';
 import type { ToolSourceConfig } from '@booltox/shared';
 
 /**
- * 工具中心 - MUI 风格
+ * 工具中心 - Material Design 3 风格
  */
 export function ModuleCenter() {
   const navigate = useNavigate();
   const {
     installedModules,
     toolRegistry,
-    availableModules,
     availablePlugins,
     uninstallModule,
-    installModule,
     installOnlinePlugin,
     openModule,
     stopModule,
     focusModuleWindow,
     isDevPlugin,
     addLocalBinaryTool,
+    addFavorite,
+    removeFavorite,
   } = useModulePlatform();
 
   // --- 状态管理 ---
@@ -204,21 +204,12 @@ export function ModuleCenter() {
     return Array.from(categories).sort();
   }, [displayedModulesRaw, storeModules]);
 
-  const recommendations = useRecommendations(installedModules, availableModules);
-  const showRecommendations =
-    (currentView === 'store' || currentView === 'official') &&
-    !debouncedValue &&
-    currentCategory === 'all';
-
   // --- 回调函数 ---
   const selectedModule = useMemo(() => {
     if (!selectedModuleId) return null;
 
     const installed = installedModules.find(m => m.id === selectedModuleId);
     if (installed) return installed;
-
-    const available = availableModules.find(m => m.id === selectedModuleId);
-    if (available) return available;
 
     const onlinePlugin = availablePlugins.find(p => p.id === selectedModuleId);
     if (onlinePlugin) {
@@ -249,7 +240,7 @@ export function ModuleCenter() {
       } as unknown as ModuleInstance;
     }
     return null;
-  }, [selectedModuleId, installedModules, availableModules, availablePlugins]);
+  }, [selectedModuleId, installedModules, availablePlugins]);
 
   const isSelectedModuleInstalled = useMemo(() => {
     return installedModules.some(m => m.id === selectedModuleId);
@@ -262,14 +253,12 @@ export function ModuleCenter() {
         const onlinePlugin = availablePlugins.find(p => p.id === moduleId);
         if (onlinePlugin) {
           await installOnlinePlugin(onlinePlugin);
-        } else {
-          await installModule(moduleId);
         }
       } finally {
         setProcessingModuleId(null);
       }
     },
-    [installModule, installOnlinePlugin, availablePlugins]
+    [installOnlinePlugin, availablePlugins]
   );
 
   const handleUninstall = useCallback(
@@ -291,6 +280,19 @@ export function ModuleCenter() {
       }
     },
     [focusModuleWindow, installedModules, openModule]
+  );
+
+  const handleToggleFavorite = useCallback(
+    (moduleId: string) => {
+      const module = installedModules.find(m => m.id === moduleId);
+      if (!module) return;
+      if (module.isFavorite) {
+        void removeFavorite(moduleId);
+      } else {
+        void addFavorite(moduleId);
+      }
+    },
+    [installedModules, addFavorite, removeFavorite]
   );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -362,28 +364,17 @@ export function ModuleCenter() {
     });
   }, [selectedToolIds, installedModules]);
 
-  const getViewTitle = () => {
-    if (currentCategory !== 'all') return `📂 ${currentCategory}`;
-    switch (currentView) {
-      case 'running':
-        return '▶️ 运行中';
-      case 'store':
-        return '🛍️ 全部工具';
-      case 'official':
-        return '🏪 官方工具库';
-      case 'custom':
-        return '🌐 社区工具';
-      case 'favorites':
-        return '⭐ 我的收藏';
-      default:
-        if (currentView.startsWith('source:')) {
-          const sourceId = currentView.replace('source:', '');
-          const sourceName = allAvailableModules.find(m => m.sourceId === sourceId)?.sourceName;
-          return `📂 ${sourceName || '工具源'}`;
-        }
-        return '📦 已安装工具';
-    }
-  };
+  const handleSelect = useCallback((toolId: string) => {
+    setSelectedToolIds(prev => {
+      const next = new Set(prev);
+      if (next.has(toolId)) {
+        next.delete(toolId);
+      } else {
+        next.add(toolId);
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <Box
@@ -392,6 +383,7 @@ export function ModuleCenter() {
         height: '100%',
         overflow: 'hidden',
         position: 'relative',
+        bgcolor: 'background.default',
       }}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
@@ -416,7 +408,7 @@ export function ModuleCenter() {
             alignItems: 'center',
             justifyContent: 'center',
             bgcolor: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(8px)',
             p: 4,
           }}
         >
@@ -448,123 +440,173 @@ export function ModuleCenter() {
 
       {/* 右侧主内容区 */}
       <Box sx={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
-        {/* 顶部工具栏 */}
+        {/* 页面内工具栏 */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             gap: 2,
-            borderBottom: 1,
-            borderColor: 'divider',
             px: 3,
             py: 2,
+            bgcolor: theme => (theme.palette as any).surfaceContainerLow,
+            borderBottom: 1,
+            borderColor: 'divider',
           }}
         >
+          {/* 搜索框 */}
           <TextField
-            placeholder={`在 ${
-              currentView === 'store' ? '商店' : currentView === 'favorites' ? '收藏' : '已安装'
-            }中搜索...`}
+            placeholder="搜索工具..."
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             size="small"
-            sx={{ maxWidth: 400, flex: 1 }}
+            sx={{
+              maxWidth: 320,
+              flex: 1,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: theme => (theme.palette as any).surfaceContainer,
+                '& fieldset': {
+                  borderColor: 'transparent',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'divider',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'primary.main',
+                },
+              },
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search size={18} />
+                  <Search sx={{ color: 'text.secondary', fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
           />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {currentView === 'installed' && (
-              <>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<Plus size={16} />}
-                  onClick={addLocalBinaryTool}
-                >
-                  本地工具
-                </Button>
+          <Box sx={{ flexGrow: 1 }} />
 
-                <Button
-                  variant={isSelectionMode ? 'contained' : 'outlined'}
-                  size="small"
-                  startIcon={<CheckSquare size={16} />}
-                  onClick={() => {
-                    setIsSelectionMode(!isSelectionMode);
-                    setSelectedToolIds(new Set());
-                  }}
-                >
-                  管理
-                </Button>
-              </>
-            )}
+          {/* 右侧操作按钮 */}
+          {currentView === 'installed' && (
+            <>
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<Add />}
+                onClick={addLocalBinaryTool}
+                sx={{ borderRadius: 2 }}
+              >
+                添加本地工具
+              </Button>
 
-            <CustomSelect
-              value={sortConfig.by}
-              onChange={val =>
-                setSortConfig(prev => ({ ...prev, by: val as ModuleSortConfig['by'] }))
-              }
-              options={[
-                { value: 'default', label: '默认' },
-                { value: 'name', label: '名称' },
-                { value: 'updatedAt', label: '时间' },
-              ]}
-              icon={<ArrowUpDown size={16} />}
-              minimal
-            />
-          </Box>
+              <Button
+                variant={isSelectionMode ? 'contained' : 'text'}
+                color={isSelectionMode ? 'primary' : 'inherit'}
+                size="small"
+                startIcon={<CheckBox />}
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  setSelectedToolIds(new Set());
+                }}
+                sx={{ borderRadius: 2 }}
+              >
+                管理
+              </Button>
+            </>
+          )}
+
+          {/* 排序选择器 */}
+          <Select
+            value={sortConfig.by}
+            onChange={e =>
+              setSortConfig(prev => ({ ...prev, by: e.target.value as ModuleSortConfig['by'] }))
+            }
+            size="small"
+            sx={{
+              minWidth: 110,
+              borderRadius: 2,
+              bgcolor: theme => (theme.palette as any).surfaceContainer,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'transparent',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'divider',
+              },
+            }}
+          >
+            <MenuItem value="default">默认排序</MenuItem>
+            <MenuItem value="name">按名称</MenuItem>
+            <MenuItem value="updatedAt">最近使用</MenuItem>
+          </Select>
         </Box>
 
         {/* 滚动内容区 */}
-        <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 3, position: 'relative' }}>
-          {showRecommendations && (
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="h6" fontWeight="bold" color="text.primary" sx={{ mb: 2 }}>
-                💡 推荐工具
+        <Box
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            px: 3,
+            py: 3,
+            bgcolor: theme => (theme.palette as any).surfaceContainerLowest,
+            '&::-webkit-scrollbar': {
+              width: 6,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              bgcolor: 'action.hover',
+              borderRadius: 3,
+            },
+          }}
+        >
+          {/* 工具计数 */}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            共 {finalModules.length} 个工具
+          </Typography>
+
+          {/* 工具卡片网格 */}
+          {finalModules.length === 0 ? (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 300,
+              }}
+            >
+              <Typography variant="body1" color="text.secondary">
+                {currentView === 'favorites'
+                  ? '暂无收藏的工具'
+                  : currentView === 'running'
+                    ? '暂无运行中的工具'
+                    : '没有找到匹配的工具'}
               </Typography>
-              <ModuleRecommendations
-                recommendations={recommendations}
-                onInstall={handleInstall}
-                onCardClick={id => setSelectedModuleId(id)}
-                processingModuleId={processingModuleId}
-              />
-              <Box sx={{ my: 4, borderTop: 1, borderColor: 'divider' }} />
             </Box>
+          ) : (
+            <Grid container spacing={2.5}>
+              {finalModules.map(tool => (
+                <Grid key={tool.id} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 3 }}>
+                  <ToolCard
+                    tool={tool}
+                    onOpen={handleOpen}
+                    onStop={stopModule}
+                    onInstall={handleInstall}
+                    onUninstall={handleUninstall}
+                    onToggleFavorite={handleToggleFavorite}
+                    onClick={setSelectedModuleId}
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedToolIds.has(tool.id)}
+                    onSelect={handleSelect}
+                    isInstalling={processingModuleId === tool.id}
+                    isDev={isDevPlugin(tool.id)}
+                  />
+                </Grid>
+              ))}
+            </Grid>
           )}
-
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6" fontWeight="bold" color="text.primary">
-              {getViewTitle()}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {finalModules.length} 个项目
-            </Typography>
-          </Box>
-
-          <ModuleGrid
-            modules={finalModules}
-            processingModuleId={processingModuleId}
-            onUninstall={handleUninstall}
-            onOpen={handleOpen}
-            onStop={stopModule}
-            onCardClick={id => setSelectedModuleId(id)}
-            isDevPlugin={isDevPlugin}
-            emptyMessage={
-              currentView === 'favorites'
-                ? '暂无收藏的工具'
-                : currentView === 'store'
-                  ? '没有找到匹配的工具'
-                  : '还没有安装任何工具'
-            }
-          />
         </Box>
 
-        {/* 批量操作浮层 */}
+        {/* 批量操作浮动栏 */}
         {isSelectionMode && selectedToolIds.size > 0 && (
           <BatchActionsBar
             selectedCount={selectedToolIds.size}

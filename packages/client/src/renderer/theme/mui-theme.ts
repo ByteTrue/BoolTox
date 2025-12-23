@@ -1,11 +1,11 @@
 /**
  * MUI 主题配置
- * Material Design 风格，基于原有品牌色
+ * Material Design 3 风格，基于品牌色
  */
 
-import { createTheme, type ThemeOptions } from '@mui/material/styles';
+import { createTheme, type ThemeOptions, alpha } from '@mui/material/styles';
 
-// 品牌色（保留原有配色）
+// 品牌色
 const brandColors = {
   blue: {
     light: '#65BBE9',
@@ -16,6 +16,24 @@ const brandColors = {
     light: '#FBD7E1',
     main: '#F9C1CF',
     dark: '#F7AAB8',
+  },
+};
+
+// MD3 Surface 层次系统
+const surfaceLayers = {
+  light: {
+    surfaceContainerLowest: '#FFFFFF',
+    surfaceContainerLow: '#F7F7F9',
+    surfaceContainer: '#F2F2F4',
+    surfaceContainerHigh: '#ECECEE',
+    surfaceContainerHighest: '#E6E6E8',
+  },
+  dark: {
+    surfaceContainerLowest: '#0D0D0E',
+    surfaceContainerLow: '#1A1A1C',
+    surfaceContainer: '#1E1E20',
+    surfaceContainerHigh: '#282A2C',
+    surfaceContainerHighest: '#333537',
   },
 };
 
@@ -216,23 +234,32 @@ export const lightTheme = createTheme({
       dark: '#3D97C1',
     },
     background: {
-      default: '#F5F5F7',
-      paper: '#FFFFFF',
+      default: surfaceLayers.light.surfaceContainerLow,
+      paper: surfaceLayers.light.surfaceContainerLowest,
     },
     text: {
-      primary: 'rgba(0, 0, 0, 0.85)',
+      primary: 'rgba(0, 0, 0, 0.87)',
       secondary: 'rgba(0, 0, 0, 0.60)',
       disabled: 'rgba(0, 0, 0, 0.38)',
+      tertiary: 'rgba(0, 0, 0, 0.45)',
     },
-    divider: 'rgba(0, 0, 0, 0.12)',
+    divider: 'rgba(0, 0, 0, 0.08)',
     action: {
-      active: 'rgba(0, 0, 0, 0.54)',
+      active: 'rgba(0, 0, 0, 0.56)',
       hover: 'rgba(0, 0, 0, 0.04)',
-      selected: 'rgba(81, 169, 213, 0.12)',
+      selected: alpha(brandColors.blue.main, 0.12),
       disabled: 'rgba(0, 0, 0, 0.26)',
       disabledBackground: 'rgba(0, 0, 0, 0.12)',
     },
-  },
+    // MD3 扩展颜色
+    surfaceContainerLowest: surfaceLayers.light.surfaceContainerLowest,
+    surfaceContainerLow: surfaceLayers.light.surfaceContainerLow,
+    surfaceContainer: surfaceLayers.light.surfaceContainer,
+    surfaceContainerHigh: surfaceLayers.light.surfaceContainerHigh,
+    surfaceContainerHighest: surfaceLayers.light.surfaceContainerHighest,
+    primaryContainer: alpha(brandColors.blue.main, 0.12),
+    onPrimaryContainer: brandColors.blue.dark,
+  } as any,
 });
 
 // 暗色主题
@@ -273,23 +300,32 @@ export const darkTheme = createTheme({
       dark: '#51A9D5',
     },
     background: {
-      default: '#1C1C1E',
-      paper: '#2C2C2E',
+      default: surfaceLayers.dark.surfaceContainerLow,
+      paper: surfaceLayers.dark.surfaceContainer,
     },
     text: {
-      primary: 'rgba(255, 255, 255, 0.95)',
-      secondary: 'rgba(255, 255, 255, 0.75)',
-      disabled: 'rgba(255, 255, 255, 0.45)',
+      primary: 'rgba(255, 255, 255, 0.92)',
+      secondary: 'rgba(255, 255, 255, 0.68)',
+      disabled: 'rgba(255, 255, 255, 0.38)',
+      tertiary: 'rgba(255, 255, 255, 0.45)',
     },
-    divider: 'rgba(255, 255, 255, 0.12)',
+    divider: 'rgba(255, 255, 255, 0.08)',
     action: {
-      active: 'rgba(255, 255, 255, 0.70)',
-      hover: 'rgba(255, 255, 255, 0.08)',
-      selected: 'rgba(101, 187, 233, 0.20)',
+      active: 'rgba(255, 255, 255, 0.72)',
+      hover: 'rgba(255, 255, 255, 0.06)',
+      selected: alpha(brandColors.blue.light, 0.16),
       disabled: 'rgba(255, 255, 255, 0.30)',
       disabledBackground: 'rgba(255, 255, 255, 0.12)',
     },
-  },
+    // MD3 扩展颜色
+    surfaceContainerLowest: surfaceLayers.dark.surfaceContainerLowest,
+    surfaceContainerLow: surfaceLayers.dark.surfaceContainerLow,
+    surfaceContainer: surfaceLayers.dark.surfaceContainer,
+    surfaceContainerHigh: surfaceLayers.dark.surfaceContainerHigh,
+    surfaceContainerHighest: surfaceLayers.dark.surfaceContainerHighest,
+    primaryContainer: alpha(brandColors.blue.light, 0.16),
+    onPrimaryContainer: '#8ACEF1',
+  } as any,
 });
 
 // 根据主题模式获取主题

@@ -11,20 +11,15 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import {
-  LayoutGrid,
+  Apps,
   Star,
-  Hash,
-  ChevronRight,
+  PlayArrow,
   Store,
-  Package,
-  Plus,
-  Play,
-  Settings,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+  FolderOpen,
+  Add,
+} from '@mui/icons-material';
 import type { ToolSourceConfig } from '@booltox/shared';
 
 interface SidebarItemProps {
@@ -32,10 +27,11 @@ interface SidebarItemProps {
   label: string;
   active: boolean;
   count?: number;
+  countColor?: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
   onClick: () => void;
 }
 
-function SidebarItem({ icon, label, active, count, onClick }: SidebarItemProps) {
+function SidebarItem({ icon, label, active, count, countColor = 'default', onClick }: SidebarItemProps) {
   return (
     <ListItemButton
       onClick={onClick}
@@ -43,25 +39,31 @@ function SidebarItem({ icon, label, active, count, onClick }: SidebarItemProps) 
       sx={{
         borderRadius: 2,
         mb: 0.5,
+        px: 2,
+        py: 1,
         '&.Mui-selected': {
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText',
+          bgcolor: theme => (theme.palette as any).primaryContainer,
+          color: 'primary.main',
           '&:hover': {
-            bgcolor: 'primary.dark',
+            bgcolor: theme => (theme.palette as any).primaryContainer,
           },
           '& .MuiListItemIcon-root': {
+            color: 'primary.main',
+          },
+          '& .MuiChip-root': {
+            bgcolor: 'primary.main',
             color: 'primary.contrastText',
           },
+        },
+        '&:hover': {
+          bgcolor: 'action.hover',
         },
       }}
     >
       <ListItemIcon
         sx={{
-          minWidth: 36,
-          color: active ? 'inherit' : 'text.secondary',
-          '& svg': {
-            strokeWidth: 2.5,
-          },
+          minWidth: 40,
+          color: active ? 'inherit' : 'action.active',
         }}
       >
         {icon}
@@ -69,18 +71,19 @@ function SidebarItem({ icon, label, active, count, onClick }: SidebarItemProps) 
       <ListItemText
         primary={label}
         primaryTypographyProps={{
-          color: active ? 'inherit' : 'text.primary',
+          variant: 'body2',
+          fontWeight: active ? 600 : 500,
         }}
       />
       {count !== undefined && (
         <Chip
           label={count}
           size="small"
+          color={active ? undefined : countColor}
           sx={{
             height: 20,
             fontSize: '0.75rem',
-            bgcolor: active ? 'primary.contrastText' : 'action.selected',
-            color: active ? 'primary.main' : 'text.secondary',
+            fontWeight: 600,
           }}
         />
       )}
@@ -88,18 +91,20 @@ function SidebarItem({ icon, label, active, count, onClick }: SidebarItemProps) 
   );
 }
 
-// 区域标题组件
+// 区域标题组件 - 符合MD3规范
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
     <Typography
       variant="overline"
       sx={{
         px: 2,
-        py: 1,
+        pt: 2,
+        pb: 1,
         display: 'block',
         color: 'text.secondary',
-        fontWeight: 700,
-        letterSpacing: 1,
+        fontWeight: 600,
+        fontSize: '0.75rem',
+        letterSpacing: '0.05em',
       }}
     >
       {children}
@@ -108,8 +113,8 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 }
 
 interface ModuleSidebarProps {
-  currentView: string; // 'installed' | 'store' | 'official' | 'custom' | 'favorites' | 'running' | 'source:xxx'
-  currentCategory: string; // 'all' | categoryName
+  currentView: string;
+  currentCategory: string;
   onViewChange: (view: string) => void;
   onCategoryChange: (category: string) => void;
   onAddToolSource?: () => void;
@@ -119,11 +124,11 @@ interface ModuleSidebarProps {
     official: number;
     custom: number;
     favorites: number;
-    running: number; // 新增
-    sourceCount?: Record<string, number>; // 新增：每个源的工具数
+    running: number;
+    sourceCount?: Record<string, number>;
   };
   categories: string[];
-  toolSources?: ToolSourceConfig[]; // 新增：工具源列表
+  toolSources?: ToolSourceConfig[];
 }
 
 export function ModuleSidebar({
@@ -136,11 +141,9 @@ export function ModuleSidebar({
   categories,
   toolSources = [],
 }: ModuleSidebarProps) {
-  const navigate = useNavigate();
-
   // 过滤自定义工具源（非官方的远程源，排除本地源）
   const customSources = toolSources.filter(
-    s => s.id !== 'official' && s.type === 'remote' && !s.localPath // 额外保险：排除有 localPath 的源
+    s => s.id !== 'official' && s.type === 'remote' && !s.localPath
   );
 
   return (
@@ -152,16 +155,16 @@ export function ModuleSidebar({
         borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        py: 3,
-        px: 2,
+        bgcolor: theme => (theme.palette as any).surfaceContainerLow,
+        overflow: 'hidden',
       }}
     >
       {/* 区域 1: 我的工具 */}
-      <Box>
-        <SectionHeader>📦 我的工具</SectionHeader>
+      <Box sx={{ px: 1 }}>
+        <SectionHeader>我的工具</SectionHeader>
         <List disablePadding>
           <SidebarItem
-            icon={<LayoutGrid size={20} />}
+            icon={<Apps />}
             label="全部已安装"
             active={currentView === 'installed'}
             count={stats.installed}
@@ -169,37 +172,35 @@ export function ModuleSidebar({
           />
 
           <SidebarItem
-            icon={<Star size={20} />}
+            icon={<Star />}
             label="收藏"
             active={currentView === 'favorites'}
             count={stats.favorites}
+            countColor="warning"
             onClick={() => onViewChange('favorites')}
           />
 
           <SidebarItem
-            icon={<Play size={20} />}
+            icon={<PlayArrow />}
             label="运行中"
             active={currentView === 'running'}
             count={stats.running}
+            countColor="success"
             onClick={() => onViewChange('running')}
           />
         </List>
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 1 }} />
 
       {/* 区域 2: 工具市场 */}
-      <Box>
-        <SectionHeader>🛍️ 工具市场</SectionHeader>
-
-        {/* 浏览工具源子标题 */}
-        <Typography variant="caption" color="text.disabled" sx={{ px: 2, py: 1, display: 'block' }}>
-          📂 浏览工具源
-        </Typography>
+      <Box sx={{ px: 1 }}>
+        <SectionHeader>工具市场</SectionHeader>
 
         <List disablePadding>
+          {/* 官方工具库 */}
           <SidebarItem
-            icon={<Store size={20} />}
+            icon={<Store />}
             label="官方工具库"
             active={currentView === 'official'}
             count={stats.official}
@@ -210,81 +211,100 @@ export function ModuleSidebar({
           {customSources.map(source => (
             <SidebarItem
               key={source.id}
-              icon={<Package size={20} />}
+              icon={<FolderOpen />}
               label={source.name}
               active={currentView === `source:${source.id}`}
               count={stats.sourceCount?.[source.id] || 0}
               onClick={() => onViewChange(`source:${source.id}`)}
             />
           ))}
-        </List>
 
-        {/* 添加工具源按钮 */}
-        {onAddToolSource && (
-          <Button
-            onClick={onAddToolSource}
-            variant="contained"
-            color="secondary"
-            startIcon={<Plus size={18} />}
-            fullWidth
-            sx={{
-              mt: 2,
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
-          >
-            添加工具源
-          </Button>
-        )}
-      </Box>
-
-      <Divider sx={{ my: 2 }} />
-
-      {/* 区域 3: 工具源管理 */}
-      <Box>
-        <SectionHeader>管理</SectionHeader>
-
-        <List disablePadding>
-          <ListItemButton
-            onClick={() => navigate('/tools/sources')}
-            sx={{ borderRadius: 2 }}
-          >
-            <ListItemIcon sx={{ minWidth: 36, color: 'text.secondary', '& svg': { strokeWidth: 2.5 } }}>
-              <Settings size={20} />
-            </ListItemIcon>
-            <ListItemText
-              primary="工具源"
-              primaryTypographyProps={{
-                color: 'text.primary',
+          {/* 添加工具源按钮 */}
+          {onAddToolSource && (
+            <ListItemButton
+              onClick={onAddToolSource}
+              sx={{
+                borderRadius: 2,
+                mt: 1,
+                border: 1,
+                borderColor: 'divider',
+                borderStyle: 'dashed',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                  borderColor: 'primary.main',
+                },
               }}
-            />
-          </ListItemButton>
+            >
+              <ListItemIcon sx={{ minWidth: 40, color: 'primary.main' }}>
+                <Add />
+              </ListItemIcon>
+              <ListItemText
+                primary="添加工具源"
+                primaryTypographyProps={{
+                  variant: 'body2',
+                  fontWeight: 500,
+                  color: 'primary.main',
+                }}
+              />
+            </ListItemButton>
+          )}
         </List>
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 1 }} />
 
-      {/* 分类过滤 */}
-      <Box className="elegant-scroll" sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+      {/* 区域 3: 分类筛选 */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          px: 1,
+          '&::-webkit-scrollbar': {
+            width: 6,
+          },
+          '&::-webkit-scrollbar-thumb': {
+            bgcolor: 'action.hover',
+            borderRadius: 3,
+          },
+        }}
+      >
         <SectionHeader>分类</SectionHeader>
 
         <List disablePadding>
           <SidebarItem
-            icon={<Hash size={20} />}
+            icon={<Apps />}
             label="全部"
             active={currentCategory === 'all'}
             onClick={() => onCategoryChange('all')}
           />
 
           {categories.map(category => (
-            <SidebarItem
+            <ListItemButton
               key={category}
-              icon={<ChevronRight size={18} />}
-              label={category}
-              active={currentCategory === category}
+              selected={currentCategory === category}
               onClick={() => onCategoryChange(category)}
-            />
+              sx={{
+                borderRadius: 2,
+                mb: 0.5,
+                px: 2,
+                py: 0.75,
+                pl: 6,
+                '&.Mui-selected': {
+                  bgcolor: 'action.selected',
+                  '&:hover': {
+                    bgcolor: 'action.selected',
+                  },
+                },
+              }}
+            >
+              <ListItemText
+                primary={category}
+                primaryTypographyProps={{
+                  variant: 'body2',
+                  fontWeight: currentCategory === category ? 600 : 400,
+                }}
+              />
+            </ListItemButton>
           ))}
         </List>
       </Box>

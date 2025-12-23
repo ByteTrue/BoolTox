@@ -170,7 +170,7 @@ class DetachedWindowManager {
         logger.info(`Creating detached window ${windowId}, bootState: ${bootState ? 'provided' : 'none'}`);
 
         // 创建窗口
-        const detachedWindow = this.createDetachedWindow(windowId, bounds);
+        this.createDetachedWindow(windowId, bounds);
 
         if (bootState) {
           this.bootStateByWindowId.set(windowId, bootState);
