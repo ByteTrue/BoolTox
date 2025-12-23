@@ -3,8 +3,12 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Badge from '@mui/material/Badge';
 
 interface SegmentOption<T extends string> {
   value: T;
@@ -20,9 +24,14 @@ interface SegmentedControlProps<T extends string> {
   size?: 'sm' | 'md' | 'lg';
 }
 
+const SIZE_MAP = {
+  sm: 'small',
+  md: 'medium',
+  lg: 'medium',
+} as const;
+
 /**
  * 分段控制器组件 - 用于多选项切换
- * 苹果风格的流畅动画效果
  */
 export function SegmentedControl<T extends string>({
   options,
@@ -30,55 +39,72 @@ export function SegmentedControl<T extends string>({
   onChange,
   size = 'md',
 }: SegmentedControlProps<T>) {
-  const sizeClasses = {
-    sm: 'text-xs px-3 py-1',
-    md: 'text-sm px-4 py-1.5',
-    lg: 'text-base px-5 py-2',
+  const handleChange = (_: React.MouseEvent<HTMLElement>, newValue: T | null) => {
+    if (newValue !== null) {
+      onChange(newValue);
+    }
   };
 
   return (
-    <div className="inline-flex rounded-full border border-[var(--shell-border)] bg-[var(--shell-surface)] p-1 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
-      {options.map(option => {
-        const isActive = value === option.value;
-
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className={`
-              relative flex items-center gap-2 rounded-full font-semibold
-              transition-colors duration-200
-              ${sizeClasses[size]}
-              ${isActive ? 'text-[var(--accent-strong)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}
-            `}
-          >
-            {/* 选中背景动画 */}
-            {isActive && (
-              <motion.div
-                layoutId="segmented-control-bg"
-                className="absolute inset-0 bg-[var(--accent-soft)] rounded-full"
-                transition={{
-                  type: 'spring',
-                  stiffness: 500,
-                  damping: 35,
+    <ToggleButtonGroup
+      value={value}
+      exclusive
+      onChange={handleChange}
+      size={SIZE_MAP[size]}
+      sx={{
+        bgcolor: 'action.hover',
+        borderRadius: 3,
+        p: 0.5,
+        '& .MuiToggleButtonGroup-grouped': {
+          border: 0,
+          borderRadius: 2,
+          mx: 0.25,
+          '&.Mui-selected': {
+            bgcolor: 'background.paper',
+            boxShadow: 1,
+            '&:hover': {
+              bgcolor: 'background.paper',
+            },
+          },
+        },
+      }}
+    >
+      {options.map(option => (
+        <ToggleButton
+          key={option.value}
+          value={option.value}
+          sx={{
+            px: size === 'sm' ? 1.5 : size === 'lg' ? 2.5 : 2,
+            py: size === 'sm' ? 0.5 : size === 'lg' ? 1 : 0.75,
+            textTransform: 'none',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {option.icon}
+            <Typography
+              variant={size === 'sm' ? 'caption' : 'body2'}
+              fontWeight={600}
+            >
+              {option.label}
+            </Typography>
+            {option.badge !== undefined && (
+              <Badge
+                badgeContent={option.badge}
+                color="primary"
+                sx={{
+                  '& .MuiBadge-badge': {
+                    position: 'static',
+                    transform: 'none',
+                    fontSize: '0.7rem',
+                    minWidth: 18,
+                    height: 18,
+                  },
                 }}
               />
             )}
-
-            {/* 内容 */}
-            <span className="relative z-10 flex items-center gap-2">
-              {option.icon}
-              {option.label}
-              {option.badge !== undefined && (
-                <span className="rounded-full bg-[var(--shell-chip)] px-2 py-0.5 text-xs font-semibold">
-                  {option.badge}
-                </span>
-              )}
-            </span>
-          </button>
-        );
-      })}
-    </div>
+          </Box>
+        </ToggleButton>
+      ))}
+    </ToggleButtonGroup>
   );
 }

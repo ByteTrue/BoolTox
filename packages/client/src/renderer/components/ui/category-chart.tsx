@@ -3,27 +3,24 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
-import { useTheme } from '../theme-provider';
-import { buttonInteraction } from '@/utils/animation-presets';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Fade from '@mui/material/Fade';
 import { getCategoryLabel } from '@/hooks/use-module-stats';
 
 export interface CategoryChartProps {
-  /** 分类统计数据 { category: count } */
   data: Record<string, number>;
-  /** 图表尺寸 */
   size?: number;
-  /** 环形厚度 */
   strokeWidth?: number;
 }
 
 /**
  * 分类圆环图组件
- * 使用 SVG + Framer Motion 绘制环形统计图
+ * 使用 SVG 绘制环形统计图
  */
 export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryChartProps) {
-  const { theme } = useTheme();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const { segments, total } = useMemo(() => {
@@ -34,8 +31,7 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
       return { segments: [], total: 0 };
     }
 
-    // 计算每个分类的弧度
-    let currentAngle = -90; // 从顶部开始
+    let currentAngle = -90;
 
     const segments = entries.map(([category, count], index) => {
       const percentage = (count / total) * 100;
@@ -48,7 +44,7 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
         percentage: Math.round(percentage),
         startAngle: currentAngle,
         endAngle: currentAngle + angle,
-        color: getSegmentColor(index, theme),
+        color: getSegmentColor(index),
       };
 
       currentAngle += angle;
@@ -56,34 +52,35 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
     });
 
     return { segments, total };
-  }, [data, theme]);
+  }, [data]);
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
   if (total === 0) {
     return (
-      <div className="flex items-center justify-center" style={{ width: size, height: size }}>
-        <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
+        <Typography variant="body2" color="text.secondary">
           暂无数据
-        </p>
-      </div>
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
       {/* SVG 圆环图 */}
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="transform -rotate-90">
+      <Box sx={{ position: 'relative', width: size, height: size }}>
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
           {/* 背景圆环 */}
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
+            stroke="currentColor"
             strokeWidth={strokeWidth}
+            style={{ color: 'var(--mui-palette-action-hover)' }}
           />
 
           {/* 数据分段 */}
@@ -96,7 +93,7 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
             const isHovered = hoveredIndex === index;
 
             return (
-              <motion.circle
+              <circle
                 key={segment.category}
                 cx={size / 2}
                 cy={size / 2}
@@ -107,20 +104,11 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
                 strokeDasharray={`${dashLength} ${circumference}`}
                 strokeDashoffset={-dashOffset}
                 strokeLinecap="round"
-                initial={{ strokeDasharray: `0 ${circumference}` }}
-                animate={{
-                  strokeDasharray: `${dashLength} ${circumference}`,
-                  strokeWidth: isHovered ? strokeWidth + 4 : strokeWidth,
-                }}
-                transition={{
-                  duration: 1,
-                  delay: index * 0.1,
-                  ease: 'easeOut',
-                }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                className="cursor-pointer"
                 style={{
+                  cursor: 'pointer',
+                  transition: 'stroke-width 0.2s, filter 0.2s',
                   filter: isHovered ? 'drop-shadow(0 0 8px currentColor)' : 'none',
                 }}
               />
@@ -129,93 +117,77 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
         </svg>
 
         {/* 中心文本 */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <motion.p
-            className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
-          >
-            {total}
-          </motion.p>
-          <p
-            className={`text-xs uppercase tracking-wider ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}
-          >
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Fade in>
+            <Typography variant="h4" fontWeight={700}>
+              {total}
+            </Typography>
+          </Fade>
+          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
             已启用
-          </p>
-        </div>
-      </div>
+          </Typography>
+        </Box>
+      </Box>
 
       {/* 图例 */}
-      <div className="grid grid-cols-2 gap-3 w-full">
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5, width: '100%' }}>
         {segments.map((segment, index) => (
-          <motion.button
-            {...buttonInteraction}
+          <Button
             key={segment.category}
-            type="button"
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 transition-[background-color,transform] duration-250 ease-swift ${
-              hoveredIndex === index
-                ? theme === 'dark'
-                  ? 'bg-white/10'
-                  : 'bg-slate-100'
-                : 'hover:bg-white/5'
-            }`}
+            variant="text"
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 + index * 0.05 }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              borderRadius: 2,
+              justifyContent: 'flex-start',
+              textTransform: 'none',
+              bgcolor: hoveredIndex === index ? 'action.hover' : 'transparent',
+            }}
           >
-            <div
-              className="h-3 w-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: segment.color }}
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                bgcolor: segment.color,
+                flexShrink: 0,
+              }}
             />
-            <div className="flex-1 text-left min-w-0">
-              <p
-                className={`text-xs font-medium truncate ${
-                  theme === 'dark' ? 'text-white' : 'text-slate-800'
-                }`}
-              >
-                {segment.label}
-              </p>
-            </div>
-            <span
-              className={`text-xs font-semibold ${
-                theme === 'dark' ? 'text-white/80' : 'text-slate-600'
-              }`}
-            >
+            <Typography variant="caption" fontWeight={500} sx={{ flex: 1, textAlign: 'left' }} noWrap>
+              {segment.label}
+            </Typography>
+            <Typography variant="caption" fontWeight={600} color="text.secondary">
               {segment.count}
-            </span>
-          </motion.button>
+            </Typography>
+          </Button>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
-/**
- * 根据索引和主题返回分段颜色
- * 使用 Apple 设计系统色彩
- */
-function getSegmentColor(index: number, theme: 'light' | 'dark'): string {
-  const lightColors = [
-    'rgb(101, 187, 233)', // brand-blue-400
-    'rgb(138, 206, 241)', // brand-blue-300
-    'rgb(249, 193, 207)', // brand-pink-300
-    '#FBCFE8', // 浅粉色（保留）
-    '#A78BFA', // 紫色（保留）
-    '#60A5FA', // 天蓝色（保留）
+function getSegmentColor(index: number): string {
+  const colors = [
+    'rgb(101, 187, 233)',
+    'rgb(138, 206, 241)',
+    'rgb(249, 193, 207)',
+    '#FBCFE8',
+    '#A78BFA',
+    '#60A5FA',
   ];
-
-  const darkColors = [
-    'rgb(101, 187, 233)', // brand-blue-400
-    'rgb(138, 206, 241)', // brand-blue-300
-    'rgb(249, 193, 207)', // brand-pink-300
-    '#FBCFE8', // 浅粉色（保留）
-    '#C4B5FD', // 紫色（保留）
-    '#7DD3FC', // 天蓝色（保留）
-  ];
-
-  const colors = theme === 'dark' ? darkColors : lightColors;
   return colors[index % colors.length];
 }

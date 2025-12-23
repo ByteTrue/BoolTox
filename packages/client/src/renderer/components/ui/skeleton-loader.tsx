@@ -3,7 +3,9 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { motion } from 'framer-motion';
+import Box from '@mui/material/Box';
+import Skeleton from '@mui/material/Skeleton';
+import Paper from '@mui/material/Paper';
 
 interface SkeletonLoaderProps {
   type?: 'module-card' | 'list-item' | 'text' | 'circle';
@@ -25,81 +27,60 @@ export function SkeletonLoader({
   return (
     <>
       {items.map(index => (
-        <div key={index} className={className}>
+        <Box key={index} className={className}>
           {type === 'module-card' && <ModuleCardSkeleton />}
           {type === 'list-item' && <ListItemSkeleton />}
           {type === 'text' && <TextSkeleton />}
           {type === 'circle' && <CircleSkeleton />}
-        </div>
+        </Box>
       ))}
     </>
   );
 }
 
-// 模块卡片骨架屏
 function ModuleCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-[var(--shell-border)] bg-[var(--shell-surface)] p-4 shadow-[0_8px_18px_rgba(15,35,70,0.12)]">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-8 w-8 rounded-lg" />
-          <Skeleton className="h-5 w-16 rounded-full" />
-        </div>
-        <Skeleton className="h-5 w-20 rounded-full" />
-      </div>
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Skeleton variant="rounded" width={32} height={32} />
+          <Skeleton variant="rounded" width={64} height={20} sx={{ borderRadius: 3 }} />
+        </Box>
+        <Skeleton variant="rounded" width={80} height={20} sx={{ borderRadius: 3 }} />
+      </Box>
 
-      <Skeleton className="h-5 w-32 mb-2" />
-      <Skeleton className="h-4 w-full mb-4" />
+      <Skeleton variant="text" width={128} height={24} sx={{ mb: 1 }} />
+      <Skeleton variant="text" width="100%" height={16} sx={{ mb: 2 }} />
 
-      <div className="flex justify-end">
-        <Skeleton className="h-8 w-20 rounded-full" />
-      </div>
-    </div>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Skeleton variant="rounded" width={80} height={32} sx={{ borderRadius: 3 }} />
+      </Box>
+    </Paper>
   );
 }
 
-// 列表项骨架屏
 function ListItemSkeleton() {
   return (
-    <div className="rounded-2xl border border-[var(--shell-border)] bg-[var(--shell-surface)] p-4">
-      <div className="flex items-center gap-4">
-        <Skeleton className="h-10 w-10 rounded-xl" />
-        <div className="flex-1">
-          <Skeleton className="h-5 w-48 mb-2" />
-          <Skeleton className="h-4 w-full max-w-md" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-8 w-20 rounded-full" />
-          <Skeleton className="h-8 w-20 rounded-full" />
-        </div>
-      </div>
-    </div>
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Skeleton variant="rounded" width={40} height={40} />
+        <Box sx={{ flex: 1 }}>
+          <Skeleton variant="text" width={192} height={20} sx={{ mb: 0.5 }} />
+          <Skeleton variant="text" width="100%" sx={{ maxWidth: 384 }} height={16} />
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Skeleton variant="rounded" width={80} height={32} sx={{ borderRadius: 3 }} />
+          <Skeleton variant="rounded" width={80} height={32} sx={{ borderRadius: 3 }} />
+        </Box>
+      </Box>
+    </Paper>
   );
 }
 
-// 文本骨架屏
 function TextSkeleton() {
-  return <Skeleton className="h-4 w-full" />;
+  return <Skeleton variant="text" width="100%" height={16} />;
 }
 
-// 圆形骨架屏
 function CircleSkeleton() {
-  return <Skeleton className="h-12 w-12 rounded-full" />;
-}
-
-// 基础骨架屏组件
-function Skeleton({ className }: { className: string }) {
-  return (
-    <motion.div
-      className={`bg-[var(--shell-chip)] ${className}`}
-      animate={{
-        opacity: [0.5, 0.8, 0.5],
-      }}
-      transition={{
-        duration: 1.5,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-    />
-  );
+  return <Skeleton variant="circular" width={48} height={48} />;
 }

@@ -4,12 +4,13 @@
  */
 
 import { useMemo } from 'react';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import LinearProgress from '@mui/material/LinearProgress';
 import { Download, Loader2, RefreshCw, XCircle, CheckCircle2, Settings } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useUpdate } from '@/contexts/update-context';
-import { useTheme } from '../theme-provider';
-import { getGlassStyle } from '@/utils/glass-layers';
-import { buttonInteraction } from '@/utils/animation-presets';
 
 interface UpdateBannerProps {
   onNavigate?: (nav: string) => void;
@@ -25,7 +26,6 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
     dismissUpdate,
     retryCheck,
   } = useUpdate();
-  const { theme } = useTheme();
 
   const progressPercent = useMemo(() => {
     if (state.phase !== 'downloading' || !state.progress) return 0;
@@ -44,266 +44,179 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
   }
 
   const sizeLabel = details?.sizeBytes ? formatBytes(details.sizeBytes) : undefined;
-  const baseStyle = getGlassStyle('CARD', theme);
 
   const handleGoToSettings = () => {
     onNavigate?.('settings');
   };
 
   return (
-    <div
-      className={`mb-4 rounded-2xl border px-5 py-4 shadow-unified-md ${
-        theme === 'dark' ? 'bg-[#0b1625]/60 text-white' : 'bg-white/80 text-slate-800'
-      }`}
-      style={baseStyle} // 使用统一的玻璃边框
-    >
+    <Paper sx={{ mb: 2, p: 2.5, borderRadius: 2 }}>
       {state.phase === 'available' && details ? (
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-blue-400">
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'stretch', md: 'center' },
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
               <Download size={16} />
-              发现新版本
-              <span className="text-white/70 dark:text-white/70 text-xs font-normal">
+              <Typography variant="subtitle2" color="primary" fontWeight={600}>
+                发现新版本
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
                 {details.version}
-              </span>
-            </div>
-            <p className={`text-sm ${theme === 'dark' ? 'text-white/80' : 'text-slate-600'}`}>
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
               {details.notes
                 ? truncateText(details.notes, 120)
                 : '可立即下载安装最新版本以获取最新功能和修复。'}
               {sizeLabel ? ` · 安装包大小约 ${sizeLabel}` : ''}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <motion.button
-              {...buttonInteraction}
-              type="button"
-              className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
-              style={{
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                    : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
-              }}
-              whileHover={{
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                    : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
-              }}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Settings size={16} />}
               onClick={handleGoToSettings}
+              sx={{ borderRadius: 50 }}
             >
-              <Settings size={16} /> 前往更新
-            </motion.button>
-            <motion.button
-              {...buttonInteraction}
-              type="button"
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-[background-color,box-shadow] duration-200 ${
-                theme === 'dark' ? 'text-white/90' : 'text-slate-800'
-              } ${details.mandatory ? 'opacity-60 cursor-not-allowed' : ''}`}
-              style={{
-                ...getGlassStyle('BUTTON', theme, {
-                  withBorderGlow: true,
-                  withInnerShadow: true,
-                }),
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
-              }}
+              前往更新
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
               onClick={dismissUpdate}
               disabled={details.mandatory}
+              sx={{ borderRadius: 50 }}
             >
               关闭
-            </motion.button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
       ) : null}
 
       {state.phase === 'downloading' && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
             <Loader2 size={18} className="animate-spin" />
-            正在下载更新包
-            {sizeLabel ? (
-              <span className="text-xs text-white/60 dark:text-white/60">（约 {sizeLabel}）</span>
-            ) : null}
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
-            <div
-              className="h-full rounded-full bg-brand-gradient-secondary transition-[width] duration-250 ease-swift"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-xs text-white/60 dark:text-white/60">
-            <span>{progressPercent}%</span>
-            {state.progress?.totalBytes ? (
-              <span>
-                {formatBytes(state.progress.downloadedBytes)} /{' '}
-                {formatBytes(state.progress.totalBytes)}
-              </span>
-            ) : null}
-          </div>
-          <div className="flex justify-end">
-            <motion.button
-              {...buttonInteraction}
-              type="button"
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-[background-color,box-shadow] duration-200 ${
-                theme === 'dark' ? 'text-white/90' : 'text-slate-800'
-              }`}
-              style={{
-                ...getGlassStyle('BUTTON', theme, {
-                  withBorderGlow: true,
-                  withInnerShadow: true,
-                }),
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
-              }}
-              onClick={cancelDownload}
-            >
+            <Typography variant="body2" fontWeight={500}>
+              正在下载更新包
+            </Typography>
+            {sizeLabel && (
+              <Typography variant="caption" color="text.secondary">
+                （约 {sizeLabel}）
+              </Typography>
+            )}
+          </Box>
+          <LinearProgress variant="determinate" value={progressPercent} sx={{ borderRadius: 1, mb: 1 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="caption" color="text.secondary">
+              {progressPercent}%
+              {state.progress?.totalBytes && (
+                <> · {formatBytes(state.progress.downloadedBytes)} / {formatBytes(state.progress.totalBytes)}</>
+              )}
+            </Typography>
+            <Button variant="outlined" size="small" onClick={cancelDownload} sx={{ borderRadius: 50 }}>
               取消下载
-            </motion.button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
       )}
 
       {state.phase === 'downloaded' && details ? (
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 size={24} className="text-green-400" />
-            <div>
-              <p className="text-sm font-semibold">更新包已准备就绪</p>
-              <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-600'}`}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'stretch', md: 'center' },
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+            <CheckCircle2 size={24} color="green" />
+            <Box>
+              <Typography variant="body2" fontWeight={600}>
+                更新包已准备就绪
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
                 版本 {details.version} 下载完成，点击安装以完成更新。
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <motion.button
-              {...buttonInteraction}
-              type="button"
-              className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
-              style={{
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                    : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
-              }}
-              whileHover={{
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                    : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
-              }}
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Settings size={16} />}
               onClick={handleGoToSettings}
+              sx={{ borderRadius: 50 }}
             >
-              <Settings size={16} /> 前往安装
-            </motion.button>
-            <motion.button
-              {...buttonInteraction}
-              type="button"
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-[background-color,box-shadow] duration-200 ${
-                theme === 'dark' ? 'text-white/90' : 'text-slate-800'
-              }`}
-              style={{
-                ...getGlassStyle('BUTTON', theme, {
-                  withBorderGlow: true,
-                  withInnerShadow: true,
-                }),
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
-              }}
-              onClick={dismissUpdate}
-            >
+              前往安装
+            </Button>
+            <Button variant="outlined" size="small" onClick={dismissUpdate} sx={{ borderRadius: 50 }}>
               稍后再说
-            </motion.button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
       ) : null}
 
       {state.phase === 'error' && (
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <XCircle size={24} className="text-rose-400" />
-            <div>
-              <p className="text-sm font-semibold">更新遇到问题</p>
-              <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-slate-600'}`}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'stretch', md: 'center' },
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+            <XCircle size={24} color="red" />
+            <Box>
+              <Typography variant="body2" fontWeight={600}>
+                更新遇到问题
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
                 {state.error ?? '下载或安装过程中发生错误，请重试。'}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             {details ? (
-              <motion.button
-                {...buttonInteraction}
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
-                style={{
-                  boxShadow:
-                    theme === 'dark'
-                      ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                      : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
-                }}
-                whileHover={{
-                  boxShadow:
-                    theme === 'dark'
-                      ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                      : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
-                }}
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<RefreshCw size={16} />}
                 onClick={downloadUpdate}
+                sx={{ borderRadius: 50 }}
               >
-                <RefreshCw size={16} /> 重新下载
-              </motion.button>
+                重新下载
+              </Button>
             ) : (
-              <motion.button
-                {...buttonInteraction}
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full bg-brand-blue-400 px-4 py-2 text-sm font-semibold text-white transition-[box-shadow,transform] duration-200"
-                style={{
-                  boxShadow:
-                    theme === 'dark'
-                      ? '0 4px 12px rgba(101, 187, 233, 0.4), 0 0 0 1px rgba(101, 187, 233, 0.3)'
-                      : '0 4px 16px rgba(101, 187, 233, 0.35), 0 0 0 1px rgba(101, 187, 233, 0.2)',
-                }}
-                whileHover={{
-                  boxShadow:
-                    theme === 'dark'
-                      ? '0 6px 20px rgba(101, 187, 233, 0.5), 0 0 0 1px rgba(101, 187, 233, 0.4)'
-                      : '0 6px 24px rgba(101, 187, 233, 0.45), 0 0 0 1px rgba(101, 187, 233, 0.3)',
-                }}
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<RefreshCw size={16} />}
                 onClick={retryCheck}
+                sx={{ borderRadius: 50 }}
               >
-                <RefreshCw size={16} /> 重新检查
-              </motion.button>
+                重新检查
+              </Button>
             )}
-            <motion.button
-              {...buttonInteraction}
-              type="button"
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-[background-color,box-shadow] duration-200 ${
-                theme === 'dark' ? 'text-white/90' : 'text-slate-800'
-              }`}
-              style={{
-                ...getGlassStyle('BUTTON', theme, {
-                  withBorderGlow: true,
-                  withInnerShadow: true,
-                }),
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                    : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
-              }}
-              onClick={dismissUpdate}
-            >
+            <Button variant="outlined" size="small" onClick={dismissUpdate} sx={{ borderRadius: 50 }}>
               隐藏提示
-            </motion.button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Paper>
   );
 }
 

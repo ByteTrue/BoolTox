@@ -3,15 +3,14 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { AnimatePresence, motion } from 'framer-motion';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Fade from '@mui/material/Fade';
 import type { ModuleEvent } from '@/utils/module-event-logger';
-import { useTheme } from '../theme-provider';
-import { GLASS_BORDERS } from '@/utils/glass-layers';
 
 export interface ActivityTimelineProps {
-  /** 事件列表 */
   events: ModuleEvent[];
-  /** 最多显示数量 */
   maxItems?: number;
 }
 
@@ -20,138 +19,133 @@ export interface ActivityTimelineProps {
  * 展示模块的操作历史（安装、卸载、启用、停用）
  */
 export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProps) {
-  const { theme } = useTheme();
-
   const displayEvents = events.slice(0, maxItems);
 
   if (displayEvents.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6 }}>
+        <Typography variant="body2" color="text.secondary">
           暂无操作记录
-        </p>
-      </div>
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="relative space-y-4">
-      <AnimatePresence mode="popLayout">
-        {displayEvents.map((event, index) => (
-          <motion.div
-            key={event.id}
-            className="relative flex gap-4"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{
-              duration: 0.3,
-              delay: index * 0.05,
-              ease: 'easeOut',
-            }}
-          >
+    <Box sx={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {displayEvents.map((event, index) => (
+        <Fade in key={event.id} timeout={300 + index * 50}>
+          <Box sx={{ position: 'relative', display: 'flex', gap: 2 }}>
             {/* 时间轴线和圆点 */}
-            <div className="relative flex flex-col items-center">
+            <Box sx={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {/* 圆点 */}
-              <motion.div
-                className={`z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
-                  theme === 'dark' ? 'bg-slate-900' : 'bg-white'
-                }`}
-                style={{
-                  borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+              <Box
+                sx={{
+                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: 2,
+                  borderColor: 'divider',
+                  bgcolor: 'background.paper',
                 }}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: index * 0.05 + 0.1, type: 'spring' }}
               >
-                <div
-                  className="h-4 w-4 rounded-full"
-                  style={{ backgroundColor: getActionColor(event.action) }}
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    bgcolor: getActionColor(event.action),
+                  }}
                 />
-              </motion.div>
+              </Box>
 
               {/* 连接线 */}
               {index < displayEvents.length - 1 && (
-                <div
-                  className={`w-[2px] flex-1 ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`}
-                  style={{ minHeight: '20px' }}
+                <Box
+                  sx={{
+                    width: 2,
+                    flex: 1,
+                    minHeight: 20,
+                    bgcolor: 'divider',
+                  }}
                 />
               )}
-            </div>
+            </Box>
 
             {/* 事件内容 */}
-            <motion.div
-              className={`flex-1 rounded-xl border px-4 py-3 backdrop-blur-sm transition-colors ${
-                theme === 'dark' ? 'bg-white/5 hover:bg-white/8' : 'bg-white/50 hover:bg-white/70'
-              }`}
-              style={{
-                borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+            <Paper
+              variant="outlined"
+              sx={{
+                flex: 1,
+                px: 2,
+                py: 1.5,
+                borderRadius: 2,
+                transition: 'background-color 0.2s, transform 0.2s',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                  transform: 'scale(1.01)',
+                },
               }}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm font-semibold ${
-                      theme === 'dark' ? 'text-white' : 'text-slate-800'
-                    }`}
-                  >
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight={600}>
                     {event.moduleName}
-                  </p>
-                  <p
-                    className={`mt-1 text-xs ${
-                      theme === 'dark' ? 'text-white/70' : 'text-slate-600'
-                    }`}
-                  >
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                     {getActionText(event.action)}
-                  </p>
-                </div>
+                  </Typography>
+                </Box>
 
                 {/* 操作图标 */}
-                <div
-                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs"
-                  style={{ backgroundColor: getActionColor(event.action) + '20' }}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    bgcolor: `${getActionColor(event.action)}20`,
+                    fontSize: '0.75rem',
+                    flexShrink: 0,
+                  }}
                 >
                   {getActionIcon(event.action)}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* 时间戳 */}
-              <p
-                className={`mt-2 text-xs ${theme === 'dark' ? 'text-white/50' : 'text-slate-500'}`}
-              >
+              <Typography variant="caption" color="text.disabled" sx={{ mt: 1, display: 'block' }}>
                 {formatTimestamp(event.timestamp)}
-              </p>
-            </motion.div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+              </Typography>
+            </Paper>
+          </Box>
+        </Fade>
+      ))}
+    </Box>
   );
 }
 
-/**
- * 获取操作类型对应的颜色
- */
 function getActionColor(action: ModuleEvent['action']): string {
   switch (action) {
     case 'install':
-      return '#10B981'; // 绿色
+      return '#10B981';
     case 'uninstall':
-      return '#EF4444'; // 红色
+      return '#EF4444';
     case 'enable':
-      return '#3B82F6'; // 蓝色
+      return '#3B82F6';
     case 'disable':
-      return '#6B7280'; // 灰色
+      return '#6B7280';
     default:
-      return '#6B7280'; // 默认灰色
+      return '#6B7280';
   }
 }
 
-/**
- * 获取操作类型对应的图标
- */
 function getActionIcon(action: ModuleEvent['action']): string {
   switch (action) {
     case 'install':
@@ -167,9 +161,6 @@ function getActionIcon(action: ModuleEvent['action']): string {
   }
 }
 
-/**
- * 获取操作类型的文本描述
- */
 function getActionText(action: ModuleEvent['action']): string {
   switch (action) {
     case 'install':
@@ -185,9 +176,6 @@ function getActionText(action: ModuleEvent['action']): string {
   }
 }
 
-/**
- * 格式化时间戳为相对时间
- */
 function formatTimestamp(timestamp: number): string {
   const now = Date.now();
   const diff = now - timestamp;

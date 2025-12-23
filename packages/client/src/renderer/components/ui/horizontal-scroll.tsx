@@ -5,15 +5,11 @@
 
 import type { ReactNode, WheelEvent } from 'react';
 import { useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useTheme } from '../theme-provider';
+import Box from '@mui/material/Box';
 
 export interface HorizontalScrollProps {
-  /** 子元素 */
   children: ReactNode;
-  /** 间距 */
   gap?: number;
-  /** 是否显示滚动条 */
   showScrollbar?: boolean;
 }
 
@@ -26,90 +22,53 @@ export function HorizontalScroll({
   gap = 24,
   showScrollbar = true,
 }: HorizontalScrollProps) {
-  const { theme } = useTheme();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 处理鼠标滚轮事件，实现横向滚动
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     if (scrollRef.current) {
-      // 如果按住 Shift 或者滚动的是横向滚动条，使用默认行为
       if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
         return;
       }
-
-      // 阻止默认的纵向滚动
       e.preventDefault();
-
-      // 将纵向滚动转换为横向滚动
       scrollRef.current.scrollLeft += e.deltaY;
     }
   };
 
   return (
-    <div
+    <Box
       ref={scrollRef}
-      className={`horizontal-scroll-container overflow-x-auto py-2 ${
-        showScrollbar ? '' : 'scrollbar-hide'
-      }`}
       onWheel={handleWheel}
-      style={{
+      sx={{
+        overflowX: 'auto',
+        py: 1,
         scrollBehavior: 'smooth',
+        '&::-webkit-scrollbar': {
+          height: showScrollbar ? 8 : 0,
+          display: showScrollbar ? 'block' : 'none',
+        },
+        '&::-webkit-scrollbar-track': {
+          bgcolor: 'action.hover',
+          borderRadius: 1,
+        },
+        '&::-webkit-scrollbar-thumb': {
+          bgcolor: 'primary.main',
+          borderRadius: 1,
+          opacity: 0.5,
+          '&:hover': {
+            opacity: 0.7,
+          },
+        },
+        scrollbarWidth: showScrollbar ? 'thin' : 'none',
       }}
     >
-      <motion.div
-        className="flex"
-        style={{ gap: `${gap}px` }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
+      <Box
+        sx={{
+          display: 'flex',
+          gap: `${gap}px`,
+        }}
       >
         {children}
-      </motion.div>
-
-      <style>{`
-        .horizontal-scroll-container {
-          /* WebKit 浏览器滚动条样式 */
-          &::-webkit-scrollbar {
-            height: 8px;
-          }
-
-          &::-webkit-scrollbar-track {
-            background: ${theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
-            border-radius: 4px;
-          }
-
-          &::-webkit-scrollbar-thumb {
-            background: ${
-              theme === 'dark' ? 'rgba(101, 187, 233, 0.5)' : 'rgba(101, 187, 233, 0.6)'
-            };
-            border-radius: 4px;
-            transition: background 0.3s ease;
-          }
-
-          &::-webkit-scrollbar-thumb:hover {
-            background: ${
-              theme === 'dark' ? 'rgba(101, 187, 233, 0.7)' : 'rgba(101, 187, 233, 0.8)'
-            };
-          }
-
-          /* Firefox 滚动条样式 */
-          scrollbar-width: thin;
-          scrollbar-color: ${
-            theme === 'dark'
-              ? 'rgba(101, 187, 233, 0.5) rgba(255, 255, 255, 0.05)'
-              : 'rgba(101, 187, 233, 0.6) rgba(0, 0, 0, 0.05)'
-          };
-        }
-
-        .scrollbar-hide {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-
-          &::-webkit-scrollbar {
-            display: none;
-          }
-        }
-      `}</style>
-    </div>
+      </Box>
+    </Box>
   );
 }

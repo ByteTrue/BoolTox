@@ -5,17 +5,12 @@
 
 /**
  * 可拖拽卡片组件
- *
- * 集成触觉反馈的拖拽卡片，特性：
- * - 拖拽时缩小 + 旋转
- * - 释放时回弹 + 震动
- * - 橡皮筋边界效果
+ * 注意：此组件保留 framer-motion 用于拖拽动画
  */
 
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { useState, type ReactNode } from 'react';
-import { useTheme } from '../theme-provider';
-import { getGlassStyle } from '../../utils/glass-layers';
+import Box from '@mui/material/Box';
 
 export interface DraggableCardProps {
   children: ReactNode;
@@ -30,26 +25,21 @@ export function DraggableCard({
   className = '',
   disabled = false,
 }: DraggableCardProps) {
-  const { theme } = useTheme();
   const [isDragging, setIsDragging] = useState(false);
 
-  // 拖拽位置
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-
-  // 根据拖拽距离计算旋转角度
   const rotate = useTransform(x, [-100, 0, 100], [-5, 0, 5]);
-
-  // 根据拖拽距离计算透明度（模拟"抓取"效果）
   const opacity = useTransform(x, [-200, 0, 200], [0.6, 1, 0.6]);
 
   return (
-    <motion.div
+    <Box
+      component={motion.div}
       drag={!disabled}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0.1} // 橡皮筋效果
+      dragElastic={0.1}
       onDragStart={() => setIsDragging(true)}
-      onDragEnd={(_, info) => {
+      onDragEnd={(_, info: PanInfo) => {
         setIsDragging(false);
         onDragEnd?.(info);
       }}
@@ -59,7 +49,6 @@ export function DraggableCard({
         rotate,
         opacity,
         cursor: disabled ? 'default' : isDragging ? 'grabbing' : 'grab',
-        ...getGlassStyle('CARD', theme),
       }}
       whileHover={!disabled ? { scale: 1.02 } : undefined}
       whileTap={!disabled ? { scale: 0.98 } : undefined}
@@ -67,12 +56,10 @@ export function DraggableCard({
         isDragging
           ? {
               scale: 0.98,
-              rotate: rotate.get(),
               boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
             }
           : {
               scale: 1,
-              rotate: 0,
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }
       }
@@ -81,16 +68,22 @@ export function DraggableCard({
         stiffness: 300,
         damping: 20,
       }}
-      className={`rounded-2xl border p-4 ${className}`}
+      className={className}
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        bgcolor: 'background.paper',
+        border: 1,
+        borderColor: 'divider',
+      }}
     >
       {children}
-    </motion.div>
+    </Box>
   );
 }
 
 /**
  * 可拖拽排序列表
- * 带有触觉反馈的拖拽排序
  */
 export interface DraggableSortableListProps<T> {
   items: T[];
@@ -110,7 +103,7 @@ export function DraggableSortableList<T>({
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {items.map((item, index) => {
         const key = keyExtractor(item);
         const isDragging = draggedItem === key;

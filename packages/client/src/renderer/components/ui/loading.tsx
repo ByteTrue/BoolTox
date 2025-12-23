@@ -4,103 +4,74 @@
  */
 
 /**
- * LoadingSpinner - 加载动画组件
- *
- * Apple 风格的加载指示器
+ * Loading 组件集合
  */
 
-import { motion } from 'framer-motion';
-import { getSpinnerStyle, getPulseStyle } from '@/utils/detail-polish';
-import { useTheme } from '../theme-provider';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Fade from '@mui/material/Fade';
 
 export interface LoadingSpinnerProps {
-  /** 尺寸 */
   size?: 'sm' | 'md' | 'lg';
-  /** 颜色 */
   color?: string;
-  /** 速度 (秒) */
-  speed?: number;
-  /** 类名 */
   className?: string;
 }
 
+const SIZE_MAP = {
+  sm: 20,
+  md: 32,
+  lg: 48,
+};
+
 /**
  * LoadingSpinner - 旋转 Spinner
- *
- * @example
- * <LoadingSpinner size="md" />
  */
 export function LoadingSpinner({
   size = 'md',
-  color,
-  speed = 0.8,
   className = '',
 }: LoadingSpinnerProps) {
-  const { theme } = useTheme();
-
   return (
-    <motion.div
+    <CircularProgress
+      size={SIZE_MAP[size]}
       className={className}
-      style={getSpinnerStyle(theme, { size, color, speed })}
-      animate={{ rotate: 360 }}
-      transition={{
-        duration: speed,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
     />
   );
 }
 
 /**
- * LoadingDots - 三点跳跃动画
+ * LoadingDots - 三点加载动画
  */
 export interface LoadingDotsProps {
-  /** 尺寸 */
   size?: 'sm' | 'md' | 'lg';
-  /** 颜色 */
-  color?: string;
-  /** 速度 */
-  speed?: number;
-  /** 类名 */
   className?: string;
 }
 
-export function LoadingDots({ size = 'md', color, speed = 1.2, className = '' }: LoadingDotsProps) {
-  const { theme } = useTheme();
-
-  const sizeMap = {
-    sm: 6,
-    md: 8,
-    lg: 10,
-  };
-
-  const dotSize = sizeMap[size];
-  const dotColor = color || (theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.6)');
+export function LoadingDots({ size = 'md', className = '' }: LoadingDotsProps) {
+  const dotSize = { sm: 6, md: 8, lg: 10 }[size];
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <Box className={className} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {[0, 1, 2].map(index => (
-        <motion.div
+        <Box
           key={index}
-          animate={{
-            y: [-8, 0, -8],
-          }}
-          transition={{
-            duration: speed,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: index * (speed / 6),
-          }}
-          style={{
+          sx={{
             width: dotSize,
             height: dotSize,
             borderRadius: '50%',
-            backgroundColor: dotColor,
+            bgcolor: 'text.secondary',
+            animation: 'bounce 1.2s infinite ease-in-out',
+            animationDelay: `${index * 0.2}s`,
+            '@keyframes bounce': {
+              '0%, 80%, 100%': { transform: 'translateY(0)' },
+              '40%': { transform: 'translateY(-8px)' },
+            },
           }}
         />
       ))}
-    </div>
+    </Box>
   );
 }
 
@@ -108,35 +79,24 @@ export function LoadingDots({ size = 'md', color, speed = 1.2, className = '' }:
  * LoadingPulse - 脉冲动画
  */
 export interface LoadingPulseProps {
-  /** 尺寸 */
   size?: number;
-  /** 颜色 */
-  color?: string;
-  /** 速度 */
-  speed?: number;
-  /** 类名 */
   className?: string;
 }
 
-export function LoadingPulse({ size = 40, color, speed = 1.5, className = '' }: LoadingPulseProps) {
-  const { theme } = useTheme();
-
+export function LoadingPulse({ size = 40, className = '' }: LoadingPulseProps) {
   return (
-    <motion.div
-      className={`rounded-full ${className}`}
-      style={{
+    <Box
+      className={className}
+      sx={{
         width: size,
         height: size,
-        ...getPulseStyle(theme, { color, speed }),
-      }}
-      animate={{
-        scale: [1, 1.2, 1],
-        opacity: [1, 0.5, 1],
-      }}
-      transition={{
-        duration: speed,
-        repeat: Infinity,
-        ease: 'easeInOut',
+        borderRadius: '50%',
+        bgcolor: 'primary.main',
+        animation: 'pulse 1.5s infinite ease-in-out',
+        '@keyframes pulse': {
+          '0%, 100%': { transform: 'scale(1)', opacity: 1 },
+          '50%': { transform: 'scale(1.2)', opacity: 0.5 },
+        },
       }}
     />
   );
@@ -146,15 +106,9 @@ export function LoadingPulse({ size = 40, color, speed = 1.5, className = '' }: 
  * LoadingProgress - 进度条动画
  */
 export interface LoadingProgressProps {
-  /** 进度 (0-100) */
   progress?: number;
-  /** 是否为不确定状态 */
   indeterminate?: boolean;
-  /** 高度 */
   height?: number;
-  /** 颜色 */
-  color?: string;
-  /** 类名 */
   className?: string;
 }
 
@@ -162,51 +116,18 @@ export function LoadingProgress({
   progress = 0,
   indeterminate = false,
   height = 4,
-  color,
   className = '',
 }: LoadingProgressProps) {
-  const { theme } = useTheme();
-
-  const bgColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-  const barColor =
-    color || (theme === 'dark' ? 'rgba(101, 187, 233, 0.8)' : 'rgba(0, 122, 255, 0.8)');
-
   return (
-    <div
-      className={`w-full rounded-full overflow-hidden ${className}`}
-      style={{
+    <LinearProgress
+      variant={indeterminate ? 'indeterminate' : 'determinate'}
+      value={indeterminate ? undefined : Math.min(100, Math.max(0, progress))}
+      className={className}
+      sx={{
         height,
-        backgroundColor: bgColor,
+        borderRadius: height / 2,
       }}
-    >
-      {indeterminate ? (
-        <motion.div
-          className="h-full rounded-full"
-          style={{
-            width: '30%',
-            backgroundColor: barColor,
-          }}
-          animate={{
-            x: ['-100%', '400%'],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      ) : (
-        <motion.div
-          className="h-full rounded-full"
-          style={{
-            backgroundColor: barColor,
-          }}
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-          transition={{ duration: 0.3 }}
-        />
-      )}
-    </div>
+    />
   );
 }
 
@@ -214,13 +135,9 @@ export function LoadingProgress({
  * LoadingOverlay - 全屏加载遮罩
  */
 export interface LoadingOverlayProps {
-  /** 是否显示 */
   show: boolean;
-  /** 加载文本 */
   text?: string;
-  /** 是否模糊背景 */
   blur?: boolean;
-  /** 类名 */
   className?: string;
 }
 
@@ -230,34 +147,38 @@ export function LoadingOverlay({
   blur = true,
   className = '',
 }: LoadingOverlayProps) {
-  const { theme } = useTheme();
-
   if (!show) return null;
 
   return (
-    <motion.div
-      className={`fixed inset-0 z-50 flex items-center justify-center ${className}`}
-      style={{
-        backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.8)',
-        backdropFilter: blur ? 'blur(8px)' : 'none',
-      }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-    >
-      <motion.div
-        className={`flex flex-col items-center gap-4 p-8 rounded-2xl ${
-          theme === 'dark' ? 'bg-slate-800/90' : 'bg-white/90'
-        }`}
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1 }}
+    <Fade in={show}>
+      <Box
+        className={className}
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: blur ? 'blur(8px)' : 'none',
+        }}
       >
-        <LoadingSpinner size="lg" />
-        {text && <p className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>{text}</p>}
-      </motion.div>
-    </motion.div>
+        <Paper
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            p: 4,
+            borderRadius: 3,
+          }}
+        >
+          <CircularProgress size={48} />
+          {text && <Typography color="text.primary">{text}</Typography>}
+        </Paper>
+      </Box>
+    </Fade>
   );
 }
 
@@ -275,14 +196,12 @@ export function LoadingInline({
   size = 'sm',
   className = '',
 }: LoadingInlineProps) {
-  const { theme } = useTheme();
-
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <LoadingSpinner size={size} />
-      <span className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
+    <Box className={className} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <CircularProgress size={SIZE_MAP[size]} />
+      <Typography variant="body2" color="text.secondary">
         {text}
-      </span>
-    </div>
+      </Typography>
+    </Box>
   );
 }

@@ -4,21 +4,23 @@
  */
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import Skeleton from '@mui/material/Skeleton';
+import Divider from '@mui/material/Divider';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useTheme } from '../theme-provider';
 import { useActivityFeed } from '@/contexts';
 import { formatRelativeTime, type ActivityFeedItem } from '@/content/activity-feed';
-import { getGlassStyle, GLASS_BORDERS } from '@/utils/glass-layers';
-import { cardHover, buttonInteraction } from '@/utils/animation-presets';
 import { History, RefreshCw } from 'lucide-react';
 import { ChangelogDrawer } from './changelog-drawer';
 
-type ThemeMode = 'dark' | 'light';
-
 export function ActivityFeed() {
-  const { theme } = useTheme();
   const { items, loading, refreshing, refresh, error } = useActivityFeed();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | undefined>();
@@ -41,62 +43,53 @@ export function ActivityFeed() {
     await refresh();
   };
 
-  // 使用统一的玻璃边框，不再根据优先级改变边框颜色
-  const glassStyle = getGlassStyle('CARD', theme);
-
   return (
     <>
-      <motion.div
-        {...cardHover}
-        className="relative flex min-h-[280px] flex-col overflow-hidden rounded-3xl border p-8 transition-shadow duration-250 ease-swift hover:shadow-lg"
-        style={glassStyle} // 使用统一的玻璃样式
+      <Card
+        sx={{
+          minHeight: 280,
+          p: 4,
+          borderRadius: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'box-shadow 0.2s',
+          '&:hover': {
+            boxShadow: 3,
+          },
+        }}
       >
-        {!loading && latestItem?.priority === 'high' ? (
-          <div
-            className="absolute inset-0 opacity-5"
-            style={{
-              background:
-                theme === 'dark'
-                  ? 'radial-gradient(circle at 50% 50%, rgba(101, 187, 233, 0.3), transparent 70%)'
-                  : 'radial-gradient(circle at 50% 50%, rgba(101, 187, 233, 0.2), transparent 70%)',
-            }}
-          />
+        {!loading && error ? (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {hasItems ? '公告服务暂时不可用，当前展示缓存内容。' : error}
+          </Alert>
         ) : null}
 
-        <div className="relative z-10 flex h-full flex-col gap-4">
-          {!loading && error ? (
-            <div
-              className={`rounded-2xl border px-3 py-2 text-xs leading-relaxed ${
-                theme === 'dark'
-                  ? 'border-red-400/20 bg-red-500/10 text-red-200'
-                  : 'border-red-200 bg-red-50 text-red-600'
-              }`}
-            >
-              {hasItems ? '公告服务暂时不可用，当前展示缓存内容。' : error}
-            </div>
-          ) : null}
-
-          {loading ? (
-            <ActivityFeedSkeleton theme={theme} />
-          ) : latestItem ? (
-            <ActivityFeedContent
-              theme={theme}
-              latestItem={latestItem}
-              itemCount={items.length}
-              refreshing={refreshing}
-              onViewDetail={handleViewDetail}
-              onViewHistory={handleViewHistory}
-              onRefresh={handleRefresh}
-            />
-          ) : (
-            <div className="flex flex-1 flex-col items-center justify-center text-sm">
-              <p className={theme === 'dark' ? 'text-white/60' : 'text-slate-600'}>
-                {error ?? '暂无公告'}
-              </p>
-            </div>
-          )}
-        </div>
-      </motion.div>
+        {loading ? (
+          <ActivityFeedSkeleton />
+        ) : latestItem ? (
+          <ActivityFeedContent
+            latestItem={latestItem}
+            itemCount={items.length}
+            refreshing={refreshing}
+            onViewDetail={handleViewDetail}
+            onViewHistory={handleViewHistory}
+            onRefresh={handleRefresh}
+          />
+        ) : (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {error ?? '暂无公告'}
+            </Typography>
+          </Box>
+        )}
+      </Card>
 
       {!loading && latestItem ? (
         <ChangelogDrawer
@@ -110,44 +103,37 @@ export function ActivityFeed() {
   );
 }
 
-function ActivityFeedSkeleton({ theme }: { theme: ThemeMode }) {
-  const block = theme === 'dark' ? 'bg-white/10' : 'bg-slate-200';
-  const text = theme === 'dark' ? 'bg-white/15' : 'bg-slate-200';
-
+function ActivityFeedSkeleton() {
   return (
-    <div className="flex h-full flex-col gap-6 animate-pulse">
-      <div className="flex items-start gap-4">
-        <div className={`h-14 w-14 rounded-xl ${block}`} />
-        <div className="flex-1 space-y-3">
-          <div className={`h-5 w-2/3 rounded ${text}`} />
-          <div className={`h-4 w-1/4 rounded ${text}`} />
-          <div className={`h-5 w-24 rounded ${text}`} />
-        </div>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+        <Skeleton variant="rounded" width={56} height={56} />
+        <Box sx={{ flex: 1 }}>
+          <Skeleton variant="text" width="60%" height={24} />
+          <Skeleton variant="text" width="30%" height={20} sx={{ mt: 1 }} />
+          <Skeleton variant="rounded" width={80} height={24} sx={{ mt: 1 }} />
+        </Box>
+      </Box>
 
-      <div className="space-y-3">
-        <div className={`h-4 w-full rounded ${text}`} />
-        <div className={`h-4 w-11/12 rounded ${text}`} />
-        <div className={`h-4 w-10/12 rounded ${text}`} />
-        <div className={`h-4 w-9/12 rounded ${text}`} />
-      </div>
+      <Box>
+        <Skeleton variant="text" width="100%" />
+        <Skeleton variant="text" width="90%" />
+        <Skeleton variant="text" width="85%" />
+        <Skeleton variant="text" width="75%" />
+      </Box>
 
-      <div
-        className="mt-auto flex flex-wrap items-center gap-3 border-t pt-2"
-        style={{
-          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
-        }}
-      >
-        <div className={`h-9 w-28 rounded-lg ${block}`} />
-        <div className={`h-9 w-32 rounded-lg ${block}`} />
-        <div className={`h-6 w-20 rounded-full ${block}`} />
-      </div>
-    </div>
+      <Divider />
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Skeleton variant="rounded" width={100} height={36} />
+        <Skeleton variant="rounded" width={36} height={36} />
+        <Skeleton variant="rounded" width={60} height={24} sx={{ ml: 'auto' }} />
+      </Box>
+    </Box>
   );
 }
 
 function ActivityFeedContent({
-  theme,
   latestItem,
   itemCount,
   refreshing,
@@ -155,7 +141,6 @@ function ActivityFeedContent({
   onViewHistory,
   onRefresh,
 }: {
-  theme: ThemeMode;
   latestItem: ActivityFeedItem;
   itemCount: number;
   refreshing: boolean;
@@ -165,82 +150,89 @@ function ActivityFeedContent({
 }) {
   return (
     <>
-      <div className="flex items-start gap-4">
-        <div
-          className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl text-3xl ${
-            theme === 'dark' ? 'bg-white/10' : 'bg-slate-100'
-          }`}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 2,
+            bgcolor: 'action.hover',
+            fontSize: '1.75rem',
+            flexShrink: 0,
+          }}
         >
           {latestItem.icon || '📢'}
-        </div>
+        </Box>
 
-        <div className="flex-1 min-w-0">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <h3
-              className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}
-            >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+            <Typography variant="h6" fontWeight={700}>
               {latestItem.title}
-            </h3>
-            <span
-              className={`text-xs whitespace-nowrap ${
-                theme === 'dark' ? 'text-white/50' : 'text-slate-500'
-              }`}
-            >
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
               {formatRelativeTime(latestItem.timestamp)}
-            </span>
-          </div>
+            </Typography>
+          </Box>
 
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${
-              latestItem.type === 'update'
-                ? theme === 'dark'
-                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                  : 'bg-blue-50 text-blue-600 border-blue-200'
-                : theme === 'dark'
-                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                  : 'bg-purple-50 text-purple-600 border-purple-200'
-            }`}
-          >
-            {latestItem.type === 'update' ? '更新日志' : '公告'}
-          </span>
-        </div>
-      </div>
+          <Chip
+            label={latestItem.type === 'update' ? '更新日志' : '公告'}
+            size="small"
+            color={latestItem.type === 'update' ? 'info' : 'secondary'}
+            variant="outlined"
+            sx={{ mt: 1, height: 22 }}
+          />
+        </Box>
+      </Box>
 
-      <div className="flex-1 cursor-pointer overflow-hidden" onClick={onViewDetail}>
-        <div
-          className={`text-sm leading-relaxed ${
-            theme === 'dark' ? 'text-white/80' : 'text-slate-600'
-          } prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}
-          style={{
+      <Box
+        sx={{
+          flex: 1,
+          cursor: 'pointer',
+          overflow: 'hidden',
+        }}
+        onClick={onViewDetail}
+      >
+        <Box
+          sx={{
             display: '-webkit-box',
             WebkitLineClamp: 6,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
+            '& .prose': {
+              fontSize: '0.875rem',
+              lineHeight: 1.6,
+            },
           }}
         >
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              // 预览模式下禁用图片和标题过大
               img: () => null,
-              h1: ({ children }) => <p className="font-bold">{children}</p>,
-              h2: ({ children }) => <p className="font-bold">{children}</p>,
-              h3: ({ children }) => <p className="font-bold">{children}</p>,
+              h1: ({ children }) => <Typography fontWeight={600}>{children}</Typography>,
+              h2: ({ children }) => <Typography fontWeight={600}>{children}</Typography>,
+              h3: ({ children }) => <Typography fontWeight={600}>{children}</Typography>,
               code: ({ className, children, ...props }) => {
                 const match = /language-(\w+)/.exec(className || '');
                 const isInline = !match && !String(children).includes('\n');
                 if (isInline) {
                   return (
-                    <code
-                      className={`rounded px-1 py-0.5 font-mono text-xs font-medium ${
-                        theme === 'dark'
-                          ? 'bg-white/10 text-brand-blue-300'
-                          : 'bg-slate-100 text-brand-blue-600'
-                      }`}
+                    <Box
+                      component="code"
+                      sx={{
+                        px: 0.5,
+                        py: 0.25,
+                        borderRadius: 0.5,
+                        bgcolor: 'action.hover',
+                        fontFamily: 'monospace',
+                        fontSize: '0.75rem',
+                      }}
                       {...props}
                     >
                       {children}
-                    </code>
+                    </Box>
                   );
                 }
                 return (
@@ -253,113 +245,56 @@ function ActivityFeedContent({
           >
             {latestItem.content}
           </ReactMarkdown>
-        </div>
-        <div className="mt-2 text-xs text-brand-blue-500 dark:text-brand-blue-400">
+        </Box>
+        <Typography variant="caption" color="primary" sx={{ mt: 1, display: 'block' }}>
           点击查看完整内容 →
-        </div>
-      </div>
+        </Typography>
+      </Box>
 
-      <div
-        className="flex flex-wrap items-center justify-between gap-3 border-t pt-2"
-        style={{
-          borderColor: theme === 'dark' ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <motion.button
-            {...buttonInteraction}
-            type="button"
+      <Divider sx={{ my: 2 }} />
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<History size={16} />}
             onClick={onViewHistory}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-[background-color,transform,box-shadow] duration-250 ease-swift ${
-              theme === 'dark'
-                ? 'text-white/90 hover:text-white'
-                : 'text-slate-800 hover:text-slate-900'
-            }`}
-            style={{
-              ...getGlassStyle('BUTTON', theme, {
-                withBorderGlow: true,
-                withInnerShadow: true,
-              }),
-              // 增强按钮的浮起感
-              boxShadow:
-                theme === 'dark'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
-            }}
           >
-            <History className="h-4 w-4" />
             查看所有公告
-          </motion.button>
+          </Button>
 
-          <motion.button
-            {...buttonInteraction}
-            type="button"
+          <IconButton
+            size="small"
             onClick={onRefresh}
             disabled={refreshing}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-[background-color,transform,box-shadow] duration-250 ease-swift disabled:opacity-50 disabled:cursor-not-allowed ${
-              theme === 'dark'
-                ? 'text-white/90 hover:text-white'
-                : 'text-slate-800 hover:text-slate-900'
-            }`}
-            style={{
-              ...getGlassStyle('BUTTON', theme, {
-                withBorderGlow: true,
-                withInnerShadow: true,
-              }),
-              // 增强按钮的浮起感
-              boxShadow:
-                theme === 'dark'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.3), 0 0.5px 0 0 rgba(255, 255, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)'
-                  : '0 2px 10px rgba(0, 0, 0, 0.1), 0 0.5px 0 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
-            }}
             title="刷新公告"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </motion.button>
-        </div>
+            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+          </IconButton>
+        </Box>
 
-        {latestItem.ctaUrl ? (
-          <motion.button
-            {...buttonInteraction}
-            type="button"
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.open(latestItem.ctaUrl, '_blank');
-              }
-            }}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-[background-color,transform,box-shadow] duration-250 ease-swift ${
-              theme === 'dark'
-                ? 'text-brand-blue-300 hover:text-brand-blue-200'
-                : 'text-brand-blue-700 hover:text-brand-blue-800'
-            }`}
-            style={{
-              ...getGlassStyle('BUTTON', theme, {
-                withBorderGlow: true,
-                withInnerShadow: true,
-              }),
-              // CTA 按钮额外的品牌色高光
-              background:
-                theme === 'dark' ? 'rgba(101, 187, 233, 0.20)' : 'rgba(101, 187, 233, 0.18)',
-              boxShadow:
-                theme === 'dark'
-                  ? '0 2px 10px rgba(101, 187, 233, 0.25), 0 0.5px 0 0 rgba(101, 187, 233, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.15)'
-                  : '0 2px 12px rgba(101, 187, 233, 0.2), 0 0.5px 0 0 rgba(101, 187, 233, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.7)',
-            }}
-          >
-            {latestItem.ctaLabel ?? '立即查看'}
-          </motion.button>
-        ) : null}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {latestItem.ctaUrl ? (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => window.open(latestItem.ctaUrl, '_blank')}
+            >
+              {latestItem.ctaLabel ?? '立即查看'}
+            </Button>
+          ) : null}
 
-        {itemCount > 1 && (
-          <div
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              theme === 'dark' ? 'bg-white/10 text-white/70' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            共 {itemCount} 条公告
-          </div>
-        )}
-      </div>
+          {itemCount > 1 && (
+            <Chip
+              label={`共 ${itemCount} 条公告`}
+              size="small"
+              variant="outlined"
+              sx={{ height: 24 }}
+            />
+          )}
+        </Box>
+      </Box>
     </>
   );
 }
