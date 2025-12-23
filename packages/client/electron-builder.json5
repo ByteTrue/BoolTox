@@ -7,7 +7,7 @@
   "directories": {
     "output": "release/${version}"
   },
-  "beforePack": "./scripts/before-pack.js",
+  "beforePack": "./scripts/before-pack.cjs",
   "files": [
     "dist",
     "dist-electron"

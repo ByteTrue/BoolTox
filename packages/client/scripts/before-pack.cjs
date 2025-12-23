@@ -16,8 +16,13 @@ const path = require('path');
  * @param {import('electron-builder').BeforeBuildContext} context
  */
 exports.default = async function (context) {
-  const { platform, arch } = context;
-  const platformName = platform.name; // 'mac', 'win', 'linux'
+  // 兼容不同版本的 electron-builder API
+  const platformName = context.electronPlatformName || context.platform?.name || 'unknown';
+  const arch = context.arch;
+
+  // electron-builder 在 beforePack hook 中的目录结构
+  // context.appOutDir - 打包输出目录 (electron-builder 24.x+)
+  const appDir = context.appOutDir || context.packager?.appDir || process.cwd();
 
   console.log(`\n🔧 [Before Pack] 平台: ${platformName}, 架构: ${arch}`);
 
@@ -34,10 +39,12 @@ exports.default = async function (context) {
 
   switch (platformName) {
     case 'mac':
+    case 'darwin':
       // macOS 需要保留两个架构（通用二进制）
       keepBinaries.push('darwin-arm64', 'darwin-x64');
       break;
     case 'win':
+    case 'win32':
       keepBinaries.push('win-x64');
       break;
     case 'linux':
@@ -78,7 +85,7 @@ exports.default = async function (context) {
   }
 
   // 计算预期体积减少
-  const uvDir = path.join(context.appDir, 'resources', 'uv');
+  const uvDir = path.join(appDir, 'resources', 'uv');
 
   if (fs.existsSync(uvDir)) {
     const allBinaries = fs.readdirSync(uvDir);
