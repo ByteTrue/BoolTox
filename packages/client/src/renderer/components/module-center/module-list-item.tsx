@@ -3,11 +3,14 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { motion } from 'framer-motion';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Trash2, Download, ExternalLink, Square } from 'lucide-react';
-import { useTheme } from '../theme-provider';
-import { getGlassStyle, getGlassShadow } from '@/utils/glass-layers';
-import { cardHover, iconButtonInteraction, buttonInteraction } from '@/utils/animation-presets';
 import type { ModuleInstance, ModuleDefinition } from '@/types/module';
 
 interface ModuleListItemProps {
@@ -18,7 +21,7 @@ interface ModuleListItemProps {
   onInstall?: (moduleId: string) => void;
   onClick: (moduleId: string) => void;
   isProcessing?: boolean;
-  isDev?: boolean; // 是否为开发工具(不可卸载)
+  isDev?: boolean;
 }
 
 export function ModuleListItem({
@@ -31,9 +34,6 @@ export function ModuleListItem({
   isProcessing = false,
   isDev = false,
 }: ModuleListItemProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   const isInstalled = 'definition' in module;
   const definition = 'definition' in module ? module.definition : module;
   const launchState = 'definition' in module ? (module.runtime.launchState ?? 'idle') : 'idle';
@@ -42,121 +42,133 @@ export function ModuleListItem({
   const isRunning = launchState === 'running';
   const isLaunchError = launchState === 'error';
 
-  // 检查是否为外部工具（CLI/Binary）
   const runtimeType = definition.runtime?.type;
   const isExternalTool = runtimeType === 'cli' || runtimeType === 'binary';
 
-  // 启动器模式：不显示运行状态（所有工具都不显示）
   const launchStateBadge = isInstalled
     ? isLaunching
-      ? { label: '启动中…', className: 'border-yellow-500/30 bg-yellow-500/15 text-yellow-600' }
+      ? { label: '启动中…', color: 'warning' as const }
       : isStopping
-        ? { label: '停止中…', className: 'border-yellow-500/30 bg-yellow-500/15 text-yellow-600' }
+        ? { label: '停止中…', color: 'warning' as const }
         : isLaunchError
-          ? { label: '启动失败', className: 'border-red-500/30 bg-red-500/15 text-red-500' }
+          ? { label: '启动失败', color: 'error' as const }
           : null
     : null;
 
   return (
-    <motion.div
-      {...cardHover}
-      layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.2 }}
-      className={`group relative flex items-center gap-4 rounded-2xl border p-4 transition-shadow duration-250 ease-swift ${getGlassShadow(theme)}`}
-      style={getGlassStyle('CARD', theme)}
+    <Paper
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: 3,
+        },
+      }}
     >
       {/* 左侧: 图标 */}
-      <div
-        className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${
-          isDark
-            ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20'
-            : 'bg-gradient-to-br from-blue-400/20 to-purple-400/20'
-        }`}
+      <Box
+        sx={{
+          width: 56,
+          height: 56,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 2,
+          bgcolor: 'primary.main',
+          opacity: 0.1,
+        }}
       >
         {definition.icon && definition.icon.startsWith('http') ? (
-          <img
+          <Box
+            component="img"
             src={definition.icon}
             alt={definition.name}
-            className="h-9 w-9 rounded-lg"
+            sx={{ width: 36, height: 36, borderRadius: 1 }}
             loading="lazy"
             onError={e => {
-              e.currentTarget.style.display = 'none';
+              (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
         ) : (
-          <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>
+          <Typography variant="h6" fontWeight="bold" color="text.primary">
             {definition.name.slice(0, 2).toUpperCase()}
-          </span>
+          </Typography>
         )}
-      </div>
+      </Box>
 
       {/* 中间: 主要信息 */}
-      <button
-        type="button"
+      <Box
+        component="button"
         onClick={() => onClick(module.id)}
-        className="flex flex-1 flex-col gap-1 text-left"
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.5,
+          textAlign: 'left',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          p: 0,
+        }}
       >
-        <div className="flex items-center gap-2">
-          <h3
-            className={`text-base font-semibold transition-colors hover:text-blue-500 ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            sx={{ '&:hover': { color: 'primary.main' } }}
           >
             {definition.name}
-          </h3>
+          </Typography>
           {launchStateBadge && (
-            <span
-              className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${launchStateBadge.className}`}
-            >
-              {launchStateBadge.label}
-            </span>
+            <Chip label={launchStateBadge.label} color={launchStateBadge.color} size="small" />
           )}
-        </div>
-        <p className={`line-clamp-1 text-sm ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
-          {definition.description || '暂无描述'}
-        </p>
-        <div
-          className={`flex items-center gap-2 text-xs ${
-            isDark ? 'text-white/60' : 'text-slate-500'
-          }`}
+        </Box>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
         >
-          <span>v{definition.version}</span>
+          {definition.description || '暂无描述'}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            v{definition.version}
+          </Typography>
           {definition.category && (
-            <>
-              <span>•</span>
-              <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-500">
-                {definition.category}
-              </span>
-            </>
+            <Chip label={definition.category} size="small" color="primary" variant="outlined" />
           )}
           {definition.author && (
-            <>
-              <span>•</span>
-              <span>{definition.author}</span>
-            </>
+            <Typography variant="caption" color="text.secondary">
+              {definition.author}
+            </Typography>
           )}
-        </div>
-      </button>
+        </Box>
+      </Box>
 
       {/* 右侧: 操作按钮 */}
-      <div className="flex shrink-0 items-center gap-2">
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
         {isInstalled ? (
           <>
-            {/* 打开按钮 */}
-            <motion.button
-              {...iconButtonInteraction}
-              type="button"
+            <IconButton
+              size="small"
               onClick={e => {
                 e.stopPropagation();
                 onOpen?.(module.id);
               }}
               disabled={isLaunching || isStopping}
-              className={`rounded-lg border border-blue-500/30 bg-blue-500/20 p-2 text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
-                isLaunching || isStopping ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
-              }`}
+              color="primary"
               title={
                 isLaunching
                   ? '工具正在启动…'
@@ -168,75 +180,57 @@ export function ModuleListItem({
               }
             >
               {isLaunching || isStopping ? (
-                <span className="flex items-center justify-center">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                </span>
+                <CircularProgress size={16} color="inherit" />
               ) : (
                 <ExternalLink size={16} />
               )}
-            </motion.button>
+            </IconButton>
 
-            {/* 停止按钮：仅在运行时显示 */}
             {isRunning && (
-              <motion.button
-                {...iconButtonInteraction}
-                type="button"
+              <IconButton
+                size="small"
                 onClick={e => {
                   e.stopPropagation();
                   onStop?.(module.id);
                 }}
-                className={`rounded-lg border border-orange-500/30 bg-orange-500/20 p-2 text-orange-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-orange-500/30`}
+                color="warning"
                 title={isExternalTool ? '我已关闭工具（标记为已停止）' : '停止工具'}
               >
-                {isExternalTool ? (
-                  <span className="text-xs px-1">已关闭</span>
-                ) : (
-                  <Square size={16} />
-                )}
-              </motion.button>
+                <Square size={16} />
+              </IconButton>
             )}
 
-            {/* 卸载按钮 - 开发工具不显示 */}
             {!isDev && (
-              <motion.button
-                {...iconButtonInteraction}
-                type="button"
+              <IconButton
+                size="small"
                 onClick={e => {
                   e.stopPropagation();
                   onUninstall?.(module.id);
                 }}
-                className={`rounded-lg border border-red-500/30 bg-red-500/20 p-2 text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/30`}
+                color="error"
                 title="卸载工具"
               >
                 <Trash2 size={16} />
-              </motion.button>
+              </IconButton>
             )}
           </>
         ) : (
-          <motion.button
-            {...buttonInteraction}
-            type="button"
+          <Button
+            variant="contained"
+            size="small"
             onClick={e => {
               e.stopPropagation();
               onInstall?.(module.id);
             }}
             disabled={isProcessing}
-            className={`flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 disabled:opacity-50`}
+            startIcon={
+              isProcessing ? <CircularProgress size={14} color="inherit" /> : <Download size={16} />
+            }
           >
-            {isProcessing ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-                安装中
-              </>
-            ) : (
-              <>
-                <Download size={16} />
-                安装
-              </>
-            )}
-          </motion.button>
+            {isProcessing ? '安装中' : '安装'}
+          </Button>
         )}
-      </div>
-    </motion.div>
+      </Box>
+    </Paper>
   );
 }

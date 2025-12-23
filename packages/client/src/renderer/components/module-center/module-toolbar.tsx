@@ -3,12 +3,14 @@
  * Licensed under CC-BY-NC-4.0
  */
 
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import { Search, SlidersHorizontal, ArrowUpDown, X, Plus, CheckSquare } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useTheme } from '../theme-provider';
 import { CustomSelect } from './custom-select';
-import { getGlassStyle, getGlassShadow } from '@/utils/glass-layers';
-import { iconButtonInteraction } from '@/utils/animation-presets';
 import type { SortBy } from './types';
 
 interface ModuleToolbarProps {
@@ -19,9 +21,9 @@ interface ModuleToolbarProps {
   categories: string[];
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
-  onAddLocalTool?: () => void; // 新增：添加本地工具回调
-  isSelectionMode?: boolean; // 是否为选择模式
-  onToggleSelectionMode?: () => void; // 切换选择模式
+  onAddLocalTool?: () => void;
+  isSelectionMode?: boolean;
+  onToggleSelectionMode?: () => void;
 }
 
 export function ModuleToolbar({
@@ -36,88 +38,64 @@ export function ModuleToolbar({
   isSelectionMode = false,
   onToggleSelectionMode,
 }: ModuleToolbarProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   return (
-    <div
-      className={`relative z-20 rounded-2xl border p-4 transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${getGlassShadow(theme)}`}
-      style={getGlassStyle('CARD', theme)}
-    >
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <Paper sx={{ p: 2, borderRadius: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' },
+          justifyContent: 'space-between',
+          gap: 2,
+        }}
+      >
         {/* 搜索框 */}
-        <div className="relative flex-1 max-w-md">
-          <Search
-            className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-              isDark ? 'text-white/60' : 'text-slate-500'
-            }`}
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="搜索工具..."
-            value={searchQuery}
-            onChange={e => onSearchChange(e.target.value)}
-            className={`w-full rounded-full border py-2 pl-10 pr-10 text-sm transition-[background-color,border-color,box-shadow] duration-250 ease-swift focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
-              isDark
-                ? 'bg-white/5 text-white placeholder:text-white/60'
-                : 'bg-white/50 text-slate-800 placeholder:text-slate-500'
-            }`}
-            style={getGlassStyle('BUTTON', theme)}
-          />
-          {searchQuery && (
-            <motion.button
-              {...iconButtonInteraction}
-              type="button"
-              onClick={() => onSearchChange('')}
-              className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 transition-[background-color,color] duration-250 ease-swift hover:bg-white/10 ${
-                isDark ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <X size={14} />
-            </motion.button>
-          )}
-        </div>
+        <TextField
+          placeholder="搜索工具..."
+          value={searchQuery}
+          onChange={e => onSearchChange(e.target.value)}
+          size="small"
+          sx={{ flex: 1, maxWidth: { md: 400 } }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={18} />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => onSearchChange('')}>
+                  <X size={14} />
+                </IconButton>
+              </InputAdornment>
+            ) : null,
+          }}
+        />
 
         {/* 右侧控制按钮 */}
-        <div className="flex items-center gap-2">
-          {/* 选择模式按钮 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {onToggleSelectionMode && (
-            <motion.button
-              {...iconButtonInteraction}
+            <Button
+              variant={isSelectionMode ? 'contained' : 'outlined'}
+              size="small"
+              startIcon={<CheckSquare size={16} />}
               onClick={onToggleSelectionMode}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
-                isSelectionMode
-                  ? 'border-blue-500/50 bg-blue-500/20 text-blue-500'
-                  : isDark
-                    ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                    : 'border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80'
-              }`}
-              style={getGlassStyle('BUTTON', theme)}
             >
-              <CheckSquare size={16} />
-              <span>{isSelectionMode ? '取消选择' : '选择'}</span>
-            </motion.button>
+              {isSelectionMode ? '取消选择' : '选择'}
+            </Button>
           )}
 
-          {/* 添加本地工具按钮 */}
           {onAddLocalTool && !isSelectionMode && (
-            <motion.button
-              {...iconButtonInteraction}
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Plus size={16} />}
               onClick={onAddLocalTool}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-250 ease-swift ${
-                isDark
-                  ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                  : 'border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80'
-              }`}
-              style={getGlassStyle('BUTTON', theme)}
             >
-              <Plus size={16} />
-              <span>添加本地工具</span>
-            </motion.button>
+              添加本地工具
+            </Button>
           )}
 
-          {/* 分类过滤 */}
           <CustomSelect
             value={selectedCategory}
             onChange={onCategoryChange}
@@ -128,7 +106,6 @@ export function ModuleToolbar({
             icon={<SlidersHorizontal size={16} />}
           />
 
-          {/* 排序 */}
           <CustomSelect
             value={sortBy}
             onChange={val => onSortChange(val as SortBy)}
@@ -139,8 +116,8 @@ export function ModuleToolbar({
             ]}
             icon={<ArrowUpDown size={16} />}
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Paper>
   );
 }

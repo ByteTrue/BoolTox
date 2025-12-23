@@ -4,12 +4,18 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useTheme } from '../theme-provider';
-import { getGlassStyle, GLASS_BORDERS } from '@/utils/glass-layers';
-import { iconButtonInteraction, buttonInteraction } from '@/utils/animation-presets';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Paper from '@mui/material/Paper';
+import Fade from '@mui/material/Fade';
+import { X } from 'lucide-react';
 import { ScreenshotCarousel } from './screenshot-carousel';
 import type { ModuleInstance, ModuleDefinition } from '@/types/module';
 
@@ -34,8 +40,6 @@ export function ModuleDetailModal({
   onOpen,
   isInstalled = false,
 }: ModuleDetailModalProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<DetailTab>('details');
   const [mounted, setMounted] = useState(false);
 
@@ -61,303 +65,224 @@ export function ModuleDetailModal({
   const isRunning = launchState === 'running';
   const isLaunchError = launchState === 'error';
 
+  const getStatusChip = () => {
+    if (isRunning) return { label: '窗口运行中', color: 'success' as const };
+    if (isLaunching) return { label: '启动中…', color: 'warning' as const };
+    if (isStopping) return { label: '停止中…', color: 'warning' as const };
+    if (isLaunchError) return { label: '启动失败', color: 'error' as const };
+    return { label: '未运行', color: 'default' as const };
+  };
+
   return createPortal(
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[9998] bg-slate-950/55 backdrop-blur-xl dark:bg-slate-950/60"
-            onClick={onClose}
-          />
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 260, damping: 32 }}
-            className="fixed right-0 top-0 z-[9999] h-full w-full sm:w-[80vw]"
-            style={{ maxWidth: '1200px' }}
+    <Drawer
+      anchor="right"
+      open={isOpen}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          width: { xs: '100%', sm: '80vw' },
+          maxWidth: 1200,
+        },
+      }}
+    >
+      {/* 头部 */}
+      <Box
+        sx={{
+          position: 'relative',
+          borderBottom: 1,
+          borderColor: 'divider',
+          px: 3,
+          py: 3,
+        }}
+      >
+        <IconButton
+          onClick={onClose}
+          sx={{ position: 'absolute', right: 16, top: 16 }}
+          aria-label="关闭"
+        >
+          <X size={20} />
+        </IconButton>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 2, pr: 6 }}>
+          {/* 图标 */}
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 2,
+              bgcolor: 'primary.main',
+              opacity: 0.1,
+            }}
           >
-            <div
-              className={`flex h-full flex-col border-l ${isDark ? 'shadow-2xl shadow-blue-900/30' : 'shadow-xl shadow-blue-200/30'}`}
-              style={getGlassStyle('CARD', theme)}
-              onClick={event => event.stopPropagation()}
-            >
-              <div
-                className="relative border-b px-6 py-6"
-                style={{
-                  borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
+            {definition.icon && definition.icon.startsWith('http') ? (
+              <Box
+                component="img"
+                src={definition.icon}
+                alt={definition.name}
+                sx={{ width: 40, height: 40, borderRadius: 2 }}
+                onError={e => {
+                  (e.target as HTMLImageElement).style.display = 'none';
                 }}
-              >
-                <motion.button
-                  {...iconButtonInteraction}
-                  type="button"
-                  onClick={onClose}
-                  className={`absolute right-6 top-6 z-10 rounded-lg p-1.5 transition-[background-color,transform] duration-250 ease-swift ${
-                    isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
-                  }`}
-                  aria-label="关闭"
-                >
-                  <X className={`h-4 w-4 ${isDark ? 'text-white/70' : 'text-slate-600'}`} />
-                </motion.button>
+              />
+            ) : (
+              <Typography variant="h5" fontWeight="bold" color="text.primary">
+                {definition.name.slice(0, 2).toUpperCase()}
+              </Typography>
+            )}
+          </Box>
 
-                <div className="grid grid-cols-[auto,1fr] gap-4 pr-12">
-                  <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
-                      isDark
-                        ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20'
-                        : 'bg-gradient-to-br from-blue-400/20 to-purple-400/20'
-                    }`}
-                  >
-                    {definition.icon && definition.icon.startsWith('http') ? (
-                      <img
-                        src={definition.icon}
-                        alt={definition.name}
-                        className="h-10 w-10 rounded-xl"
-                        onError={event => {
-                          event.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <span
-                        className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}
-                      >
-                        {definition.name.slice(0, 2).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
+          {/* 信息 */}
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h5" fontWeight="bold" noWrap sx={{ mb: 1 }}>
+              {definition.name}
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+              <Chip label={`ID ${definition.id}`} size="small" variant="outlined" />
+              <Chip label={`v${definition.version}`} size="small" variant="outlined" />
+              {definition.category && (
+                <Chip label={definition.category} size="small" color="primary" />
+              )}
+              {definition.author && (
+                <Typography variant="caption" color="text.secondary">
+                  作者：{definition.author}
+                </Typography>
+              )}
+              <Typography variant="caption" color="text.secondary">
+                来源：{definition.source === 'remote' ? '远程工具' : '本地工具'}
+              </Typography>
+              {runtime && <Chip label={getStatusChip().label} size="small" color={getStatusChip().color} />}
+            </Box>
 
-                  <div className="min-w-0 space-y-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2
-                        className={`truncate text-2xl font-bold ${
-                          isDark ? 'text-white' : 'text-slate-800'
-                        }`}
-                      >
-                        {definition.name}
-                      </h2>
-                    </div>
-                    <div
-                      className={`flex flex-wrap items-center gap-2 text-xs ${
-                        isDark ? 'text-white/70' : 'text-slate-600'
-                      }`}
+            {/* 操作按钮 */}
+            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+              {isInstalled && runtime ? (
+                <>
+                  {onOpen && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => onOpen(module.id)}
+                      disabled={isLaunching || isStopping}
                     >
-                      <span className="rounded-full border px-2 py-0.5">ID {definition.id}</span>
-                      <span className="rounded-full border px-2 py-0.5">
-                        版本 v{definition.version}
-                      </span>
-                      {definition.category && (
-                        <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-blue-500">
-                          {definition.category}
-                        </span>
-                      )}
-                      {definition.author && <span>作者：{definition.author}</span>}
-                      <span>来源：{definition.source === 'remote' ? '远程工具' : '本地工具'}</span>
-                      {runtime && (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            isRunning
-                              ? 'border border-green-500/30 bg-green-500/15 text-green-500'
-                              : isLaunching
-                                ? 'border border-yellow-500/30 bg-yellow-500/15 text-yellow-600'
-                                : isStopping
-                                  ? 'border border-yellow-500/30 bg-yellow-500/15 text-yellow-600'
-                                  : isLaunchError
-                                    ? 'border border-red-500/30 bg-red-500/15 text-red-500'
-                                    : isDark
-                                      ? 'border border-white/10 text-white/70'
-                                    : 'border border-slate-200 text-slate-600'
-                          }`}
-                        >
-                          {isRunning
-                            ? '窗口运行中'
-                            : isLaunching
-                              ? '启动中…'
-                              : isStopping
-                                ? '停止中…'
-                              : isLaunchError
-                                ? '启动失败'
-                                : '未运行'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="col-start-2 flex flex-wrap items-center gap-2 pt-2">
-                    {isInstalled && runtime ? (
-                      <>
-                        {onOpen && (
-                          <motion.button
-                            {...buttonInteraction}
-                            type="button"
-                            onClick={() => onOpen(module.id)}
-                            disabled={isLaunching || isStopping}
-                            className={`rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30 ${
-                              isLaunching || isStopping ? 'cursor-wait opacity-70 hover:bg-blue-500/20' : ''
-                            }`}
-                          >
-                            {isLaunching ? '启动中…' : isStopping ? '停止中…' : isRunning ? '聚焦窗口' : '打开工具'}
-                          </motion.button>
-                        )}
-                        {isInstalled && onUninstall && (
-                          <motion.button
-                            {...buttonInteraction}
-                            type="button"
-                            onClick={() => onUninstall(module.id)}
-                            className="rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-red-500/25"
-                          >
-                            卸载
-                          </motion.button>
-                        )}
-                      </>
-                    ) : null}
-                    {!isInstalled && onInstall ? (
-                      <motion.button
-                        {...buttonInteraction}
-                        type="button"
-                        onClick={() => onInstall(module.id)}
-                        className="rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-500 transition-[background-color,transform] duration-250 ease-swift hover:bg-blue-500/30"
-                      >
-                        安装工具
-                      </motion.button>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4 elegant-scroll">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('details')}
-                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                      activeTab === 'details'
-                        ? isDark
-                          ? 'bg-white/15 text-white'
-                          : 'bg-slate-200 text-slate-900'
-                        : isDark
-                          ? 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                          : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    工具详情
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('changelog')}
-                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                      activeTab === 'changelog'
-                        ? isDark
-                          ? 'bg-white/15 text-white'
-                          : 'bg-slate-200 text-slate-900'
-                        : isDark
-                          ? 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                          : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    更新日志
-                  </button>
-                </div>
-
-                <div
-                  className={`rounded-2xl border px-6 py-5 ${
-                    isDark ? 'bg-white/10' : 'bg-white/75'
-                  }`}
-                  style={{
-                    borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
-                  }}
-                >
-                  {activeTab === 'details' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className={isDark ? 'text-white/80' : 'text-slate-700'}
-                    >
-                      {/* 截图轮播 */}
-                      {definition.screenshots && definition.screenshots.length > 0 && (
-                        <ScreenshotCarousel
-                          screenshots={definition.screenshots}
-                          toolName={definition.name}
-                        />
-                      )}
-
-                      <h3 className="mb-3 text-lg font-semibold">工具描述</h3>
-                      <p className="mb-6 leading-relaxed">
-                        {definition.description || '暂无详细描述'}
-                      </p>
-
-                      {definition.keywords && definition.keywords.length > 0 && (
-                        <>
-                          <h3 className="mb-3 text-lg font-semibold">关键词</h3>
-                          <div className="mb-6 flex flex-wrap gap-2">
-                            {definition.keywords.map(keyword => (
-                              <span
-                                key={keyword}
-                                className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-500"
-                              >
-                                {keyword}
-                              </span>
-                            ))}
-                          </div>
-                        </>
-                      )}
-
-                      <h3 className="mb-3 text-lg font-semibold">工具信息</h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className={isDark ? 'text-white/60' : 'text-slate-500'}>
-                            版本号:
-                          </span>
-                          <span className="font-medium">{definition.version}</span>
-                        </div>
-                        {definition.author && (
-                          <div className="flex justify-between">
-                            <span className={isDark ? 'text-white/60' : 'text-slate-500'}>
-                              作者:
-                            </span>
-                            <span className="font-medium">{definition.author}</span>
-                          </div>
-                        )}
-                        {definition.category && (
-                          <div className="flex justify-between">
-                            <span className={isDark ? 'text-white/60' : 'text-slate-500'}>
-                              分类:
-                            </span>
-                            <span className="font-medium">{definition.category}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className={isDark ? 'text-white/60' : 'text-slate-500'}>来源:</span>
-                          <span className="font-medium">
-                            {definition.source === 'remote' ? '远程工具' : '本地工具'}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
+                      {isLaunching ? '启动中…' : isStopping ? '停止中…' : isRunning ? '聚焦窗口' : '打开工具'}
+                    </Button>
                   )}
-
-                  {activeTab === 'changelog' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className={isDark ? 'text-white/80' : 'text-slate-700'}
+                  {onUninstall && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      onClick={() => onUninstall(module.id)}
                     >
-                      <h3 className="mb-3 text-lg font-semibold">更新日志</h3>
-                      <p className={isDark ? 'text-white/60' : 'text-slate-500'}>暂无更新日志</p>
-                    </motion.div>
+                      卸载
+                    </Button>
                   )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>,
+                </>
+              ) : null}
+              {!isInstalled && onInstall && (
+                <Button variant="contained" size="small" onClick={() => onInstall(module.id)}>
+                  安装工具
+                </Button>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* 内容区 */}
+      <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{ mb: 3 }}
+        >
+          <Tab label="工具详情" value="details" />
+          <Tab label="更新日志" value="changelog" />
+        </Tabs>
+
+        <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
+          {activeTab === 'details' && (
+            <Fade in>
+              <Box>
+                {/* 截图轮播 */}
+                {definition.screenshots && definition.screenshots.length > 0 && (
+                  <Box sx={{ mb: 3 }}>
+                    <ScreenshotCarousel
+                      screenshots={definition.screenshots}
+                      toolName={definition.name}
+                    />
+                  </Box>
+                )}
+
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
+                  工具描述
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
+                  {definition.description || '暂无详细描述'}
+                </Typography>
+
+                {definition.keywords && definition.keywords.length > 0 && (
+                  <>
+                    <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
+                      关键词
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+                      {definition.keywords.map(keyword => (
+                        <Chip key={keyword} label={keyword} size="small" color="primary" variant="outlined" />
+                      ))}
+                    </Box>
+                  </>
+                )}
+
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
+                  工具信息
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">版本号:</Typography>
+                    <Typography variant="body2" fontWeight={500}>{definition.version}</Typography>
+                  </Box>
+                  {definition.author && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">作者:</Typography>
+                      <Typography variant="body2" fontWeight={500}>{definition.author}</Typography>
+                    </Box>
+                  )}
+                  {definition.category && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">分类:</Typography>
+                      <Typography variant="body2" fontWeight={500}>{definition.category}</Typography>
+                    </Box>
+                  )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">来源:</Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {definition.source === 'remote' ? '远程工具' : '本地工具'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Fade>
+          )}
+
+          {activeTab === 'changelog' && (
+            <Fade in>
+              <Box>
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
+                  更新日志
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  暂无更新日志
+                </Typography>
+              </Box>
+            </Fade>
+          )}
+        </Paper>
+      </Box>
+    </Drawer>,
     document.body
   );
 }

@@ -5,8 +5,16 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Typography from '@mui/material/Typography';
+import InputAdornment from '@mui/material/InputAdornment';
+import Fade from '@mui/material/Fade';
 import { useModulePlatform } from '@/contexts/module-context';
-import { useTheme } from '../theme-provider';
 import { ModuleGrid } from './module-grid';
 import { ModuleDetailModal } from './module-detail-modal';
 import { ModuleSidebar } from './module-sidebar';
@@ -17,15 +25,13 @@ import { ModuleRecommendations } from './module-recommendations';
 import { useRecommendations } from './hooks/use-recommendations';
 import { CustomSelect } from './custom-select';
 import { Search, ArrowUpDown, Plus, CheckSquare, LayoutGrid, List } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { iconButtonInteraction } from '@/utils/animation-presets';
 import { DropZone } from './drop-zone';
 import type { ModuleSortConfig, ViewMode } from './types';
 import type { ModuleInstance } from '@/types/module';
 import type { ToolSourceConfig } from '@booltox/shared';
 
 /**
- * 工具中心 - 重新设计的侧边栏布局
+ * 工具中心 - MUI 风格
  */
 export function ModuleCenter() {
   const navigate = useNavigate();
@@ -46,33 +52,20 @@ export function ModuleCenter() {
     addLocalBinaryTool,
   } = useModulePlatform();
 
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   // --- 状态管理 ---
-
-  // 视图状态: 'installed' | 'favorites' | 'store'
   const [currentView, setCurrentView] = useState<string>('installed');
   const [currentCategory, setCurrentCategory] = useState<string>('all');
-
-  // UI 状态
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
-
-  // 批量操作状态
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(new Set());
-
-  // 搜索与排序
   const { inputValue, debouncedValue, setInputValue } = useSearchInput();
   const [sortConfig, setSortConfig] = useState<ModuleSortConfig>({
     by: 'default',
     order: 'asc',
   });
-
-  // 工具源列表（用于侧边栏显示）
   const [toolSources, setToolSources] = useState<ToolSourceConfig[]>([]);
 
   useEffect(() => {
@@ -91,9 +84,6 @@ export function ModuleCenter() {
   }, []);
 
   // --- 数据处理 ---
-
-  // 1. 准备基础数据集
-  // 将 availablePlugins 转换为 ModuleInstance 格式（不过滤已安装）
   const allAvailableModules = useMemo(() => {
     return availablePlugins.map(
       plugin =>
@@ -117,7 +107,7 @@ export function ModuleCenter() {
             component: null,
             loading: false,
             error: null,
-            installed: toolRegistry.some(t => t.id === plugin.id), // 标记是否已安装
+            installed: toolRegistry.some(t => t.id === plugin.id),
             launchState: 'idle' as const,
             lastError: null,
           },
@@ -128,27 +118,22 @@ export function ModuleCenter() {
     );
   }, [availablePlugins, toolRegistry]);
 
-  // 官方工具（来自官方工具源）
   const officialTools = useMemo(() => {
     return allAvailableModules.filter(m => m.sourceId === 'official');
   }, [allAvailableModules]);
 
-  // 自定义工具（来自非官方工具源）
   const customTools = useMemo(() => {
     return allAvailableModules.filter(m => m.sourceId && m.sourceId !== 'official');
   }, [allAvailableModules]);
 
-  // 未安装的工具（用于旧的 store 视图）
   const storeModules = useMemo(() => {
     return allAvailableModules.filter(m => !m.runtime.installed);
   }, [allAvailableModules]);
 
-  // 计算运行中的工具数
   const runningCount = useMemo(() => {
     return installedModules.filter(m => m.runtime.launchState === 'running').length;
   }, [installedModules]);
 
-  // 计算每个工具源的可安装工具数量
   const sourceToolCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     allAvailableModules.forEach(m => {
@@ -162,7 +147,6 @@ export function ModuleCenter() {
   const displayedModulesRaw = useMemo(() => {
     let modules: ModuleInstance[] = [];
 
-    // 检查是否为动态工具源视图（格式：source:sourceId）
     if (currentView.startsWith('source:')) {
       const sourceId = currentView.replace('source:', '');
       modules = allAvailableModules.filter(m => m.sourceId === sourceId && !m.runtime.installed);
@@ -175,23 +159,18 @@ export function ModuleCenter() {
           modules = installedModules.filter(m => m.isFavorite);
           break;
         case 'running':
-          // 运行中的工具
           modules = installedModules.filter(m => m.runtime.launchState === 'running');
           break;
         case 'store-grouped':
-          // 工具市场：按工具源分组展示（保留所有未安装工具用于分组）
           modules = allAvailableModules.filter(m => !m.runtime.installed);
           break;
         case 'store':
-          // 旧的商店视图：只显示未安装的
           modules = storeModules;
           break;
         case 'official':
-          // 官方工具商店：只显示未安装的官方工具
           modules = officialTools.filter(m => !m.runtime.installed);
           break;
         case 'custom':
-          // 自定义工具：只显示未安装的自定义工具（来自远程工具源）
           modules = customTools.filter(m => !m.runtime.installed);
           break;
         default:
@@ -208,7 +187,6 @@ export function ModuleCenter() {
     allAvailableModules,
   ]);
 
-  // 2. 应用分类过滤
   const categoryFilteredModules = useMemo(() => {
     if (currentCategory === 'all') return displayedModulesRaw;
     return displayedModulesRaw.filter(
@@ -216,13 +194,9 @@ export function ModuleCenter() {
     );
   }, [displayedModulesRaw, currentCategory]);
 
-  // 3. 应用搜索
   const searchedModules = useModuleSearch(categoryFilteredModules, debouncedValue);
-
-  // 4. 应用排序
   const finalModules = useModuleSort(searchedModules, sortConfig);
 
-  // 获取所有可用分类（基于当前视图）
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
     displayedModulesRaw.forEach(m => {
@@ -236,7 +210,6 @@ export function ModuleCenter() {
     return Array.from(categories).sort();
   }, [displayedModulesRaw, storeModules]);
 
-  // 获取推荐
   const recommendations = useRecommendations(installedModules, availableModules);
   const showRecommendations =
     (currentView === 'store' || currentView === 'official') &&
@@ -244,8 +217,6 @@ export function ModuleCenter() {
     currentCategory === 'all';
 
   // --- 回调函数 ---
-
-  // 详情 Modal 数据
   const selectedModule = useMemo(() => {
     if (!selectedModuleId) return null;
 
@@ -290,7 +261,6 @@ export function ModuleCenter() {
     return installedModules.some(m => m.id === selectedModuleId);
   }, [selectedModuleId, installedModules]);
 
-  // 操作回调
   const handleInstall = useCallback(
     async (moduleId: string) => {
       setProcessingModuleId(moduleId);
@@ -342,7 +312,6 @@ export function ModuleCenter() {
     [focusModuleWindow, installedModules, openModule]
   );
 
-  // 拖拽处理
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -354,7 +323,6 @@ export function ModuleCenter() {
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // 只有离开当前容器时才取消（通过关联目标判断）
     if (e.currentTarget.contains(e.relatedTarget as Node)) return;
     setIsDragActive(false);
   }, []);
@@ -368,21 +336,11 @@ export function ModuleCenter() {
     async (files: FileList) => {
       setIsDragActive(false);
       if (files.length === 0) return;
-
-      // 假设 installLocalModule 可以处理文件对象
-      // 这里需要根据实际 API 调整，暂时使用 addLocalBinaryTool 模拟
-      // 实际上应该调用处理文件路径的逻辑
-
-      // 如果有处理文件的逻辑，可以在这里调用
-      // await installLocalModule(files[0].path);
-
-      // 临时：打开手动添加对话框
       addLocalBinaryTool();
     },
     [addLocalBinaryTool]
   );
 
-  // 视图切换处理
   const handleViewChange = (view: string) => {
     setCurrentView(view);
     setCurrentCategory('all');
@@ -390,7 +348,6 @@ export function ModuleCenter() {
     setSelectedToolIds(new Set());
   };
 
-  // 批量操作回调... (省略重复逻辑)
   const handleSelect = useCallback((toolId: string) => {
     setSelectedToolIds(prev => {
       const next = new Set(prev);
@@ -433,9 +390,37 @@ export function ModuleCenter() {
     });
   }, [selectedToolIds, installedModules]);
 
+  const getViewTitle = () => {
+    if (currentCategory !== 'all') return `📂 ${currentCategory}`;
+    switch (currentView) {
+      case 'running':
+        return '▶️ 运行中';
+      case 'store':
+        return '🛍️ 全部工具';
+      case 'official':
+        return '🏪 官方工具库';
+      case 'custom':
+        return '🌐 社区工具';
+      case 'favorites':
+        return '⭐ 我的收藏';
+      default:
+        if (currentView.startsWith('source:')) {
+          const sourceId = currentView.replace('source:', '');
+          const sourceName = allAvailableModules.find(m => m.sourceId === sourceId)?.sourceName;
+          return `📂 ${sourceName || '工具源'}`;
+        }
+        return '📦 已安装工具';
+    }
+  };
+
   return (
-    <div
-      className="flex h-full overflow-hidden bg-transparent relative"
+    <Box
+      sx={{
+        display: 'flex',
+        height: '100%',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -449,20 +434,25 @@ export function ModuleCenter() {
       }}
     >
       {/* 拖拽覆盖层 */}
-      <AnimatePresence>
-        {isDragActive && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-8"
-          >
-            <div className="w-full max-w-2xl">
-              <DropZone onDrop={handleDrop} onBrowse={addLocalBinaryTool} />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Fade in={isDragActive}>
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            p: 4,
+          }}
+        >
+          <Box sx={{ width: '100%', maxWidth: 600 }}>
+            <DropZone onDrop={handleDrop} onBrowse={addLocalBinaryTool} />
+          </Box>
+        </Box>
+      </Fade>
 
       {/* 左侧侧边栏 */}
       <ModuleSidebar
@@ -485,68 +475,60 @@ export function ModuleCenter() {
       />
 
       {/* 右侧主内容区 */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <Box sx={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
         {/* 顶部工具栏 */}
-        <div
-          className={`flex flex-none items-center justify-between gap-4 border-b px-6 py-4 ${
-            isDark ? 'border-white/10' : 'border-slate-200'
-          }`}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            borderBottom: 1,
+            borderColor: 'divider',
+            px: 3,
+            py: 2,
+          }}
         >
-          <div className="relative max-w-md flex-1">
-            <Search
-              size={18}
-              className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${
-                isDark ? 'text-white/60' : 'text-slate-500'
-              }`}
-            />
-            <input
-              type="text"
-              placeholder={`在 ${
-                currentView === 'store' ? '商店' : currentView === 'favorites' ? '收藏' : '已安装'
-              }中搜索...`}
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              className={`w-full rounded-lg border py-2 pl-10 pr-4 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
-                isDark
-                  ? 'border-white/10 bg-white/5 text-white placeholder:text-white/50'
-                  : 'border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400'
-              }`}
-            />
-          </div>
+          <TextField
+            placeholder={`在 ${
+              currentView === 'store' ? '商店' : currentView === 'favorites' ? '收藏' : '已安装'
+            }中搜索...`}
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            size="small"
+            sx={{ maxWidth: 400, flex: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} />
+                </InputAdornment>
+              ),
+            }}
+          />
 
-          <div className="flex items-center gap-2">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {currentView === 'installed' && (
               <>
-                <motion.button
-                  {...iconButtonInteraction}
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Plus size={16} />}
                   onClick={addLocalBinaryTool}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    isDark
-                      ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                      : 'border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80'
-                  }`}
                 >
-                  <Plus size={16} />
-                  <span className="hidden sm:inline">本地工具</span>
-                </motion.button>
+                  本地工具
+                </Button>
 
-                <motion.button
-                  {...iconButtonInteraction}
+                <Button
+                  variant={isSelectionMode ? 'contained' : 'outlined'}
+                  size="small"
+                  startIcon={<CheckSquare size={16} />}
                   onClick={() => {
                     setIsSelectionMode(!isSelectionMode);
                     setSelectedToolIds(new Set());
                   }}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    isSelectionMode
-                      ? 'border-blue-500/50 bg-blue-500/20 text-blue-500'
-                      : isDark
-                        ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                        : 'border-slate-200 bg-white/50 text-slate-700 hover:bg-white/80'
-                  }`}
                 >
-                  <CheckSquare size={16} />
-                  <span className="hidden sm:inline">管理</span>
-                </motion.button>
+                  管理
+                </Button>
               </>
             )}
 
@@ -564,82 +546,47 @@ export function ModuleCenter() {
               minimal
             />
 
-            <div
-              className={`flex items-center rounded-lg border p-1 ${
-                isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white/50'
-              }`}
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, value) => value && setViewMode(value)}
+              size="small"
             >
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`rounded p-1 transition-colors ${
-                  viewMode === 'grid'
-                    ? isDark
-                      ? 'bg-white/10 text-white'
-                      : 'bg-slate-200 text-slate-900'
-                    : isDark
-                      ? 'text-white/40 hover:text-white/80'
-                      : 'text-slate-400 hover:text-slate-700'
-                }`}
-              >
+              <ToggleButton value="grid">
                 <LayoutGrid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`rounded p-1 transition-colors ${
-                  viewMode === 'list'
-                    ? isDark
-                      ? 'bg-white/10 text-white'
-                      : 'bg-slate-200 text-slate-900'
-                    : isDark
-                      ? 'text-white/40 hover:text-white/80'
-                      : 'text-slate-400 hover:text-slate-700'
-                }`}
-              >
+              </ToggleButton>
+              <ToggleButton value="list">
                 <List size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        </Box>
 
         {/* 滚动内容区 */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 elegant-scroll relative">
+        <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 3, position: 'relative' }}>
           {showRecommendations && (
-            <div className="mb-8">
-              <h2 className={`mb-4 text-lg font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 💡 推荐工具
-              </h2>
+              </Typography>
               <ModuleRecommendations
                 recommendations={recommendations}
                 onInstall={handleInstall}
                 onCardClick={id => setSelectedModuleId(id)}
                 processingModuleId={processingModuleId}
               />
-              <div className={`my-8 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`} />
-            </div>
+              <Box sx={{ my: 4, borderTop: 1, borderColor: 'divider' }} />
+            </Box>
           )}
 
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-              {currentCategory === 'all'
-                ? currentView === 'running'
-                  ? '▶️ 运行中'
-                  : currentView === 'store'
-                    ? '🛍️ 全部工具'
-                    : currentView === 'official'
-                      ? '🏪 官方工具库'
-                      : currentView === 'custom'
-                        ? '🌐 社区工具'
-                        : currentView === 'favorites'
-                          ? '⭐ 我的收藏'
-                          : currentView.startsWith('source:')
-                            ? `📂 ${allAvailableModules.find(m => m.sourceId === currentView.replace('source:', ''))?.sourceName || '工具源'}`
-                            : '📦 已安装工具'
-                : `📂 ${currentCategory}`}
-            </h2>
-            <span className={`text-sm ${isDark ? 'text-white/40' : 'text-slate-400'}`}>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6" fontWeight="bold">
+              {getViewTitle()}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
               {finalModules.length} 个项目
-            </span>
-          </div>
+            </Typography>
+          </Box>
 
           <ModuleGrid
             modules={finalModules}
@@ -662,7 +609,7 @@ export function ModuleCenter() {
                   : '还没有安装任何工具'
             }
           />
-        </div>
+        </Box>
 
         {/* 批量操作浮层 */}
         {isSelectionMode && selectedToolIds.size > 0 && (
@@ -678,7 +625,7 @@ export function ModuleCenter() {
             hasHttpService={hasHttpServiceSelected}
           />
         )}
-      </div>
+      </Box>
 
       {/* 详情弹窗 */}
       <ModuleDetailModal
@@ -690,6 +637,6 @@ export function ModuleCenter() {
         onOpen={handleOpen}
         isInstalled={isSelectedModuleInstalled}
       />
-    </div>
+    </Box>
   );
 }
