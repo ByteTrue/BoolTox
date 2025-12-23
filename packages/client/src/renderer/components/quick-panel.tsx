@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Zap, Grid, Settings, Home } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import type { ToolRuntime } from '@booltox/shared';
 
 type QuickPanelTool = ToolRuntime & { isFavorite?: boolean };
@@ -35,6 +34,12 @@ export function QuickPanel() {
   const [installedModules, setInstalledModules] = useState<QuickPanelTool[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => resolveActualTheme());
+  const [isVisible, setIsVisible] = useState(false);
+
+  // 入场动画
+  useEffect(() => {
+    requestAnimationFrame(() => setIsVisible(true));
+  }, []);
 
   // 监听主题变化（支持跟随系统）
   useEffect(() => {
@@ -147,29 +152,25 @@ export function QuickPanel() {
     action();
   };
 
+  const isDark = theme === 'dark';
+
   return (
     <div className="w-full h-full flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: -20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -20 }}
-        transition={{ duration: 0.15 }}
-        className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+      <div
+        className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transition-all duration-200"
         style={{
-          background: theme === 'dark' ? 'rgba(17, 24, 39, 0.98)' : 'rgba(255, 255, 255, 0.98)',
-          backdropFilter: 'blur(20px)',
-          border:
-            theme === 'dark'
-              ? '1px solid rgba(255, 255, 255, 0.1)'
-              : '1px solid rgba(0, 0, 0, 0.1)',
+          background: isDark ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(-20px)',
         }}
       >
         {/* 搜索框 */}
         <div
-          className={`relative p-6 border-b ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}
+          className={`relative p-6 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}
         >
           <Search
-            className={`absolute left-9 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-400'}`}
+            className={`absolute left-9 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/60' : 'text-gray-400'}`}
             size={20}
           />
           <input
@@ -179,7 +180,7 @@ export function QuickPanel() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             className={`w-full border rounded-xl pl-12 pr-4 py-3.5 text-lg focus:outline-none transition-colors ${
-              theme === 'dark'
+              isDark
                 ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-500'
                 : 'bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-blue-500'
             }`}
@@ -188,157 +189,141 @@ export function QuickPanel() {
 
         {/* 内容区 */}
         <div className="p-6 max-h-[500px] overflow-y-auto elegant-scroll">
-          <AnimatePresence mode="wait">
-            {query ? (
-              // 搜索结果
-              <motion.div
-                key="search-results"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-2"
-              >
-                {filteredModules.length > 0 ? (
-                  filteredModules.map(module => (
-                    <button
-                      key={module.id}
-                      onClick={() => handleToolClick(module.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group ${
-                        theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      <span className="text-3xl">{module.manifest.icon || '🔧'}</span>
-                      <div className="flex-1">
-                        <p
-                          className={`font-medium transition-colors ${
-                            theme === 'dark'
-                              ? 'text-white group-hover:text-blue-400'
-                              : 'text-gray-900 group-hover:text-blue-600'
-                          }`}
-                        >
-                          {module.manifest.name}
-                        </p>
-                        <p
-                          className={`text-sm line-clamp-1 ${
-                            theme === 'dark' ? 'text-white/60' : 'text-gray-500'
-                          }`}
-                        >
-                          {module.manifest.description}
-                        </p>
-                      </div>
-                      {module.status === 'running' && (
-                        <span className="flex items-center gap-1 text-xs text-green-600">
-                          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                          运行中
-                        </span>
-                      )}
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-center py-12">
-                    <p className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>
-                      没有找到匹配的工具
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-            ) : (
-              // 默认视图
-              <motion.div
-                key="default-view"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-6"
-              >
-                {/* 收藏的工具 */}
-                {favorites.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
-                        theme === 'dark' ? 'text-white/80' : 'text-gray-600'
-                      }`}
-                    >
-                      ★ 收藏的工具
-                    </h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {favorites.map(module => (
-                        <button
-                          key={module.id}
-                          onClick={() => handleToolClick(module.id)}
-                          className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-colors group ${
-                            theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                          }`}
-                        >
-                          <span className="text-4xl group-hover:scale-110 transition-transform">
-                            {module.manifest.icon || '🔧'}
-                          </span>
-                          <span
-                            className={`text-sm text-center line-clamp-1 ${
-                              theme === 'dark' ? 'text-white' : 'text-gray-900'
-                            }`}
-                          >
-                            {module.manifest.name}
-                          </span>
-                        </button>
-                      ))}
+          {query ? (
+            // 搜索结果
+            <div className="space-y-2">
+              {filteredModules.length > 0 ? (
+                filteredModules.map(module => (
+                  <button
+                    key={module.id}
+                    onClick={() => handleToolClick(module.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group ${
+                      isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-3xl">{module.manifest.icon || '🔧'}</span>
+                    <div className="flex-1">
+                      <p
+                        className={`font-medium transition-colors ${
+                          isDark
+                            ? 'text-white group-hover:text-blue-400'
+                            : 'text-gray-900 group-hover:text-blue-600'
+                        }`}
+                      >
+                        {module.manifest.name}
+                      </p>
+                      <p
+                        className={`text-sm line-clamp-1 ${
+                          isDark ? 'text-white/60' : 'text-gray-500'
+                        }`}
+                      >
+                        {module.manifest.description}
+                      </p>
                     </div>
-                  </div>
-                )}
-
-                {/* 快速操作 */}
+                    {module.status === 'running' && (
+                      <span className="flex items-center gap-1 text-xs text-green-600">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        运行中
+                      </span>
+                    )}
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <p className={isDark ? 'text-white/60' : 'text-gray-500'}>
+                    没有找到匹配的工具
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            // 默认视图
+            <div className="space-y-6">
+              {/* 收藏的工具 */}
+              {favorites.length > 0 && (
                 <div>
                   <h3
                     className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
-                      theme === 'dark' ? 'text-white/80' : 'text-gray-600'
+                      isDark ? 'text-white/80' : 'text-gray-600'
                     }`}
                   >
-                    <Zap size={14} />
-                    快速操作
+                    ★ 收藏的工具
                   </h3>
-                  <div className="space-y-1">
-                    {quickActions.map(action => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {favorites.map(module => (
                       <button
-                        key={action.id}
-                        onClick={() => handleActionClick(action.action)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-sm ${
-                          theme === 'dark'
-                            ? 'hover:bg-white/10 text-white'
-                            : 'hover:bg-gray-100 text-gray-900'
+                        key={module.id}
+                        onClick={() => handleToolClick(module.id)}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-colors group ${
+                          isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
                         }`}
                       >
-                        {action.icon}
-                        <span>{action.label}</span>
+                        <span className="text-4xl group-hover:scale-110 transition-transform">
+                          {module.manifest.icon || '🔧'}
+                        </span>
+                        <span
+                          className={`text-sm text-center line-clamp-1 ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}
+                        >
+                          {module.manifest.name}
+                        </span>
                       </button>
                     ))}
                   </div>
                 </div>
+              )}
 
-                {/* 提示 */}
-                <div
-                  className={`pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}
+              {/* 快速操作 */}
+              <div>
+                <h3
+                  className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
+                    isDark ? 'text-white/80' : 'text-gray-600'
+                  }`}
                 >
-                  <p
-                    className={`text-xs text-center ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}
-                  >
-                    按{' '}
-                    <kbd
-                      className={`px-2 py-0.5 rounded ${
-                        theme === 'dark' ? 'bg-white/10 text-white/60' : 'bg-gray-200 text-gray-600'
+                  <Zap size={14} />
+                  快速操作
+                </h3>
+                <div className="space-y-1">
+                  {quickActions.map(action => (
+                    <button
+                      key={action.id}
+                      onClick={() => handleActionClick(action.action)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-sm ${
+                        isDark
+                          ? 'hover:bg-white/10 text-white'
+                          : 'hover:bg-gray-100 text-gray-900'
                       }`}
                     >
-                      ESC
-                    </kbd>{' '}
-                    关闭
-                  </p>
+                      {action.icon}
+                      <span>{action.label}</span>
+                    </button>
+                  ))}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+
+              {/* 提示 */}
+              <div
+                className={`pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}
+              >
+                <p
+                  className={`text-xs text-center ${isDark ? 'text-white/40' : 'text-gray-400'}`}
+                >
+                  按{' '}
+                  <kbd
+                    className={`px-2 py-0.5 rounded ${
+                      isDark ? 'bg-white/10 text-white/60' : 'bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    ESC
+                  </kbd>{' '}
+                  关闭
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

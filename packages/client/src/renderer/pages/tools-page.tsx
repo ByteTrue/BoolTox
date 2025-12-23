@@ -5,6 +5,7 @@
 
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import Box from '@mui/material/Box';
 import { useModulePlatform } from '@/contexts/module-context';
 import { ModuleCenter } from '../components/module-center';
 
@@ -24,8 +25,8 @@ export function ToolsPage() {
   }, [location.pathname, refreshAvailablePlugins]);
 
   return (
-    <div className="h-full w-full overflow-hidden">
+    <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
       <ModuleCenter />
-    </div>
+    </Box>
   );
 }

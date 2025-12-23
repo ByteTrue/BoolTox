@@ -3,8 +3,12 @@
  * Licensed under CC-BY-NC-4.0
  */
 
+import { useMemo } from 'react';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
 import { useModulePlatform } from '@/contexts/module-context';
-import { useTheme } from '../components/theme-provider';
 import { useModuleStats } from '@/hooks/use-module-stats';
 import { useModuleEvents } from '@/hooks/use-module-events';
 import { getGreeting, getShortDate, getTimeEmoji } from '@/utils/greeting';
@@ -13,10 +17,8 @@ import { HorizontalScroll } from '../components/ui/horizontal-scroll';
 import { ActivityFeed } from '../components/ui/activity-feed';
 import { ActivityTimeline } from '../components/ui/activity-timeline';
 import { SystemMonitor } from '../components/ui/system-monitor';
-import { useMemo } from 'react';
 
 export function HomePage() {
-  const { theme } = useTheme();
   const { installedModules, openModule } = useModulePlatform();
   const stats = useModuleStats();
   const { events, getRecentlyActiveModules } = useModuleEvents();
@@ -31,105 +33,86 @@ export function HomePage() {
   const recentEvents = useMemo(() => events.slice(0, 5), [events]);
 
   return (
-    <div className="h-full overflow-y-auto px-8 py-6 space-y-8 elegant-scroll">
-      {/* Hero 区域 */}
-      <section
-        className="rounded-2xl border p-8"
-        style={{
-          background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(12px)',
-          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <div className="flex items-center justify-between">
-          {/* 问候语 */}
-          <div className="flex items-center gap-4">
-            <span className="text-5xl">{getTimeEmoji()}</span>
-            <div>
-              <h1
-                className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-              >
-                {getGreeting()}
-              </h1>
-              <p className={`text-sm mt-2 ${theme === 'dark' ? 'text-white/70' : 'text-gray-600'}`}>
-                {getShortDate()}
-              </p>
-            </div>
-          </div>
+    <Box sx={{ height: '100%', overflow: 'auto', px: 4, py: 3 }}>
+      <Stack spacing={4}>
+        {/* Hero 区域 */}
+        <Paper sx={{ p: 4, borderRadius: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* 问候语 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h2" component="span">
+                {getTimeEmoji()}
+              </Typography>
+              <Box>
+                <Typography variant="h4" fontWeight="bold">
+                  {getGreeting()}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {getShortDate()}
+                </Typography>
+              </Box>
+            </Box>
 
-          {/* 统计卡片 */}
-          <div className="flex gap-4">
-            <StatCard label="已安装" value={stats.installed} icon="📦" theme={theme} />
-            <StatCard label="运行中" value={stats.enabled} icon="✅" theme={theme} highlight />
-            <StatCard label="远程可用" value={stats.remote} icon="🌐" theme={theme} />
-          </div>
-        </div>
-      </section>
+            {/* 统计卡片 */}
+            <Stack direction="row" spacing={2}>
+              <StatCard label="已安装" value={stats.installed} icon="📦" />
+              <StatCard label="运行中" value={stats.enabled} icon="✅" highlight />
+              <StatCard label="远程可用" value={stats.remote} icon="🌐" />
+            </Stack>
+          </Box>
+        </Paper>
 
-      {/* 最近使用 */}
-      {recentModules.length > 0 && (
-        <section>
-          <h2
-            className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-          >
-            🚀 最近使用
-          </h2>
-          <HorizontalScroll gap={16}>
-            {recentModules.map(module => (
-              <div key={module.id} className="w-[280px] flex-shrink-0">
-                <ModuleQuickCard module={module} onClick={() => openModule(module.id)} />
-              </div>
-            ))}
-          </HorizontalScroll>
-        </section>
-      )}
+        {/* 最近使用 */}
+        {recentModules.length > 0 && (
+          <Box>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+              🚀 最近使用
+            </Typography>
+            <HorizontalScroll gap={16}>
+              {recentModules.map(module => (
+                <Box key={module.id} sx={{ width: 280, flexShrink: 0 }}>
+                  <ModuleQuickCard module={module} onClick={() => openModule(module.id)} />
+                </Box>
+              ))}
+            </HorizontalScroll>
+          </Box>
+        )}
 
-      {/* 公告 + 操作记录 */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 公告 */}
-        <ActivityFeed />
-
-        {/* 操作记录 */}
-        <div
-          className="rounded-2xl border p-6"
-          style={{
-            background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.7)',
-            backdropFilter: 'blur(12px)',
-            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        {/* 公告 + 操作记录 */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
+            gap: 3,
           }}
         >
-          <h3
-            className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-          >
-            📝 操作记录
-          </h3>
-          {recentEvents.length > 0 ? (
-            <ActivityTimeline events={recentEvents} maxItems={5} />
-          ) : (
-            <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
-              暂无操作记录
-            </p>
-          )}
-        </div>
-      </section>
+          {/* 公告 */}
+          <ActivityFeed />
 
-      {/* 系统监控 */}
-      <section
-        className="rounded-2xl border p-6"
-        style={{
-          background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(12px)',
-          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <h3
-          className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-        >
-          💻 系统监控
-        </h3>
-        <SystemMonitor />
-      </section>
-    </div>
+          {/* 操作记录 */}
+          <Paper sx={{ p: 3, borderRadius: 3 }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+              📝 操作记录
+            </Typography>
+            {recentEvents.length > 0 ? (
+              <ActivityTimeline events={recentEvents} maxItems={5} />
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                暂无操作记录
+              </Typography>
+            )}
+          </Paper>
+        </Box>
+
+        {/* 系统监控 */}
+        <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+            💻 系统监控
+          </Typography>
+          <SystemMonitor />
+        </Paper>
+      </Stack>
+    </Box>
   );
 }
 
@@ -138,42 +121,52 @@ function StatCard({
   label,
   value,
   icon,
-  theme,
   highlight = false,
 }: {
   label: string;
   value: number;
   icon: string;
-  theme: 'light' | 'dark';
   highlight?: boolean;
 }) {
   return (
-    <div
-      className="rounded-xl border px-6 py-4 min-w-[120px] transition-transform hover:scale-105"
-      style={{
-        background: highlight
-          ? 'linear-gradient(135deg, rgba(101, 187, 233, 0.2) 0%, rgba(249, 193, 207, 0.2) 100%)'
-          : theme === 'dark'
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(255, 255, 255, 0.6)',
-        borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    <Paper
+      sx={{
+        px: 3,
+        py: 2,
+        minWidth: 120,
+        borderRadius: 2,
+        transition: 'transform 0.2s',
+        '&:hover': { transform: 'scale(1.05)' },
+        ...(highlight && {
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          '& .MuiTypography-root': {
+            color: 'inherit',
+          },
+        }),
       }}
+      elevation={highlight ? 3 : 1}
     >
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{icon}</span>
-        <div>
-          <p
-            className={`text-xs uppercase tracking-wider ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Typography variant="h5" component="span">
+          {icon}
+        </Typography>
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              color: highlight ? 'inherit' : 'text.secondary',
+            }}
           >
             {label}
-          </p>
-          <p
-            className={`text-2xl font-bold mt-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-          >
+          </Typography>
+          <Typography variant="h5" fontWeight="bold" sx={{ mt: 0.5 }}>
             {value}
-          </p>
-        </div>
-      </div>
-    </div>
+          </Typography>
+        </Box>
+      </Box>
+    </Paper>
   );
 }

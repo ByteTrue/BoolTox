@@ -18,9 +18,14 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import { ArrowLeft, Github, FolderOpen } from 'lucide-react';
 import type { ToolSourceConfig } from '@booltox/shared';
+import { AppButton, AppInput, AppSelect } from '../components/ui';
 
 type SourceType = 'remote' | 'local';
 
@@ -44,30 +49,31 @@ export function AddToolSourcePage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto px-8 py-6 elegant-scroll">
+    <Box sx={{ height: '100%', overflowY: 'auto', px: 4, py: 3 }}>
       {/* 头部 */}
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={handleBack}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <IconButton onClick={handleBack}>
           <ArrowLeft size={24} />
-        </button>
-        <h1 className="text-3xl font-bold">添加工具源</h1>
-      </div>
+        </IconButton>
+        <Typography variant="h4" fontWeight={700}>
+          添加工具源
+        </Typography>
+      </Box>
 
       {/* 步骤 1：选择类型 */}
       {step === 'select-type' && (
-        <div className="max-w-4xl mx-auto">
-          <p className="text-gray-500 mb-8 text-center">选择要添加的工具源类型</p>
+        <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+          <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 4 }}>
+            选择要添加的工具源类型
+          </Typography>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
             {/* 远程仓库 */}
             <SourceTypeCard
               icon={<Github size={48} />}
               title="远程仓库"
               description="GitHub/GitLab 仓库，支持 booltox.json 或 booltox-index.json"
-              color="blue"
+              color="primary"
               onClick={() => handleSelectType('remote')}
             />
 
@@ -76,25 +82,25 @@ export function AddToolSourcePage() {
               icon={<FolderOpen size={48} />}
               title="本地目录"
               description="本地文件夹（源码或二进制），支持 booltox.json 或手动配置"
-              color="green"
+              color="success"
               onClick={() => handleSelectType('local')}
             />
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
 
       {/* 步骤 2：填写表单 */}
       {step === 'fill-form' && selectedType && (
-        <div className="max-w-2xl mx-auto">
+        <Box sx={{ maxWidth: 600, mx: 'auto' }}>
           {selectedType === 'remote' && (
             <RemoteSourceForm onBack={handleBack} onSuccess={() => navigate('/tools')} />
           )}
           {selectedType === 'local' && (
             <LocalSourceForm onBack={handleBack} onSuccess={() => navigate('/tools')} />
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -103,29 +109,49 @@ interface SourceTypeCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
-  color: 'blue' | 'green' | 'orange';
+  color: 'primary' | 'success';
   onClick: () => void;
 }
 
 function SourceTypeCard({ icon, title, description, color, onClick }: SourceTypeCardProps) {
-  const colorClasses = {
-    blue: 'border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20',
-    green: 'border-green-200 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20',
-    orange:
-      'border-orange-200 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20',
-  };
-
   return (
-    <motion.button
+    <Paper
+      component="button"
+      variant="outlined"
       onClick={onClick}
-      className={`border-2 rounded-xl p-6 text-center transition-all ${colorClasses[color]}`}
-      whileHover={{ y: -4, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      sx={{
+        p: 3,
+        textAlign: 'center',
+        cursor: 'pointer',
+        borderRadius: 2,
+        border: 2,
+        borderColor: `${color}.light`,
+        bgcolor: 'background.paper',
+        '&:hover': {
+          borderColor: `${color}.main`,
+          bgcolor: `${color}.main`,
+          color: `${color}.contrastText`,
+          transform: 'translateY(-4px) scale(1.02)',
+          '& .icon-wrapper': {
+            opacity: 1,
+          },
+        },
+        '&:active': {
+          transform: 'scale(0.98)',
+        },
+        transition: 'all 0.2s',
+      }}
     >
-      <div className="flex justify-center mb-4 opacity-70">{icon}</div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
-    </motion.button>
+      <Box className="icon-wrapper" sx={{ mb: 2, opacity: 0.7 }}>
+        {icon}
+      </Box>
+      <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+        {title}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {description}
+      </Typography>
+    </Paper>
   );
 }
 
@@ -174,110 +200,77 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
     <form onSubmit={handleSubmit} className="space-y-6">
       <h2 className="text-2xl font-bold mb-4">添加远程仓库</h2>
 
-      <div>
-        <label className="block text-sm font-medium mb-2">工具源名称 *</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={e => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-          placeholder="如：公司内部工具库"
+      <AppInput
+        label="工具源名称"
+        value={formData.name}
+        onChange={e => setFormData({ ...formData, name: e.target.value })}
+        placeholder="如：公司内部工具库"
+        required
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <AppSelect
+          label="平台"
+          value={formData.provider}
+          onChange={value => setFormData({ ...formData, provider: value as 'github' | 'gitlab' })}
+          options={[
+            { value: 'github', label: 'GitHub' },
+            { value: 'gitlab', label: 'GitLab' },
+          ]}
+          required
+        />
+        <AppInput
+          label="分支"
+          value={formData.branch}
+          onChange={e => setFormData({ ...formData, branch: e.target.value })}
+          placeholder="main"
           required
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">平台 *</label>
-          <select
-            value={formData.provider}
-            onChange={e =>
-              setFormData({ ...formData, provider: e.target.value as 'github' | 'gitlab' })
-            }
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-          >
-            <option value="github">GitHub</option>
-            <option value="gitlab">GitLab</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">分支 *</label>
-          <input
-            type="text"
-            value={formData.branch}
-            onChange={e => setFormData({ ...formData, branch: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            placeholder="main"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">所有者 *</label>
-          <input
-            type="text"
-            value={formData.owner}
-            onChange={e => setFormData({ ...formData, owner: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            placeholder="如：ByteTrue"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">仓库名 *</label>
-          <input
-            type="text"
-            value={formData.repo}
-            onChange={e => setFormData({ ...formData, repo: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            placeholder="如：my-tools"
-            required
-          />
-        </div>
+        <AppInput
+          label="所有者"
+          value={formData.owner}
+          onChange={e => setFormData({ ...formData, owner: e.target.value })}
+          placeholder="如：ByteTrue"
+          required
+        />
+        <AppInput
+          label="仓库名"
+          value={formData.repo}
+          onChange={e => setFormData({ ...formData, repo: e.target.value })}
+          placeholder="如：my-tools"
+          required
+        />
       </div>
 
       {formData.provider === 'gitlab' && (
-        <div>
-          <label className="block text-sm font-medium mb-2">GitLab 服务器地址（可选）</label>
-          <input
-            type="text"
-            value={formData.baseUrl}
-            onChange={e => setFormData({ ...formData, baseUrl: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            placeholder="https://gitlab.company.com"
-          />
-          <p className="text-xs text-gray-500 mt-1">留空使用 gitlab.com</p>
-        </div>
+        <AppInput
+          label="GitLab 服务器地址（可选）"
+          value={formData.baseUrl}
+          onChange={e => setFormData({ ...formData, baseUrl: e.target.value })}
+          placeholder="https://gitlab.company.com"
+          helperText="留空使用 gitlab.com"
+        />
       )}
 
-      <div>
-        <label className="block text-sm font-medium mb-2">访问 Token（私有仓库）</label>
-        <input
-          type="password"
-          value={formData.token}
-          onChange={e => setFormData({ ...formData, token: e.target.value })}
-          className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-          placeholder="ghp_xxx 或 glpat-xxx"
-        />
-        <p className="text-xs text-gray-500 mt-1">公开仓库无需填写</p>
-      </div>
+      <AppInput
+        label="访问 Token（私有仓库）"
+        type="password"
+        value={formData.token}
+        onChange={e => setFormData({ ...formData, token: e.target.value })}
+        placeholder="ghp_xxx 或 glpat-xxx"
+        helperText="公开仓库无需填写"
+      />
 
       <div className="flex justify-end gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="px-6 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-        >
+        <AppButton variant="ghost" onClick={onBack}>
           返回
-        </button>
-        <button
-          type="submit"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
+        </AppButton>
+        <AppButton type="submit" variant="primary">
           添加
-        </button>
+        </AppButton>
       </div>
     </form>
   );
@@ -356,34 +349,26 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
       <div className="space-y-6">
         <h2 className="text-2xl font-bold mb-4">添加本地目录</h2>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">工具源名称 *</label>
-          <input
-            type="text"
-            value={formData.sourceName}
-            onChange={e => setFormData({ ...formData, sourceName: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            placeholder="如：我的本地工具"
-          />
-        </div>
+        <AppInput
+          label="工具源名称"
+          value={formData.sourceName}
+          onChange={e => setFormData({ ...formData, sourceName: e.target.value })}
+          placeholder="如：我的本地工具"
+          required
+        />
 
         <div>
-          <label className="block text-sm font-medium mb-2">本地目录路径 *</label>
           <div className="flex gap-2">
-            <input
-              type="text"
+            <AppInput
+              label="本地目录路径"
               value={formData.localPath}
               onChange={e => setFormData({ ...formData, localPath: e.target.value })}
-              className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
               placeholder="E:\Code\MyTool"
+              required
             />
-            <button
-              type="button"
-              onClick={handleSelectPath}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
+            <AppButton variant="secondary" onClick={handleSelectPath} className="mt-2 shrink-0">
               浏览...
-            </button>
+            </AppButton>
           </div>
           {existingConfig && (
             <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm">
@@ -407,21 +392,16 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
+          <AppButton variant="ghost" onClick={onBack}>
             返回
-          </button>
-          <button
-            type="button"
+          </AppButton>
+          <AppButton
+            variant="success"
             onClick={handleNextStep}
             disabled={!formData.localPath}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             下一步
-          </button>
+          </AppButton>
         </div>
       </div>
     );
@@ -664,13 +644,9 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
+          <AppButton variant="ghost" onClick={onBack}>
             返回
-          </button>
+          </AppButton>
         </div>
       </div>
     );
@@ -683,128 +659,98 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
         <h2 className="text-2xl font-bold mb-4">配置工具信息</h2>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">工具 ID *</label>
-            <input
-              type="text"
-              value={toolConfig.id}
-              onChange={e => setToolConfig({ ...toolConfig, id: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-              placeholder="com.example.my-tool"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">工具名称 *</label>
-            <input
-              type="text"
-              value={toolConfig.name}
-              onChange={e => setToolConfig({ ...toolConfig, name: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-              placeholder="我的工具"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">版本 *</label>
-            <input
-              type="text"
-              value={toolConfig.version}
-              onChange={e => setToolConfig({ ...toolConfig, version: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-              placeholder="1.0.0"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">作者 *</label>
-            <input
-              type="text"
-              value={toolConfig.author}
-              onChange={e => setToolConfig({ ...toolConfig, author: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-              placeholder="Your Name"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">描述</label>
-          <textarea
-            value={toolConfig.description}
-            onChange={e => setToolConfig({ ...toolConfig, description: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            rows={3}
-            placeholder="工具功能描述"
+          <AppInput
+            label="工具 ID"
+            value={toolConfig.id}
+            onChange={e => setToolConfig({ ...toolConfig, id: e.target.value })}
+            placeholder="com.example.my-tool"
+            required
+          />
+          <AppInput
+            label="工具名称"
+            value={toolConfig.name}
+            onChange={e => setToolConfig({ ...toolConfig, name: e.target.value })}
+            placeholder="我的工具"
+            required
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">运行时类型 *</label>
-            <select
-              value={toolConfig.runtime?.type || 'http-service'}
-              onChange={e =>
-                setToolConfig({
-                  ...toolConfig,
-                  runtime: { ...toolConfig.runtime, type: e.target.value },
-                })
-              }
-              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            >
-              <option value="http-service">HTTP Service</option>
-              <option value="standalone">Standalone</option>
-              <option value="cli">CLI</option>
-              <option value="binary">Binary</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">分类</label>
-            <input
-              type="text"
-              value={toolConfig.category}
-              onChange={e => setToolConfig({ ...toolConfig, category: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-              placeholder="utilities"
-            />
-          </div>
+          <AppInput
+            label="版本"
+            value={toolConfig.version}
+            onChange={e => setToolConfig({ ...toolConfig, version: e.target.value })}
+            placeholder="1.0.0"
+            required
+          />
+          <AppInput
+            label="作者"
+            value={toolConfig.author}
+            onChange={e => setToolConfig({ ...toolConfig, author: e.target.value })}
+            placeholder="Your Name"
+            required
+          />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">启动命令 *</label>
-          <input
-            type="text"
-            value={toolConfig.runtime?.start || ''}
-            onChange={e =>
+        <AppInput
+          label="描述"
+          value={toolConfig.description}
+          onChange={e => setToolConfig({ ...toolConfig, description: e.target.value })}
+          placeholder="工具功能描述"
+          multiline
+          rows={3}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <AppSelect
+            label="运行时类型"
+            value={toolConfig.runtime?.type || 'http-service'}
+            onChange={value =>
               setToolConfig({
                 ...toolConfig,
-                runtime: { ...toolConfig.runtime, start: e.target.value },
+                runtime: { ...toolConfig.runtime, type: value },
               })
             }
-            className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
-            placeholder="python main.py 或 node server.js"
+            options={[
+              { value: 'http-service', label: 'HTTP Service' },
+              { value: 'standalone', label: 'Standalone' },
+              { value: 'cli', label: 'CLI' },
+              { value: 'binary', label: 'Binary' },
+            ]}
+            required
+          />
+          <AppInput
+            label="分类"
+            value={toolConfig.category}
+            onChange={e => setToolConfig({ ...toolConfig, category: e.target.value })}
+            placeholder="utilities"
           />
         </div>
 
+        <AppInput
+          label="启动命令"
+          value={toolConfig.runtime?.start || ''}
+          onChange={e =>
+            setToolConfig({
+              ...toolConfig,
+              runtime: { ...toolConfig.runtime, start: e.target.value },
+            })
+          }
+          placeholder="python main.py 或 node server.js"
+          required
+        />
+
         <div className="flex justify-end gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
+          <AppButton variant="ghost" onClick={onBack}>
             返回
-          </button>
-          <button
-            type="button"
+          </AppButton>
+          <AppButton
+            variant="primary"
             onClick={handleSaveConfig}
             disabled={!toolConfig.id || !toolConfig.name || !toolConfig.runtime?.start}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             保存并添加
-          </button>
+          </AppButton>
         </div>
       </div>
     );
@@ -819,64 +765,57 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
 
         <div className="space-y-3">
           {indexTools.map((tool, index) => (
-            <div key={index} className="flex gap-2">
-              <input
-                type="text"
+            <div key={index} className="flex gap-2 items-end">
+              <AppInput
+                label={index === 0 ? '工具 ID' : undefined}
                 value={tool.id}
                 onChange={e => {
                   const newTools = [...indexTools];
                   newTools[index].id = e.target.value;
                   setIndexTools(newTools);
                 }}
-                className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
                 placeholder="工具 ID (如: com.example.tool1)"
               />
-              <input
-                type="text"
+              <AppInput
+                label={index === 0 ? '相对路径' : undefined}
                 value={tool.path}
                 onChange={e => {
                   const newTools = [...indexTools];
                   newTools[index].path = e.target.value;
                   setIndexTools(newTools);
                 }}
-                className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600"
                 placeholder="相对路径（如：tools/tool1）"
               />
-              <button
-                type="button"
+              <AppButton
+                variant="danger"
+                size="sm"
                 onClick={() => setIndexTools(indexTools.filter((_, i) => i !== index))}
-                className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 删除
-              </button>
+              </AppButton>
             </div>
           ))}
         </div>
 
-        <button
-          type="button"
+        <AppButton
+          variant="secondary"
+          fullWidth
           onClick={() => setIndexTools([...indexTools, { id: '', path: '' }])}
-          className="w-full px-4 py-2 border-2 border-dashed rounded-lg hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
         >
           + 添加工具
-        </button>
+        </AppButton>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
+          <AppButton variant="ghost" onClick={onBack}>
             返回
-          </button>
-          <button
-            type="button"
+          </AppButton>
+          <AppButton
+            variant="success"
             onClick={handleSaveIndex}
             disabled={indexTools.length === 0 || indexTools.some(t => !t.id || !t.path)}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             下一步
-          </button>
+          </AppButton>
         </div>
       </div>
     );
@@ -903,13 +842,13 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
                 {tool.hasConfig ? (
                   <span className="text-green-600 dark:text-green-400 text-sm">✓ 已有配置</span>
                 ) : (
-                  <button
-                    type="button"
+                  <AppButton
+                    variant="primary"
+                    size="sm"
                     onClick={() => handleCreateSubtoolConfig(tool.id, tool.path)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                   >
                     生成配置模板
-                  </button>
+                  </AppButton>
                 )}
               </div>
             </div>
@@ -924,20 +863,12 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
-            type="button"
-            onClick={() => setStep('index-list')}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
+          <AppButton variant="ghost" onClick={() => setStep('index-list')}>
             返回
-          </button>
-          <button
-            type="button"
-            onClick={handleFinishSubtools}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
+          </AppButton>
+          <AppButton variant="success" onClick={handleFinishSubtools}>
             完成并添加
-          </button>
+          </AppButton>
         </div>
       </div>
     );

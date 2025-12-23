@@ -4,8 +4,11 @@
  */
 
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { useTheme } from '../components/theme-provider';
+import Box from '@mui/material/Box';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Fade from '@mui/material/Fade';
 import { SettingsPanel } from '../components/settings-panel';
 import { DeveloperSettings } from './settings/developer';
 import { AboutSettings } from './settings/about';
@@ -18,7 +21,6 @@ const SETTINGS_SECTIONS = [
 ];
 
 export function SettingsPage() {
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,54 +29,60 @@ export function SettingsPage() {
     SETTINGS_SECTIONS.find(section => section.path === location.pathname)?.key || 'general';
 
   return (
-    <div className="flex h-full">
+    <Box sx={{ display: 'flex', height: '100%' }}>
       {/* 左侧侧边栏 */}
-      <aside
-        className="w-56 border-r p-4 overflow-y-auto elegant-scroll"
-        style={{
-          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-          background: theme === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.5)',
+      <Box
+        component="aside"
+        sx={{
+          width: 224,
+          borderRight: 1,
+          borderColor: 'divider',
+          p: 2,
+          overflow: 'auto',
+          bgcolor: 'background.paper',
         }}
       >
-        <nav className="space-y-1">
+        <List disablePadding>
           {SETTINGS_SECTIONS.map(section => {
             const isActive = activeSection === section.key;
             return (
-              <button
+              <ListItemButton
                 key={section.key}
                 onClick={() => navigate(section.path)}
-                className={`w-full text-left rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-                  isActive
-                    ? theme === 'dark'
-                      ? 'bg-white/10 text-white'
-                      : 'bg-gray-200 text-gray-900'
-                    : theme === 'dark'
-                      ? 'text-white/70 hover:bg-white/5 hover:text-white'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                selected={isActive}
+                sx={{
+                  borderRadius: 1,
+                  mb: 0.5,
+                  '&.Mui-selected': {
+                    bgcolor: 'action.selected',
+                  },
+                }}
               >
-                {section.label}
-              </button>
+                <ListItemText
+                  primary={section.label}
+                  primaryTypographyProps={{
+                    fontSize: '0.875rem',
+                    fontWeight: isActive ? 600 : 400,
+                  }}
+                />
+              </ListItemButton>
             );
           })}
-        </nav>
-      </aside>
+        </List>
+      </Box>
 
       {/* 右侧内容区 */}
-      <div className="flex-1 overflow-y-auto elegant-scroll p-8">
-        <motion.div
-          key={activeSection}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Routes>
-            <Route path="/developer" element={<DeveloperSettings />} />
-            <Route path="/about" element={<AboutSettings />} />
-            <Route path="/*" element={<SettingsPanel />} />
-          </Routes>
-        </motion.div>
-      </div>
-    </div>
+      <Box sx={{ flex: 1, overflow: 'auto', p: 4 }}>
+        <Fade in key={activeSection}>
+          <Box>
+            <Routes>
+              <Route path="/developer" element={<DeveloperSettings />} />
+              <Route path="/about" element={<AboutSettings />} />
+              <Route path="/*" element={<SettingsPanel />} />
+            </Routes>
+          </Box>
+        </Fade>
+      </Box>
+    </Box>
   );
 }

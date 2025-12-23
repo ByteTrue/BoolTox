@@ -5,10 +5,9 @@
 
 import { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import { TabBar } from './tab-bar';
-import { useTheme } from './theme-provider';
-import { GlassLoadingFallback } from './ui/glass-loading-fallback';
 import { ErrorBoundary } from './error-boundary';
 import { UpdateBanner } from './ui/update-banner';
 import { ToolTabProvider, useToolTabs } from '../contexts/tool-tab-context';
@@ -30,18 +29,28 @@ const DetachedWindowPage = lazy(() =>
   import('../pages/detached-window-page').then(m => ({ default: m.DetachedWindowPage }))
 );
 
-// 页面切换动画
-const pageVariants = {
-  initial: { opacity: 0, x: -20 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: 20 },
-};
+/**
+ * 页面加载占位
+ */
+function PageLoading() {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+      }}
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
 
 /**
  * AppShell 内部实现（需要在 ToolTabProvider 内）
  */
 function AppShellContent() {
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { toolTabs, activeToolTabId, updateToolTab } = useToolTabs();
@@ -66,7 +75,7 @@ function AppShellContent() {
   if (isDetachedWindowRoute) {
     return (
       <ErrorBoundary name="DetachedWindow">
-        <Suspense fallback={<GlassLoadingFallback />}>
+        <Suspense fallback={<PageLoading />}>
           <Routes>
             <Route path="/detached/:windowId" element={<DetachedWindowPage />} />
           </Routes>
@@ -76,118 +85,51 @@ function AppShellContent() {
   }
 
   return (
-    <div
-      className="flex flex-col h-dvh overflow-hidden transition-colors duration-300"
-      style={{
-        background:
-          theme === 'dark'
-            ? 'linear-gradient(135deg, rgb(15, 23, 42) 0%, rgb(30, 41, 59) 100%)'
-            : 'linear-gradient(135deg, rgb(241, 245, 249) 0%, rgb(226, 232, 240) 100%)',
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        overflow: 'hidden',
+        bgcolor: 'background.default',
       }}
     >
-      {/* 标签栏（替代原有的标题栏 + 侧边栏） */}
+      {/* 标签栏 */}
       <TabBar />
 
       {/* 主内容区 */}
-      <main className="flex-1 overflow-hidden relative">
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
         {/* 路由内容区（当没有激活工具标签时显示） */}
-        <div className={activeToolTabId ? 'hidden' : 'h-full'}>
+        <Box sx={{ height: '100%', display: activeToolTabId ? 'none' : 'block' }}>
           <ErrorBoundary name="MainContent">
-            <Suspense fallback={<GlassLoadingFallback />}>
-              <AnimatePresence mode="wait">
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      <motion.div
-                        key="home"
-                        variants={pageVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.2 }}
-                        className="h-full"
-                      >
-                        <HomePage />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/tools"
-                    element={
-                      <motion.div
-                        key="tools"
-                        variants={pageVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.2 }}
-                        className="h-full"
-                      >
-                        <ToolsPage />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/tools/add-source"
-                    element={
-                      <motion.div
-                        key="add-source"
-                        variants={pageVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.2 }}
-                        className="h-full"
-                      >
-                        <AddToolSourcePage />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/tools/sources"
-                    element={
-                      <motion.div
-                        key="tool-sources"
-                        variants={pageVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.2 }}
-                        className="h-full"
-                      >
-                        <ToolSourcesPage />
-                      </motion.div>
-                    }
-                  />
-                  <Route
-                    path="/settings/*"
-                    element={
-                      <motion.div
-                        key="settings"
-                        variants={pageVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.2 }}
-                        className="h-full"
-                      >
-                        <SettingsPage />
-                      </motion.div>
-                    }
-                  />
-                </Routes>
-              </AnimatePresence>
+            <Suspense fallback={<PageLoading />}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/tools" element={<ToolsPage />} />
+                <Route path="/tools/add-source" element={<AddToolSourcePage />} />
+                <Route path="/tools/sources" element={<ToolSourcesPage />} />
+                <Route path="/settings/*" element={<SettingsPage />} />
+              </Routes>
             </Suspense>
           </ErrorBoundary>
-        </div>
+        </Box>
 
         {/* 工具 webview 区域（当有激活工具标签时显示） */}
-        <div className={activeToolTabId ? 'h-full' : 'hidden'}>
+        <Box sx={{ height: '100%', display: activeToolTabId ? 'block' : 'none' }}>
           {toolTabs
             .filter(tab => tab.windowId === 'main')
             .map(tab => (
-              <div key={tab.id} className={tab.id === activeToolTabId ? 'h-full' : 'hidden'}>
+              <Box
+                key={tab.id}
+                sx={{ height: '100%', display: tab.id === activeToolTabId ? 'block' : 'none' }}
+              >
                 <ToolWebView
                   url={tab.url}
                   toolId={tab.toolId}
@@ -197,16 +139,24 @@ function AppShellContent() {
                   }
                   onLoadingChange={isLoading => updateToolTab(tab.id, { isLoading })}
                 />
-              </div>
+              </Box>
             ))}
-        </div>
+        </Box>
 
         {/* 更新横幅（固定在内容区顶部） */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50">
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 50,
+          }}
+        >
           <UpdateBanner onNavigate={() => {}} />
-        </div>
-      </main>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

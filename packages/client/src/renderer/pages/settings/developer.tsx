@@ -8,13 +8,14 @@
  * 包含调试工具和开发配置
  */
 
-import { useTheme } from '../../components/theme-provider';
-import { motion } from 'framer-motion';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Alert from '@mui/material/Alert';
 import { Trash2, FileText, RefreshCw } from 'lucide-react';
 
 export function DeveloperSettings() {
-  const { theme } = useTheme();
-
   const handleOpenLogs = async () => {
     await window.ipc?.invoke('logger:open-log-folder');
     window.toast?.success('日志文件夹已打开');
@@ -57,116 +58,105 @@ export function DeveloperSettings() {
   ];
 
   return (
-    <div className="space-y-8">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* 页面标题 */}
-      <div>
-        <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+      <Box>
+        <Typography variant="h5" fontWeight={700}>
           开发者模式
-        </h2>
-        <p className={`text-sm mt-2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           调试工具和开发配置
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {/* 快速操作 */}
-      <section className="space-y-4">
-        <h3
-          className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-        >
+      <Box component="section" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="subtitle1" fontWeight={600}>
           快速操作
-        </h3>
+        </Typography>
 
-        <div className="grid grid-cols-1 gap-3">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {actionButtons.map(action => (
-            <motion.button
+            <Button
               key={action.label}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
               onClick={action.onClick}
-              className={`flex items-start gap-4 p-4 rounded-lg border text-left transition-colors ${
-                action.variant === 'danger'
-                  ? theme === 'dark'
-                    ? 'border-red-500/30 hover:bg-red-500/10'
-                    : 'border-red-200 hover:bg-red-50'
-                  : theme === 'dark'
-                    ? 'border-white/10 hover:bg-white/5'
-                    : 'border-gray-200 hover:bg-gray-50'
-              }`}
+              variant="outlined"
+              color={action.variant === 'danger' ? 'error' : 'inherit'}
+              sx={{
+                justifyContent: 'flex-start',
+                textAlign: 'left',
+                p: 2,
+                borderRadius: 2,
+                textTransform: 'none',
+                '&:hover': {
+                  transform: 'scale(1.01)',
+                },
+                transition: 'transform 0.15s',
+              }}
             >
-              <div
-                className={`mt-1 ${
-                  action.variant === 'danger'
-                    ? 'text-red-500'
-                    : theme === 'dark'
-                      ? 'text-blue-400'
-                      : 'text-blue-600'
-                }`}
+              <Box
+                sx={{
+                  mr: 2,
+                  color: action.variant === 'danger' ? 'error.main' : 'primary.main',
+                }}
               >
                 {action.icon}
-              </div>
-              <div className="flex-1">
-                <h4
-                  className={`font-semibold mb-1 ${
-                    action.variant === 'danger'
-                      ? 'text-red-500'
-                      : theme === 'dark'
-                        ? 'text-white'
-                        : 'text-gray-900'
-                  }`}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  color={action.variant === 'danger' ? 'error.main' : 'text.primary'}
                 >
                   {action.label}
-                </h4>
-                <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
                   {action.description}
-                </p>
-              </div>
-            </motion.button>
+                </Typography>
+              </Box>
+            </Button>
           ))}
-        </div>
-      </section>
+        </Box>
+      </Box>
 
       {/* 环境信息 */}
-      <section className="space-y-4">
-        <h3
-          className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-        >
+      <Box component="section" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="subtitle1" fontWeight={600}>
           环境信息
-        </h3>
+        </Typography>
 
-        <div
-          className="rounded-lg border p-4 font-mono text-sm space-y-2"
-          style={{
-            background: theme === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
-            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            fontFamily: 'monospace',
+            fontSize: '0.875rem',
           }}
         >
-          <div className="flex justify-between">
-            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>环境模式:</span>
-            <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              环境模式:
+            </Typography>
+            <Typography variant="body2" color="success.main">
               {import.meta.env.MODE === 'development' ? '开发环境' : '生产环境'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className={theme === 'dark' ? 'text-white/60' : 'text-gray-500'}>Electron:</span>
-            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2" color="text.secondary">
+              Electron:
+            </Typography>
+            <Typography variant="body2">
               {typeof window !== 'undefined' && window.electron ? '已启用' : '未启用'}
-            </span>
-          </div>
-        </div>
-      </section>
+            </Typography>
+          </Box>
+        </Paper>
+      </Box>
 
       {/* 提示 */}
-      <div
-        className="rounded-lg border p-4"
-        style={{
-          background: theme === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(251, 191, 36, 0.05)',
-          borderColor: theme === 'dark' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(251, 191, 36, 0.2)',
-        }}
-      >
-        <p className={`text-sm ${theme === 'dark' ? 'text-yellow-200' : 'text-yellow-700'}`}>
-          ⚠️ 开发者模式仅供调试使用。修改配置可能影响应用稳定性，请谨慎操作。
-        </p>
-      </div>
-    </div>
+      <Alert severity="warning" sx={{ borderRadius: 2 }}>
+        开发者模式仅供调试使用。修改配置可能影响应用稳定性，请谨慎操作。
+      </Alert>
+    </Box>
   );
 }

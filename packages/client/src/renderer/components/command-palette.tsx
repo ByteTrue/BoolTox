@@ -4,7 +4,11 @@
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import Dialog from '@mui/material/Dialog';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import InputBase from '@mui/material/InputBase';
+import Fade from '@mui/material/Fade';
 import { Search, Settings, Download, Clock, Command } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { useCommandPalette } from '@/contexts/command-palette-context';
@@ -111,136 +115,188 @@ export function CommandPalette() {
     }
   }, [isOpen]);
 
-  // 点击背景关闭
-  const handleBackdropClick = useCallback(() => {
-    close();
-  }, [close]);
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* 背景遮罩 */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            onClick={handleBackdropClick}
-          />
+    <Dialog
+      open={isOpen}
+      onClose={close}
+      maxWidth="sm"
+      fullWidth
+      TransitionComponent={Fade}
+      PaperProps={{
+        sx: {
+          position: 'fixed',
+          top: '20vh',
+          m: 0,
+          borderRadius: 3,
+          bgcolor: 'background.paper',
+          backgroundImage: 'none',
+        },
+      }}
+      slotProps={{
+        backdrop: {
+          sx: { bgcolor: 'rgba(0, 0, 0, 0.5)' },
+        },
+      }}
+    >
+      {/* 搜索框 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+        <Search size={20} style={{ opacity: 0.5 }} />
+        <InputBase
+          inputRef={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="搜索工具或输入命令..."
+          fullWidth
+          sx={{ fontSize: '1rem' }}
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.disabled' }}>
+          <Command size={12} />
+          <Typography variant="caption">K</Typography>
+        </Box>
+      </Box>
 
-          {/* 命令面板 */}
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="w-full max-w-2xl pointer-events-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="mx-4 overflow-hidden rounded-xl border border-white/10 bg-black/80 shadow-2xl backdrop-blur-xl">
-                {/* 搜索框 */}
-                <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
-                  <Search className="h-5 w-5 text-white/40" />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="搜索工具或输入命令..."
-                    className="flex-1 bg-transparent text-white placeholder-white/40 outline-none"
-                  />
-                  <div className="flex items-center gap-1 text-xs text-white/40">
-                    <Command className="h-3 w-3" />
-                    <span>K</span>
-                  </div>
-                </div>
-
-                {/* 结果列表 */}
-                <div className="max-h-[60vh] overflow-y-auto elegant-scroll">
-                  {filteredCommands.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-white/40">未找到匹配的工具</div>
+      {/* 结果列表 */}
+      <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        {filteredCommands.length === 0 ? (
+          <Box sx={{ px: 2, py: 4, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              未找到匹配的工具
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ py: 1 }}>
+            {filteredCommands.map((command, index) => (
+              <Box
+                key={command.id}
+                component="button"
+                onClick={command.onSelect}
+                onMouseEnter={() => setSelectedIndex(index)}
+                sx={{
+                  display: 'flex',
+                  width: '100%',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  px: 2,
+                  py: 1.25,
+                  textAlign: 'left',
+                  border: 'none',
+                  cursor: 'pointer',
+                  bgcolor: index === selectedIndex ? 'action.selected' : 'transparent',
+                  '&:hover': { bgcolor: 'action.hover' },
+                  transition: 'background-color 0.1s',
+                }}
+              >
+                {/* 图标 */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    width: 40,
+                    height: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 2,
+                    bgcolor: 'action.hover',
+                  }}
+                >
+                  {command.type === 'tool' ? (
+                    <Typography variant="h6">{command.icon || '🔧'}</Typography>
+                  ) : command.id === 'settings' ? (
+                    <Settings size={20} style={{ opacity: 0.6 }} />
                   ) : (
-                    <div className="py-2">
-                      {filteredCommands.map((command, index) => (
-                        <button
-                          key={command.id}
-                          onClick={command.onSelect}
-                          onMouseEnter={() => setSelectedIndex(index)}
-                          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                            index === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'
-                          }`}
-                        >
-                          {/* 图标 */}
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5">
-                            {command.type === 'tool' ? (
-                              <div className="text-2xl">{command.icon || '🔧'}</div>
-                            ) : command.id === 'settings' ? (
-                              <Settings className="h-5 w-5 text-white/60" />
-                            ) : (
-                              <Download className="h-5 w-5 text-white/60" />
-                            )}
-                          </div>
-
-                          {/* 信息 */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-white">{command.label}</span>
-                              {command.type === 'tool' && (
-                                <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-white/60">
-                                  工具
-                                </span>
-                              )}
-                            </div>
-                            {command.description && (
-                              <div className="mt-0.5 text-sm text-white/50 truncate">
-                                {command.description}
-                              </div>
-                            )}
-                            {command.lastUsed && (
-                              <div className="mt-1 flex items-center gap-1 text-xs text-white/40">
-                                <Clock className="h-3 w-3" />
-                                <span>上次使用: {formatDistanceToNow(command.lastUsed)}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* 快捷键提示 */}
-                          {index === selectedIndex && (
-                            <div className="text-xs text-white/40">
-                              <span className="rounded border border-white/20 px-1.5 py-0.5">
-                                Enter
-                              </span>
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                    <Download size={20} style={{ opacity: 0.6 }} />
                   )}
-                </div>
+                </Box>
 
-                {/* 底部提示 */}
-                <div className="flex items-center gap-4 border-t border-white/10 px-4 py-2 text-xs text-white/40">
-                  <div className="flex items-center gap-1">
-                    <span className="rounded border border-white/20 px-1 py-0.5">↑↓</span>
-                    <span>导航</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="rounded border border-white/20 px-1 py-0.5">Enter</span>
-                    <span>选择</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="rounded border border-white/20 px-1 py-0.5">Esc</span>
-                    <span>关闭</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </AnimatePresence>
+                {/* 信息 */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" fontWeight={500}>
+                      {command.label}
+                    </Typography>
+                    {command.type === 'tool' && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          px: 0.75,
+                          py: 0.25,
+                          borderRadius: 0.5,
+                          bgcolor: 'action.hover',
+                          color: 'text.secondary',
+                        }}
+                      >
+                        工具
+                      </Typography>
+                    )}
+                  </Box>
+                  {command.description && (
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {command.description}
+                    </Typography>
+                  )}
+                  {command.lastUsed && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      <Clock size={12} style={{ opacity: 0.5 }} />
+                      <Typography variant="caption" color="text.disabled">
+                        上次使用: {formatDistanceToNow(command.lastUsed)}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* 快捷键提示 */}
+                {index === selectedIndex && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: 0.5,
+                      border: 1,
+                      borderColor: 'divider',
+                      color: 'text.disabled',
+                    }}
+                  >
+                    Enter
+                  </Typography>
+                )}
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* 底部提示 */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          px: 2,
+          py: 1,
+          borderTop: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}>
+            ↑↓
+          </Typography>
+          <Typography variant="caption" color="text.disabled">导航</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}>
+            Enter
+          </Typography>
+          <Typography variant="caption" color="text.disabled">选择</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}>
+            Esc
+          </Typography>
+          <Typography variant="caption" color="text.disabled">关闭</Typography>
+        </Box>
+      </Box>
+    </Dialog>
   );
 }
