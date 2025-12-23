@@ -22,6 +22,9 @@ export function Toaster() {
 
   if (!currentToast) return null;
 
+  // 将 'default' 映射为 'info'，因为 MUI Alert 不支持 'default'
+  const severity = currentToast.type === 'default' ? 'info' : (currentToast.type || 'info');
+
   return (
     <Snackbar
       open={!!currentToast}
@@ -32,7 +35,7 @@ export function Toaster() {
     >
       <Alert
         onClose={() => removeToast(currentToast.id)}
-        severity={currentToast.type || 'info'}
+        severity={severity}
         variant="filled"
         sx={{ minWidth: 280 }}
       >
