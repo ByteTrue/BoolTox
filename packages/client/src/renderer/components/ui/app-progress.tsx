@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import LinearProgress, { type LinearProgressProps } from '@mui/material/LinearProgress';
-import CircularProgress, { type CircularProgressProps } from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
+import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 

@@ -11,7 +11,6 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { X } from 'lucide-react';
 

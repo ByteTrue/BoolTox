@@ -102,13 +102,6 @@ export function TiltCardGroup({
 }: TiltCardGroupProps) {
   const gapMap = { sm: 1.5, md: 2, lg: 3 };
 
-  const gridColumns = {
-    1: { xs: 1 },
-    2: { xs: 1, md: 2 },
-    3: { xs: 1, md: 2, lg: 3 },
-    4: { xs: 1, md: 2, lg: 4 },
-  };
-
   return (
     <Box
       className={className}

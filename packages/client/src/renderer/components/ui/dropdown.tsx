@@ -4,7 +4,6 @@
  */
 
 import { useState, type ReactNode, type MouseEvent } from 'react';
-import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';

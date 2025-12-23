@@ -3,14 +3,18 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { type InputHTMLAttributes, type ReactNode } from 'react';
+import { type InputHTMLAttributes, type ReactNode, type ChangeEvent } from 'react';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> {
+  /**
+   * 值变更回调
+   */
+  onChange?: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   /**
    * 标签文本
    */
@@ -84,7 +88,7 @@ export function Input({
         {...props}
         label={label}
         value={value}
-        onChange={onChange as any}
+        onChange={onChange}
         disabled={disabled}
         size={sizeMap[size]}
         fullWidth

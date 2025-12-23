@@ -91,13 +91,6 @@ export interface ToastContainerProps {
 }
 
 export function ToastContainer({ toasts, onRemove, position = 'top-right' }: ToastContainerProps) {
-  const anchorOrigin = {
-    'top-right': { vertical: 'top' as const, horizontal: 'right' as const },
-    'top-left': { vertical: 'top' as const, horizontal: 'left' as const },
-    'bottom-right': { vertical: 'bottom' as const, horizontal: 'right' as const },
-    'bottom-left': { vertical: 'bottom' as const, horizontal: 'left' as const },
-  };
-
   return (
     <Box
       sx={{

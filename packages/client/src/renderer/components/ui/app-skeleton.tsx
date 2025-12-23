@@ -251,8 +251,6 @@ export interface AppSkeletonImageProps {
   width?: string | number;
   /** 高度 */
   height?: string | number;
-  /** 圆角 */
-  borderRadius?: string | number;
   /** 自定义类名 */
   className?: string;
 }
@@ -260,7 +258,6 @@ export interface AppSkeletonImageProps {
 export function AppSkeletonImage({
   width = '100%',
   height = 200,
-  borderRadius = 2,
   className = '',
 }: AppSkeletonImageProps) {
   return (

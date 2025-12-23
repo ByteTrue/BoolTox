@@ -104,7 +104,17 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
       {state.phase === 'downloading' && (
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <Loader2 size={18} className="animate-spin" />
+            <Box
+              component={Loader2}
+              size={18}
+              sx={{
+                animation: 'spin 1s linear infinite',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' },
+                },
+              }}
+            />
             <Typography variant="body2" fontWeight={500}>
               正在下载更新包
             </Typography>

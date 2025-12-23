@@ -270,7 +270,21 @@ function ActivityFeedContent({
             disabled={refreshing}
             title="刷新公告"
           >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            <Box
+              component={RefreshCw}
+              size={16}
+              sx={
+                refreshing
+                  ? {
+                      animation: 'spin 1s linear infinite',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' },
+                      },
+                    }
+                  : undefined
+              }
+            />
           </IconButton>
         </Box>
 

@@ -3,7 +3,7 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useId, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -30,7 +30,6 @@ type FilterType = 'all' | 'announcement' | 'update';
  * 更新日志历史抽屉组件
  */
 export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: ChangelogDrawerProps) {
-  const drawerId = useId();
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedItem, setSelectedItem] = useState<ActivityFeedItem | null>(
     () => items.find(item => item.id === initialSelectedId) || items[0] || null

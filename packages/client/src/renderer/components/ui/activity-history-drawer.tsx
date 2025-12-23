@@ -3,12 +3,10 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useId } from 'react';
 import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import Divider from '@mui/material/Divider';
 import { X } from 'lucide-react';
 import { ActivityTimeline } from './activity-timeline';
 import type { ModuleEvent } from '@/utils/module-event-logger';
@@ -23,8 +21,6 @@ export interface ActivityHistoryDrawerProps {
  * 操作记录历史抽屉组件
  */
 export function ActivityHistoryDrawer({ open, events, onClose }: ActivityHistoryDrawerProps) {
-  const drawerId = useId();
-
   return (
     <Drawer
       anchor="right"
