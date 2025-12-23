@@ -1,189 +1,7 @@
-@import 'tailwindcss';
-
-@plugin '@tailwindcss/typography';
-
-@custom-variant dark (&:is(.dark *));
-
-@theme {
-  --color-brand-blue-50: #e8f4fd;
-  --color-brand-blue-100: #d1e9fb;
-  --color-brand-blue-200: #a3d3f7;
-  --color-brand-blue-300: #8acef1;
-  --color-brand-blue-400: #65bbe9;
-  --color-brand-blue-500: #51a9d5;
-  --color-brand-blue-600: #3d97c1;
-  --color-brand-blue-700: #2e7fa9;
-  --color-brand-blue-800: #206891;
-  --color-brand-blue-900: #145279;
-
-  --color-brand-pink-50: #fef5f8;
-  --color-brand-pink-100: #fdebf0;
-  --color-brand-pink-200: #fbd7e1;
-  --color-brand-pink-300: #f9c1cf;
-  --color-brand-pink-400: #f7aab8;
-  --color-brand-pink-500: #f593a1;
-  --color-brand-pink-600: #f37c8a;
-  --color-brand-pink-700: #f16573;
-  --color-brand-pink-800: #ef4e5c;
-  --color-brand-pink-900: #ed3745;
-
-  --color-success-light: #34c759;
-  --color-success-dark: #30d158;
-  --color-success: #34c759;
-
-  --color-warning-light: #ff9500;
-  --color-warning-dark: #ff9f0a;
-  --color-warning: #ff9500;
-
-  --color-error-light: #ff3b30;
-  --color-error-dark: #ff453a;
-  --color-error: #ff3b30;
-
-  --color-info-light: #51a9d5;
-  --color-info-dark: #65bbe9;
-  --color-info: #51a9d5;
-
-  --color-neutral-light-text-primary: rgba(0, 0, 0, 0.85);
-  --color-neutral-light-text-secondary: rgba(0, 0, 0, 0.6);
-  --color-neutral-light-text-tertiary: rgba(0, 0, 0, 0.45);
-  --color-neutral-light-text-quaternary: rgba(0, 0, 0, 0.3);
-  --color-neutral-light-text-disabled: rgba(0, 0, 0, 0.25);
-
-  --color-neutral-light-bg-primary: #ffffff;
-  --color-neutral-light-bg-secondary: #f5f5f7;
-  --color-neutral-light-bg-tertiary: #e8e8ed;
-  --color-neutral-light-bg-elevated: #ffffff;
-  --color-neutral-light-bg-grouped: #f2f2f7;
-
-  --color-neutral-light-border-primary: rgba(0, 0, 0, 0.1);
-  --color-neutral-light-border-secondary: rgba(0, 0, 0, 0.08);
-  --color-neutral-light-border-tertiary: rgba(0, 0, 0, 0.05);
-
-  --color-neutral-dark-text-primary: rgba(255, 255, 255, 0.85);
-  --color-neutral-dark-text-secondary: rgba(255, 255, 255, 0.6);
-  --color-neutral-dark-text-tertiary: rgba(255, 255, 255, 0.45);
-  --color-neutral-dark-text-quaternary: rgba(255, 255, 255, 0.3);
-  --color-neutral-dark-text-disabled: rgba(255, 255, 255, 0.25);
-
-  --color-neutral-dark-bg-primary: #1c1c1e;
-  --color-neutral-dark-bg-secondary: #2c2c2e;
-  --color-neutral-dark-bg-tertiary: #3a3a3c;
-  --color-neutral-dark-bg-elevated: #1c1c1e;
-  --color-neutral-dark-bg-grouped: #000000;
-
-  --color-neutral-dark-border-primary: rgba(255, 255, 255, 0.13);
-  --color-neutral-dark-border-secondary: rgba(255, 255, 255, 0.1);
-  --color-neutral-dark-border-tertiary: rgba(255, 255, 255, 0.07);
-
-  --background-image-brand-gradient: linear-gradient(
-    135deg,
-    #8acef1 0%,
-    #f9c1cf 100%
-  );
-  --background-image-brand-gradient-secondary: linear-gradient(
-    135deg,
-    #65bbe9 0%,
-    #51a9d5 100%
-  );
-  --background-image-brand-gradient-accent: linear-gradient(
-    135deg,
-    #65bbe9 0%,
-    #f9c1cf 100%
-  );
-
-  --animate-fade-in: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --animate-slide-up: slideUp 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
-  --animate-slide-down: slideDown 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
-  --animate-scale-in: scaleIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --animate-slide-in-left: slideInLeft 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
-
-  --transition-duration-150: 150ms;
-  --transition-duration-250: 250ms;
-  --transition-duration-350: 350ms;
-  --transition-duration-500: 500ms;
-
-  --ease-swift: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-gentle: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --ease-standard: cubic-bezier(0.4, 0, 0.6, 1);
-
-  --shadow-unified-sm: 1px 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-unified-md: 2px 2px 6px rgba(0, 0, 0, 0.08);
-  --shadow-unified-lg: 3px 3px 8px rgba(0, 0, 0, 0.1);
-  --shadow-unified-xl: 4px 4px 12px rgba(0, 0, 0, 0.12);
-  --shadow-unified-2xl: 6px 6px 16px rgba(0, 0, 0, 0.15);
-  --shadow-unified-sm-dark: 1px 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-unified-md-dark: 2px 2px 6px rgba(0, 0, 0, 0.25);
-  --shadow-unified-lg-dark: 3px 3px 8px rgba(0, 0, 0, 0.3);
-  --shadow-unified-xl-dark: 4px 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-unified-2xl-dark: 6px 6px 16px rgba(0, 0, 0, 0.4);
-
-  @keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-  @keyframes slideUp {
-    0% {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  @keyframes slideDown {
-    0% {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  @keyframes scaleIn {
-    0% {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-  @keyframes slideInLeft {
-    0% {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-}
-
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
-}
+/**
+ * BoolTox Client - 全局样式
+ * 完全基于 MUI + 原生 CSS，无 Tailwind 依赖
+ */
 
 :root {
   color-scheme: light;
@@ -209,12 +27,30 @@
   --spacing-lg: clamp(24px, 1.5rem + 0.5vw, 32px);
   --spacing-xl: clamp(32px, 2rem + 1vw, 48px);
   --spacing-2xl: clamp(48px, 3rem + 1vw, 64px);
+
+  /* 品牌渐变 */
+  --background-image-brand-gradient: linear-gradient(135deg, #8acef1 0%, #f9c1cf 100%);
+  --background-image-brand-gradient-secondary: linear-gradient(135deg, #65bbe9 0%, #51a9d5 100%);
+  --background-image-brand-gradient-accent: linear-gradient(135deg, #65bbe9 0%, #f9c1cf 100%);
+
+  /* 动画时长 */
+  --transition-duration-150: 150ms;
+  --transition-duration-250: 250ms;
+  --transition-duration-350: 350ms;
+  --transition-duration-500: 500ms;
+
+  /* 缓动函数 */
+  --ease-swift: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-gentle: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-spring-out: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
   --titlebar-height: 44px;
 }
+
 html,
 body {
   min-height: 100%;
@@ -231,6 +67,7 @@ body {
     Arial,
     sans-serif;
   letter-spacing: -0.01em;
+  font-display: swap;
 }
 
 /* ============================================
@@ -282,7 +119,7 @@ a[aria-disabled='true']:focus-visible {
 }
 
 /* ============================================
-   原有样式
+   基础样式
    ============================================ */
 
 a {
@@ -300,14 +137,7 @@ a {
   outline: none !important;
 }
 
-/* 移除 Tailwind 的默认 ring */
-*:focus-visible {
-  --tw-ring-shadow: 0 0 transparent !important;
-  --tw-ring-offset-shadow: 0 0 transparent !important;
-  box-shadow: none !important;
-}
-
-/* 为交互元素添加圆角光晕效果 - 增强版 */
+/* 为交互元素添加圆角光晕效果 */
 button:focus-visible,
 a:focus-visible,
 [role='button']:focus-visible {
@@ -327,7 +157,10 @@ textarea:focus-visible {
   color: #ffffff;
 }
 
-/* 现代化滚动条设计 - Linus式简洁版 */
+/* ============================================
+   现代化滚动条设计
+   ============================================ */
+
 .elegant-scroll {
   overflow-y: auto;
   scroll-behavior: smooth;
@@ -383,10 +216,75 @@ textarea:focus-visible {
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
-[data-animate] {
-  opacity: 0;
-  transform: translateY(26px) scale(0.985);
-  animation: float-in 0.7s var(--ease-spring-out) forwards;
+/* 完全隐藏滚动条 - 用于标签栏等不需要显示滚动条的区域 */
+.scrollbar-hide,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ============================================
+   动画定义
+   ============================================ */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes float-in {
@@ -413,18 +311,71 @@ textarea:focus-visible {
   }
 }
 
-/* 完全隐藏滚动条 - 用于标签栏等不需要显示滚动条的区域 */
-.scrollbar-hide,
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* 网格渐变动画 - 柔和漂浮效果 */
+@keyframes blob-float-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(80px, -60px) scale(1.2);
+  }
+  66% {
+    transform: translate(-60px, 80px) scale(0.85);
+  }
 }
 
-.scrollbar-hide::-webkit-scrollbar,
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+@keyframes blob-float-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-70px, 70px) scale(1.15);
+  }
+  66% {
+    transform: translate(70px, -50px) scale(0.9);
+  }
+}
+
+@keyframes blob-float-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(50px, 60px) scale(1.25);
+  }
+}
+
+@keyframes shadow-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  }
+  50% {
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
+  }
+}
+
+[data-animate] {
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+  animation: float-in 0.7s var(--ease-spring-out) forwards;
+}
+
+.wave-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wave-layer {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  will-change: transform;
 }
 
 /* ============================================
@@ -470,61 +421,8 @@ textarea:focus-visible {
 }
 
 /* ============================================
-   动画定义
+   性能优化
    ============================================ */
-
-/* 网格渐变动画 - 柔和漂浮效果 */
-@keyframes blob-float-1 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(80px, -60px) scale(1.2);
-  }
-  66% {
-    transform: translate(-60px, 80px) scale(0.85);
-  }
-}
-
-@keyframes blob-float-2 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-70px, 70px) scale(1.15);
-  }
-  66% {
-    transform: translate(70px, -50px) scale(0.9);
-  }
-}
-
-@keyframes blob-float-3 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(50px, 60px) scale(1.25);
-  }
-}
-
-.wave-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.wave-layer {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  will-change: transform;
-}
-
-/* ==================== 性能优化 ==================== */
 
 /* GPU 加速 - 强制硬件加速 */
 .gpu-accelerated {
@@ -536,17 +434,19 @@ textarea:focus-visible {
 /* 动画性能优化 - 仅使用 transform 和 opacity */
 .animate-optimized {
   will-change: transform, opacity;
-  transform: translateZ(0); /* 强制 GPU 加速 */
+  transform: translateZ(0);
 }
 
 /* Framer Motion 组件优化 */
-[data-framer-motion] {
+[data-framer-motion],
+[data-framer-component] {
   will-change: transform;
   transform: translateZ(0);
 }
 
 /* 布局动画优化 */
-.layout-animate {
+.layout-animate,
+[data-layout-animate] {
   will-change: transform;
   contain: layout style paint;
 }
@@ -556,7 +456,7 @@ textarea:focus-visible {
   will-change: scroll-position;
   contain: layout style paint;
   overflow: auto;
-  -webkit-overflow-scrolling: touch; /* iOS 滚动优化 */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 避免重排的动画 */
@@ -576,14 +476,24 @@ textarea:focus-visible {
   contain: paint;
 }
 
+.contain-layout {
+  contain: layout;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
 /* Hover 交互优化 */
 .hover-optimized {
   will-change: transform;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
 }
 
 .hover-optimized:hover {
   transform: scale(1.02) translateZ(0);
+  will-change: transform, opacity, box-shadow;
 }
 
 /* 卡片 Hover 优化 */
@@ -608,50 +518,6 @@ textarea:focus-visible {
 .will-change-auto {
   will-change: auto;
 }
-/* ========== 动画性能优化 ========== */
-
-/* GPU 加速基础类 - 强制硬件加速 */
-.gpu-accelerated {
-  transform: translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
-  perspective: 1000px;
-}
-
-/* Framer Motion 组件优化 */
-[data-framer-component] {
-  will-change: transform, opacity;
-  transform: translateZ(0);
-}
-
-/* 频繁动画的元素 - 提前告知浏览器 */
-.animate-optimized {
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* 布局动画优化 */
-[data-layout-animate] {
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-/* 悬停动画优化 - 仅在 hover 时启用 will-change */
-.hover-optimized {
-  transform: translateZ(0);
-}
-
-.hover-optimized:hover {
-  will-change: transform, opacity, box-shadow;
-}
-
-/* 滚动性能优化 */
-.scroll-optimized {
-  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
-  scroll-behavior: smooth;
-  will-change: scroll-position;
-}
 
 /* 玻璃材质动画优化 */
 .glass-optimized {
@@ -664,36 +530,7 @@ textarea:focus-visible {
   contain: layout style;
 }
 
-/* 阴影动画优化 - 使用 transform 模拟 */
-@keyframes shadow-pulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-  }
-  50% {
-    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
-  }
-}
-
-/* 防止字体加载时的布局偏移 */
-body {
-  font-display: swap;
-}
-
 /* 图片加载优化 */
 img {
   content-visibility: auto;
-}
-
-/* 减少重绘区域 */
-.contain-paint {
-  contain: paint;
-}
-
-.contain-layout {
-  contain: layout;
-}
-
-.contain-strict {
-  contain: strict;
 }
