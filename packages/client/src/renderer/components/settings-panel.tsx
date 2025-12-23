@@ -237,7 +237,23 @@ export function SettingsPanel() {
                 <Button
                   variant="contained"
                   size="small"
-                  startIcon={<PrimaryIcon size={16} className={primaryAction.spinning ? 'animate-spin' : ''} />}
+                  startIcon={
+                    <Box
+                      component={PrimaryIcon}
+                      size={16}
+                      sx={
+                        primaryAction.spinning
+                          ? {
+                              animation: 'spin 1s linear infinite',
+                              '@keyframes spin': {
+                                '0%': { transform: 'rotate(0deg)' },
+                                '100%': { transform: 'rotate(360deg)' },
+                              },
+                            }
+                          : undefined
+                      }
+                    />
+                  }
                   onClick={handlePrimaryAction}
                   disabled={primaryAction.disabled}
                 >

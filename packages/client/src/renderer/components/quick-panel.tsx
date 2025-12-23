@@ -4,36 +4,23 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import InputBase from '@mui/material/InputBase';
+import ButtonBase from '@mui/material/ButtonBase';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
 import { Search, Zap, Grid, Settings, Home } from 'lucide-react';
 import type { ToolRuntime } from '@booltox/shared';
 
 type QuickPanelTool = ToolRuntime & { isFavorite?: boolean };
 
-// 获取系统主题
-function getSystemTheme(): 'light' | 'dark' {
-  if (typeof window === 'undefined') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-// 解析实际主题
-function resolveActualTheme(): 'light' | 'dark' {
-  if (typeof window === 'undefined') return 'light';
-
-  const stored = window.localStorage.getItem('app-theme-mode');
-
-  if (stored === 'light') return 'light';
-  if (stored === 'dark') return 'dark';
-  if (stored === 'system') return getSystemTheme();
-
-  // 默认跟随系统
-  return getSystemTheme();
-}
-
 export function QuickPanel() {
   const [query, setQuery] = useState('');
   const [installedModules, setInstalledModules] = useState<QuickPanelTool[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => resolveActualTheme());
   const [isVisible, setIsVisible] = useState(false);
 
   // 入场动画
@@ -41,28 +28,8 @@ export function QuickPanel() {
     requestAnimationFrame(() => setIsVisible(true));
   }, []);
 
-  // 监听主题变化（支持跟随系统）
-  useEffect(() => {
-    const updateTheme = () => {
-      setTheme(resolveActualTheme());
-    };
-
-    // 监听 localStorage 变化（主窗口切换主题时同步）
-    window.addEventListener('storage', updateTheme);
-
-    // 监听系统主题变化
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', updateTheme);
-
-    return () => {
-      window.removeEventListener('storage', updateTheme);
-      mediaQuery.removeEventListener('change', updateTheme);
-    };
-  }, []);
-
   // 自动聚焦搜索框
   useEffect(() => {
-    // 延迟聚焦，确保窗口完全显示
     const timer = setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
@@ -152,178 +119,272 @@ export function QuickPanel() {
     action();
   };
 
-  const isDark = theme === 'dark';
-
   return (
-    <div className="w-full h-full flex items-center justify-center p-4">
-      <div
-        className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transition-all duration-200"
-        style={{
-          background: isDark ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+    <Box
+      sx={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+      }}
+    >
+      <Paper
+        elevation={24}
+        sx={{
+          width: '100%',
+          maxWidth: 640,
+          borderRadius: 4,
+          overflow: 'hidden',
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(-20px)',
+          transition: 'all 0.2s',
         }}
       >
         {/* 搜索框 */}
-        <div
-          className={`relative p-6 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}
-        >
-          <Search
-            className={`absolute left-9 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/60' : 'text-gray-400'}`}
-            size={20}
-          />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="搜索工具或操作..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            className={`w-full border rounded-xl pl-12 pr-4 py-3.5 text-lg focus:outline-none transition-colors ${
-              isDark
-                ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-500'
-                : 'bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-blue-500'
-            }`}
-          />
-        </div>
+        <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ position: 'relative' }}>
+            <Search
+              size={20}
+              style={{
+                position: 'absolute',
+                left: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--mui-palette-text-secondary)',
+              }}
+            />
+            <InputBase
+              inputRef={inputRef}
+              placeholder="搜索工具或操作..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              sx={{
+                width: '100%',
+                pl: 6,
+                pr: 2,
+                py: 1.5,
+                fontSize: '1.125rem',
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 3,
+                bgcolor: 'action.hover',
+                '&:focus-within': {
+                  borderColor: 'primary.main',
+                },
+              }}
+            />
+          </Box>
+        </Box>
 
         {/* 内容区 */}
-        <div className="p-6 max-h-[500px] overflow-y-auto elegant-scroll">
+        <Box className="elegant-scroll" sx={{ p: 3, maxHeight: 500, overflowY: 'auto' }}>
           {query ? (
             // 搜索结果
-            <div className="space-y-2">
+            <Stack spacing={1}>
               {filteredModules.length > 0 ? (
                 filteredModules.map(module => (
-                  <button
+                  <ButtonBase
                     key={module.id}
                     onClick={() => handleToolClick(module.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group ${
-                      isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                    }`}
+                    sx={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 1.5,
+                      borderRadius: 2,
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                      },
+                    }}
                   >
-                    <span className="text-3xl">{module.manifest.icon || '🔧'}</span>
-                    <div className="flex-1">
-                      <p
-                        className={`font-medium transition-colors ${
-                          isDark
-                            ? 'text-white group-hover:text-blue-400'
-                            : 'text-gray-900 group-hover:text-blue-600'
-                        }`}
-                      >
+                    <Typography variant="h3">{module.manifest.icon || '🔧'}</Typography>
+                    <Box flex={1}>
+                      <Typography variant="body1" fontWeight={600}>
                         {module.manifest.name}
-                      </p>
-                      <p
-                        className={`text-sm line-clamp-1 ${
-                          isDark ? 'text-white/60' : 'text-gray-500'
-                        }`}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
                       >
                         {module.manifest.description}
-                      </p>
-                    </div>
+                      </Typography>
+                    </Box>
                     {module.status === 'running' && (
-                      <span className="flex items-center gap-1 text-xs text-green-600">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        运行中
-                      </span>
+                      <Chip
+                        label="运行中"
+                        size="small"
+                        color="success"
+                        sx={{
+                          '& .MuiChip-label': {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                          },
+                        }}
+                        icon={
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor: 'success.main',
+                              animation: 'pulse 2s infinite',
+                              '@keyframes pulse': {
+                                '0%, 100%': { opacity: 1 },
+                                '50%': { opacity: 0.5 },
+                              },
+                            }}
+                          />
+                        }
+                      />
                     )}
-                  </button>
+                  </ButtonBase>
                 ))
               ) : (
-                <div className="text-center py-12">
-                  <p className={isDark ? 'text-white/60' : 'text-gray-500'}>
-                    没有找到匹配的工具
-                  </p>
-                </div>
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <Typography color="text.secondary">没有找到匹配的工具</Typography>
+                </Box>
               )}
-            </div>
+            </Stack>
           ) : (
             // 默认视图
-            <div className="space-y-6">
+            <Stack spacing={3}>
               {/* 收藏的工具 */}
               {favorites.length > 0 && (
-                <div>
-                  <h3
-                    className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
-                      isDark ? 'text-white/80' : 'text-gray-600'
-                    }`}
+                <Box>
+                  <Typography
+                    variant="overline"
+                    fontWeight={700}
+                    color="text.secondary"
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}
                   >
                     ★ 收藏的工具
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2">
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: 1,
+                    }}
+                  >
                     {favorites.map(module => (
-                      <button
+                      <ButtonBase
                         key={module.id}
                         onClick={() => handleToolClick(module.id)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-colors group ${
-                          isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                        }`}
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 1,
+                          p: 2,
+                          borderRadius: 3,
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                            '& [data-tool-icon]': {
+                              transform: 'scale(1.1)',
+                            },
+                          },
+                        }}
                       >
-                        <span className="text-4xl group-hover:scale-110 transition-transform">
+                        <Typography
+                          data-tool-icon
+                          variant="h2"
+                          sx={{ transition: 'transform 0.2s' }}
+                        >
                           {module.manifest.icon || '🔧'}
-                        </span>
-                        <span
-                          className={`text-sm text-center line-clamp-1 ${
-                            isDark ? 'text-white' : 'text-gray-900'
-                          }`}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          textAlign="center"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                          }}
                         >
                           {module.manifest.name}
-                        </span>
-                      </button>
+                        </Typography>
+                      </ButtonBase>
                     ))}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               )}
 
               {/* 快速操作 */}
-              <div>
-                <h3
-                  className={`text-xs font-semibold mb-3 uppercase tracking-wider flex items-center gap-2 ${
-                    isDark ? 'text-white/80' : 'text-gray-600'
-                  }`}
+              <Box>
+                <Typography
+                  variant="overline"
+                  fontWeight={700}
+                  color="text.secondary"
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}
                 >
                   <Zap size={14} />
                   快速操作
-                </h3>
-                <div className="space-y-1">
+                </Typography>
+                <Stack spacing={0.5}>
                   {quickActions.map(action => (
-                    <button
+                    <ButtonBase
                       key={action.id}
                       onClick={() => handleActionClick(action.action)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-sm ${
-                        isDark
-                          ? 'hover:bg-white/10 text-white'
-                          : 'hover:bg-gray-100 text-gray-900'
-                      }`}
+                      sx={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        p: 1.5,
+                        borderRadius: 2,
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                        },
+                      }}
                     >
                       {action.icon}
-                      <span>{action.label}</span>
-                    </button>
+                      <Typography variant="body2">{action.label}</Typography>
+                    </ButtonBase>
                   ))}
-                </div>
-              </div>
+                </Stack>
+              </Box>
 
               {/* 提示 */}
-              <div
-                className={`pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}
-              >
-                <p
-                  className={`text-xs text-center ${isDark ? 'text-white/40' : 'text-gray-400'}`}
+              <Box>
+                <Divider />
+                <Typography
+                  variant="caption"
+                  color="text.disabled"
+                  textAlign="center"
+                  sx={{ display: 'block', mt: 2 }}
                 >
                   按{' '}
-                  <kbd
-                    className={`px-2 py-0.5 rounded ${
-                      isDark ? 'bg-white/10 text-white/60' : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    ESC
-                  </kbd>{' '}
+                  <Chip
+                    label="ESC"
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontSize: '0.7rem',
+                      bgcolor: 'action.selected',
+                    }}
+                  />{' '}
                   关闭
-                </p>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Stack>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Paper>
+    </Box>
   );
 }

@@ -126,11 +126,11 @@ function SortableTab({
           bgcolor: isActive ? 'action.selected' : 'action.hover',
           color: 'text.primary',
         },
-        '& .tab-action': {
+        '& [data-action]': {
           opacity: 0,
           transition: 'opacity 0.15s',
         },
-        '&:hover .tab-action': {
+        '&:hover [data-action]': {
           opacity: 1,
         },
         ...dragStyle,
@@ -143,7 +143,7 @@ function SortableTab({
       {windowId === 'main' && tab.type === 'tool' && (
         <Box
           component="button"
-          className="tab-action"
+          data-action="popout"
           onClick={e => onPopOut(tab, e)}
           title="在新窗口中打开"
           sx={{
@@ -166,7 +166,7 @@ function SortableTab({
       {windowId !== 'main' && tab.type === 'tool' && (
         <Box
           component="button"
-          className="tab-action"
+          data-action="dock"
           onClick={e => onDockToMain(tab, e)}
           title="移回主窗口"
           sx={{
@@ -189,7 +189,7 @@ function SortableTab({
       {tab.closable && (
         <Box
           component="button"
-          className="tab-action"
+          data-action="close"
           onClick={e => onCloseTab(tab, e)}
           title="关闭"
           sx={{
@@ -230,11 +230,10 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
   const tabBarRef = useRef<HTMLDivElement | null>(null);
   const dragStartPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const shouldDetachRef = useRef(false);
-  const mainWindowBoundsRef = useRef<WindowBounds | null>(null);
   const allWindowsBoundsRef = useRef<WindowBoundsInfo[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, themeMode, setThemeMode } = useTheme();
+  const { themeMode, setThemeMode } = useTheme();
   const {
     toolTabs,
     activeToolTabId,
@@ -254,27 +253,6 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
       },
     })
   );
-
-  const getMainWindowBounds = useCallback(async (): Promise<WindowBounds | null> => {
-    try {
-      const result = (await window.ipc.invoke('window:get-main-window-bounds')) as unknown;
-      if (!result || typeof result !== 'object') return null;
-      const bounds = result as Partial<WindowBounds>;
-      if (
-        typeof bounds.x !== 'number' ||
-        typeof bounds.y !== 'number' ||
-        typeof bounds.width !== 'number' ||
-        typeof bounds.height !== 'number'
-      ) {
-        return null;
-      }
-      mainWindowBoundsRef.current = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
-      return mainWindowBoundsRef.current;
-    } catch (error) {
-      console.warn('[TabBar] 获取主窗口 bounds 失败:', error);
-      return null;
-    }
-  }, []);
 
   const getCursorScreenPoint = useCallback(async (): Promise<CursorScreenPoint | null> => {
     try {

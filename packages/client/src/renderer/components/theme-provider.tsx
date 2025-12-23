@@ -80,13 +80,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     root.dataset.theme = theme;
     root.style.colorScheme = theme;
-
-    // Tailwind dark mode support
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
   }, [theme]);
 
   const value = useMemo<ThemeContextValue>(

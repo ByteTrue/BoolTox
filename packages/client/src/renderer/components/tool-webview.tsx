@@ -4,7 +4,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { useTheme } from './theme-provider';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 import { AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
 
 interface ToolWebViewProps {
@@ -29,8 +32,6 @@ export function ToolWebView({
   const webviewRef = useRef<Electron.WebviewTag>(null);
   const [crashed, setCrashed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   useEffect(() => {
     const webview = webviewRef.current;
@@ -124,65 +125,68 @@ export function ToolWebView({
   // 显示崩溃提示
   if (crashed) {
     return (
-      <div
-        className={`flex flex-col items-center justify-center h-full gap-4 ${
-          isDark ? 'bg-slate-900' : 'bg-gray-50'
-        }`}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          gap: 2,
+          bgcolor: 'background.default',
+        }}
       >
-        <AlertCircle size={48} className="text-red-500" />
-        <p className={`text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>工具页面已崩溃</p>
-        <div className="flex gap-2">
-          <button
+        <AlertCircle size={48} color="var(--mui-palette-error-main)" />
+        <Typography variant="h6">工具页面已崩溃</Typography>
+        <Stack direction="row" spacing={2}>
+          <Button
             onClick={handleReload}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            variant="contained"
+            startIcon={<RefreshCw size={16} />}
           >
-            <RefreshCw size={16} />
             重新加载
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleOpenInBrowser}
-            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              isDark
-                ? 'bg-white/10 text-white hover:bg-white/20'
-                : 'bg-gray-200 text-slate-700 hover:bg-gray-300'
-            }`}
+            variant="outlined"
+            startIcon={<ExternalLink size={16} />}
           >
-            <ExternalLink size={16} />
             在浏览器中打开
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Box>
     );
   }
 
   // 显示错误提示
   if (error) {
     return (
-      <div
-        className={`flex flex-col items-center justify-center h-full gap-4 ${
-          isDark ? 'bg-slate-900' : 'bg-gray-50'
-        }`}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          gap: 2,
+          bgcolor: 'background.default',
+        }}
       >
-        <AlertCircle size={48} className="text-orange-500" />
-        <p className={`text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>{error}</p>
-        <div className="flex gap-2">
-          <button
-            onClick={handleReload}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <RefreshCw size={16} />
-            重试
-          </button>
-        </div>
-      </div>
+        <AlertCircle size={48} color="var(--mui-palette-warning-main)" />
+        <Typography variant="h6">{error}</Typography>
+        <Button
+          onClick={handleReload}
+          variant="contained"
+          startIcon={<RefreshCw size={16} />}
+        >
+          重试
+        </Button>
+      </Box>
     );
   }
 
   return (
-    <webview
-      ref={webviewRef}
-      src={url}
-      className="w-full h-full"
+    <Box component="webview" ref={webviewRef} src={url} sx={{ width: '100%', height: '100%' }}
       // 安全配置：禁用 Node 集成，启用上下文隔离
       nodeintegration={false}
       webpreferences="contextIsolation=true,enableRemoteModule=false"

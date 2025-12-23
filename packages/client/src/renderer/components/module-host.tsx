@@ -3,6 +3,13 @@
  * Licensed under CC-BY-NC-4.0
  */
 
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Paper from '@mui/material/Paper';
 import type { ModuleInstance } from '@/types/module';
 import { useModulePlatform } from '@/contexts/module-context';
 
@@ -15,9 +22,22 @@ export function ModuleHost({ module }: ModuleHostProps) {
 
   if (!module) {
     return (
-      <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-[var(--shell-border)] bg-[var(--shell-soft)] text-sm text-[var(--text-secondary)]">
-        选择左侧模块开始使用。
-      </div>
+      <Paper
+        variant="outlined"
+        sx={{
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 6,
+          borderStyle: 'dashed',
+          bgcolor: 'action.hover',
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          选择左侧模块开始使用。
+        </Typography>
+      </Paper>
     );
   }
 
@@ -36,72 +56,131 @@ export function ModuleHost({ module }: ModuleHostProps) {
     };
 
     return (
-      <div className="flex h-full w-full min-h-[320px] flex-col items-center justify-center gap-6 rounded-3xl border border-dashed border-[var(--shell-border)] bg-[var(--shell-soft)] px-6 text-center">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+      <Paper
+        variant="outlined"
+        sx={{
+          height: '100%',
+          minHeight: 320,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 3,
+          borderRadius: 6,
+          borderStyle: 'dashed',
+          bgcolor: 'action.hover',
+          px: 3,
+          textAlign: 'center',
+        }}
+      >
+        <Stack spacing={1}>
+          <Typography variant="h6" fontWeight={700}>
             {module.definition.name} 在独立窗口中运行
-          </h3>
-          <p className="text-sm text-[var(--text-secondary)]">
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             点击下方按钮即可
             {isRunning ? '聚焦' : isLaunching ? '等待启动完成后重试' : '在新窗口启动'}工具。
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
+          </Typography>
+        </Stack>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Button
             onClick={handleOpen}
             disabled={isLaunching}
-            className={`rounded-full border border-blue-500/30 bg-blue-500/15 px-5 py-2 text-sm font-semibold text-blue-500 shadow-sm transition-[transform,background-color] duration-200 hover:bg-blue-500/25 hover:scale-[1.02] ${
-              isLaunching ? 'cursor-wait opacity-70 hover:scale-100 hover:bg-blue-500/15' : ''
-            }`}
+            variant="contained"
+            color="primary"
+            sx={{
+              borderRadius: 8,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+            }}
           >
             {isLaunching ? '启动中…' : isRunning ? '聚焦工具窗口' : '打开工具窗口'}
-          </button>
-          {isRunning && (
-            <span className="rounded-full border border-green-500/30 bg-green-500/15 px-3 py-1 text-xs font-semibold text-green-500">
-              窗口已运行
-            </span>
-          )}
-          {launchState === 'error' && (
-            <span className="rounded-full border border-red-500/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-500">
-              启动失败，可重试
-            </span>
-          )}
-        </div>
-      </div>
+          </Button>
+
+          {isRunning && <Chip label="窗口已运行" color="success" size="small" />}
+          {launchState === 'error' && <Chip label="启动失败，可重试" color="error" size="small" />}
+        </Stack>
+      </Paper>
     );
   }
 
   if (module.runtime.loading) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-3xl border border-[var(--shell-border)] bg-[var(--shell-soft)]">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent-soft)] border-t-[var(--accent-strong)]" />
-        <p className="text-sm text-[var(--text-secondary)]">正在加载 {module.definition.name}</p>
-      </div>
+      <Paper
+        variant="outlined"
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+          borderRadius: 6,
+          bgcolor: 'action.hover',
+        }}
+      >
+        <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          正在加载 {module.definition.name}
+        </Typography>
+      </Paper>
     );
   }
 
   if (module.runtime.error) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-red-200 bg-red-50 text-red-600">
-        <p className="text-sm font-semibold">模块加载失败</p>
-        <p className="text-xs opacity-80">{module.runtime.error}</p>
-      </div>
+      <Paper
+        variant="outlined"
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+          borderRadius: 6,
+          borderStyle: 'dashed',
+          borderColor: 'error.main',
+          bgcolor: 'error.light',
+        }}
+      >
+        <Typography variant="body2" fontWeight={700} color="error.main">
+          模块加载失败
+        </Typography>
+        <Typography variant="caption" color="error.dark" sx={{ opacity: 0.8 }}>
+          {module.runtime.error}
+        </Typography>
+      </Paper>
     );
   }
 
   if (!module.runtime.component) {
     return (
-      <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-[var(--shell-border)] bg-[var(--shell-soft)] text-sm text-[var(--text-secondary)]">
-        模块入口未准备就绪。
-      </div>
+      <Paper
+        variant="outlined"
+        sx={{
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 6,
+          borderStyle: 'dashed',
+          bgcolor: 'action.hover',
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          模块入口未准备就绪。
+        </Typography>
+      </Paper>
     );
   }
 
   const Component = module.runtime.component;
   return (
-    <div className="h-full min-h-0 overflow-hidden rounded-3xl">
+    <Box sx={{ height: '100%', minHeight: 0, overflow: 'hidden', borderRadius: 6 }}>
       <Component />
-    </div>
+    </Box>
   );
 }
