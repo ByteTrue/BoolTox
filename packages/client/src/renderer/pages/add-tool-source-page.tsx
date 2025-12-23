@@ -19,10 +19,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Alert from '@mui/material/Alert';
 import { ArrowLeft, Github, FolderOpen } from 'lucide-react';
 import type { ToolSourceConfig } from '@booltox/shared';
 import { AppButton, AppInput, AppSelect } from '../components/ui';
@@ -51,14 +52,14 @@ export function AddToolSourcePage() {
   return (
     <Box sx={{ height: '100%', overflowY: 'auto', px: 4, py: 3 }}>
       {/* 头部 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
         <IconButton onClick={handleBack}>
           <ArrowLeft size={24} />
         </IconButton>
         <Typography variant="h4" fontWeight={700}>
           添加工具源
         </Typography>
-      </Box>
+      </Stack>
 
       {/* 步骤 1：选择类型 */}
       {step === 'select-type' && (
@@ -132,7 +133,7 @@ function SourceTypeCard({ icon, title, description, color, onClick }: SourceType
           bgcolor: `${color}.main`,
           color: `${color}.contrastText`,
           transform: 'translateY(-4px) scale(1.02)',
-          '& .icon-wrapper': {
+          '& [data-icon]': {
             opacity: 1,
           },
         },
@@ -142,7 +143,7 @@ function SourceTypeCard({ icon, title, description, color, onClick }: SourceType
         transition: 'all 0.2s',
       }}
     >
-      <Box className="icon-wrapper" sx={{ mb: 2, opacity: 0.7 }}>
+      <Box data-icon sx={{ mb: 2, opacity: 0.7 }}>
         {icon}
       </Box>
       <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
@@ -197,82 +198,86 @@ function RemoteSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <h2 className="text-2xl font-bold mb-4">添加远程仓库</h2>
+    <Box component="form" onSubmit={handleSubmit}>
+      <Stack spacing={3}>
+        <Typography variant="h5" fontWeight={700}>
+          添加远程仓库
+        </Typography>
 
-      <AppInput
-        label="工具源名称"
-        value={formData.name}
-        onChange={e => setFormData({ ...formData, name: e.target.value })}
-        placeholder="如：公司内部工具库"
-        required
-      />
-
-      <div className="grid grid-cols-2 gap-4">
-        <AppSelect
-          label="平台"
-          value={formData.provider}
-          onChange={value => setFormData({ ...formData, provider: value as 'github' | 'gitlab' })}
-          options={[
-            { value: 'github', label: 'GitHub' },
-            { value: 'gitlab', label: 'GitLab' },
-          ]}
+        <AppInput
+          label="工具源名称"
+          value={formData.name}
+          onChange={e => setFormData({ ...formData, name: e.target.value })}
+          placeholder="如：公司内部工具库"
           required
         />
-        <AppInput
-          label="分支"
-          value={formData.branch}
-          onChange={e => setFormData({ ...formData, branch: e.target.value })}
-          placeholder="main"
-          required
-        />
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <AppInput
-          label="所有者"
-          value={formData.owner}
-          onChange={e => setFormData({ ...formData, owner: e.target.value })}
-          placeholder="如：ByteTrue"
-          required
-        />
-        <AppInput
-          label="仓库名"
-          value={formData.repo}
-          onChange={e => setFormData({ ...formData, repo: e.target.value })}
-          placeholder="如：my-tools"
-          required
-        />
-      </div>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+          <AppSelect
+            label="平台"
+            value={formData.provider}
+            onChange={value => setFormData({ ...formData, provider: value as 'github' | 'gitlab' })}
+            options={[
+              { value: 'github', label: 'GitHub' },
+              { value: 'gitlab', label: 'GitLab' },
+            ]}
+            required
+          />
+          <AppInput
+            label="分支"
+            value={formData.branch}
+            onChange={e => setFormData({ ...formData, branch: e.target.value })}
+            placeholder="main"
+            required
+          />
+        </Box>
 
-      {formData.provider === 'gitlab' && (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+          <AppInput
+            label="所有者"
+            value={formData.owner}
+            onChange={e => setFormData({ ...formData, owner: e.target.value })}
+            placeholder="如：ByteTrue"
+            required
+          />
+          <AppInput
+            label="仓库名"
+            value={formData.repo}
+            onChange={e => setFormData({ ...formData, repo: e.target.value })}
+            placeholder="如：my-tools"
+            required
+          />
+        </Box>
+
+        {formData.provider === 'gitlab' && (
+          <AppInput
+            label="GitLab 服务器地址（可选）"
+            value={formData.baseUrl}
+            onChange={e => setFormData({ ...formData, baseUrl: e.target.value })}
+            placeholder="https://gitlab.company.com"
+            helperText="留空使用 gitlab.com"
+          />
+        )}
+
         <AppInput
-          label="GitLab 服务器地址（可选）"
-          value={formData.baseUrl}
-          onChange={e => setFormData({ ...formData, baseUrl: e.target.value })}
-          placeholder="https://gitlab.company.com"
-          helperText="留空使用 gitlab.com"
+          label="访问 Token（私有仓库）"
+          type="password"
+          value={formData.token}
+          onChange={e => setFormData({ ...formData, token: e.target.value })}
+          placeholder="ghp_xxx 或 glpat-xxx"
+          helperText="公开仓库无需填写"
         />
-      )}
 
-      <AppInput
-        label="访问 Token（私有仓库）"
-        type="password"
-        value={formData.token}
-        onChange={e => setFormData({ ...formData, token: e.target.value })}
-        placeholder="ghp_xxx 或 glpat-xxx"
-        helperText="公开仓库无需填写"
-      />
-
-      <div className="flex justify-end gap-3 pt-4">
-        <AppButton variant="ghost" onClick={onBack}>
-          返回
-        </AppButton>
-        <AppButton type="submit" variant="primary">
-          添加
-        </AppButton>
-      </div>
-    </form>
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 2 }}>
+          <AppButton variant="ghost" onClick={onBack}>
+            返回
+          </AppButton>
+          <AppButton type="submit" variant="primary">
+            添加
+          </AppButton>
+        </Stack>
+      </Stack>
+    </Box>
   );
 }
 
@@ -346,8 +351,10 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
   // 第一步：选择路径
   if (step === 'select-path') {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold mb-4">添加本地目录</h2>
+      <Stack spacing={3}>
+        <Typography variant="h5" fontWeight={700}>
+          添加本地目录
+        </Typography>
 
         <AppInput
           label="工具源名称"
@@ -357,8 +364,8 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
           required
         />
 
-        <div>
-          <div className="flex gap-2">
+        <Box>
+          <Stack direction="row" spacing={2}>
             <AppInput
               label="本地目录路径"
               value={formData.localPath}
@@ -366,44 +373,42 @@ function LocalSourceForm({ onBack, onSuccess }: { onBack: () => void; onSuccess:
               placeholder="E:\Code\MyTool"
               required
             />
-            <AppButton variant="secondary" onClick={handleSelectPath} className="mt-2 shrink-0">
-              浏览...
-            </AppButton>
-          </div>
+            <Box sx={{ mt: 2, flexShrink: 0 }}>
+              <AppButton variant="secondary" onClick={handleSelectPath}>
+                浏览...
+              </AppButton>
+            </Box>
+          </Stack>
           {existingConfig && (
-            <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm">
+            <Paper sx={{ mt: 1, p: 2, bgcolor: 'info.light', borderRadius: 2 }}>
               {existingConfig.hasBooltoxIndex && (
-                <p className="text-blue-700 dark:text-blue-300">
+                <Typography variant="body2" color="info.dark">
                   ✓ 检测到 booltox-index.json（多工具模式）
-                </p>
+                </Typography>
               )}
               {existingConfig.hasBooltoxJson && !existingConfig.hasBooltoxIndex && (
-                <p className="text-blue-700 dark:text-blue-300">
+                <Typography variant="body2" color="info.dark">
                   ✓ 检测到 booltox.json（单工具模式）
-                </p>
+                </Typography>
               )}
               {!existingConfig.hasBooltoxJson && !existingConfig.hasBooltoxIndex && (
-                <p className="text-yellow-700 dark:text-yellow-300">
+                <Typography variant="body2" color="warning.dark">
                   ⚠ 未检测到配置文件，将引导您创建
-                </p>
+                </Typography>
               )}
-            </div>
+            </Paper>
           )}
-        </div>
+        </Box>
 
-        <div className="flex justify-end gap-3 pt-4">
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 2 }}>
           <AppButton variant="ghost" onClick={onBack}>
             返回
           </AppButton>
-          <AppButton
-            variant="success"
-            onClick={handleNextStep}
-            disabled={!formData.localPath}
-          >
+          <AppButton variant="success" onClick={handleNextStep} disabled={!formData.localPath}>
             下一步
           </AppButton>
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     );
   }
 
@@ -615,50 +620,88 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
   // 选择模式
   if (step === 'mode-select' && !mode) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold mb-4">选择工具模式</h2>
-        <p className="text-gray-500 mb-6">该目录还没有配置文件，请选择工具模式：</p>
+      <Stack spacing={3}>
+        <Typography variant="h5" fontWeight={700}>
+          选择工具模式
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          该目录还没有配置文件，请选择工具模式：
+        </Typography>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+          <Paper
+            component="button"
             onClick={() => {
               setMode('single');
               setStep('mode-select');
             }}
-            className="border-2 border-blue-200 rounded-xl p-6 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+            sx={{
+              p: 3,
+              border: 2,
+              borderColor: 'info.light',
+              borderRadius: 3,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                borderColor: 'info.main',
+                bgcolor: 'info.light',
+              },
+            }}
           >
-            <h3 className="text-lg font-bold mb-2">单工具模式</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">该目录是一个完整的工具项目</p>
-          </button>
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+              单工具模式
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              该目录是一个完整的工具项目
+            </Typography>
+          </Paper>
 
-          <button
+          <Paper
+            component="button"
             onClick={() => {
               setMode('index');
               setStep('index-list');
             }}
-            className="border-2 border-green-200 rounded-xl p-6 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
+            sx={{
+              p: 3,
+              border: 2,
+              borderColor: 'success.light',
+              borderRadius: 3,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                borderColor: 'success.main',
+                bgcolor: 'success.light',
+              },
+            }}
           >
-            <h3 className="text-lg font-bold mb-2">多工具模式</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">该目录包含多个子工具项目</p>
-          </button>
-        </div>
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+              多工具模式
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              该目录包含多个子工具项目
+            </Typography>
+          </Paper>
+        </Box>
 
-        <div className="flex justify-end gap-3 pt-4">
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 2 }}>
           <AppButton variant="ghost" onClick={onBack}>
             返回
           </AppButton>
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     );
   }
 
   // 单工具模式：配置表单
   if (mode === 'single') {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold mb-4">配置工具信息</h2>
+      <Stack spacing={3}>
+        <Typography variant="h5" fontWeight={700}>
+          配置工具信息
+        </Typography>
 
-        <div className="grid grid-cols-2 gap-4">
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <AppInput
             label="工具 ID"
             value={toolConfig.id}
@@ -673,9 +716,9 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             placeholder="我的工具"
             required
           />
-        </div>
+        </Box>
 
-        <div className="grid grid-cols-2 gap-4">
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <AppInput
             label="版本"
             value={toolConfig.version}
@@ -690,7 +733,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             placeholder="Your Name"
             required
           />
-        </div>
+        </Box>
 
         <AppInput
           label="描述"
@@ -701,7 +744,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
           rows={3}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <AppSelect
             label="运行时类型"
             value={toolConfig.runtime?.type || 'http-service'}
@@ -725,7 +768,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
             onChange={e => setToolConfig({ ...toolConfig, category: e.target.value })}
             placeholder="utilities"
           />
-        </div>
+        </Box>
 
         <AppInput
           label="启动命令"
@@ -740,7 +783,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
           required
         />
 
-        <div className="flex justify-end gap-3 pt-4">
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 2 }}>
           <AppButton variant="ghost" onClick={onBack}>
             返回
           </AppButton>
@@ -751,21 +794,25 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
           >
             保存并添加
           </AppButton>
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     );
   }
 
   // 多工具模式 - 步骤1：配置工具列表
   if (step === 'index-list') {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold mb-4">配置工具列表</h2>
-        <p className="text-gray-500 mb-4">请添加该目录下的工具子项目</p>
+      <Stack spacing={3}>
+        <Typography variant="h5" fontWeight={700}>
+          配置工具列表
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          请添加该目录下的工具子项目
+        </Typography>
 
-        <div className="space-y-3">
+        <Stack spacing={2}>
           {indexTools.map((tool, index) => (
-            <div key={index} className="flex gap-2 items-end">
+            <Stack key={index} direction="row" spacing={2} alignItems="flex-end">
               <AppInput
                 label={index === 0 ? '工具 ID' : undefined}
                 value={tool.id}
@@ -793,9 +840,9 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
               >
                 删除
               </AppButton>
-            </div>
+            </Stack>
           ))}
-        </div>
+        </Stack>
 
         <AppButton
           variant="secondary"
@@ -805,7 +852,7 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
           + 添加工具
         </AppButton>
 
-        <div className="flex justify-end gap-3 pt-4">
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 2 }}>
           <AppButton variant="ghost" onClick={onBack}>
             返回
           </AppButton>
@@ -816,31 +863,47 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
           >
             下一步
           </AppButton>
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     );
   }
 
   // 多工具模式 - 步骤2：创建子工具配置
   if (step === 'create-subtools') {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold mb-4">配置子工具</h2>
-        <p className="text-gray-500 mb-4">为没有配置的子工具生成配置模板（后续可手动编辑）</p>
+      <Stack spacing={3}>
+        <Typography variant="h5" fontWeight={700}>
+          配置子工具
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          为没有配置的子工具生成配置模板（后续可手动编辑）
+        </Typography>
 
-        <div className="space-y-3">
+        <Stack spacing={2}>
           {subtoolsStatus.map(tool => (
-            <div
+            <Paper
               key={tool.id}
-              className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600"
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
             >
-              <div className="flex-1">
-                <h3 className="font-medium">{tool.id}</h3>
-                <p className="text-sm text-gray-500">{tool.path}</p>
-              </div>
-              <div className="flex items-center gap-3">
+              <Box flex={1}>
+                <Typography variant="body1" fontWeight={600}>
+                  {tool.id}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {tool.path}
+                </Typography>
+              </Box>
+              <Box>
                 {tool.hasConfig ? (
-                  <span className="text-green-600 dark:text-green-400 text-sm">✓ 已有配置</span>
+                  <Typography variant="body2" color="success.main">
+                    ✓ 已有配置
+                  </Typography>
                 ) : (
                   <AppButton
                     variant="primary"
@@ -850,27 +913,25 @@ function ToolConfigWizard({ localPath, existingConfig, onBack, onFinish }: ToolC
                     生成配置模板
                   </AppButton>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Paper>
           ))}
-        </div>
+        </Stack>
 
-        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            💡 提示：生成的配置模板只包含基本字段，请稍后手动编辑 booltox.json
-            添加详细信息（如描述、启动命令等）
-          </p>
-        </div>
+        <Alert severity="info">
+          💡 提示：生成的配置模板只包含基本字段，请稍后手动编辑 booltox.json
+          添加详细信息（如描述、启动命令等）
+        </Alert>
 
-        <div className="flex justify-end gap-3 pt-4">
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pt: 2 }}>
           <AppButton variant="ghost" onClick={() => setStep('index-list')}>
             返回
           </AppButton>
           <AppButton variant="success" onClick={handleFinishSubtools}>
             完成并添加
           </AppButton>
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     );
   }
 

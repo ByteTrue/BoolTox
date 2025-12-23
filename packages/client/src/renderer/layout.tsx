@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect } from 'react'; // 添加 React 导入
+import Box from '@mui/material/Box';
 import { ThemeProvider } from './components/theme-provider';
 import { Toaster } from './components/Toaster'; // 导入 Toaster
 import './globals.css';
@@ -57,11 +58,19 @@ export default function RootLayout({
   }, []);
 
   return (
-    <div className={'antialiased bg-[var(--shell-background)] text-[var(--text-primary)]'}>
+    <Box
+      sx={{
+        WebkitFontSmoothing: 'antialiased',
+        MozOsxFontSmoothing: 'grayscale',
+        bgcolor: 'background.default',
+        color: 'text.primary',
+        minHeight: '100vh',
+      }}
+    >
       <ThemeProvider>
         {children}
-        <Toaster /> {/* 在这里添加 Toaster */}
+        <Toaster />
       </ThemeProvider>
-    </div>
+    </Box>
   );
 }

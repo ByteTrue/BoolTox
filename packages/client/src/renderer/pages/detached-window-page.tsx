@@ -5,8 +5,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { TabBar } from '../components/tab-bar';
-import { useTheme } from '../components/theme-provider';
 import { useToolTabs } from '../contexts/tool-tab-context';
 import { ToolWebView } from '../components/tool-webview';
 
@@ -16,7 +17,6 @@ import { ToolWebView } from '../components/tool-webview';
  */
 export function DetachedWindowPage() {
   const { windowId } = useParams<{ windowId: string }>();
-  const { theme } = useTheme();
   const { toolTabs, getActiveToolTabId, activateToolTab, updateToolTab } = useToolTabs();
   const [hasEverHadTabs, setHasEverHadTabs] = useState(false);
   const closeRequestedRef = useRef(false);
@@ -68,22 +68,22 @@ export function DetachedWindowPage() {
   }, [hasEverHadTabs, windowId, windowTabs.length]);
 
   return (
-    <div
-      className="flex flex-col h-dvh overflow-hidden transition-colors duration-300"
-      style={{
-        background:
-          theme === 'dark'
-            ? 'linear-gradient(135deg, rgb(15, 23, 42) 0%, rgb(30, 41, 59) 100%)'
-            : 'linear-gradient(135deg, rgb(241, 245, 249) 0%, rgb(226, 232, 240) 100%)',
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        overflow: 'hidden',
+        bgcolor: 'background.default',
       }}
     >
       {/* 标签栏 */}
       <TabBar windowId={windowId} />
 
       {/* 工具 webview 区域 */}
-      <main className="flex-1 overflow-hidden relative">
+      <Box component="main" sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         {windowTabs.map(tab => (
-          <div key={tab.id} className={tab.id === activeTabId ? 'h-full' : 'hidden'}>
+          <Box key={tab.id} sx={{ display: tab.id === activeTabId ? 'block' : 'none', height: '100%' }}>
             <ToolWebView
               url={tab.url}
               toolId={tab.toolId}
@@ -93,20 +93,20 @@ export function DetachedWindowPage() {
               }
               onLoadingChange={isLoading => updateToolTab(tab.id, { isLoading })}
             />
-          </div>
+          </Box>
         ))}
 
         {/* 如果窗口没有标签，显示空状态 */}
         {windowTabs.length === 0 && (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-gray-500 dark:text-gray-400">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography color="text.secondary">
                 {hasEverHadTabs ? '窗口已无标签页，即将关闭…' : '正在载入标签页…'}
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
         )}
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }

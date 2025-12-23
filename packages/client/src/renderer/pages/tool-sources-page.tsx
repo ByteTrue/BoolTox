@@ -5,14 +5,20 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../components/theme-provider';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Github, Folder, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import type { ToolSourceConfig } from '@booltox/shared';
 
 export function ToolSourcesPage() {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const [sources, setSources] = useState<ToolSourceConfig[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,73 +64,68 @@ export function ToolSourcesPage() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <p className="text-gray-500">加载中...</p>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto px-8 py-6 elegant-scroll">
+    <Box className="elegant-scroll" sx={{ height: '100%', overflow: 'auto', px: 4, py: 3 }}>
       {/* 页面头部 */}
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={() => navigate('/tools')}
-          className={`p-2 rounded-lg transition-colors ${
-            isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-          }`}
-        >
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
+        <IconButton onClick={() => navigate('/tools')} sx={{ borderRadius: 2 }}>
           <ArrowLeft size={24} />
-        </button>
-        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+        </IconButton>
+        <Typography variant="h4" fontWeight="bold">
           工具源管理
-        </h1>
-      </div>
+        </Typography>
+      </Stack>
 
       {/* 工具源列表（仅显示远程源） */}
-      <section className="mb-8">
-        <h2 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
           工具源 ({remoteSources.length})
-        </h2>
-        <div className="space-y-4">
+        </Typography>
+        <Stack spacing={2}>
           {remoteSources.length === 0 ? (
-            <EmptyPlaceholder text="暂无工具源" isDark={isDark} />
+            <EmptyPlaceholder text="暂无工具源" />
           ) : (
             remoteSources.map(source => (
               <SourceCard
                 key={source.id}
                 source={source}
                 onDelete={() => handleDelete(source.id, source.name)}
-                isDark={isDark}
               />
             ))
           )}
-        </div>
-      </section>
+        </Stack>
+      </Box>
 
       {/* 底部操作 */}
-      <div className="flex gap-4">
-        <button
-          onClick={() => navigate('/tools/add-source')}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
+      <Box>
+        <Button variant="contained" size="large" onClick={() => navigate('/tools/add-source')}>
           + 添加工具源
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Box>
+    </Box>
   );
 }
 
 // 空状态占位
-function EmptyPlaceholder({ text, isDark }: { text: string; isDark: boolean }) {
+function EmptyPlaceholder({ text }: { text: string }) {
   return (
-    <div
-      className={`p-6 border-2 border-dashed rounded-lg text-center ${
-        isDark ? 'border-white/10' : 'border-slate-200'
-      }`}
+    <Paper
+      sx={{
+        p: 3,
+        textAlign: 'center',
+        border: '2px dashed',
+        borderColor: 'divider',
+        bgcolor: 'transparent',
+      }}
     >
-      <p className="text-gray-500">{text}</p>
-    </div>
+      <Typography color="text.secondary">{text}</Typography>
+    </Paper>
   );
 }
 
@@ -132,108 +133,100 @@ function EmptyPlaceholder({ text, isDark }: { text: string; isDark: boolean }) {
 interface SourceCardProps {
   source: ToolSourceConfig;
   onDelete: () => void;
-  isDark: boolean;
 }
 
-function SourceCard({ source, onDelete, isDark }: SourceCardProps) {
+function SourceCard({ source, onDelete }: SourceCardProps) {
   const canDelete = source.id !== 'official';
 
   return (
-    <div
-      className={`border rounded-xl p-6 transition-all ${
-        isDark
-          ? 'border-white/10 bg-white/5 hover:bg-white/10'
-          : 'border-slate-200 bg-white/50 hover:bg-white/80'
-      }`}
+    <Paper
+      sx={{
+        p: 3,
+        borderRadius: 3,
+        transition: 'all 0.2s',
+        '&:hover': {
+          bgcolor: 'action.hover',
+        },
+      }}
     >
-      <div className="flex items-start justify-between">
+      <Stack direction="row" alignItems="flex-start" justifyContent="space-between">
         {/* 左侧：图标 + 信息 */}
-        <div className="flex items-start gap-4 flex-1">
-          <div
-            className={`flex-shrink-0 p-3 rounded-lg ${
-              source.type === 'remote' ? 'bg-blue-500/10' : 'bg-green-500/10'
-            }`}
+        <Stack direction="row" spacing={2} flex={1}>
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: source.type === 'remote' ? 'primary.50' : 'success.50',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             {source.type === 'remote' ? (
-              <Github size={32} className="text-blue-500" />
+              <Github size={32} color="var(--color-brand-blue-500)" />
             ) : (
-              <Folder size={32} className="text-green-500" />
+              <Folder size={32} color="#34C759" />
             )}
-          </div>
+          </Box>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>
+          <Box flex={1} minWidth={0}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <Typography variant="h6" fontWeight={600}>
                 {source.name}
-              </h3>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  source.enabled ? 'bg-green-500/20 text-green-600' : 'bg-gray-500/20 text-gray-500'
-                }`}
-              >
-                {source.enabled ? '已启用' : '已禁用'}
-              </span>
-            </div>
+              </Typography>
+              <Chip
+                label={source.enabled ? '已启用' : '已禁用'}
+                color={source.enabled ? 'success' : 'default'}
+                size="small"
+              />
+            </Stack>
 
             {/* 远程工具源信息 */}
             {source.type === 'remote' && (
-              <div className="space-y-1">
-                <p className={`text-sm ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
+              <Stack spacing={0.5}>
+                <Typography variant="body2" color="text.secondary">
                   {source.provider === 'github' ? 'GitHub' : 'GitLab'}: {source.owner}/{source.repo}
-                </p>
-                <p className={`text-xs ${isDark ? 'text-white/50' : 'text-slate-500'}`}>
+                </Typography>
+                <Typography variant="caption" color="text.disabled">
                   分支: {source.branch}
-                </p>
-              </div>
+                </Typography>
+              </Stack>
             )}
 
             {/* 本地工具源信息 */}
             {source.type === 'local' && (
-              <p className={`text-sm ${isDark ? 'text-white/70' : 'text-slate-600'} truncate`}>
+              <Typography variant="body2" color="text.secondary" noWrap>
                 {source.localPath}
-              </p>
+              </Typography>
             )}
 
             {/* 统计信息 */}
-            <div
-              className={`mt-3 flex items-center gap-4 text-xs ${isDark ? 'text-white/50' : 'text-slate-500'}`}
-            >
-              <span>优先级: {source.priority}</span>
-            </div>
-          </div>
-        </div>
+            <Box sx={{ mt: 1.5 }}>
+              <Typography variant="caption" color="text.disabled">
+                优先级: {source.priority}
+              </Typography>
+            </Box>
+          </Box>
+        </Stack>
 
         {/* 右侧：操作按钮 */}
-        <div className="flex gap-2">
+        <Box>
           {!canDelete ? (
-            <div
-              className={`px-4 py-2 rounded-lg border ${
-                isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50'
-              }`}
-            >
-              <span className="text-sm text-gray-500">不可删除</span>
-            </div>
+            <Chip label="不可删除" variant="outlined" size="small" />
           ) : (
-            <button
-              onClick={onDelete}
-              className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              title="删除工具源"
-            >
+            <IconButton onClick={onDelete} color="error" title="删除工具源">
               <Trash2 size={20} />
-            </button>
+            </IconButton>
           )}
-        </div>
-      </div>
+        </Box>
+      </Stack>
 
       {/* 官方源警告 */}
       {!canDelete && (
-        <div className="mt-4 flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <AlertCircle size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-blue-700 dark:text-blue-300">
-            官方工具源提供核心工具和安全保障，不能被删除或禁用
-          </p>
-        </div>
+        <Alert icon={<AlertCircle size={16} />} severity="info" sx={{ mt: 2 }}>
+          官方工具源提供核心工具和安全保障，不能被删除或禁用
+        </Alert>
       )}
-    </div>
+    </Paper>
   );
 }

@@ -13,7 +13,7 @@ import { useModuleStats } from '@/hooks/use-module-stats';
 import { useModuleEvents } from '@/hooks/use-module-events';
 import { getGreeting, getShortDate, getTimeEmoji } from '@/utils/greeting';
 import { ModuleQuickCard } from '../components/ui/module-quick-card';
-import { HorizontalScroll } from '../components/ui/horizontal-scroll';
+import { createGridSx, GRID_BREAKPOINTS } from '@/theme/grid-config';
 import { ActivityFeed } from '../components/ui/activity-feed';
 import { ActivityTimeline } from '../components/ui/activity-timeline';
 import { SystemMonitor } from '../components/ui/system-monitor';
@@ -35,57 +35,44 @@ export function HomePage() {
   return (
     <Box sx={{ height: '100%', overflow: 'auto', px: 4, py: 3 }}>
       <Stack spacing={4}>
-        {/* Hero 区域 */}
-        <Paper sx={{ p: 4, borderRadius: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            {/* 问候语 */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="h2" component="span">
-                {getTimeEmoji()}
-              </Typography>
-              <Box>
-                <Typography variant="h4" fontWeight="bold">
-                  {getGreeting()}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  {getShortDate()}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* 统计卡片 */}
-            <Stack direction="row" spacing={2}>
-              <StatCard label="已安装" value={stats.installed} icon="📦" />
-              <StatCard label="运行中" value={stats.enabled} icon="✅" highlight />
-              <StatCard label="远程可用" value={stats.remote} icon="🌐" />
-            </Stack>
+        {/* Hero 区域 - 问候语 */}
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Typography variant="h2" component="span">
+              {getTimeEmoji()}
+            </Typography>
+            <Typography variant="h3" fontWeight="700">
+              {getGreeting()}
+            </Typography>
           </Box>
-        </Paper>
+          <Typography variant="body1" color="text.secondary">
+            {getShortDate()}
+          </Typography>
+        </Box>
 
-        {/* 最近使用 */}
+        {/* 统计卡片 Grid */}
+        <Box sx={createGridSx(GRID_BREAKPOINTS.STAT_CARD)}>
+          <StatCard label="已安装" value={stats.installed} icon="📦" />
+          <StatCard label="运行中" value={stats.enabled} icon="✅" highlight />
+          <StatCard label="远程可用" value={stats.remote} icon="🌐" />
+        </Box>
+
+        {/* 最近使用 - Grid 布局 */}
         {recentModules.length > 0 && (
           <Box>
             <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
               🚀 最近使用
             </Typography>
-            <HorizontalScroll gap={16}>
+            <Box sx={createGridSx(GRID_BREAKPOINTS.QUICK_LAUNCH, 'TIGHT')}>
               {recentModules.map(module => (
-                <Box key={module.id} sx={{ width: 280, flexShrink: 0 }}>
-                  <ModuleQuickCard module={module} onClick={() => openModule(module.id)} />
-                </Box>
+                <ModuleQuickCard key={module.id} module={module} onClick={() => openModule(module.id)} />
               ))}
-            </HorizontalScroll>
+            </Box>
           </Box>
         )}
 
         {/* 公告 + 操作记录 */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
-            gap: 3,
-          }}
-        >
+        <Box sx={createGridSx(GRID_BREAKPOINTS.TWO_COLUMN)}>
           {/* 公告 */}
           <ActivityFeed />
 
@@ -131,12 +118,13 @@ function StatCard({
   return (
     <Paper
       sx={{
-        px: 3,
-        py: 2,
-        minWidth: 120,
-        borderRadius: 2,
-        transition: 'transform 0.2s',
-        '&:hover': { transform: 'scale(1.05)' },
+        p: 3,
+        borderRadius: 3,
+        transition: 'all 0.2s',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: highlight ? 8 : 4,
+        },
         ...(highlight && {
           bgcolor: 'primary.main',
           color: 'primary.contrastText',
@@ -145,28 +133,27 @@ function StatCard({
           },
         }),
       }}
-      elevation={highlight ? 3 : 1}
+      elevation={highlight ? 4 : 1}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Typography variant="h5" component="span">
+      <Stack spacing={1}>
+        <Typography variant="h4" component="div">
           {icon}
         </Typography>
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              color: highlight ? 'inherit' : 'text.secondary',
-            }}
-          >
-            {label}
-          </Typography>
-          <Typography variant="h5" fontWeight="bold" sx={{ mt: 0.5 }}>
-            {value}
-          </Typography>
-        </Box>
-      </Box>
+        <Typography
+          variant="caption"
+          sx={{
+            textTransform: 'uppercase',
+            letterSpacing: 1.2,
+            fontWeight: 600,
+            color: highlight ? 'inherit' : 'text.secondary',
+          }}
+        >
+          {label}
+        </Typography>
+        <Typography variant="h4" fontWeight="700">
+          {value}
+        </Typography>
+      </Stack>
     </Paper>
   );
 }

@@ -7,12 +7,14 @@
  * 关于页面
  */
 
-import { useTheme } from '../../components/theme-provider';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Link from '@mui/material/Link';
 import { ExternalLink } from 'lucide-react';
 
 export function AboutSettings() {
-  const { theme } = useTheme();
-
   const links = [
     { label: '官网', url: 'https://booltox.com' },
     { label: 'GitHub', url: 'https://github.com/ByteTrue/BoolTox' },
@@ -21,76 +23,94 @@ export function AboutSettings() {
   ];
 
   return (
-    <div className="flex items-center justify-center min-h-full">
-      <div className="space-y-8 max-w-2xl w-full">
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100%',
+      }}
+    >
+      <Stack spacing={4} sx={{ maxWidth: 600, width: '100%', px: 4 }}>
         {/* Logo 和标题 */}
-        <div className="text-center">
-          <div className="inline-flex rounded-xl bg-brand-gradient p-3 shadow-lg mb-4">
-            <span className="text-5xl">📦</span>
-          </div>
-          <h1
-            className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+        <Box sx={{ textAlign: 'center' }}>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              p: 1.5,
+              boxShadow: 3,
+              mb: 2,
+            }}
           >
+            <Typography variant="h2">📦</Typography>
+          </Box>
+          <Typography variant="h3" fontWeight={700} sx={{ mb: 1 }}>
             BoolTox
-          </h1>
-          <p className={`text-sm ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}>
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             版本 0.0.1
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
         {/* 简介 */}
-        <div
-          className="rounded-lg border p-6"
-          style={{
-            background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.7)',
-            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        <Paper
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            bgcolor: 'action.hover',
           }}
         >
-          <p className={`text-center ${theme === 'dark' ? 'text-white/80' : 'text-gray-700'}`}>
+          <Typography variant="body1" textAlign="center" color="text.primary">
             开源、可扩展的工具箱平台
-          </p>
-          <p
-            className={`text-center text-sm mt-2 ${theme === 'dark' ? 'text-white/60' : 'text-gray-500'}`}
-          >
+          </Typography>
+          <Typography variant="body2" textAlign="center" color="text.secondary" sx={{ mt: 1 }}>
             Web 优先 · 工具生态 · 本地 Agent · 隐私优先
-          </p>
-        </div>
+          </Typography>
+        </Paper>
 
         {/* 链接 */}
-        <div className="space-y-2">
+        <Stack spacing={1}>
           {links.map(link => (
-            <a
+            <Link
               key={link.label}
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                theme === 'dark'
-                  ? 'border-white/10 hover:bg-white/5'
-                  : 'border-gray-200 hover:bg-gray-50'
-              }`}
+              underline="none"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                p: 2,
+                borderRadius: 2,
+                border: 1,
+                borderColor: 'divider',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
             >
-              <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+              <Typography variant="body1" color="text.primary">
                 {link.label}
-              </span>
-              <ExternalLink
-                size={16}
-                className={theme === 'dark' ? 'text-white/60' : 'text-gray-400'}
-              />
-            </a>
+              </Typography>
+              <ExternalLink size={16} color="var(--mui-palette-text-secondary)" />
+            </Link>
           ))}
-        </div>
+        </Stack>
 
         {/* 许可证 */}
-        <div className="text-center">
-          <p className={`text-sm ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="body2" color="text.disabled">
             Copyright © 2025 ByteTrue
-          </p>
-          <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>
+          </Typography>
+          <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
             Licensed under CC-BY-NC-4.0
-          </p>
-        </div>
-      </div>
-    </div>
+          </Typography>
+        </Box>
+      </Stack>
+    </Box>
   );
 }
