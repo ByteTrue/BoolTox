@@ -1,6 +1,189 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-brand-blue-50: #e8f4fd;
+  --color-brand-blue-100: #d1e9fb;
+  --color-brand-blue-200: #a3d3f7;
+  --color-brand-blue-300: #8acef1;
+  --color-brand-blue-400: #65bbe9;
+  --color-brand-blue-500: #51a9d5;
+  --color-brand-blue-600: #3d97c1;
+  --color-brand-blue-700: #2e7fa9;
+  --color-brand-blue-800: #206891;
+  --color-brand-blue-900: #145279;
+
+  --color-brand-pink-50: #fef5f8;
+  --color-brand-pink-100: #fdebf0;
+  --color-brand-pink-200: #fbd7e1;
+  --color-brand-pink-300: #f9c1cf;
+  --color-brand-pink-400: #f7aab8;
+  --color-brand-pink-500: #f593a1;
+  --color-brand-pink-600: #f37c8a;
+  --color-brand-pink-700: #f16573;
+  --color-brand-pink-800: #ef4e5c;
+  --color-brand-pink-900: #ed3745;
+
+  --color-success-light: #34c759;
+  --color-success-dark: #30d158;
+  --color-success: #34c759;
+
+  --color-warning-light: #ff9500;
+  --color-warning-dark: #ff9f0a;
+  --color-warning: #ff9500;
+
+  --color-error-light: #ff3b30;
+  --color-error-dark: #ff453a;
+  --color-error: #ff3b30;
+
+  --color-info-light: #51a9d5;
+  --color-info-dark: #65bbe9;
+  --color-info: #51a9d5;
+
+  --color-neutral-light-text-primary: rgba(0, 0, 0, 0.85);
+  --color-neutral-light-text-secondary: rgba(0, 0, 0, 0.6);
+  --color-neutral-light-text-tertiary: rgba(0, 0, 0, 0.45);
+  --color-neutral-light-text-quaternary: rgba(0, 0, 0, 0.3);
+  --color-neutral-light-text-disabled: rgba(0, 0, 0, 0.25);
+
+  --color-neutral-light-bg-primary: #ffffff;
+  --color-neutral-light-bg-secondary: #f5f5f7;
+  --color-neutral-light-bg-tertiary: #e8e8ed;
+  --color-neutral-light-bg-elevated: #ffffff;
+  --color-neutral-light-bg-grouped: #f2f2f7;
+
+  --color-neutral-light-border-primary: rgba(0, 0, 0, 0.1);
+  --color-neutral-light-border-secondary: rgba(0, 0, 0, 0.08);
+  --color-neutral-light-border-tertiary: rgba(0, 0, 0, 0.05);
+
+  --color-neutral-dark-text-primary: rgba(255, 255, 255, 0.85);
+  --color-neutral-dark-text-secondary: rgba(255, 255, 255, 0.6);
+  --color-neutral-dark-text-tertiary: rgba(255, 255, 255, 0.45);
+  --color-neutral-dark-text-quaternary: rgba(255, 255, 255, 0.3);
+  --color-neutral-dark-text-disabled: rgba(255, 255, 255, 0.25);
+
+  --color-neutral-dark-bg-primary: #1c1c1e;
+  --color-neutral-dark-bg-secondary: #2c2c2e;
+  --color-neutral-dark-bg-tertiary: #3a3a3c;
+  --color-neutral-dark-bg-elevated: #1c1c1e;
+  --color-neutral-dark-bg-grouped: #000000;
+
+  --color-neutral-dark-border-primary: rgba(255, 255, 255, 0.13);
+  --color-neutral-dark-border-secondary: rgba(255, 255, 255, 0.1);
+  --color-neutral-dark-border-tertiary: rgba(255, 255, 255, 0.07);
+
+  --background-image-brand-gradient: linear-gradient(
+    135deg,
+    #8acef1 0%,
+    #f9c1cf 100%
+  );
+  --background-image-brand-gradient-secondary: linear-gradient(
+    135deg,
+    #65bbe9 0%,
+    #51a9d5 100%
+  );
+  --background-image-brand-gradient-accent: linear-gradient(
+    135deg,
+    #65bbe9 0%,
+    #f9c1cf 100%
+  );
+
+  --animate-fade-in: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-slide-up: slideUp 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --animate-slide-down: slideDown 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --animate-scale-in: scaleIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-slide-in-left: slideInLeft 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  --transition-duration-150: 150ms;
+  --transition-duration-250: 250ms;
+  --transition-duration-350: 350ms;
+  --transition-duration-500: 500ms;
+
+  --ease-swift: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-gentle: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.6, 1);
+
+  --shadow-unified-sm: 1px 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-unified-md: 2px 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-unified-lg: 3px 3px 8px rgba(0, 0, 0, 0.1);
+  --shadow-unified-xl: 4px 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-unified-2xl: 6px 6px 16px rgba(0, 0, 0, 0.15);
+  --shadow-unified-sm-dark: 1px 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-unified-md-dark: 2px 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-unified-lg-dark: 3px 3px 8px rgba(0, 0, 0, 0.3);
+  --shadow-unified-xl-dark: 4px 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-unified-2xl-dark: 6px 6px 16px rgba(0, 0, 0, 0.4);
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes slideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slideDown {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes scaleIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes slideInLeft {
+    0% {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 :root {
   color-scheme: light;

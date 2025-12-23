@@ -6,6 +6,9 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { getTheme } from '../theme/mui-theme';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 type Theme = 'light' | 'dark';
@@ -95,7 +98,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     [theme, themeMode]
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  // 获取 MUI 主题
+  const muiTheme = useMemo(() => getTheme(theme), [theme]);
+
+  return (
+    <ThemeContext.Provider value={value}>
+      <MuiThemeProvider theme={muiTheme}>
+        <CssBaseline />
+        {children}
+      </MuiThemeProvider>
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
