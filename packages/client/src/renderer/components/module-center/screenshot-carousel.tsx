@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import Fade from '@mui/material/Fade';
+import { alpha, useTheme } from '@mui/material/styles';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ScreenshotCarouselProps {
@@ -18,39 +19,54 @@ interface ScreenshotCarouselProps {
 
 export function ScreenshotCarousel({ screenshots, toolName }: ScreenshotCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
-  if (!screenshots || screenshots.length === 0) {
+  // 过滤有效截图
+  const validScreenshots = screenshots.filter(s => s && s.trim());
+
+  if (validScreenshots.length === 0) {
     return null;
   }
 
   const handlePrev = () => {
-    setCurrentIndex(prev => (prev === 0 ? screenshots.length - 1 : prev - 1));
+    setCurrentIndex(prev => (prev === 0 ? validScreenshots.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex(prev => (prev === screenshots.length - 1 ? 0 : prev + 1));
+    setCurrentIndex(prev => (prev === validScreenshots.length - 1 ? 0 : prev + 1));
   };
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5 }}>
-        工具截图
+      <Typography
+        variant="subtitle2"
+        sx={{
+          color: 'text.primary',
+          fontWeight: 600,
+          mb: 1.5,
+        }}
+      >
+        截图预览
       </Typography>
       <Box
         sx={{
           position: 'relative',
+          width: '100%',
+          // 16:9 比例，但限制最大高度
           aspectRatio: '16/9',
+          maxHeight: 280,
           overflow: 'hidden',
-          borderRadius: 2,
-          border: 1,
-          borderColor: 'divider',
-          bgcolor: 'action.hover',
+          borderRadius: 2.5,
+          border: '1px solid',
+          borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+          bgcolor: isDark ? alpha('#fff', 0.03) : alpha('#000', 0.02),
         }}
       >
         <Fade in key={currentIndex}>
           <Box
             component="img"
-            src={screenshots[currentIndex]}
+            src={validScreenshots[currentIndex]}
             alt={`${toolName} - 截图 ${currentIndex + 1}`}
             sx={{
               width: '100%',
@@ -64,7 +80,7 @@ export function ScreenshotCarousel({ screenshots, toolName }: ScreenshotCarousel
           />
         </Fade>
 
-        {screenshots.length > 1 && (
+        {validScreenshots.length > 1 && (
           <>
             <IconButton
               onClick={handlePrev}
@@ -73,12 +89,18 @@ export function ScreenshotCarousel({ screenshots, toolName }: ScreenshotCarousel
                 left: 8,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                bgcolor: 'background.paper',
-                '&:hover': { bgcolor: 'action.hover' },
+                width: 32,
+                height: 32,
+                bgcolor: isDark ? alpha('#000', 0.6) : alpha('#fff', 0.9),
+                color: isDark ? '#fff' : '#000',
+                backdropFilter: 'blur(8px)',
+                '&:hover': {
+                  bgcolor: isDark ? alpha('#000', 0.8) : alpha('#fff', 1),
+                },
               }}
               aria-label="上一张"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={18} />
             </IconButton>
             <IconButton
               onClick={handleNext}
@@ -87,40 +109,54 @@ export function ScreenshotCarousel({ screenshots, toolName }: ScreenshotCarousel
                 right: 8,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                bgcolor: 'background.paper',
-                '&:hover': { bgcolor: 'action.hover' },
+                width: 32,
+                height: 32,
+                bgcolor: isDark ? alpha('#000', 0.6) : alpha('#fff', 0.9),
+                color: isDark ? '#fff' : '#000',
+                backdropFilter: 'blur(8px)',
+                '&:hover': {
+                  bgcolor: isDark ? alpha('#000', 0.8) : alpha('#fff', 1),
+                },
               }}
               aria-label="下一张"
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={18} />
             </IconButton>
 
             {/* 指示器 */}
             <Box
               sx={{
                 position: 'absolute',
-                bottom: 12,
+                bottom: 10,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 display: 'flex',
-                gap: 0.75,
+                gap: 0.5,
+                p: 0.75,
+                borderRadius: 2,
+                bgcolor: isDark ? alpha('#000', 0.5) : alpha('#fff', 0.8),
+                backdropFilter: 'blur(8px)',
               }}
             >
-              {screenshots.map((_, index) => (
+              {validScreenshots.map((_, index) => (
                 <Box
                   key={index}
                   component="button"
                   onClick={() => setCurrentIndex(index)}
                   sx={{
-                    width: index === currentIndex ? 24 : 8,
-                    height: 8,
-                    borderRadius: 4,
+                    width: index === currentIndex ? 16 : 6,
+                    height: 6,
+                    borderRadius: 3,
                     border: 'none',
-                    bgcolor: index === currentIndex ? 'primary.main' : 'action.disabled',
+                    bgcolor: index === currentIndex
+                      ? 'primary.main'
+                      : isDark ? alpha('#fff', 0.4) : alpha('#000', 0.3),
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      bgcolor: index === currentIndex ? 'primary.main' : 'action.selected',
+                      bgcolor: index === currentIndex
+                        ? 'primary.main'
+                        : isDark ? alpha('#fff', 0.6) : alpha('#000', 0.5),
                     },
                   }}
                   aria-label={`跳转到截图 ${index + 1}`}
@@ -130,12 +166,18 @@ export function ScreenshotCarousel({ screenshots, toolName }: ScreenshotCarousel
 
             {/* 计数器 */}
             <Chip
-              label={`${currentIndex + 1} / ${screenshots.length}`}
+              label={`${currentIndex + 1} / ${validScreenshots.length}`}
               size="small"
               sx={{
                 position: 'absolute',
-                top: 12,
-                right: 12,
+                top: 10,
+                right: 10,
+                height: 24,
+                fontSize: '0.75rem',
+                bgcolor: isDark ? alpha('#000', 0.6) : alpha('#fff', 0.9),
+                color: isDark ? '#fff' : '#000',
+                backdropFilter: 'blur(8px)',
+                '& .MuiChip-label': { px: 1.25 },
               }}
             />
           </>

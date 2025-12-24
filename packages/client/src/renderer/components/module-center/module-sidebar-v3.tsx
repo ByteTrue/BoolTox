@@ -30,24 +30,38 @@ function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
     <Box
       onClick={onClick}
       sx={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
         px: 1.5,
         py: 1,
-        mx: 0.5,  // 配合侧边栏的 px: 1.5，总间距约 16px
+        mx: 0.5,
         borderRadius: 1.5,
         cursor: 'pointer',
         color: active ? 'text.primary' : 'text.secondary',
         bgcolor: active
           ? isDark
             ? alpha('#fff', 0.06)
-            : alpha('#000', 0.04)
+            : alpha(theme.palette.primary.main, 0.08)
           : 'transparent',
-        transition: 'all 0.1s ease',
+        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
-          bgcolor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.04),
+          bgcolor: isDark ? alpha('#fff', 0.06) : alpha(theme.palette.primary.main, 0.06),
           color: 'text.primary',
+        },
+        // Linear 风格左侧 accent bar
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: active ? 'translateY(-50%) scaleY(1)' : 'translateY(-50%) scaleY(0)',
+          width: 3,
+          height: 16,
+          borderRadius: 1.5,
+          bgcolor: 'primary.main',
+          transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         },
       }}
     >
@@ -57,6 +71,7 @@ function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
           alignItems: 'center',
           justifyContent: 'center',
           color: active ? 'primary.main' : 'inherit',
+          transition: 'color 0.15s ease',
         }}
       >
         {icon}
@@ -143,7 +158,7 @@ export function ModuleSidebarV3({
         display: 'flex',
         flexDirection: 'column',
         // 用背景色差异替代边框分割
-        bgcolor: isDark ? '#0c0c0e' : '#f5f5f7',
+        bgcolor: isDark ? '#0c0c0e' : '#f8f9fb',
         // 左右留出空间，让选中项有呼吸间距
         px: 1.5,
       }}
@@ -227,14 +242,14 @@ export function ModuleSidebarV3({
               py: 1.25,
               borderRadius: 2,
               border: '1px dashed',
-              borderColor: isDark ? alpha('#fff', 0.12) : alpha('#000', 0.12),
-              color: 'text.secondary',
+              borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.25),
+              color: isDark ? 'text.secondary' : theme.palette.primary.main,
               cursor: 'pointer',
-              transition: 'all 0.1s ease',
+              transition: 'all 0.15s ease',
               '&:hover': {
                 borderColor: 'primary.main',
                 color: 'primary.main',
-                bgcolor: alpha(theme.palette.primary.main, 0.04),
+                bgcolor: alpha(theme.palette.primary.main, 0.06),
               },
             }}
           >

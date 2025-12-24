@@ -5,17 +5,23 @@
 
 import { createTheme, type ThemeOptions, alpha } from '@mui/material/styles';
 
-// 品牌色
+// 品牌色 - 经典蓝色 (GitHub/Tailwind Blue)
 const brandColors = {
-  blue: {
-    light: '#65BBE9',
-    main: '#51A9D5',
-    dark: '#3D97C1',
+  // 浅色模式用深一点的蓝色
+  light: {
+    lighter: '#DBEAFE', // Blue 100
+    light: '#60A5FA',   // Blue 400
+    main: '#3B82F6',    // Blue 500
+    dark: '#2563EB',    // Blue 600
+    darker: '#1D4ED8',  // Blue 700
   },
-  pink: {
-    light: '#FBD7E1',
-    main: '#F9C1CF',
-    dark: '#F7AAB8',
+  // 深色模式用亮一点的蓝色
+  dark: {
+    lighter: '#93C5FD', // Blue 300
+    light: '#60A5FA',   // Blue 400
+    main: '#3B82F6',    // Blue 500 (实际会用 light)
+    dark: '#2563EB',    // Blue 600
+    darker: '#1D4ED8',  // Blue 700
   },
 };
 
@@ -202,36 +208,36 @@ export const lightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      light: brandColors.blue.light,
-      main: brandColors.blue.main,
-      dark: brandColors.blue.dark,
+      light: brandColors.light.light,
+      main: brandColors.light.main,
+      dark: brandColors.light.dark,
       contrastText: '#FFFFFF',
     },
     secondary: {
-      light: brandColors.pink.light,
-      main: brandColors.pink.main,
-      dark: brandColors.pink.dark,
-      contrastText: '#000000',
+      light: '#94A3B8',  // Slate 400
+      main: '#64748B',   // Slate 500
+      dark: '#475569',   // Slate 600
+      contrastText: '#FFFFFF',
     },
     success: {
-      main: '#34C759',
-      light: '#4CD964',
-      dark: '#28A745',
+      main: '#22C55E',   // Green 500
+      light: '#4ADE80',  // Green 400
+      dark: '#16A34A',   // Green 600
     },
     warning: {
-      main: '#FF9500',
-      light: '#FFAA33',
-      dark: '#CC7700',
+      main: '#F59E0B',   // Amber 500
+      light: '#FBBF24',  // Amber 400
+      dark: '#D97706',   // Amber 600
     },
     error: {
-      main: '#FF3B30',
-      light: '#FF6B6B',
-      dark: '#CC2F26',
+      main: '#EF4444',   // Red 500
+      light: '#F87171',  // Red 400
+      dark: '#DC2626',   // Red 600
     },
     info: {
-      main: '#51A9D5',
-      light: '#65BBE9',
-      dark: '#3D97C1',
+      main: brandColors.light.main,
+      light: brandColors.light.light,
+      dark: brandColors.light.dark,
     },
     background: {
       default: surfaceLayers.light.surfaceContainerLow,
@@ -247,7 +253,7 @@ export const lightTheme = createTheme({
     action: {
       active: 'rgba(0, 0, 0, 0.56)',
       hover: 'rgba(0, 0, 0, 0.04)',
-      selected: alpha(brandColors.blue.main, 0.12),
+      selected: alpha(brandColors.light.main, 0.12),
       disabled: 'rgba(0, 0, 0, 0.26)',
       disabledBackground: 'rgba(0, 0, 0, 0.12)',
     },
@@ -257,8 +263,8 @@ export const lightTheme = createTheme({
     surfaceContainer: surfaceLayers.light.surfaceContainer,
     surfaceContainerHigh: surfaceLayers.light.surfaceContainerHigh,
     surfaceContainerHighest: surfaceLayers.light.surfaceContainerHighest,
-    primaryContainer: alpha(brandColors.blue.main, 0.12),
-    onPrimaryContainer: brandColors.blue.dark,
+    primaryContainer: alpha(brandColors.light.main, 0.12),
+    onPrimaryContainer: brandColors.light.dark,
   } as any,
 });
 
@@ -268,36 +274,36 @@ export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      light: '#8ACEF1',
-      main: brandColors.blue.light,
-      dark: brandColors.blue.main,
+      light: brandColors.dark.lighter,
+      main: brandColors.dark.light,    // 深色模式用亮一点的蓝色
+      dark: brandColors.dark.main,
       contrastText: '#000000',
     },
     secondary: {
-      light: brandColors.pink.light,
-      main: brandColors.pink.main,
-      dark: brandColors.pink.dark,
+      light: '#CBD5E1',  // Slate 300
+      main: '#94A3B8',   // Slate 400
+      dark: '#64748B',   // Slate 500
       contrastText: '#000000',
     },
     success: {
-      main: '#30D158',
-      light: '#4ADE80',
-      dark: '#22C55E',
+      main: '#4ADE80',   // Green 400
+      light: '#86EFAC',  // Green 300
+      dark: '#22C55E',   // Green 500
     },
     warning: {
-      main: '#FF9F0A',
-      light: '#FFB340',
-      dark: '#F59E0B',
+      main: '#FBBF24',   // Amber 400
+      light: '#FCD34D',  // Amber 300
+      dark: '#F59E0B',   // Amber 500
     },
     error: {
-      main: '#FF453A',
-      light: '#FF6B6B',
-      dark: '#EF4444',
+      main: '#F87171',   // Red 400
+      light: '#FCA5A5',  // Red 300
+      dark: '#EF4444',   // Red 500
     },
     info: {
-      main: '#65BBE9',
-      light: '#8ACEF1',
-      dark: '#51A9D5',
+      main: brandColors.dark.light,
+      light: brandColors.dark.lighter,
+      dark: brandColors.dark.main,
     },
     background: {
       default: surfaceLayers.dark.surfaceContainerLow,
@@ -313,7 +319,7 @@ export const darkTheme = createTheme({
     action: {
       active: 'rgba(255, 255, 255, 0.72)',
       hover: 'rgba(255, 255, 255, 0.06)',
-      selected: alpha(brandColors.blue.light, 0.16),
+      selected: alpha(brandColors.dark.light, 0.16),
       disabled: 'rgba(255, 255, 255, 0.30)',
       disabledBackground: 'rgba(255, 255, 255, 0.12)',
     },
@@ -323,8 +329,8 @@ export const darkTheme = createTheme({
     surfaceContainer: surfaceLayers.dark.surfaceContainer,
     surfaceContainerHigh: surfaceLayers.dark.surfaceContainerHigh,
     surfaceContainerHighest: surfaceLayers.dark.surfaceContainerHighest,
-    primaryContainer: alpha(brandColors.blue.light, 0.16),
-    onPrimaryContainer: '#8ACEF1',
+    primaryContainer: alpha(brandColors.dark.light, 0.16),
+    onPrimaryContainer: brandColors.dark.lighter,
   } as any,
 });
 

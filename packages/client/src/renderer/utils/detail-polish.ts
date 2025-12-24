@@ -103,7 +103,7 @@ export function getFocusRingStyle(
   config?: FocusRingConfig
 ): CSSProperties {
   const {
-    color = theme === 'dark' ? 'rgba(101, 187, 233, 0.6)' : 'rgba(0, 122, 255, 0.5)',
+    color = theme === 'dark' ? 'rgba(96, 165, 250, 0.6)' : 'rgba(59, 130, 246, 0.5)',
     width = 3,
     blur = 8,
   } = config || {};
@@ -212,7 +212,7 @@ export function getPulseStyle(
   config?: LoadingConfig
 ): CSSProperties {
   const {
-    color = theme === 'dark' ? 'rgba(101, 187, 233, 0.6)' : 'rgba(0, 122, 255, 0.5)',
+    color = theme === 'dark' ? 'rgba(96, 165, 250, 0.6)' : 'rgba(59, 130, 246, 0.5)',
     speed = 1.5,
   } = config || {};
 

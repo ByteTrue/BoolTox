@@ -230,7 +230,7 @@ export function ModuleCenterV3() {
         height: '100%',
         overflow: 'hidden',
         // 基础背景色（与侧边栏同色，作为底层）
-        bgcolor: isDark ? '#0c0c0e' : '#f5f5f7',
+        bgcolor: isDark ? '#0c0c0e' : '#f8f9fb',
       }}
     >
       {/* 侧边栏 */}
@@ -261,7 +261,7 @@ export function ModuleCenterV3() {
           // 左侧内阴影，创造"嵌入"效果
           boxShadow: isDark
             ? 'inset 4px 0 12px -4px rgba(0,0,0,0.3)'
-            : 'inset 4px 0 12px -4px rgba(0,0,0,0.06)',
+            : 'inset 2px 0 8px -2px rgba(0,0,0,0.04)',
           // 圆角让边缘更柔和
           borderTopLeftRadius: 16,
           borderBottomLeftRadius: 16,
@@ -279,7 +279,7 @@ export function ModuleCenterV3() {
             top: 0,
             zIndex: 10,
             // 毛玻璃效果
-            bgcolor: isDark ? alpha('#111113', 0.8) : alpha('#ffffff', 0.8),
+            bgcolor: isDark ? alpha('#111113', 0.8) : alpha('#ffffff', 0.85),
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             // 继承主内容区的左上圆角
@@ -298,7 +298,7 @@ export function ModuleCenterV3() {
 
           <Box sx={{ flex: 1 }} />
 
-          {/* 搜索框 */}
+          {/* 搜索框 - Focus 发光动画 */}
           <TextField
             placeholder="搜索..."
             value={inputValue}
@@ -306,12 +306,26 @@ export function ModuleCenterV3() {
             size="small"
             sx={{
               width: 240,
+              transition: 'width 0.2s ease',
+              '&:focus-within': {
+                width: 280,
+              },
               '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                bgcolor: isDark ? alpha('#fff', 0.04) : alpha('#000', 0.03),
+                borderRadius: 2.5,
+                bgcolor: isDark ? alpha('#fff', 0.04) : '#ffffff',
+                border: '1px solid',
+                borderColor: isDark ? 'transparent' : alpha('#000', 0.08),
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 '& fieldset': { border: 'none' },
-                '&:hover': { bgcolor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.04) },
-                '&.Mui-focused': { bgcolor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.04) },
+                '&:hover': {
+                  bgcolor: isDark ? alpha('#fff', 0.06) : '#ffffff',
+                  borderColor: isDark ? alpha('#fff', 0.1) : alpha(theme.palette.primary.main, 0.3),
+                },
+                '&.Mui-focused': {
+                  bgcolor: isDark ? alpha('#fff', 0.06) : '#ffffff',
+                  borderColor: 'primary.main',
+                  boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.12)}, 0 0 16px ${alpha(theme.palette.primary.main, 0.08)}`,
+                },
               },
               '& .MuiInputBase-input': {
                 fontSize: '0.8125rem',

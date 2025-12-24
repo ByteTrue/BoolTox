@@ -109,7 +109,7 @@ requestAnimationFrame(async () => {
 
   console.warn(
     '%c🚀 BoolTox Performance Report (New Architecture)',
-    'font-size: 16px; font-weight: bold; color: rgb(101, 187, 233);'
+    'font-size: 16px; font-weight: bold; color: rgb(59, 130, 246);'
   );
   profiler.report('Phase 1: Startup Performance');
 

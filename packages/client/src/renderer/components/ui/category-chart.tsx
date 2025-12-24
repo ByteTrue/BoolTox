@@ -181,13 +181,14 @@ export function CategoryChart({ data, size = 200, strokeWidth = 24 }: CategoryCh
 }
 
 function getSegmentColor(index: number): string {
+  // 双品牌色系 - 蓝色 + 橙色交替
   const colors = [
-    'rgb(101, 187, 233)',
-    'rgb(138, 206, 241)',
-    'rgb(249, 193, 207)',
-    '#FBCFE8',
-    '#A78BFA',
-    '#60A5FA',
+    '#3B82F6', // Blue 500
+    '#F97316', // Orange 500
+    '#60A5FA', // Blue 400
+    '#FB923C', // Orange 400
+    '#93C5FD', // Blue 300
+    '#FDBA74', // Orange 300
   ];
   return colors[index % colors.length];
 }

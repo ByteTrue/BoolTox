@@ -17,42 +17,56 @@
 export const AppleColors = {
   /**
    * 品牌主色 - BoolTox Brand
-   * 淡蓝色 (#65BBE9) + 淡粉色 (#F9C1CF)
+   * 双品牌色：蓝色 (Tailwind Blue) + 橙色 (Tailwind Orange)
    */
   brand: {
-    // 蓝色系
+    // 蓝色系 - Tailwind Blue (主品牌色)
     blue: {
-      50: '#E8F4FD', // 最浅
-      100: '#D1E9FB',
-      200: '#A3D3F7',
-      300: '#8ACEF1', // Light 模式辅助色
-      400: '#65BBE9', // 主色 - Dark 模式
-      500: '#51A9D5', // 主色 - Light 模式
-      600: '#3D97C1',
-      700: '#2E7FA9',
-      800: '#206891',
-      900: '#145279', // 最深
+      50: '#EFF6FF',  // Blue 50
+      100: '#DBEAFE', // Blue 100
+      200: '#BFDBFE', // Blue 200
+      300: '#93C5FD', // Blue 300
+      400: '#60A5FA', // Blue 400 - Dark 模式主色
+      500: '#3B82F6', // Blue 500 - Light 模式主色
+      600: '#2563EB', // Blue 600
+      700: '#1D4ED8', // Blue 700
+      800: '#1E40AF', // Blue 800
+      900: '#1E3A8A', // Blue 900
     },
 
-    // 粉色系
-    pink: {
-      50: '#FEF5F8', // 最浅
-      100: '#FDEBF0',
-      200: '#FBD7E1',
-      300: '#F9C1CF', // 辅助色
-      400: '#F7AAB8',
-      500: '#F593A1',
-      600: '#F37C8A',
-      700: '#F16573',
-      800: '#EF4E5C',
-      900: '#ED3745', // 最深
+    // 橙色系 - Tailwind Orange (副品牌色)
+    orange: {
+      50: '#FFF7ED',  // Orange 50
+      100: '#FFEDD5', // Orange 100
+      200: '#FED7AA', // Orange 200
+      300: '#FDBA74', // Orange 300
+      400: '#FB923C', // Orange 400
+      500: '#F97316', // Orange 500 - 副品牌主色
+      600: '#EA580C', // Orange 600
+      700: '#C2410C', // Orange 700
+      800: '#9A3412', // Orange 800
+      900: '#7C2D12', // Orange 900
     },
 
-    // 渐变组合
+    // Slate 灰色系 - 中性色
+    slate: {
+      50: '#F8FAFC',
+      100: '#F1F5F9',
+      200: '#E2E8F0',
+      300: '#CBD5E1',
+      400: '#94A3B8',
+      500: '#64748B',
+      600: '#475569',
+      700: '#334155',
+      800: '#1E293B',
+      900: '#0F172A',
+    },
+
+    // 双品牌色渐变组合
     gradient: {
-      primary: 'linear-gradient(135deg, #8ACEF1 0%, #F9C1CF 100%)',
-      secondary: 'linear-gradient(135deg, #65BBE9 0%, #51A9D5 100%)',
-      accent: 'linear-gradient(135deg, #65BBE9 0%, #F9C1CF 100%)',
+      primary: 'linear-gradient(135deg, #60A5FA 0%, #F97316 100%)',
+      secondary: 'linear-gradient(135deg, #3B82F6 0%, #F97316 100%)',
+      accent: 'linear-gradient(135deg, #93C5FD 0%, #FB923C 100%)',
     },
   },
 
@@ -105,15 +119,15 @@ export const AppleColors = {
 
     // 信息 - 蓝色（使用品牌色）
     info: {
-      light: '#51A9D5',
-      dark: '#65BBE9',
+      light: '#3B82F6',  // Blue 500
+      dark: '#60A5FA',   // Blue 400
       bg: {
-        light: 'rgba(81, 169, 213, 0.1)',
-        dark: 'rgba(101, 187, 233, 0.15)',
+        light: 'rgba(59, 130, 246, 0.1)',
+        dark: 'rgba(96, 165, 250, 0.15)',
       },
       border: {
-        light: 'rgba(81, 169, 213, 0.3)',
-        dark: 'rgba(101, 187, 233, 0.4)',
+        light: 'rgba(59, 130, 246, 0.3)',
+        dark: 'rgba(96, 165, 250, 0.4)',
       },
     },
   },
@@ -236,8 +250,8 @@ export const AppleColors = {
 
     // Focus Ring
     focusRing: {
-      light: '#51A9D5',
-      dark: '#65BBE9',
+      light: '#3B82F6',  // Blue 500
+      dark: '#60A5FA',   // Blue 400
     },
   },
 } as const;
@@ -277,10 +291,10 @@ export function getThemeColor(colorPath: string, theme: 'light' | 'dark'): strin
  */
 export const appleCSSVariables = {
   // 品牌色
-  '--color-brand-blue': AppleColors.brand.blue[400],
-  '--color-brand-blue-light': AppleColors.brand.blue[300],
-  '--color-brand-blue-dark': AppleColors.brand.blue[500],
-  '--color-brand-pink': AppleColors.brand.pink[300],
+  '--color-brand-blue': AppleColors.brand.blue[500],
+  '--color-brand-blue-light': AppleColors.brand.blue[400],
+  '--color-brand-blue-dark': AppleColors.brand.blue[600],
+  '--color-brand-slate': AppleColors.brand.slate[500],
 
   // 语义色
   '--color-success': AppleColors.semantic.success.light,
