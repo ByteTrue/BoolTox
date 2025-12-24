@@ -22,7 +22,6 @@ import { ModuleProvider } from './renderer/contexts/module-context';
 import { SpotlightProvider } from './renderer/contexts/spotlight-context';
 import { ToastProvider } from './renderer/contexts/toast-context';
 import { UpdateProvider } from './renderer/contexts/update-context';
-import { ActivityFeedProvider } from './renderer/contexts/activity-feed-context';
 import { AnimationProvider } from './renderer/contexts/animation-context';
 // import { initErrorTracking } from './renderer/lib/error-tracking'; // 暂时禁用，等待日志系统兼容
 import { ErrorBoundary } from './renderer/components/error-boundary';
@@ -70,11 +69,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <SpotlightProvider>
               <ModuleProvider>
                 <UpdateProvider>
-                  <ActivityFeedProvider>
-                    <RootLayout>
-                      <AppShell />
-                    </RootLayout>
-                  </ActivityFeedProvider>
+                  <RootLayout>
+                    <AppShell />
+                  </RootLayout>
                 </UpdateProvider>
               </ModuleProvider>
             </SpotlightProvider>

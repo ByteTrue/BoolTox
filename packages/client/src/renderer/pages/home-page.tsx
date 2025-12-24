@@ -27,7 +27,6 @@ import { useModulePlatform } from '@/contexts/module-context';
 import { useModuleEvents } from '@/hooks/use-module-events';
 import { getGreeting, getShortDate } from '@/utils/greeting';
 import { AppSegmentedControl, EmptyState } from '@/components/ui';
-import { ActivityFeed } from '@/components/ui/activity-feed';
 import { ActivityTimeline } from '@/components/ui/activity-timeline';
 import { brandGradient, elevations, pulse, transitions, contentBg } from '@/theme/animations';
 import { StaggerList, StaggerItem } from '@/components/motion';
@@ -127,27 +126,68 @@ export function HomePage() {
           display: 'grid',
           gap: 3,
           gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.6fr) minmax(0, 1fr)' },
+          gridTemplateRows: { lg: 'auto 1fr' },
+          maxWidth: 1400,
+          mx: 'auto',
         }}
       >
-        {/* 左侧主列 */}
-        <Stack spacing={3}>
-          <HeroCard
-            title={getGreeting()}
-            subtitle={`${getShortDate()} · BoolTox`}
-            onOpenTools={() => navigate('/tools')}
-            onOpenSources={() => navigate('/tools/sources')}
-            onAddLocalTool={() => void addLocalBinaryTool()}
-          />
+        {/* 左上：Hero */}
+        <HeroCard
+          title={getGreeting()}
+          subtitle={`${getShortDate()} · BoolTox`}
+          onOpenTools={() => navigate('/tools')}
+          onOpenSources={() => navigate('/tools/sources')}
+          onAddLocalTool={() => void addLocalBinaryTool()}
+        />
 
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
-              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
-            }}
-          >
+        {/* 右上：概览 */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+            borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+            boxShadow: isDark ? elevations.card.idle.dark : elevations.card.idle.light,
+            transition: transitions.hover,
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.2),
+              boxShadow: isDark ? elevations.card.hover.dark : elevations.card.hover.light,
+            },
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+            概览
+          </Typography>
+          <Stack spacing={1.25}>
+            <MetricRow label="已安装" value={installedModules.length} />
+            <MetricRow label="收藏" value={favoriteModules.length} />
+            <MetricRow label="运行中" value={runningModules.length} />
+            <MetricRow label="可更新" value={updateAvailableCount} />
+            <MetricRow label="可安装" value={remoteAvailableCount} />
+          </Stack>
+        </Paper>
+
+        {/* 左下：快速启动 */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+            borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+            boxShadow: isDark ? elevations.card.idle.dark : elevations.card.idle.light,
+            transition: transitions.hover,
+            display: 'flex',
+            flexDirection: 'column',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.2),
+              boxShadow: isDark ? elevations.card.hover.dark : elevations.card.hover.light,
+            },
+          }}
+        >
             <Box
               sx={{
                 display: 'flex',
@@ -199,128 +239,114 @@ export function HomePage() {
 
             <Divider sx={{ my: 2 }} />
 
-            {displayedQuickModules.length > 0 ? (
-              <Box
-                component={StaggerList}
-                sx={{
-                  display: 'grid',
-                  gap: 1.5,
-                  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
-                }}
-              >
-                {displayedQuickModules.map(m => (
-                  <StaggerItem key={m.id}>
-                    <HomeToolTile
-                      module={m}
-                      onOpen={() => void openModule(m.id)}
-                      onStop={
-                        m.runtime.launchState === 'running'
-                          ? () => void stopModule(m.id)
-                          : undefined
-                      }
-                    />
-                  </StaggerItem>
-                ))}
-              </Box>
-            ) : installedModules.length === 0 ? (
-              <EmptyState
-                title="这里还什么都没有"
-                description="先添加工具源或导入一个本地工具，然后就可以在这里一键启动。"
-                actions={
-                  <>
-                    <Button variant="contained" onClick={() => navigate('/tools/sources')}>
-                      管理工具源
-                    </Button>
-                    <Button variant="outlined" onClick={() => void addLocalBinaryTool()}>
-                      添加本地工具
-                    </Button>
-                  </>
-                }
-              />
-            ) : (
-              <EmptyState
-                title="当前分组暂无内容"
-                description="换个分组看看，或者去工具库里收藏一些常用工具。"
-                actions={
-                  <>
-                    <Button variant="contained" onClick={() => navigate('/tools')}>
-                      打开工具库
-                    </Button>
-                    <Button variant="outlined" onClick={() => setQuickView('favorites')}>
-                      回到收藏
-                    </Button>
-                  </>
-                }
-              />
-            )}
-          </Paper>
-
-          <ActivityFeed />
-        </Stack>
-
-        {/* 右侧信息列 */}
-        <Stack spacing={3}>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
-              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
-            }}
-          >
-            <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-              概览
-            </Typography>
-            <Stack spacing={1.25}>
-              <MetricRow label="已安装" value={installedModules.length} />
-              <MetricRow label="收藏" value={favoriteModules.length} />
-              <MetricRow label="运行中" value={runningModules.length} />
-              <MetricRow label="可更新" value={updateAvailableCount} />
-              <MetricRow label="可安装" value={remoteAvailableCount} />
-            </Stack>
-          </Paper>
-
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
-              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
-              minHeight: 280,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 2,
-                mb: 2,
-              }}
-            >
-              <Typography variant="subtitle1" fontWeight={700}>
-                最近操作
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
-              >
-                {recentEvents.length > 0 ? `最近 ${recentEvents.length} 条` : '暂无记录'}
-              </Typography>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {displayedQuickModules.length > 0 ? (
+                <Box
+                  component={StaggerList}
+                  sx={{
+                    display: 'grid',
+                    gap: 1.5,
+                    gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                  }}
+                >
+                  {displayedQuickModules.map(m => (
+                    <StaggerItem key={m.id}>
+                      <HomeToolTile
+                        module={m}
+                        onOpen={() => void openModule(m.id)}
+                        onStop={
+                          m.runtime.launchState === 'running'
+                            ? () => void stopModule(m.id)
+                            : undefined
+                        }
+                      />
+                    </StaggerItem>
+                  ))}
+                </Box>
+              ) : installedModules.length === 0 ? (
+                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <EmptyState
+                    title="这里还什么都没有"
+                    description="先添加工具源或导入一个本地工具，然后就可以在这里一键启动。"
+                    actions={
+                      <>
+                        <Button variant="contained" onClick={() => navigate('/tools/sources')}>
+                          管理工具源
+                        </Button>
+                        <Button variant="outlined" onClick={() => void addLocalBinaryTool()}>
+                          添加本地工具
+                        </Button>
+                      </>
+                    }
+                  />
+                </Box>
+              ) : (
+                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <EmptyState
+                    title="当前分组暂无内容"
+                    description="换个分组看看，或者去工具库里收藏一些常用工具。"
+                    actions={
+                      <>
+                        <Button variant="contained" onClick={() => navigate('/tools')}>
+                          打开工具库
+                        </Button>
+                        <Button variant="outlined" onClick={() => setQuickView('favorites')}>
+                          回到收藏
+                        </Button>
+                      </>
+                    }
+                  />
+                </Box>
+              )}
             </Box>
-
-            {recentEvents.length > 0 ? (
-              <ActivityTimeline events={recentEvents} maxItems={6} />
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                你还没有做过任何操作。
-              </Typography>
-            )}
           </Paper>
-        </Stack>
+
+        {/* 右下：最近操作 */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+            borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+            boxShadow: isDark ? elevations.card.idle.dark : elevations.card.idle.light,
+            transition: transitions.hover,
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.2),
+              boxShadow: isDark ? elevations.card.hover.dark : elevations.card.hover.light,
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+              mb: 2,
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight={700}>
+              最近操作
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
+            >
+              {recentEvents.length > 0 ? `最近 ${recentEvents.length} 条` : '暂无记录'}
+            </Typography>
+          </Box>
+
+          {recentEvents.length > 0 ? (
+            <ActivityTimeline events={recentEvents} maxItems={6} />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              你还没有做过任何操作。
+            </Typography>
+          )}
+        </Paper>
       </Box>
     </Box>
   );
@@ -354,6 +380,13 @@ function HeroCard({
         borderRadius: 3,
         bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
         borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+        boxShadow: isDark ? elevations.card.idle.dark : elevations.card.idle.light,
+        transition: transitions.hover,
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.2),
+          boxShadow: isDark ? elevations.card.hover.dark : elevations.card.hover.light,
+        },
       }}
     >
       <Box

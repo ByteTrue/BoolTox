@@ -44,7 +44,6 @@ export enum IpcChannel {
   // ==================== Git 操作 ====================
   GitOps_GetConfig = 'git-ops:get-config',
   GitOps_UpdateConfig = 'git-ops:update-config',
-  GitOps_GetAnnouncements = 'git-ops:get-announcements',
   GitOps_GetTools = 'git-ops:get-tools',
 
   // ==================== 工具源管理 ====================

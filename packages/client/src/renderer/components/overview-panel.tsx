@@ -16,7 +16,6 @@ import { getGreeting, getShortDate, getTimeEmoji } from '@/utils/greeting';
 import { ActivityTimeline } from './ui/activity-timeline';
 import { ModuleQuickCard } from './ui/module-quick-card';
 import { HorizontalScroll } from './ui/horizontal-scroll';
-import { ActivityFeed } from './ui/activity-feed';
 import { SystemMonitor } from './ui/system-monitor';
 import { History } from 'lucide-react';
 import { ActivityHistoryDrawer } from './ui/activity-history-drawer';
@@ -51,20 +50,8 @@ export function OverviewPanel() {
       {/* 1. Hero 快速操作区 */}
       <HeroSection stats={stats} />
 
-      {/* 2. 公告 + 操作记录 (两列布局) */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
-        }}
-      >
-        {/* 左侧：公告 */}
-        <ActivityFeed />
-
-        {/* 右侧：操作记录 */}
-        <ActivityRecordBrief events={recentEvents} />
-      </Box>
+      {/* 2. 操作记录 */}
+      <ActivityRecordBrief events={recentEvents} />
 
       {/* 3. 系统监控 (独占) */}
       <SystemMonitorSection />

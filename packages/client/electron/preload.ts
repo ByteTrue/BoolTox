@@ -12,7 +12,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { IpcRendererEvent } from 'electron';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types';
-import type { Announcement, GitOpsConfig, ToolRegistry } from './services/git-ops.service';
+import type { GitOpsConfig, ToolRegistry } from './services/git-ops.service';
 import type { AutoUpdateStatus } from './services/auto-update.service';
 import { IpcChannel } from '../src/shared/constants/ipc-channels';
 
@@ -142,9 +142,6 @@ const gitOpsAPI = {
   },
   updateConfig: async (config: Partial<GitOpsConfig>): Promise<GitOpsConfig> => {
     return await ipcRenderer.invoke('git-ops:update-config', config) as GitOpsConfig;
-  },
-  getAnnouncements: async (): Promise<Announcement[]> => {
-    return await ipcRenderer.invoke('git-ops:get-announcements') as Announcement[];
   },
   getTools: async (): Promise<ToolRegistry> => {
     return await ipcRenderer.invoke('git-ops:get-tools') as ToolRegistry;

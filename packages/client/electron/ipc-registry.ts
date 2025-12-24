@@ -380,10 +380,6 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
     return gitOpsService.getConfig();
   });
 
-  ipcMain.handle(IpcChannel.GitOps_GetAnnouncements, async () => {
-    return await gitOpsService.getAnnouncements();
-  });
-
   ipcMain.handle(IpcChannel.GitOps_GetTools, async () => {
     return await gitOpsService.getToolRegistry();
   });

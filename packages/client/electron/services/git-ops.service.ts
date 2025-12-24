@@ -33,15 +33,6 @@ export interface GitOpsConfig {
   token?: string; // For private repos
 }
 
-export interface Announcement {
-  id: string;
-  title: string;
-  content?: string;
-  contentFile?: string;
-  date: string;
-  type: 'announcement' | 'update';
-}
-
 export interface ToolRegistry {
   tools: ToolRegistryEntry[];
 }
@@ -63,17 +54,6 @@ const DEFAULT_CONFIG: GitOpsConfig = {
 const CACHE_TTL = 5 * 60 * 1000; // 5分钟
 
 const logger = createLogger('GitOpsService');
-
-type GitHubContentItem = {
-  type: string;
-  name: string;
-  path: string;
-};
-
-type GitLabContentItem = {
-  type: string;
-  name: string;
-};
 
 export class GitOpsService {
   private config: GitOpsConfig;
@@ -209,122 +189,6 @@ export class GitOpsService {
       throw new Error(`API request failed: ${response.statusText}`);
     }
     return response.json();
-  }
-
-  /**
-   * 列出目录下的 Markdown 文件
-   */
-  private async listMarkdownFiles(dirPath: string): Promise<string[]> {
-    const { provider, branch } = this.config;
-    try {
-      if (provider === 'github') {
-        const data = await this.fetchApi(`contents/${dirPath}?ref=${branch}`);
-        if (Array.isArray(data)) {
-          return (data as GitHubContentItem[])
-            .filter((item) => item.type === 'file' && item.name.endsWith('.md'))
-            .map((item) => item.path);
-        }
-      } else {
-        // GitLab
-        const data = await this.fetchApi(`repository/tree?path=${dirPath}&ref=${branch}`);
-        if (Array.isArray(data)) {
-          return (data as GitLabContentItem[])
-            .filter((item) => item.type === 'blob' && item.name.endsWith('.md'))
-            .map((item) => `${dirPath}/${item.name}`);
-        }
-      }
-    } catch (e) {
-      logger.warn(`[GitOps] Failed to list files in ${dirPath}`, e);
-    }
-    return [];
-  }
-
-  /**
-   * 解析 Markdown 内容元数据
-   */
-  private parseMarkdownMetadata(content: string, filename: string): { title: string; date: string } {
-    // 1. 尝试从 Frontmatter 获取日期 (date: YYYY-MM-DD)
-    const frontmatterDate = content.match(/^date:\s*(\d{4}-\d{2}-\d{2})/m)?.[1];
-    // 2. 尝试从文件名获取日期 (YYYY-MM-DD-xxx.md)
-    const filenameDate = filename.match(/(\d{4}-\d{2}-\d{2})/)?.[1];
-    
-    const date = frontmatterDate || filenameDate || new Date().toISOString().split('T')[0];
-
-    // 1. 尝试从 Frontmatter 获取标题 (title: xxx)
-    const frontmatterTitle = content.match(/^title:\s*(.+)$/m)?.[1];
-    // 2. 尝试从一级标题获取 (# Title)
-    const h1Title = content.match(/^#\s+(.+)$/m)?.[1];
-    
-    const title = frontmatterTitle || h1Title || filename.replace('.md', '');
-
-    return { title, date };
-  }
-
-  /**
-   * 获取公告列表 (新闻 + 发布说明)
-   * 使用索引文件,避免 API 调用
-   */
-  async getAnnouncements(): Promise<Announcement[]> {
-    const cacheKey = 'announcements';
-    
-    // 检查缓存
-    const cached = this.getCache<Announcement[]>(cacheKey);
-    if (cached) {
-      logger.debug('[GitOps] Using cached announcements');
-      return cached;
-    }
-
-    try {
-      // 1. 获取索引文件 (索引文件使用 GitHub raw URL 避免 CDN 缓存延迟)
-      const indexUrl = this.getRawUrl('resources/announcements/index.json', false);
-      const indexRes = await fetch(indexUrl);
-      if (!indexRes.ok) {
-        throw new Error(`Failed to fetch announcements index: ${indexRes.statusText}`);
-      }
-      
-      const index = await indexRes.json() as {
-        announcements: Array<{ id: string; file: string; type: 'announcement' | 'update' }>;
-      };
-
-      // 2. 并发获取所有公告内容
-      const items = await Promise.all(index.announcements.map(async (item) => {
-        try {
-          const fileUrl = this.getRawUrl(`resources/announcements/${item.file}`);
-          const response = await fetch(fileUrl);
-          if (!response.ok) return null;
-          
-          const content = await response.text();
-          const filename = item.file.split('/').pop() || '';
-          const { title, date } = this.parseMarkdownMetadata(content, filename);
-
-          // 移除 Frontmatter
-          const contentBody = content.replace(/^---[\s\S]*?---\n/, '').trim();
-
-          return {
-            id: item.id,
-            title,
-            content: contentBody,
-            date,
-            type: item.type,
-            contentFile: item.file
-          } as Announcement;
-        } catch (err) {
-          logger.warn(`[GitOps] Failed to process announcement ${item.file}:`, err);
-          return null;
-        }
-      }));
-
-      const result = items.filter((item): item is Announcement => item !== null);
-      
-      // 缓存结果
-      this.setCache(cacheKey, result);
-      logger.info(`[GitOps] Loaded ${result.length} announcements`);
-      
-      return result;
-    } catch (error) {
-      logger.error('[GitOps] Error fetching announcements:', error);
-      return [];
-    }
   }
 
   /**

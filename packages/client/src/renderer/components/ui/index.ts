@@ -118,7 +118,6 @@ export { ProgressToast, SimpleToast } from './progress-toast';
 export { ConfirmDialog } from './confirm-dialog';
 export { PageHeader, Toolbar } from './page-header';
 export { HeroBanner, CategoryHeader, ScrollContainer } from './hero-banner';
-export { ChangelogDrawer } from './changelog-drawer';
 
 // 原有组件（即将弃用）
 export { Dropdown, Select } from './dropdown';
