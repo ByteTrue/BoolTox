@@ -1,5 +1,5 @@
 /**
- * ModuleDetailModal V3 - 惊艳版
+ * ModuleDetailModal - 惊艳版
  * 特性：毛玻璃、渐变光效、流畅动画、精致排版
  */
 

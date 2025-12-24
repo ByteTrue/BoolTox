@@ -1,47 +1,54 @@
 /**
- * Copyright (c) 2025 ByteTrue
- * Licensed under CC-BY-NC-4.0
+ * ToolCard - 惊艳版
+ * 特性：悬停升起、图标渐变、呼吸灯、精致动画
  */
 
 import { useState } from 'react';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActions from '@mui/material/CardActions';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import Avatar from '@mui/material/Avatar';
-import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
-import Tooltip from '@mui/material/Tooltip';
+import { alpha, useTheme, keyframes } from '@mui/material/styles';
 import {
-  PlayArrow,
-  Stop,
-  Download,
-  MoreVert,
-  Star,
-  StarBorder,
-  Schedule,
+  PlayArrowRounded,
+  StarBorderRounded,
+  StarRounded,
+  StopRounded,
+  DownloadRounded,
 } from '@mui/icons-material';
-import { formatDistanceToNow } from '@/utils/date';
 import type { ModuleInstance } from '@/types/module';
+
+// 呼吸灯脉冲动画
+const pulse = keyframes`
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+`;
+
+// 微光闪烁动画
+const shimmer = keyframes`
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+`;
 
 interface ToolCardProps {
   tool: ModuleInstance;
   onOpen: (toolId: string) => void;
   onStop: (toolId: string) => void;
   onInstall?: (toolId: string) => void;
-  onUninstall?: (toolId: string) => void;
   onToggleFavorite: (toolId: string) => void;
   onClick: (toolId: string) => void;
-  isSelectionMode?: boolean;
-  isSelected?: boolean;
-  onSelect?: (toolId: string) => void;
   isInstalling?: boolean;
-  isDev?: boolean;
 }
 
 export function ToolCard({
@@ -51,317 +58,323 @@ export function ToolCard({
   onInstall,
   onToggleFavorite,
   onClick,
-  isSelectionMode = false,
-  isSelected = false,
-  onSelect,
   isInstalling = false,
 }: ToolCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   const { runtime, definition } = tool;
   const isInstalled = runtime.installed;
-  const launchState = runtime.launchState;
-  const isLaunching = launchState === 'launching';
-  const isRunning = launchState === 'running';
-  const isStopping = launchState === 'stopping';
-  const isError = launchState === 'error';
+  const isRunning = runtime.launchState === 'running';
+  // 所有已安装且运行中的工具都可以停止（http-service、standalone、binary）
+  const canStop = isInstalled && isRunning;
 
-  const runtimeType = definition.runtime?.type;
-  const isExternalTool = runtimeType === 'cli' || runtimeType === 'binary';
-  const canStop = isInstalled && isRunning && !isExternalTool && runtimeType === 'http-service';
+  // 双品牌色渐变 - 蓝色 + 橙色
+  const brandGradient = isDark
+    ? 'linear-gradient(135deg, #60A5FA 0%, #F97316 100%)'
+    : 'linear-gradient(135deg, #3B82F6 0%, #F97316 100%)';
 
-  // 获取操作按钮文本和图标
-  const getActionButton = () => {
-    if (!isInstalled) {
-      return {
-        text: isInstalling ? '安装中...' : '安装工具',
-        icon: isInstalling ? <CircularProgress size={16} /> : <Download />,
-        onClick: () => onInstall?.(tool.id),
-        variant: 'outlined' as const,
-        color: 'primary' as const,
-        disabled: isInstalling,
-      };
-    }
-
-    if (canStop) {
-      return {
-        text: isStopping ? '停止中...' : '停止',
-        icon: isStopping ? <CircularProgress size={16} /> : <Stop />,
-        onClick: () => onStop(tool.id),
-        variant: 'outlined' as const,
-        color: 'error' as const,
-        disabled: isStopping,
-      };
-    }
-
-    return {
-      text: isLaunching ? '启动中...' : '打开工具',
-      icon: isLaunching ? <CircularProgress size={16} /> : <PlayArrow />,
-      onClick: () => onOpen(tool.id),
-      variant: 'outlined' as const,
-      color: 'primary' as const,
-      disabled: isLaunching,
-    };
-  };
-
-  const actionButton = getActionButton();
+  // 浅色模式下 shimmer 使用黑色渐变
+  const shimmerColor = isDark ? alpha('#fff', 0.3) : alpha('#000', 0.15);
 
   return (
-    <Card
+    <Box
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      elevation={0}
+      onClick={() => onClick(tool.id)}
       sx={{
         position: 'relative',
+        p: 2.5,
         borderRadius: 3,
-        transition: 'background-color 0.2s ease',
         cursor: 'pointer',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: theme => (theme.palette as any).surfaceContainerHigh,
-        '&:hover': {
-          bgcolor: theme => (theme.palette as any).surfaceContainerHighest,
-        },
+        bgcolor: isDark ? alpha('#fff', 0.02) : '#ffffff',
+        border: '1px solid',
+        borderColor: isHovered
+          ? isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.2)
+          : isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06),
+        // 悬停升起效果
+        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+        // 柔和的光晕效果
+        boxShadow: isHovered
+          ? isDark
+            ? `0 8px 24px ${alpha('#000', 0.4)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.15)}`
+            : `0 8px 24px ${alpha('#000', 0.06)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`
+          : isDark
+            ? 'none'
+            : `0 1px 3px ${alpha('#000', 0.04)}`,
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      {/* Hover时显示的勾选框 */}
-      <Checkbox
-        checked={isSelected}
-        onChange={() => onSelect?.(tool.id)}
-        onClick={e => e.stopPropagation()}
-        sx={{
-          position: 'absolute',
-          top: 8,
-          left: 8,
-          zIndex: 2,
-          opacity: isSelectionMode || isHovered ? 1 : 0,
-          transition: 'opacity 0.2s',
-          bgcolor: 'background.paper',
-          borderRadius: 1,
-          '&:hover': {
-            bgcolor: 'action.hover',
-          },
-        }}
-      />
-
-      {/* 运行状态徽章 */}
-      {isRunning && (
-        <Chip
-          label="运行中"
-          size="small"
-          color="success"
+      {/* 主内容 */}
+      <Stack direction="row" spacing={2} alignItems="flex-start">
+        {/* 图标 - 渐变背景 */}
+        <Box
           sx={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 2,
-            fontWeight: 600,
-            height: 22,
-            fontSize: '0.6875rem',
-          }}
-        />
-      )}
-
-      {/* 错误状态徽章 */}
-      {isError && (
-        <Chip
-          label="启动失败"
-          size="small"
-          color="error"
-          sx={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 2,
-            fontWeight: 600,
-            height: 22,
-            fontSize: '0.6875rem',
-          }}
-        />
-      )}
-
-      {/* 更新可用徽章 */}
-      {runtime.updateAvailable && (
-        <Tooltip title="有可用更新">
-          <Box
-            sx={{
+            position: 'relative',
+            width: 48,
+            height: 48,
+            borderRadius: 2.5,
+            // 渐变背景：运行时用品牌渐变，否则深色用白色渐变，浅色用黑色渐变
+            background: isRunning
+              ? brandGradient
+              : isDark
+                ? `linear-gradient(135deg, ${alpha('#fff', 0.08)} 0%, ${alpha('#fff', 0.04)} 100%)`
+                : `linear-gradient(135deg, ${alpha('#000', 0.06)} 0%, ${alpha('#000', 0.02)} 100%)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.125rem',
+            fontWeight: 700,
+            // 文字颜色：运行时白色，否则深色模式用浅色，浅色模式用深色
+            color: isRunning ? '#fff' : isDark ? alpha('#fff', 0.7) : alpha('#000', 0.7),
+            flexShrink: 0,
+            transition: 'all 0.3s ease',
+            // 悬停时的微光效果：深色用白色shimmer，浅色用黑色shimmer
+            '&::after': {
+              content: '""',
               position: 'absolute',
-              top: -4,
-              right: isRunning ? 80 : -4,
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              bgcolor: 'warning.main',
-              border: 2,
-              borderColor: 'background.paper',
-              zIndex: 3,
-            }}
-          />
-        </Tooltip>
-      )}
-
-      <CardContent
-        onClick={() => onClick(tool.id)}
-        sx={{
-          flex: 1,
-          p: 3,
-        }}
-      >
-        <Stack spacing={2.5}>
-          {/* 头部: 图标 + 名称 + 收藏按钮 */}
-          <Stack direction="row" spacing={2} alignItems="flex-start">
-            <Avatar
-              src={definition.icon?.startsWith('http') ? definition.icon : undefined}
-              variant="rounded"
+              inset: 0,
+              borderRadius: 'inherit',
+              background: `linear-gradient(90deg, transparent, ${shimmerColor}, transparent)`,
+              backgroundSize: '200% 100%',
+              animation: isHovered ? `${shimmer} 1.5s infinite` : 'none',
+              opacity: isHovered ? 1 : 0,
+              transition: 'opacity 0.3s ease',
+            },
+          }}
+        >
+          {definition.icon?.startsWith('http') ? (
+            <Box
+              component="img"
+              src={definition.icon}
               sx={{
-                width: 64,
-                height: 64,
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                fontSize: '1.75rem',
-                fontWeight: 700,
-                borderRadius: 3,
-                boxShadow: 2,
+                width: 28,
+                height: 28,
+                borderRadius: 1.5,
+                position: 'relative',
+                zIndex: 1,
               }}
-            >
-              {!definition.icon?.startsWith('http') && definition.name.slice(0, 2).toUpperCase()}
-            </Avatar>
-
-            <Box sx={{ flex: 1, minWidth: 0, pt: 0.5 }}>
-              <Typography
-                variant="h6"
-                fontWeight={700}
-                sx={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  fontSize: '1.125rem',
-                  lineHeight: 1.3,
-                  mb: 0.5,
-                }}
-              >
-                {definition.name}
-              </Typography>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                 <Typography
-                   variant="caption"
-                   sx={{
-                     bgcolor: theme => (theme.palette as any).surfaceContainerHighest,
-                     color: 'text.secondary',
-                     px: 1,
-                     py: 0.25,
-                     borderRadius: 1,
-                     fontSize: '0.6875rem',
-                   }}
-                 >
-                  v{definition.version}
-                </Typography>
-              </Stack>
-            </Box>
-
-            {isInstalled && (
-              <IconButton
-                size="small"
-                onClick={e => {
-                  e.stopPropagation();
-                  onToggleFavorite(tool.id);
-                }}
-                sx={{
-                  color: tool.isFavorite ? 'warning.main' : 'action.disabled',
-                  '&:hover': {
-                    color: tool.isFavorite ? 'warning.dark' : 'action.active',
-                  },
-                }}
-              >
-                {tool.isFavorite ? <Star /> : <StarBorder />}
-              </IconButton>
-            )}
-          </Stack>
-
-          {/* 描述 */}
-          {definition.description && (
+            />
+          ) : (
             <Typography
-              variant="body2"
-              color="text.secondary"
               sx={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                lineHeight: 1.6,
-                minHeight: '3.2em',
-                fontSize: '0.875rem',
+                fontSize: '1rem',
+                fontWeight: 700,
+                position: 'relative',
+                zIndex: 1,
               }}
             >
-              {definition.description}
+              {definition.name.slice(0, 2)}
             </Typography>
           )}
+        </Box>
 
-          {/* 元信息 */}
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ minHeight: 24 }}>
-            {definition.category && (
-              <Chip
-                label={definition.category}
-                size="small"
+        {/* 信息 */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                color: 'text.primary',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {definition.name}
+            </Typography>
+            {/* 运行状态呼吸灯 */}
+            {isRunning && (
+              <Box
                 sx={{
-                  height: 24,
-                  fontSize: '0.75rem',
-                  bgcolor: theme => (theme.palette as any).surfaceContainerHighest,
-                  color: 'text.secondary',
-                  fontWeight: 500,
+                  position: 'relative',
+                  width: 8,
+                  height: 8,
+                  // 呼吸灯外圈
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: -2,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#10B981', 0.3),
+                    animation: `${pulse} 2s ease-in-out infinite`,
+                  },
+                  // 呼吸灯内核
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    bgcolor: '#10B981',
+                    boxShadow: `0 0 8px ${alpha('#10B981', 0.6)}`,
+                  },
                 }}
               />
             )}
-
-            {isInstalled && runtime.lastLaunchedAt && (
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ ml: 'auto !important' }}>
-                <Schedule sx={{ fontSize: 14, color: 'text.disabled' }} />
-                <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
-                  {formatDistanceToNow(runtime.lastLaunchedAt)}
-                </Typography>
-              </Stack>
+            {tool.isFavorite && (
+              <StarRounded
+                sx={{
+                  fontSize: 14,
+                  color: '#F59E0B',
+                  filter: 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.4))',
+                }}
+              />
             )}
           </Stack>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.tertiary',
+              display: 'block',
+              mt: 0.25,
+            }}
+          >
+            {definition.category} · v{definition.version}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              mt: 1,
+              fontSize: '0.8rem',
+              lineHeight: 1.5,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {definition.description || '暂无描述'}
+          </Typography>
+        </Box>
+
+        {/* 操作按钮 */}
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            opacity: isHovered ? 1 : 0,
+            transform: isHovered ? 'translateX(0)' : 'translateX(8px)',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          {/* 安装按钮 - 未安装时显示 */}
+          {!isInstalled && onInstall && (
+            <IconButton
+              size="small"
+              onClick={e => {
+                e.stopPropagation();
+                onInstall(tool.id);
+              }}
+              disabled={isInstalling}
+              title="安装"
+              sx={{
+                width: 32,
+                height: 32,
+                color: 'primary.main',
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  transform: 'scale(1.05)',
+                },
+                '&:disabled': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                },
+              }}
+            >
+              {isInstalling ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <DownloadRounded sx={{ fontSize: 18 }} />
+              )}
+            </IconButton>
+          )}
+          {/* 停止按钮 - 运行中时显示 */}
+          {canStop && (
+            <IconButton
+              size="small"
+              onClick={e => {
+                e.stopPropagation();
+                onStop(tool.id);
+              }}
+              title="停止"
+              sx={{
+                width: 32,
+                height: 32,
+                color: '#EF4444',
+                bgcolor: alpha('#EF4444', 0.1),
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: alpha('#EF4444', 0.2),
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              <StopRounded sx={{ fontSize: 18 }} />
+            </IconButton>
+          )}
+          {/* 打开按钮 - 已安装时显示 */}
+          {isInstalled && (
+            <IconButton
+              size="small"
+              onClick={e => {
+                e.stopPropagation();
+                onOpen(tool.id);
+              }}
+              title={isRunning ? '聚焦窗口' : '打开工具'}
+              sx={{
+                width: 32,
+                height: 32,
+                color: 'primary.main',
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              <PlayArrowRounded sx={{ fontSize: 18 }} />
+            </IconButton>
+          )}
+          {/* 收藏按钮 - 仅已安装时显示 */}
+          {isInstalled && (
+            <IconButton
+              size="small"
+              onClick={e => {
+                e.stopPropagation();
+                onToggleFavorite(tool.id);
+              }}
+              title={tool.isFavorite ? '取消收藏' : '收藏'}
+              sx={{
+                width: 32,
+                height: 32,
+                color: tool.isFavorite ? '#F59E0B' : 'text.tertiary',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: tool.isFavorite
+                    ? alpha('#F59E0B', 0.1)
+                    : isDark ? alpha('#fff', 0.08) : alpha('#000', 0.06),
+                  transform: 'scale(1.05)',
+                  color: '#F59E0B',
+                },
+              }}
+            >
+              {tool.isFavorite ? (
+                <StarRounded sx={{ fontSize: 18 }} />
+              ) : (
+                <StarBorderRounded sx={{ fontSize: 18 }} />
+              )}
+            </IconButton>
+          )}
         </Stack>
-      </CardContent>
-
-      {/* 操作按钮区 */}
-      <CardActions sx={{ px: 3, pb: 3, pt: 0 }}>
-        <Button
-          fullWidth
-          variant={actionButton.variant}
-          color={actionButton.color}
-          startIcon={actionButton.icon}
-          onClick={e => {
-            e.stopPropagation();
-            actionButton.onClick();
-          }}
-          disabled={actionButton.disabled}
-          sx={{
-            borderRadius: 2,
-            textTransform: 'none',
-            fontWeight: 600,
-            py: 1,
-          }}
-        >
-          {actionButton.text}
-        </Button>
-
-        <IconButton
-          size="small"
-          onClick={e => {
-            e.stopPropagation();
-            // TODO: 显示更多操作菜单
-          }}
-          sx={{
-            ml: 1,
-            color: 'text.secondary'
-          }}
-        >
-          <MoreVert />
-        </IconButton>
-      </CardActions>
-    </Card>
+      </Stack>
+    </Box>
   );
 }

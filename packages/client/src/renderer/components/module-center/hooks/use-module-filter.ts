@@ -15,7 +15,7 @@ import type { ModuleFilter } from '../types';
 export function useModuleFilter(
   installedModules: ModuleInstance[],
   availableModules: ModuleDefinition[],
-  availablePlugins: ToolRegistryEntry[], // 新增：在线工具列表
+  availableTools: ToolRegistryEntry[], // 在线工具列表
   filter: ModuleFilter
 ) {
   // 过滤已安装模块
@@ -80,14 +80,14 @@ export function useModuleFilter(
     });
 
     // 从在线工具提取分类
-    availablePlugins.forEach(plugin => {
-      if (plugin.category) {
-        categories.add(plugin.category);
+    availableTools.forEach(tool => {
+      if (tool.category) {
+        categories.add(tool.category);
       }
     });
 
     return Array.from(categories).sort();
-  }, [installedModules, availableModules, availablePlugins]);
+  }, [installedModules, availableModules, availableTools]);
 
   return {
     filteredInstalled,

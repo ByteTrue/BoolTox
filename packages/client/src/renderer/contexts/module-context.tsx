@@ -23,7 +23,7 @@ import type {
 import { logModuleEvent } from '@/utils/module-event-logger';
 import type { StoredModuleInfo } from '@shared/types/module-store.types';
 import type {
-  ToolRuntime as PluginProcessRuntime,
+  ToolRuntime as ToolProcessRuntime,
   ToolRegistryEntry,
   ToolInstallProgress,
 } from '@booltox/shared';
@@ -35,8 +35,8 @@ const logger = createLogger('ModuleContext');
 interface ModuleContextValue {
   availableModules: ModuleDefinition[];
   installedModules: ModuleInstance[];
-  toolRegistry: PluginProcessRuntime[]; // 已安装的工具列表(新工具系统)
-  availablePlugins: ToolRegistryEntry[]; // 在线工具列表
+  toolRegistry: ToolProcessRuntime[]; // 已安装的工具列表(新工具系统)
+  availableTools: ToolRegistryEntry[]; // 在线工具列表
   moduleStats: ModuleStats;
   activeModuleId: string | null;
   setActiveModuleId: (moduleId: string | null) => void;
@@ -44,25 +44,25 @@ interface ModuleContextValue {
   stopModule: (moduleId: string) => Promise<void>;
   focusModuleWindow: (moduleId: string) => Promise<void>;
   installModule: (moduleId: string, remote?: boolean) => Promise<void>;
-  installOnlinePlugin: (entry: ToolRegistryEntry) => Promise<void>; // 安装在线工具
+  installOnlineTool: (entry: ToolRegistryEntry) => Promise<void>; // 安装在线工具
   uninstallModule: (moduleId: string) => Promise<void>;
   getModuleById: (moduleId: string) => ModuleInstance | undefined;
-  isDevPlugin: (moduleId: string) => boolean; // 检查是否为开发工具
-  refreshAvailablePlugins: () => Promise<void>; // 刷新在线工具
+  isDevTool: (moduleId: string) => boolean; // 检查是否为开发工具
+  refreshAvailableTools: () => Promise<void>; // 刷新在线工具
   addLocalBinaryTool: () => Promise<void>; // 添加本地二进制工具
   // 收藏功能
   favoriteModules: ModuleInstance[];
   addFavorite: (moduleId: string) => Promise<void>;
   removeFavorite: (moduleId: string) => Promise<void>;
   updateFavoriteOrder: (orderedIds: string[]) => Promise<void>;
-  runningPluginIds: string[];
+  runningToolIds: string[];
 }
 
-type PluginChannelStatus = 'launching' | 'loading' | 'running' | 'stopping' | 'stopped' | 'error';
+type ToolChannelStatus = 'launching' | 'loading' | 'running' | 'stopping' | 'stopped' | 'error';
 
-interface PluginStatePayload {
+interface ToolStatePayload {
   toolId: string;
-  status: PluginChannelStatus;
+  status: ToolChannelStatus;
   windowId?: number; // 保留用于兼容（未来可能移除）
   viewId?: number; // 保留用于兼容（未来可能移除）
   message?: string;
@@ -89,9 +89,9 @@ const ModuleContext = createContext<ModuleContextValue | null>(null);
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [installedModules, setInstalledModules] = useState<ModuleInstance[]>([]);
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  const [availablePlugins, setAvailablePlugins] = useState<ToolRegistryEntry[]>([]);
+  const [availableTools, setAvailableTools] = useState<ToolRegistryEntry[]>([]);
   const { showToast } = useToast();
-  const [toolRegistry, setPluginRegistry] = useState<PluginProcessRuntime[]>([]);
+  const [toolRegistry, setToolRegistry] = useState<ToolProcessRuntime[]>([]);
   const installedModulesRef = useRef<ModuleInstance[]>([]);
   const toastHistoryRef = useRef<Map<string, number>>(new Map());
   const [toolUpdates, setToolUpdates] = useState<Map<string, unknown>>(new Map()); // 工具更新信息
@@ -100,13 +100,13 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     installedModulesRef.current = installedModules;
   }, [installedModules]);
 
-  const refreshPluginRegistry = useCallback(async () => {
+  const refreshToolRegistry = useCallback(async () => {
     try {
-      const plugins = await window.ipc.invoke('tool:get-all');
-      if (Array.isArray(plugins)) {
-        setPluginRegistry(plugins as PluginProcessRuntime[]);
+      const tools = await window.ipc.invoke('tool:get-all');
+      if (Array.isArray(tools)) {
+        setToolRegistry(tools as ToolProcessRuntime[]);
       } else {
-        setPluginRegistry([]);
+        setToolRegistry([]);
       }
     } catch (error) {
       console.error('[ModuleContext] 获取工具列表失败:', error);
@@ -114,22 +114,22 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshPluginRegistry();
-  }, [refreshPluginRegistry]);
+    void refreshToolRegistry();
+  }, [refreshToolRegistry]);
 
   // 获取在线工具列表
-  const refreshAvailablePlugins = useCallback(async () => {
+  const refreshAvailableTools = useCallback(async () => {
     try {
       const registry = await window.gitOps.getTools();
-      setAvailablePlugins(registry.plugins || []);
+      setAvailableTools(registry.tools || []);
     } catch (error) {
       console.error('[ModuleContext] 获取在线工具列表失败:', error);
     }
   }, []);
 
   useEffect(() => {
-    void refreshAvailablePlugins();
-  }, [refreshAvailablePlugins]);
+    void refreshAvailableTools();
+  }, [refreshAvailableTools]);
 
   // 定期检查工具更新
   useEffect(() => {
@@ -179,25 +179,25 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const pluginRuntimeModeMap = useMemo(() => {
+  const toolRuntimeModeMap = useMemo(() => {
     const map = new Map<string, 'http-service' | 'standalone' | 'binary'>();
-    for (const plugin of toolRegistry) {
-      const runtimeType = plugin.manifest.runtime?.type;
+    for (const tool of toolRegistry) {
+      const runtimeType = tool.manifest.runtime?.type;
       if (runtimeType === 'standalone' || runtimeType === 'binary') {
-        map.set(plugin.id, runtimeType);
+        map.set(tool.id, runtimeType);
       } else {
         // 默认为 http-service（新架构）
-        map.set(plugin.id, 'http-service');
+        map.set(tool.id, 'http-service');
       }
     }
     return map;
   }, [toolRegistry]);
 
   // 将 toolRegistry 转换为 ModuleDefinition (动态工具定义)
-  const pluginDefinitions = useMemo<ModuleDefinition[]>(() => {
-    return toolRegistry.map(plugin => {
-      const manifest = plugin.manifest;
-      const runtimeType = plugin.manifest.runtime?.type;
+  const toolDefinitions = useMemo<ModuleDefinition[]>(() => {
+    return toolRegistry.map(tool => {
+      const manifest = tool.manifest;
+      const runtimeType = tool.manifest.runtime?.type;
       // 新架构：http-service | standalone | binary
       const runtimeMode =
         runtimeType === 'standalone' || runtimeType === 'binary' ? runtimeType : 'http-service';
@@ -211,27 +211,28 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         keywords: manifest.keywords || [],
         icon: manifest.icon || '🔌',
         installedByDefault: false,
-        source: plugin.isDev ? 'dev' : 'remote',
+        source: tool.isDev ? 'dev' : 'remote',
         runtimeMode,
+        runtime: manifest.runtime, // 传入运行时配置，用于判断工具类型
       } as ModuleDefinition;
     });
   }, [toolRegistry]);
 
-  const isWindowPlugin = useCallback(
-    (moduleId: string) => pluginRuntimeModeMap.has(moduleId) || moduleId.startsWith('com.booltox.'),
-    [pluginRuntimeModeMap]
+  const isWindowTool = useCallback(
+    (moduleId: string) => toolRuntimeModeMap.has(moduleId) || moduleId.startsWith('com.booltox.'),
+    [toolRuntimeModeMap]
   );
 
   // 检查是否为开发工具(不可卸载)
-  const isDevPlugin = useCallback(
+  const isDevTool = useCallback(
     (moduleId: string) => {
-      const plugin = toolRegistry.find(p => p.id === moduleId);
-      return plugin?.isDev === true;
+      const tool = toolRegistry.find(p => p.id === moduleId);
+      return tool?.isDev === true;
     },
     [toolRegistry]
   );
 
-  const mapStatusToLaunchState = useCallback((status: PluginChannelStatus): ModuleLaunchState => {
+  const mapStatusToLaunchState = useCallback((status: ToolChannelStatus): ModuleLaunchState => {
     switch (status) {
       case 'launching':
       case 'loading':
@@ -281,7 +282,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const handler = (payload: PluginStatePayload) => {
+    const handler = (payload: ToolStatePayload) => {
       if (!payload?.toolId) return;
       const { toolId, status, windowId, message } = payload;
       const launchState = mapStatusToLaunchState(status);
@@ -341,7 +342,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (isWindowPlugin(moduleId)) {
+      if (isWindowTool(moduleId)) {
         patchModuleRuntime(moduleId, {
           launchState: 'launching',
           lastError: null,
@@ -366,7 +367,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
       setActiveModuleId(moduleId);
     },
-    [isWindowPlugin, patchModuleRuntime, setActiveModuleId, showToast]
+    [isWindowTool, patchModuleRuntime, setActiveModuleId, showToast]
   );
 
   const stopModule = useCallback(
@@ -376,7 +377,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (isWindowPlugin(moduleId)) {
+      if (isWindowTool(moduleId)) {
         patchModuleRuntime(moduleId, {
           launchState: 'stopping',
           lastError: null,
@@ -403,12 +404,12 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         return;
       }
     },
-    [isWindowPlugin, patchModuleRuntime, showToast]
+    [isWindowTool, patchModuleRuntime, showToast]
   );
 
   const focusModuleWindow = useCallback(
     async (moduleId: string) => {
-      if (!isWindowPlugin(moduleId)) {
+      if (!isWindowTool(moduleId)) {
         setActiveModuleId(moduleId);
         return;
       }
@@ -426,12 +427,12 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [isWindowPlugin, setActiveModuleId, showToast]
+    [isWindowTool, setActiveModuleId, showToast]
   );
 
   // 从持久化存储恢复已安装工具（包含收藏信息等元数据）
   useEffect(() => {
-    if (pluginDefinitions.length === 0) {
+    if (toolDefinitions.length === 0) {
       setInstalledModules([]);
       return;
     }
@@ -448,7 +449,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         const orphanedIds: string[] = [];
 
         for (const stored of storedModules) {
-          const definition = pluginDefinitions.find(definition => definition.id === stored.id);
+          const definition = toolDefinitions.find(definition => definition.id === stored.id);
 
           if (!definition) {
             console.warn(`[ModuleContext] 无法找到工具定义: ${stored.id}，将从存储中清理`);
@@ -483,13 +484,13 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     };
 
     void restoreInstalledModules();
-  }, [pluginDefinitions, toolUpdates]); // 添加 toolUpdates 依赖
+  }, [toolDefinitions, toolUpdates]); // 添加 toolUpdates 依赖
 
   // 同步 toolRegistry 到 installedModules
   useEffect(() => {
     if (toolRegistry.length === 0) return;
 
-    const syncPlugins = async () => {
+    const syncTools = async () => {
       try {
         // 获取存储中的所有模块
         const storedModules = await window.moduleStore.getAll();
@@ -501,13 +502,13 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           const toStore: StoredModuleInfo[] = [];
 
           // 遍历所有工具
-          for (const plugin of toolRegistry) {
-            const toolId = plugin.manifest.id;
+          for (const tool of toolRegistry) {
+            const toolId = tool.manifest.id;
             if (!toolId) continue; // 跳过没有 ID 的工具
 
-            const pluginDef = pluginDefinitions.find(d => d.id === toolId);
+            const toolDef = toolDefinitions.find(d => d.id === toolId);
 
-            if (!pluginDef) continue;
+            if (!toolDef) continue;
 
             // 如果已在存储中但未在当前列表,添加它
             if (storedIds.has(toolId) && !currentIds.has(toolId)) {
@@ -516,7 +517,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
                 logger.info(`[ModuleContext] 从存储恢复工具: ${toolId}`);
                 updates.push({
                   id: toolId,
-                  definition: pluginDef,
+                  definition: toolDef,
                   runtime: createRuntime(true),
                   isFavorite: stored.isFavorite ?? false,
                   favoriteOrder: stored.favoriteOrder ?? undefined,
@@ -529,19 +530,19 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
               if (index !== -1) {
                 updates[index] = {
                   ...updates[index],
-                  definition: pluginDef,
+                  definition: toolDef,
                 };
               }
             } else if (!currentIds.has(toolId)) {
               // 所有不在当前列表的工具都需要添加(开发工具或新安装的远程工具)
-              const source = plugin.isDev ? 'dev' : 'remote';
+              const source = tool.isDev ? 'dev' : 'remote';
               logger.info(
                 `[ModuleContext] 自动添加${source === 'dev' ? '开发' : ''}工具: ${toolId}`
               );
 
               updates.push({
                 id: toolId,
-                definition: pluginDef,
+                definition: toolDef,
                 runtime: createRuntime(true),
                 isFavorite: false,
                 favoriteOrder: undefined,
@@ -554,7 +555,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
                   id: toolId,
                   installedAt: new Date().toISOString(),
                   lastUsedAt: new Date().toISOString(),
-                  version: pluginDef.version || '1.0.0',
+                  version: toolDef.version || '1.0.0',
                   source: source || 'remote',
                   isFavorite: false,
                   favoriteOrder: undefined,
@@ -585,8 +586,8 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    void syncPlugins();
-  }, [toolRegistry, pluginDefinitions]);
+    void syncTools();
+  }, [toolRegistry, toolDefinitions]);
 
   const moduleStats = useMemo<ModuleStats>(() => {
     const stats = installedModules.reduce<ModuleStats>(
@@ -608,7 +609,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     return stats;
   }, [installedModules]);
 
-  const runningPluginIds = useMemo(
+  const runningToolIds = useMemo(
     () =>
       installedModules
         .filter(module => module.runtime.launchState === 'running')
@@ -618,10 +619,10 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
   const installModule = useCallback(
     async (moduleId: string) => {
-      const plugin = toolRegistry.find(item => item.id === moduleId);
-      const definition = pluginDefinitions.find(item => item.id === moduleId);
+      const tool = toolRegistry.find(item => item.id === moduleId);
+      const definition = toolDefinitions.find(item => item.id === moduleId);
 
-      if (!plugin || !definition) {
+      if (!tool || !definition) {
         throw new Error(`未找到工具 ${moduleId}，请先在工具商店安装`);
       }
 
@@ -644,7 +645,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         installedAt: new Date().toISOString(),
         lastUsedAt: new Date().toISOString(),
         version: definition.version || '1.0.0',
-        source: plugin.isDev ? 'dev' : 'remote',
+        source: tool.isDev ? 'dev' : 'remote',
         isFavorite: false,
         favoriteOrder: undefined,
         favoritedAt: undefined,
@@ -659,11 +660,11 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         category: definition.category || 'unknown',
       });
     },
-    [pluginDefinitions, toolRegistry]
+    [toolDefinitions, toolRegistry]
   );
 
   // 安装在线工具
-  const installOnlinePlugin = useCallback(
+  const installOnlineTool = useCallback(
     async (entry: ToolRegistryEntry) => {
       try {
         showToast({
@@ -695,8 +696,8 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         }
 
         // 刷新工具列表
-        await refreshPluginRegistry();
-        await refreshAvailablePlugins();
+        await refreshToolRegistry();
+        await refreshAvailableTools();
 
         // 记录安装事件
         logModuleEvent({
@@ -714,13 +715,13 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    [refreshPluginRegistry, refreshAvailablePlugins, showToast]
+    [refreshToolRegistry, refreshAvailableTools, showToast]
   );
 
   const uninstallModule = useCallback(
     async (moduleId: string) => {
       // 检查是否为开发工具
-      if (isDevPlugin(moduleId)) {
+      if (isDevTool(moduleId)) {
         showToast({
           message: '开发工具无法卸载,请在开发目录中手动删除',
           type: 'info',
@@ -731,7 +732,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
       const module = installedModules.find(m => m.id === moduleId);
 
-      if (module && isWindowPlugin(moduleId)) {
+      if (module && isWindowTool(moduleId)) {
         try {
           await window.ipc.invoke('tool:stop', moduleId);
         } catch (error) {
@@ -754,7 +755,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       }
 
       // 如果是工具,调用工具卸载 IPC 删除文件
-      if (isWindowPlugin(moduleId)) {
+      if (isWindowTool(moduleId)) {
         try {
           const result = (await window.ipc.invoke('tool:uninstall', moduleId)) as {
             success: boolean;
@@ -785,7 +786,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
       setInstalledModules(current => current.filter(module => module.id !== moduleId));
       setActiveModuleId(current => (current === moduleId ? null : current));
-      void refreshPluginRegistry();
+      void refreshToolRegistry();
 
       showToast({
         message: `${module?.definition.name || moduleId} 已卸载`,
@@ -795,10 +796,10 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     },
     [
       installedModules,
-      isWindowPlugin,
-      isDevPlugin,
+      isWindowTool,
+      isDevTool,
       patchModuleRuntime,
-      refreshPluginRegistry,
+      refreshToolRegistry,
       showToast,
     ]
   );
@@ -950,9 +951,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           },
         ],
         properties: ['openFile'],
-      })) as { canceled: boolean; filePaths: string[] };
+      })) as { canceled: boolean; filePaths: string[] } | null;
 
-      if (result.canceled || !result.filePaths[0]) {
+      if (!result || result.canceled || !result.filePaths[0]) {
         return;
       }
 
@@ -972,7 +973,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
 
       if (response.success && response.toolId) {
         // 3. 刷新工具列表
-        await refreshPluginRegistry();
+        await refreshToolRegistry();
 
         // 4. 写入 moduleStore（让工具出现在已安装列表）
         await window.moduleStore.add({
@@ -1001,14 +1002,14 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       });
       logger.error('[ModuleContext] Failed to add local binary tool:', error);
     }
-  }, [refreshPluginRegistry, showToast]);
+  }, [refreshToolRegistry, showToast]);
 
   const contextValue = useMemo<ModuleContextValue>(
     () => ({
-      availableModules: pluginDefinitions,
+      availableModules: toolDefinitions,
       installedModules,
       toolRegistry,
-      availablePlugins,
+      availableTools,
       moduleStats,
       activeModuleId,
       setActiveModuleId,
@@ -1016,40 +1017,40 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       stopModule,
       focusModuleWindow,
       installModule,
-      installOnlinePlugin,
+      installOnlineTool,
       uninstallModule,
       getModuleById,
-      isDevPlugin,
-      refreshAvailablePlugins,
+      isDevTool,
+      refreshAvailableTools,
       addLocalBinaryTool,
       favoriteModules,
       addFavorite,
       removeFavorite,
       updateFavoriteOrder,
-      runningPluginIds,
+      runningToolIds,
     }),
     [
       activeModuleId,
-      pluginDefinitions,
+      toolDefinitions,
       focusModuleWindow,
       getModuleById,
-      isDevPlugin,
+      isDevTool,
       installModule,
-      installOnlinePlugin,
+      installOnlineTool,
       installedModules,
       toolRegistry,
-      availablePlugins,
+      availableTools,
       openModule,
       stopModule,
       moduleStats,
       uninstallModule,
-      refreshAvailablePlugins,
+      refreshAvailableTools,
       addLocalBinaryTool,
       favoriteModules,
       addFavorite,
       removeFavorite,
       updateFavoriteOrder,
-      runningPluginIds,
+      runningToolIds,
     ]
   );
 

@@ -7,24 +7,24 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import { useModulePlatform } from '@/contexts/module-context';
-import { ModuleCenterV3 } from '../components/module-center/index-v3';
+import { ModuleCenter } from '../components/module-center';
 
 /**
- * 工具页 - V3 极简设计
+ * 工具页 - 极简设计
  */
 export function ToolsPage() {
   const location = useLocation();
-  const { refreshAvailablePlugins } = useModulePlatform();
+  const { refreshAvailableTools } = useModulePlatform();
 
   useEffect(() => {
     if (location.pathname === '/tools') {
-      refreshAvailablePlugins();
+      refreshAvailableTools();
     }
-  }, [location.pathname, refreshAvailablePlugins]);
+  }, [location.pathname, refreshAvailableTools]);
 
   return (
     <Box sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
-      <ModuleCenterV3 />
+      <ModuleCenter />
     </Box>
   );
 }

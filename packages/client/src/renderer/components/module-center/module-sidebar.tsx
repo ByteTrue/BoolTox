@@ -1,109 +1,120 @@
 /**
- * Copyright (c) 2025 ByteTrue
- * Licensed under CC-BY-NC-4.0
+ * ModuleSidebar - Linear/Raycast 级别的极简设计
  */
 
-import React from 'react';
 import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
-  Apps,
-  Star,
-  PlayArrow,
-  Store,
-  FolderOpen,
-  Add,
+  GridViewRounded,
+  StarRounded,
+  PlayArrowRounded,
+  StorefrontRounded,
+  AddRounded,
 } from '@mui/icons-material';
-import type { ToolSourceConfig } from '@booltox/shared';
 
-interface SidebarItemProps {
+interface NavItemProps {
   icon: React.ReactNode;
   label: string;
-  active: boolean;
   count?: number;
-  countColor?: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  active: boolean;
   onClick: () => void;
 }
 
-function SidebarItem({ icon, label, active, count, countColor = 'default', onClick }: SidebarItemProps) {
+function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   return (
-    <ListItemButton
+    <Box
       onClick={onClick}
-      selected={active}
       sx={{
-        borderRadius: 2,
-        mb: 0.5,
-        px: 2,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        px: 1.5,
         py: 1,
-        '&.Mui-selected': {
-          bgcolor: theme => (theme.palette as any).primaryContainer,
-          color: 'primary.main',
-          '&:hover': {
-            bgcolor: theme => (theme.palette as any).primaryContainer,
-          },
-          '& .MuiListItemIcon-root': {
-            color: 'primary.main',
-          },
-          '& .MuiChip-root': {
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-          },
-        },
+        mx: 0.5,
+        borderRadius: 1.5,
+        cursor: 'pointer',
+        color: active ? 'text.primary' : 'text.secondary',
+        bgcolor: active
+          ? isDark
+            ? alpha('#fff', 0.06)
+            : alpha(theme.palette.primary.main, 0.08)
+          : 'transparent',
+        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
-          bgcolor: 'action.hover',
+          bgcolor: isDark ? alpha('#fff', 0.06) : alpha(theme.palette.primary.main, 0.06),
+          color: 'text.primary',
+        },
+        // Linear 风格左侧 accent bar
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: active ? 'translateY(-50%) scaleY(1)' : 'translateY(-50%) scaleY(0)',
+          width: 3,
+          height: 16,
+          borderRadius: 1.5,
+          bgcolor: 'primary.main',
+          transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         },
       }}
     >
-      <ListItemIcon
+      <Box
         sx={{
-          minWidth: 40,
-          color: active ? 'inherit' : 'action.active',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: active ? 'primary.main' : 'inherit',
+          transition: 'color 0.15s ease',
         }}
       >
         {icon}
-      </ListItemIcon>
-      <ListItemText
-        primary={label}
-        primaryTypographyProps={{
-          variant: 'body2',
+      </Box>
+      <Typography
+        variant="body2"
+        sx={{
+          flex: 1,
           fontWeight: active ? 600 : 500,
+          fontSize: '0.8125rem',
         }}
-      />
-      {count !== undefined && (
-        <Chip
-          label={count}
-          size="small"
-          color={active ? undefined : countColor}
+      >
+        {label}
+      </Typography>
+      {count !== undefined && count > 0 && (
+        <Typography
+          variant="caption"
           sx={{
-            height: 20,
+            color: 'text.tertiary',
             fontSize: '0.75rem',
-            fontWeight: 600,
+            fontWeight: 500,
+            fontVariantNumeric: 'tabular-nums',
           }}
-        />
+        >
+          {count}
+        </Typography>
       )}
-    </ListItemButton>
+    </Box>
   );
 }
 
-// 区域标题组件 - 符合MD3规范
-function SectionHeader({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <Typography
       variant="overline"
       sx={{
-        px: 2,
-        pt: 2,
+        px: 2.5,
+        pt: 3,
         pb: 1,
         display: 'block',
-        color: 'text.secondary',
+        color: 'text.tertiary',
         fontWeight: 600,
-        fontSize: '0.75rem',
+        fontSize: '0.6875rem',
         letterSpacing: '0.05em',
       }}
     >
@@ -120,15 +131,11 @@ interface ModuleSidebarProps {
   onAddToolSource?: () => void;
   stats: {
     installed: number;
-    store: number;
-    official: number;
-    custom: number;
     favorites: number;
     running: number;
-    sourceCount?: Record<string, number>;
+    official: number;
   };
   categories: string[];
-  toolSources?: ToolSourceConfig[];
 }
 
 export function ModuleSidebar({
@@ -139,175 +146,120 @@ export function ModuleSidebar({
   onAddToolSource,
   stats,
   categories,
-  toolSources = [],
 }: ModuleSidebarProps) {
-  // 过滤自定义工具源（非官方的远程源，排除本地源）
-  const customSources = toolSources.filter(
-    s => s.id !== 'official' && s.type === 'remote' && !s.localPath
-  );
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   return (
     <Box
       sx={{
-        width: 240,
+        width: 220,
         height: '100%',
-        borderRight: 1,
-        borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: theme => (theme.palette as any).surfaceContainerLow,
-        overflow: 'hidden',
+        // 用背景色差异替代边框分割
+        bgcolor: isDark ? '#0c0c0e' : '#f8f9fb',
+        // 左右留出空间，让选中项有呼吸间距
+        px: 1.5,
       }}
     >
-      {/* 区域 1: 我的工具 */}
-      <Box sx={{ px: 1 }}>
-        <SectionHeader>我的工具</SectionHeader>
-        <List disablePadding>
-          <SidebarItem
-            icon={<Apps />}
-            label="全部已安装"
-            active={currentView === 'installed'}
+      {/* 我的工具 */}
+      <Box>
+        <SectionLabel>工具库</SectionLabel>
+        <Stack spacing={0.25}>
+          <NavItem
+            icon={<GridViewRounded sx={{ fontSize: 18 }} />}
+            label="全部"
             count={stats.installed}
+            active={currentView === 'installed'}
             onClick={() => onViewChange('installed')}
           />
-
-          <SidebarItem
-            icon={<Star />}
+          <NavItem
+            icon={<StarRounded sx={{ fontSize: 18 }} />}
             label="收藏"
-            active={currentView === 'favorites'}
             count={stats.favorites}
-            countColor="warning"
+            active={currentView === 'favorites'}
             onClick={() => onViewChange('favorites')}
           />
-
-          <SidebarItem
-            icon={<PlayArrow />}
+          <NavItem
+            icon={<PlayArrowRounded sx={{ fontSize: 18 }} />}
             label="运行中"
-            active={currentView === 'running'}
             count={stats.running}
-            countColor="success"
+            active={currentView === 'running'}
             onClick={() => onViewChange('running')}
           />
-        </List>
+        </Stack>
       </Box>
 
-      <Divider sx={{ my: 1 }} />
-
-      {/* 区域 2: 工具市场 */}
-      <Box sx={{ px: 1 }}>
-        <SectionHeader>工具市场</SectionHeader>
-
-        <List disablePadding>
-          {/* 官方工具库 */}
-          <SidebarItem
-            icon={<Store />}
-            label="官方工具库"
-            active={currentView === 'official'}
+      {/* 发现 */}
+      <Box>
+        <SectionLabel>发现</SectionLabel>
+        <Stack spacing={0.25}>
+          <NavItem
+            icon={<StorefrontRounded sx={{ fontSize: 18 }} />}
+            label="官方市场"
             count={stats.official}
+            active={currentView === 'official'}
             onClick={() => onViewChange('official')}
           />
+        </Stack>
+      </Box>
 
-          {/* 动态显示自定义工具源 */}
-          {customSources.map(source => (
-            <SidebarItem
-              key={source.id}
-              icon={<FolderOpen />}
-              label={source.name}
-              active={currentView === `source:${source.id}`}
-              count={stats.sourceCount?.[source.id] || 0}
-              onClick={() => onViewChange(`source:${source.id}`)}
+      {/* 分类 */}
+      {categories.length > 0 && (
+        <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+          <SectionLabel>分类</SectionLabel>
+          <Stack spacing={0.25}>
+            <NavItem
+              icon={<Box sx={{ width: 18 }} />}
+              label="全部"
+              active={currentCategory === 'all'}
+              onClick={() => onCategoryChange('all')}
             />
-          ))}
-
-          {/* 添加工具源按钮 */}
-          {onAddToolSource && (
-            <ListItemButton
-              onClick={onAddToolSource}
-              sx={{
-                borderRadius: 2,
-                mt: 1,
-                border: 1,
-                borderColor: 'divider',
-                borderStyle: 'dashed',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                  borderColor: 'primary.main',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40, color: 'primary.main' }}>
-                <Add />
-              </ListItemIcon>
-              <ListItemText
-                primary="添加工具源"
-                primaryTypographyProps={{
-                  variant: 'body2',
-                  fontWeight: 500,
-                  color: 'primary.main',
-                }}
+            {categories.map(cat => (
+              <NavItem
+                key={cat}
+                icon={<Box sx={{ width: 18 }} />}
+                label={cat}
+                active={currentCategory === cat}
+                onClick={() => onCategoryChange(cat)}
               />
-            </ListItemButton>
-          )}
-        </List>
-      </Box>
+            ))}
+          </Stack>
+        </Box>
+      )}
 
-      <Divider sx={{ my: 1 }} />
-
-      {/* 区域 3: 分类筛选 */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: 'auto',
-          px: 1,
-          '&::-webkit-scrollbar': {
-            width: 6,
-          },
-          '&::-webkit-scrollbar-thumb': {
-            bgcolor: 'action.hover',
-            borderRadius: 3,
-          },
-        }}
-      >
-        <SectionHeader>分类</SectionHeader>
-
-        <List disablePadding>
-          <SidebarItem
-            icon={<Apps />}
-            label="全部"
-            active={currentCategory === 'all'}
-            onClick={() => onCategoryChange('all')}
-          />
-
-          {categories.map(category => (
-            <ListItemButton
-              key={category}
-              selected={currentCategory === category}
-              onClick={() => onCategoryChange(category)}
-              sx={{
-                borderRadius: 2,
-                mb: 0.5,
-                px: 2,
-                py: 0.75,
-                pl: 6,
-                '&.Mui-selected': {
-                  bgcolor: 'action.selected',
-                  '&:hover': {
-                    bgcolor: 'action.selected',
-                  },
-                },
-              }}
-            >
-              <ListItemText
-                primary={category}
-                primaryTypographyProps={{
-                  variant: 'body2',
-                  fontWeight: currentCategory === category ? 600 : 400,
-                }}
-              />
-            </ListItemButton>
-          ))}
-        </List>
-      </Box>
+      {/* 底部添加按钮 */}
+      {onAddToolSource && (
+        <Box sx={{ p: 2, mt: 'auto' }}>
+          <Box
+            onClick={onAddToolSource}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1,
+              py: 1.25,
+              borderRadius: 2,
+              border: '1px dashed',
+              borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.25),
+              color: isDark ? 'text.secondary' : theme.palette.primary.main,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                bgcolor: alpha(theme.palette.primary.main, 0.06),
+              },
+            }}
+          >
+            <AddRounded sx={{ fontSize: 18 }} />
+            <Typography variant="body2" fontWeight={500} fontSize="0.8125rem">
+              添加来源
+            </Typography>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }

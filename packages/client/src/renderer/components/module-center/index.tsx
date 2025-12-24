@@ -1,185 +1,123 @@
 /**
- * Copyright (c) 2025 ByteTrue
- * Licensed under CC-BY-NC-4.0
+ * ModuleCenter - Linear/Raycast 级别的极简设计
+ * 原则：大量留白、高对比度、克制的色彩、精致的细节
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import Fade from '@mui/material/Fade';
-import { Search, Add, CheckBox } from '@mui/icons-material';
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
+import { alpha, useTheme } from '@mui/material/styles';
+import { SearchRounded, AddRounded, KeyboardCommandKeyRounded } from '@mui/icons-material';
 import { useModulePlatform } from '@/contexts/module-context';
 import { ModuleDetailModal } from './module-detail-modal';
 import { ModuleSidebar } from './module-sidebar';
-import { BatchActionsBar } from './batch-actions-bar';
+import { ToolCard } from './tool-card';
 import { useModuleSearch, useSearchInput } from './hooks/use-module-search';
 import { useModuleSort } from './hooks/use-module-sort';
-import { ToolCard } from './tool-card';
-import { DropZone } from './drop-zone';
-import type { ModuleSortConfig } from './types';
 import type { ModuleInstance } from '@/types/module';
 import type { ToolSourceConfig } from '@booltox/shared';
 
-/**
- * 工具中心 - Material Design 3 风格
- */
+// 默认排序配置（不需要状态，因为不会改变）
+const DEFAULT_SORT_CONFIG = { by: 'default' as const, order: 'asc' as const };
+
 export function ModuleCenter() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const {
     installedModules,
     toolRegistry,
-    availablePlugins,
+    availableTools,
     uninstallModule,
-    installOnlinePlugin,
+    installOnlineTool,
     openModule,
     stopModule,
     focusModuleWindow,
-    isDevPlugin,
     addLocalBinaryTool,
     addFavorite,
     removeFavorite,
   } = useModulePlatform();
 
-  // --- 状态管理 ---
+  // 状态
   const [currentView, setCurrentView] = useState<string>('installed');
   const [currentCategory, setCurrentCategory] = useState<string>('all');
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
-  const [isDragActive, setIsDragActive] = useState(false);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(new Set());
   const { inputValue, debouncedValue, setInputValue } = useSearchInput();
-  const [sortConfig, setSortConfig] = useState<ModuleSortConfig>({
-    by: 'default',
-    order: 'asc',
-  });
   const [toolSources, setToolSources] = useState<ToolSourceConfig[]>([]);
 
   useEffect(() => {
     const loadToolSources = async () => {
       try {
-        const sources = (await window.ipc.invoke('tool-sources:list')) as
-          | ToolSourceConfig[]
-          | undefined;
+        const sources = (await window.ipc.invoke('tool-sources:list')) as ToolSourceConfig[] | undefined;
         setToolSources(sources || []);
-      } catch (error) {
-        console.error('[ModuleCenter] Failed to load tool sources:', error);
+      } catch {
         setToolSources([]);
       }
     };
     loadToolSources();
   }, []);
 
-  // --- 数据处理 ---
+  // 数据处理
   const allAvailableModules = useMemo(() => {
-    return availablePlugins.map(
-      plugin =>
+    return availableTools.map(
+      tool =>
         ({
-          id: plugin.id,
+          id: tool.id,
           definition: {
-            id: plugin.id,
-            name: plugin.name,
-            description: plugin.description || '',
-            version: plugin.version,
-            category: plugin.category || 'utilities',
-            keywords: plugin.keywords || [],
-            icon: plugin.icon || '🔌',
-            screenshots: plugin.screenshots || [],
+            id: tool.id,
+            name: tool.name,
+            description: tool.description || '',
+            version: tool.version,
+            category: tool.category || 'utilities',
+            keywords: tool.keywords || [],
+            icon: tool.icon || '',
+            screenshots: tool.screenshots || [],
             installedByDefault: false,
             source: 'remote' as const,
-            runtime: plugin.runtime,
-            runtimeMode: plugin.runtime?.type === 'standalone' ? 'standalone' : 'webview',
+            runtime: tool.runtime,
           },
           runtime: {
             component: null,
             loading: false,
             error: null,
-            installed: toolRegistry.some(t => t.id === plugin.id),
+            installed: toolRegistry.some(t => t.id === tool.id),
             launchState: 'idle' as const,
             lastError: null,
           },
           isFavorite: false,
-          sourceId: plugin.sourceId || 'unknown',
-          sourceName: plugin.sourceName || '未知来源',
+          sourceId: tool.sourceId || 'unknown',
         }) as ModuleInstance
     );
-  }, [availablePlugins, toolRegistry]);
+  }, [availableTools, toolRegistry]);
 
   const officialTools = useMemo(() => {
-    return allAvailableModules.filter(m => m.sourceId === 'official');
-  }, [allAvailableModules]);
-
-  const customTools = useMemo(() => {
-    return allAvailableModules.filter(m => m.sourceId && m.sourceId !== 'official');
-  }, [allAvailableModules]);
-
-  const storeModules = useMemo(() => {
-    return allAvailableModules.filter(m => !m.runtime.installed);
+    return allAvailableModules.filter(m => m.sourceId === 'official' && !m.runtime.installed);
   }, [allAvailableModules]);
 
   const runningCount = useMemo(() => {
     return installedModules.filter(m => m.runtime.launchState === 'running').length;
   }, [installedModules]);
 
-  const sourceToolCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    allAvailableModules.forEach(m => {
-      if (!m.runtime.installed && m.sourceId) {
-        counts[m.sourceId] = (counts[m.sourceId] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [allAvailableModules]);
-
   const displayedModulesRaw = useMemo(() => {
-    let modules: ModuleInstance[] = [];
-
-    if (currentView.startsWith('source:')) {
-      const sourceId = currentView.replace('source:', '');
-      modules = allAvailableModules.filter(m => m.sourceId === sourceId && !m.runtime.installed);
-    } else {
-      switch (currentView) {
-        case 'installed':
-          modules = installedModules;
-          break;
-        case 'favorites':
-          modules = installedModules.filter(m => m.isFavorite);
-          break;
-        case 'running':
-          modules = installedModules.filter(m => m.runtime.launchState === 'running');
-          break;
-        case 'store-grouped':
-          modules = allAvailableModules.filter(m => !m.runtime.installed);
-          break;
-        case 'store':
-          modules = storeModules;
-          break;
-        case 'official':
-          modules = officialTools.filter(m => !m.runtime.installed);
-          break;
-        case 'custom':
-          modules = customTools.filter(m => !m.runtime.installed);
-          break;
-        default:
-          modules = installedModules;
-      }
+    switch (currentView) {
+      case 'installed':
+        return installedModules;
+      case 'favorites':
+        return installedModules.filter(m => m.isFavorite);
+      case 'running':
+        return installedModules.filter(m => m.runtime.launchState === 'running');
+      case 'official':
+        return officialTools;
+      default:
+        return installedModules;
     }
-    return modules;
-  }, [
-    currentView,
-    installedModules,
-    storeModules,
-    officialTools,
-    customTools,
-    allAvailableModules,
-  ]);
+  }, [currentView, installedModules, officialTools]);
 
   const categoryFilteredModules = useMemo(() => {
     if (currentCategory === 'all') return displayedModulesRaw;
@@ -189,58 +127,40 @@ export function ModuleCenter() {
   }, [displayedModulesRaw, currentCategory]);
 
   const searchedModules = useModuleSearch(categoryFilteredModules, debouncedValue);
-  const finalModules = useModuleSort(searchedModules, sortConfig);
+  const finalModules = useModuleSort(searchedModules, DEFAULT_SORT_CONFIG);
 
+  // 分类统计：只显示当前视图中工具的分类，避免显示空分类
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
     displayedModulesRaw.forEach(m => {
       const cat = m.definition.category;
       if (cat) categories.add(cat);
     });
-    storeModules.forEach(m => {
-      const cat = m.definition.category;
-      if (cat) categories.add(cat);
-    });
     return Array.from(categories).sort();
-  }, [displayedModulesRaw, storeModules]);
+  }, [displayedModulesRaw]);
 
-  // --- 回调函数 ---
+  // 回调函数
   const selectedModule = useMemo(() => {
     if (!selectedModuleId) return null;
-
     const installed = installedModules.find(m => m.id === selectedModuleId);
     if (installed) return installed;
-
-    const onlinePlugin = availablePlugins.find(p => p.id === selectedModuleId);
-    if (onlinePlugin) {
+    const online = availableTools.find(p => p.id === selectedModuleId);
+    if (online) {
       return {
-        id: onlinePlugin.id,
+        id: online.id,
         definition: {
-          id: onlinePlugin.id,
-          name: onlinePlugin.name,
-          description: onlinePlugin.description || '',
-          version: onlinePlugin.version,
-          category: onlinePlugin.category || 'utilities',
-          keywords: onlinePlugin.keywords || [],
-          icon: onlinePlugin.icon || '🔌',
-          screenshots: onlinePlugin.screenshots || [],
-          installedByDefault: false,
-          source: 'remote' as const,
-          loader: () => Promise.resolve(() => null),
+          id: online.id,
+          name: online.name,
+          description: online.description || '',
+          version: online.version,
+          category: online.category || 'utilities',
         },
-        runtime: {
-          component: null,
-          loading: false,
-          error: null,
-          installed: false,
-          launchState: 'idle' as const,
-          lastError: null,
-        },
+        runtime: { installed: false, launchState: 'idle' as const },
         isFavorite: false,
       } as unknown as ModuleInstance;
     }
     return null;
-  }, [selectedModuleId, installedModules, availablePlugins]);
+  }, [selectedModuleId, installedModules, availableTools]);
 
   const isSelectedModuleInstalled = useMemo(() => {
     return installedModules.some(m => m.id === selectedModuleId);
@@ -250,15 +170,13 @@ export function ModuleCenter() {
     async (moduleId: string) => {
       setProcessingModuleId(moduleId);
       try {
-        const onlinePlugin = availablePlugins.find(p => p.id === moduleId);
-        if (onlinePlugin) {
-          await installOnlinePlugin(onlinePlugin);
-        }
+        const onlineTool = availableTools.find(p => p.id === moduleId);
+        if (onlineTool) await installOnlineTool(onlineTool);
       } finally {
         setProcessingModuleId(null);
       }
     },
-    [installOnlinePlugin, availablePlugins]
+    [installOnlineTool, availableTools]
   );
 
   const handleUninstall = useCallback(
@@ -286,95 +204,26 @@ export function ModuleCenter() {
     (moduleId: string) => {
       const module = installedModules.find(m => m.id === moduleId);
       if (!module) return;
-      if (module.isFavorite) {
-        void removeFavorite(moduleId);
-      } else {
-        void addFavorite(moduleId);
-      }
+      if (module.isFavorite) void removeFavorite(moduleId);
+      else void addFavorite(moduleId);
     },
     [installedModules, addFavorite, removeFavorite]
-  );
-
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer.types && e.dataTransfer.types.indexOf('Files') !== -1) {
-      setIsDragActive(true);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-    setIsDragActive(false);
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback(
-    async (files: FileList) => {
-      setIsDragActive(false);
-      if (files.length === 0) return;
-      addLocalBinaryTool();
-    },
-    [addLocalBinaryTool]
   );
 
   const handleViewChange = (view: string) => {
     setCurrentView(view);
     setCurrentCategory('all');
-    setIsSelectionMode(false);
-    setSelectedToolIds(new Set());
   };
 
-  const handleStartAll = useCallback(async () => {
-    const toolIds = Array.from(selectedToolIds);
-    for (const toolId of toolIds) await openModule(toolId);
-    setIsSelectionMode(false);
-    setSelectedToolIds(new Set());
-  }, [selectedToolIds, openModule]);
-
-  const handleStopAll = useCallback(async () => {
-    const toolIds = Array.from(selectedToolIds);
-    for (const toolId of toolIds) {
-      const tool = installedModules.find(m => m.id === toolId);
-      if (tool?.definition.runtime?.type === 'http-service') {
-        await stopModule(toolId);
-      }
+  const getViewTitle = () => {
+    switch (currentView) {
+      case 'installed': return '全部工具';
+      case 'favorites': return '收藏';
+      case 'running': return '运行中';
+      case 'official': return '官方市场';
+      default: return '工具';
     }
-  }, [selectedToolIds, installedModules, stopModule]);
-
-  const handleUninstallAll = useCallback(async () => {
-    if (!confirm(`确定要卸载 ${selectedToolIds.size} 个工具吗？`)) return;
-    for (const toolId of Array.from(selectedToolIds)) await uninstallModule(toolId);
-    setIsSelectionMode(false);
-    setSelectedToolIds(new Set());
-  }, [selectedToolIds, uninstallModule]);
-
-  const hasHttpServiceSelected = useMemo(() => {
-    return Array.from(selectedToolIds).some(toolId => {
-      const tool = installedModules.find(m => m.id === toolId);
-      return (
-        tool?.definition.runtime?.type === 'http-service' && tool.runtime.launchState === 'running'
-      );
-    });
-  }, [selectedToolIds, installedModules]);
-
-  const handleSelect = useCallback((toolId: string) => {
-    setSelectedToolIds(prev => {
-      const next = new Set(prev);
-      if (next.has(toolId)) {
-        next.delete(toolId);
-      } else {
-        next.add(toolId);
-      }
-      return next;
-    });
-  }, []);
+  };
 
   return (
     <Box
@@ -382,43 +231,11 @@ export function ModuleCenter() {
         display: 'flex',
         height: '100%',
         overflow: 'hidden',
-        position: 'relative',
-        bgcolor: 'background.default',
-      }}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={e => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragActive(false);
-        if (e.dataTransfer.files.length > 0) {
-          handleDrop(e.dataTransfer.files);
-        }
+        // 基础背景色（与侧边栏同色，作为底层）
+        bgcolor: isDark ? '#0c0c0e' : '#f8f9fb',
       }}
     >
-      {/* 拖拽覆盖层 */}
-      <Fade in={isDragActive}>
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 50,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(8px)',
-            p: 4,
-          }}
-        >
-          <Box sx={{ width: '100%', maxWidth: 600 }}>
-            <DropZone onDrop={handleDrop} onBrowse={addLocalBinaryTool} />
-          </Box>
-        </Box>
-      </Fade>
-
-      {/* 左侧侧边栏 */}
+      {/* 侧边栏 */}
       <ModuleSidebar
         currentView={currentView}
         currentCategory={currentCategory}
@@ -427,199 +244,201 @@ export function ModuleCenter() {
         onAddToolSource={() => navigate('/tools/add-source')}
         stats={{
           installed: installedModules.length,
-          store: storeModules.length,
-          official: officialTools.filter(m => !m.runtime.installed).length,
-          custom: customTools.filter(m => !m.runtime.installed).length,
           favorites: installedModules.filter(m => m.isFavorite).length,
           running: runningCount,
-          sourceCount: sourceToolCounts,
+          official: officialTools.length,
         }}
         categories={availableCategories}
-        toolSources={toolSources}
       />
 
-      {/* 右侧主内容区 */}
-      <Box sx={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
-        {/* 页面内工具栏 */}
+      {/* 主内容区 */}
+      <Box
+        sx={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          overflow: 'hidden',
+          // 主内容区使用稍亮的背景，与侧边栏形成层次
+          bgcolor: isDark ? '#111113' : '#ffffff',
+          // 左侧内阴影，创造"嵌入"效果
+          boxShadow: isDark
+            ? 'inset 4px 0 12px -4px rgba(0,0,0,0.3)'
+            : 'inset 2px 0 8px -2px rgba(0,0,0,0.04)',
+          // 圆角让边缘更柔和
+          borderTopLeftRadius: 16,
+          borderBottomLeftRadius: 16,
+        }}
+      >
+        {/* 顶部栏 - 毛玻璃效果 */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 2,
-            px: 3,
-            py: 2,
-            bgcolor: theme => (theme.palette as any).surfaceContainerLow,
-            borderBottom: 1,
-            borderColor: 'divider',
+            gap: 3,
+            px: 4,
+            py: 2.5,
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            // 毛玻璃效果
+            bgcolor: isDark ? alpha('#111113', 0.8) : alpha('#ffffff', 0.85),
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            // 继承主内容区的左上圆角
+            borderTopLeftRadius: 16,
           }}
         >
-          {/* 搜索框 */}
+          {/* 标题 */}
+          <Box>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', letterSpacing: '-0.02em' }}
+            >
+              {getViewTitle()}
+            </Typography>
+          </Box>
+
+          <Box sx={{ flex: 1 }} />
+
+          {/* 搜索框 - Focus 发光动画 */}
           <TextField
-            placeholder="搜索工具..."
+            placeholder="搜索..."
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             size="small"
             sx={{
-              maxWidth: 320,
-              flex: 1,
+              width: 240,
+              transition: 'width 0.2s ease',
+              '&:focus-within': {
+                width: 280,
+              },
               '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                bgcolor: theme => (theme.palette as any).surfaceContainer,
-                '& fieldset': {
-                  borderColor: 'transparent',
+                borderRadius: 2.5,
+                bgcolor: isDark ? alpha('#fff', 0.04) : '#ffffff',
+                border: '1px solid',
+                borderColor: isDark ? 'transparent' : alpha('#000', 0.08),
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                '& fieldset': { border: 'none' },
+                '&:hover': {
+                  bgcolor: isDark ? alpha('#fff', 0.06) : '#ffffff',
+                  borderColor: isDark ? alpha('#fff', 0.1) : alpha(theme.palette.primary.main, 0.3),
                 },
-                '&:hover fieldset': {
-                  borderColor: 'divider',
-                },
-                '&.Mui-focused fieldset': {
+                '&.Mui-focused': {
+                  bgcolor: isDark ? alpha('#fff', 0.06) : '#ffffff',
                   borderColor: 'primary.main',
+                  boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.12)}, 0 0 16px ${alpha(theme.palette.primary.main, 0.08)}`,
                 },
+              },
+              '& .MuiInputBase-input': {
+                fontSize: '0.8125rem',
+                '&::placeholder': { color: 'text.tertiary', opacity: 1 },
               },
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search sx={{ color: 'text.secondary', fontSize: 20 }} />
+                  <SearchRounded sx={{ fontSize: 18, color: 'text.tertiary' }} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Stack direction="row" spacing={0.25} sx={{ opacity: 0.5 }}>
+                    <KeyboardCommandKeyRounded sx={{ fontSize: 14 }} />
+                    <Typography variant="caption" sx={{ fontSize: '0.6875rem' }}>K</Typography>
+                  </Stack>
                 </InputAdornment>
               ),
             }}
           />
 
-          <Box sx={{ flexGrow: 1 }} />
-
-          {/* 右侧操作按钮 */}
+          {/* 添加按钮 */}
           {currentView === 'installed' && (
-            <>
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                startIcon={<Add />}
-                onClick={addLocalBinaryTool}
-                sx={{ borderRadius: 2 }}
-              >
-                添加本地工具
-              </Button>
-
-              <Button
-                variant={isSelectionMode ? 'contained' : 'text'}
-                color={isSelectionMode ? 'primary' : 'inherit'}
-                size="small"
-                startIcon={<CheckBox />}
-                onClick={() => {
-                  setIsSelectionMode(!isSelectionMode);
-                  setSelectedToolIds(new Set());
-                }}
-                sx={{ borderRadius: 2 }}
-              >
-                管理
-              </Button>
-            </>
+            <IconButton
+              onClick={addLocalBinaryTool}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                },
+              }}
+            >
+              <AddRounded sx={{ fontSize: 20 }} />
+            </IconButton>
           )}
-
-          {/* 排序选择器 */}
-          <Select
-            value={sortConfig.by}
-            onChange={e =>
-              setSortConfig(prev => ({ ...prev, by: e.target.value as ModuleSortConfig['by'] }))
-            }
-            size="small"
-            sx={{
-              minWidth: 110,
-              borderRadius: 2,
-              bgcolor: theme => (theme.palette as any).surfaceContainer,
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'transparent',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'divider',
-              },
-            }}
-          >
-            <MenuItem value="default">默认排序</MenuItem>
-            <MenuItem value="name">按名称</MenuItem>
-            <MenuItem value="updatedAt">最近使用</MenuItem>
-          </Select>
         </Box>
 
-        {/* 滚动内容区 */}
+        {/* 内容区 */}
         <Box
           sx={{
             flex: 1,
             overflow: 'auto',
-            px: 3,
+            px: 4,
             py: 3,
-            bgcolor: theme => (theme.palette as any).surfaceContainerLowest,
-            '&::-webkit-scrollbar': {
-              width: 6,
-            },
+            '&::-webkit-scrollbar': { width: 8 },
+            '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
             '&::-webkit-scrollbar-thumb': {
-              bgcolor: 'action.hover',
-              borderRadius: 3,
+              bgcolor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+              borderRadius: 4,
+              '&:hover': {
+                bgcolor: isDark ? alpha('#fff', 0.12) : alpha('#000', 0.12),
+              },
             },
           }}
         >
-          {/* 工具计数 */}
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            共 {finalModules.length} 个工具
+          {/* 统计信息 */}
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mb: 2,
+              color: 'text.tertiary',
+              fontWeight: 500,
+            }}
+          >
+            {finalModules.length} 个工具
           </Typography>
 
-          {/* 工具卡片网格 */}
+          {/* 工具列表 */}
           {finalModules.length === 0 ? (
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 minHeight: 300,
+                gap: 1.5,
               }}
             >
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body2" color="text.secondary">
                 {currentView === 'favorites'
-                  ? '暂无收藏的工具'
+                  ? '没有收藏的工具'
                   : currentView === 'running'
-                    ? '暂无运行中的工具'
-                    : '没有找到匹配的工具'}
+                    ? '没有运行中的工具'
+                    : '没有找到工具'}
               </Typography>
             </Box>
           ) : (
-            <Grid container spacing={2.5}>
+            <Stack spacing={1}>
               {finalModules.map(tool => (
-                <Grid key={tool.id} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 3 }}>
-                  <ToolCard
-                    tool={tool}
-                    onOpen={handleOpen}
-                    onStop={stopModule}
-                    onInstall={handleInstall}
-                    onUninstall={handleUninstall}
-                    onToggleFavorite={handleToggleFavorite}
-                    onClick={setSelectedModuleId}
-                    isSelectionMode={isSelectionMode}
-                    isSelected={selectedToolIds.has(tool.id)}
-                    onSelect={handleSelect}
-                    isInstalling={processingModuleId === tool.id}
-                    isDev={isDevPlugin(tool.id)}
-                  />
-                </Grid>
+                <ToolCard
+                  key={tool.id}
+                  tool={tool}
+                  onOpen={handleOpen}
+                  onStop={stopModule}
+                  onInstall={handleInstall}
+                  onToggleFavorite={handleToggleFavorite}
+                  onClick={setSelectedModuleId}
+                  isInstalling={processingModuleId === tool.id}
+                />
               ))}
-            </Grid>
+            </Stack>
           )}
         </Box>
-
-        {/* 批量操作浮动栏 */}
-        {isSelectionMode && selectedToolIds.size > 0 && (
-          <BatchActionsBar
-            selectedCount={selectedToolIds.size}
-            onStartAll={handleStartAll}
-            onStopAll={handleStopAll}
-            onUninstallAll={handleUninstallAll}
-            onCancel={() => {
-              setIsSelectionMode(false);
-              setSelectedToolIds(new Set());
-            }}
-            hasHttpService={hasHttpServiceSelected}
-          />
-        )}
       </Box>
 
       {/* 详情弹窗 */}

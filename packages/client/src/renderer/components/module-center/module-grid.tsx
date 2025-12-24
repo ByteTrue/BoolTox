@@ -24,7 +24,7 @@ interface ModuleGridProps {
   onStop?: (moduleId: string) => void;
   onCardClick: (moduleId: string) => void;
   emptyMessage?: string;
-  isDevPlugin?: (moduleId: string) => boolean;
+  isDevTool?: (moduleId: string) => boolean;
 }
 
 export function ModuleGrid({
@@ -37,7 +37,7 @@ export function ModuleGrid({
   onStop,
   onCardClick,
   emptyMessage = '暂无工具',
-  isDevPlugin,
+  isDevTool,
 }: ModuleGridProps) {
   // 统一转换为 ViewModel - 消除类型判断逻辑（必须在所有 hooks 之前）
   const viewModels = useMemo(() => toModuleViewModels(modules), [modules]);
@@ -74,7 +74,7 @@ export function ModuleGrid({
               onInstall={onInstall}
               onClick={onCardClick}
               isProcessing={processingModuleId === vm.id}
-              isDev={isDevPlugin?.(vm.id) || false}
+              isDev={isDevTool?.(vm.id) || false}
             />
           );
         } else {
