@@ -73,7 +73,9 @@ export function ModuleCard({
     >
       <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
         {/* 头部: 图标和状态 */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+        <Box
+          sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {isSelectionMode && (
               <Checkbox
@@ -179,7 +181,12 @@ export function ModuleCard({
             v{module.definition.version}
           </Typography>
           {module.definition.category && (
-            <Chip label={module.definition.category} size="small" color="primary" variant="outlined" />
+            <Chip
+              label={module.definition.category}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
           )}
           {isStandalone && (
             <Chip label="外部窗口" size="small" color="secondary" variant="outlined" />
@@ -220,7 +227,13 @@ export function ModuleCard({
               )
             }
           >
-            {isLaunching ? '启动中' : isStopping ? '停止中' : isRunning && !isExternalTool ? '停止' : '打开'}
+            {isLaunching
+              ? '启动中'
+              : isStopping
+                ? '停止中'
+                : isRunning && !isExternalTool
+                  ? '停止'
+                  : '打开'}
           </Button>
 
           <IconButton

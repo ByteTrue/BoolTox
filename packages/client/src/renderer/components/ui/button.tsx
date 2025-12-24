@@ -46,7 +46,10 @@ export interface AppButtonProps {
 }
 
 // 变体映射
-const variantMap: Record<ButtonVariant, { muiVariant: MuiButtonProps['variant']; color: MuiButtonProps['color'] }> = {
+const variantMap: Record<
+  ButtonVariant,
+  { muiVariant: MuiButtonProps['variant']; color: MuiButtonProps['color'] }
+> = {
   primary: { muiVariant: 'contained', color: 'primary' },
   secondary: { muiVariant: 'outlined', color: 'primary' },
   success: { muiVariant: 'contained', color: 'success' },

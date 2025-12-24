@@ -89,12 +89,7 @@ export function BatchActionsBar({
               卸载全部
             </Button>
 
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<X size={14} />}
-              onClick={onCancel}
-            >
+            <Button variant="outlined" size="small" startIcon={<X size={14} />} onClick={onCancel}>
               取消
             </Button>
           </Box>

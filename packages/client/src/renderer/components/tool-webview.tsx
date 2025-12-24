@@ -139,11 +139,7 @@ export function ToolWebView({
         <AlertCircle size={48} color="var(--mui-palette-error-main)" />
         <Typography variant="h6">工具页面已崩溃</Typography>
         <Stack direction="row" spacing={2}>
-          <Button
-            onClick={handleReload}
-            variant="contained"
-            startIcon={<RefreshCw size={16} />}
-          >
+          <Button onClick={handleReload} variant="contained" startIcon={<RefreshCw size={16} />}>
             重新加载
           </Button>
           <Button
@@ -174,11 +170,7 @@ export function ToolWebView({
       >
         <AlertCircle size={48} color="var(--mui-palette-warning-main)" />
         <Typography variant="h6">{error}</Typography>
-        <Button
-          onClick={handleReload}
-          variant="contained"
-          startIcon={<RefreshCw size={16} />}
-        >
+        <Button onClick={handleReload} variant="contained" startIcon={<RefreshCw size={16} />}>
           重试
         </Button>
       </Box>

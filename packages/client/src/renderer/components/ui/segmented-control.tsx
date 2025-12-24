@@ -81,10 +81,7 @@ export function SegmentedControl<T extends string>({
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {option.icon}
-            <Typography
-              variant={size === 'sm' ? 'caption' : 'body2'}
-              fontWeight={600}
-            >
+            <Typography variant={size === 'sm' ? 'caption' : 'body2'} fontWeight={600}>
               {option.label}
             </Typography>
             {option.badge !== undefined && (

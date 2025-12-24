@@ -269,7 +269,13 @@ export function ChangelogDrawer({ open, items, onClose, initialSelectedId }: Cha
                       </Typography>
                     </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
                       <Chip
                         label={typeConfig[item.type]?.label ?? '公告'}
                         size="small"

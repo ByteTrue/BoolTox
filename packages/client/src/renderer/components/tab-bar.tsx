@@ -7,7 +7,17 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
-import { Home, Grid, Settings, X, Moon, Sun, Monitor, ExternalLink, ArrowLeftToLine } from 'lucide-react';
+import {
+  Home,
+  Grid,
+  Settings,
+  X,
+  Moon,
+  Sun,
+  Monitor,
+  ExternalLink,
+  ArrowLeftToLine,
+} from 'lucide-react';
 import {
   DndContext,
   DragEndEvent,
@@ -19,7 +29,12 @@ import {
   useSensors,
   pointerWithin,
 } from '@dnd-kit/core';
-import { SortableContext, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTheme } from './theme-provider';
 import WindowControls from './window-controls';
@@ -137,7 +152,9 @@ function SortableTab({
       }}
     >
       {tab.icon}
-      <Box component="span" sx={{ flex: 1 }}>{tab.label}</Box>
+      <Box component="span" sx={{ flex: 1 }}>
+        {tab.label}
+      </Box>
 
       {/* Pop Out 按钮 */}
       {windowId === 'main' && tab.type === 'tool' && (
@@ -250,7 +267,8 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
     updateToolTab,
     reorderToolTabs,
   } = useToolTabs();
-  const windowActiveToolTabId = windowId === 'main' ? activeToolTabId : getActiveToolTabId(windowId);
+  const windowActiveToolTabId =
+    windowId === 'main' ? activeToolTabId : getActiveToolTabId(windowId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -457,7 +475,7 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
         console.error('[TabBar] Failed to create detached window:', error);
       }
     },
-    [activateToolTab, exportState, updateToolTab]
+    [activateToolTab, exportState, updateToolTab, windowId]
   );
 
   const handleCloseTab = useCallback(
@@ -535,26 +553,29 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
         console.error('[TabBar] Failed to pop out tab:', error);
       }
     },
-    [activateToolTab, exportState, updateToolTab]
+    [activateToolTab, exportState, updateToolTab, windowId]
   );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const id = event.active.id as string;
-    setActiveId(id);
-    activeIdRef.current = id;
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const id = event.active.id as string;
+      setActiveId(id);
+      activeIdRef.current = id;
 
-    const activatorEvent = event.activatorEvent as MouseEvent | PointerEvent | TouchEvent;
-    if ('clientX' in activatorEvent && 'clientY' in activatorEvent) {
-      dragStartPointerRef.current = {
-        clientX: (activatorEvent as { clientX: number; clientY: number }).clientX,
-        clientY: (activatorEvent as { clientX: number; clientY: number }).clientY,
-      };
-    } else {
-      dragStartPointerRef.current = null;
-    }
-    shouldDetachRef.current = false;
-    void getAllWindowsBounds();
-  }, [getAllWindowsBounds]);
+      const activatorEvent = event.activatorEvent as MouseEvent | PointerEvent | TouchEvent;
+      if ('clientX' in activatorEvent && 'clientY' in activatorEvent) {
+        dragStartPointerRef.current = {
+          clientX: (activatorEvent as { clientX: number; clientY: number }).clientX,
+          clientY: (activatorEvent as { clientX: number; clientY: number }).clientY,
+        };
+      } else {
+        dragStartPointerRef.current = null;
+      }
+      shouldDetachRef.current = false;
+      void getAllWindowsBounds();
+    },
+    [getAllWindowsBounds]
+  );
 
   const handleDragMove = useCallback((event: DragMoveEvent) => {
     if (!dragStartPointerRef.current || !tabBarRef.current) return;
@@ -669,7 +690,7 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
   return (
     <Box
       ref={tabBarRef}
-      sx={{
+      sx={theme => ({
         display: 'flex',
         alignItems: 'center',
         height: 48,
@@ -677,10 +698,16 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
         px: 2,
         borderBottom: 1,
         borderColor: 'divider',
-        bgcolor: 'background.paper',
+        // 标题栏浮在最上层：最亮
+        bgcolor: theme.palette.mode === 'light' ? '#ffffff' : '#1a1a1c',
+        // 底部阴影增强浮起感
+        boxShadow:
+          theme.palette.mode === 'light'
+            ? '0 1px 3px rgba(0,0,0,0.05)'
+            : '0 1px 3px rgba(0,0,0,0.3)',
         WebkitAppRegion: 'drag',
         pl: isMac ? 'max(env(titlebar-area-x, 80px), 80px)' : 2,
-      }}
+      })}
     >
       {/* 标签页列表 */}
       <Box

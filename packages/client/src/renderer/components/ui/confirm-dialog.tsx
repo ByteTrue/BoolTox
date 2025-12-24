@@ -65,30 +65,19 @@ export function ConfirmDialog({
         }}
       >
         {title}
-        <IconButton
-          size="small"
-          onClick={onCancel}
-          disabled={loading}
-          aria-label="关闭"
-        >
+        <IconButton size="small" onClick={onCancel} disabled={loading} aria-label="关闭">
           <X size={18} />
         </IconButton>
       </DialogTitle>
 
       {description && (
         <DialogContent>
-          <DialogContentText id={dialogDescriptionId}>
-            {description}
-          </DialogContentText>
+          <DialogContentText id={dialogDescriptionId}>{description}</DialogContentText>
         </DialogContent>
       )}
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button
-          onClick={onCancel}
-          disabled={loading}
-          color="inherit"
-        >
+        <Button onClick={onCancel} disabled={loading} color="inherit">
           {cancelText}
         </Button>
         <Button

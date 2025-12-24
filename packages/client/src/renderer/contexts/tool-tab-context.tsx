@@ -3,7 +3,15 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+  useRef,
+} from 'react';
 
 // ==================== 常量定义 ====================
 /** BroadcastChannel 状态同步重试间隔（毫秒） */
@@ -89,7 +97,9 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
   const isMainRenderer = rendererWindowIdRef.current === 'main';
 
   const [toolTabs, setToolTabs] = useState<ToolTab[]>([]);
-  const [activeToolTabIds, setActiveToolTabIds] = useState<Record<string, string | null>>({ main: null });
+  const [activeToolTabIds, setActiveToolTabIds] = useState<Record<string, string | null>>({
+    main: null,
+  });
   const activeToolTabId = activeToolTabIds.main ?? null;
   const getActiveToolTabId = useCallback(
     (windowId: string) => {
@@ -110,26 +120,40 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
     if (closingWindowIdsRef.current.has(windowId)) return;
     closingWindowIdsRef.current.add(windowId);
 
-    window.ipc.invoke('window:close-detached', { windowId, reason: 'empty' }).catch((err: Error) => {
-      closingWindowIdsRef.current.delete(windowId);
-      console.warn('[ToolTabContext] 关闭窗口失败:', err);
-    });
+    window.ipc
+      .invoke('window:close-detached', { windowId, reason: 'empty' })
+      .catch((err: Error) => {
+        closingWindowIdsRef.current.delete(windowId);
+        console.warn('[ToolTabContext] 关闭窗口失败:', err);
+      });
   }, []);
 
-  const setToolTabsWithRef = useCallback((updater: ToolTab[] | ((prev: ToolTab[]) => ToolTab[])) => {
-    setToolTabs(prev => {
-      const next = typeof updater === 'function' ? (updater as (value: ToolTab[]) => ToolTab[])(prev) : updater;
-      toolTabsRef.current = next;
-      return next;
-    });
-  }, []);
+  const setToolTabsWithRef = useCallback(
+    (updater: ToolTab[] | ((prev: ToolTab[]) => ToolTab[])) => {
+      setToolTabs(prev => {
+        const next =
+          typeof updater === 'function'
+            ? (updater as (value: ToolTab[]) => ToolTab[])(prev)
+            : updater;
+        toolTabsRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
 
   const setActiveToolTabIdsWithRef = useCallback(
-    (updater: Record<string, string | null> | ((prev: Record<string, string | null>) => Record<string, string | null>)) => {
+    (
+      updater:
+        | Record<string, string | null>
+        | ((prev: Record<string, string | null>) => Record<string, string | null>)
+    ) => {
       setActiveToolTabIds(prev => {
         const next =
           typeof updater === 'function'
-            ? (updater as (value: Record<string, string | null>) => Record<string, string | null>)(prev)
+            ? (updater as (value: Record<string, string | null>) => Record<string, string | null>)(
+                prev
+              )
             : updater;
         activeToolTabIdsRef.current = next;
         return next;
@@ -153,13 +177,21 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
     };
 
     // 运行时类型验证，防止恶意或损坏的消息
-    const isValidStateSync = (data: unknown): data is { type: 'state-sync'; toolTabs: ToolTab[]; activeToolTabIds: Record<string, string | null> } => {
+    const isValidStateSync = (
+      data: unknown
+    ): data is {
+      type: 'state-sync';
+      toolTabs: ToolTab[];
+      activeToolTabIds: Record<string, string | null>;
+    } => {
       if (!data || typeof data !== 'object') return false;
       const obj = data as Record<string, unknown>;
-      return obj.type === 'state-sync'
-        && Array.isArray(obj.toolTabs)
-        && typeof obj.activeToolTabIds === 'object'
-        && obj.activeToolTabIds !== null;
+      return (
+        obj.type === 'state-sync' &&
+        Array.isArray(obj.toolTabs) &&
+        typeof obj.activeToolTabIds === 'object' &&
+        obj.activeToolTabIds !== null
+      );
     };
 
     const handleMessage = (event: MessageEvent) => {
@@ -183,7 +215,11 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
       }
 
       // 验证 request-state 消息
-      if (data && typeof data === 'object' && (data as Record<string, unknown>).type === 'request-state') {
+      if (
+        data &&
+        typeof data === 'object' &&
+        (data as Record<string, unknown>).type === 'request-state'
+      ) {
         channel.postMessage({
           type: 'state-sync',
           toolTabs: toolTabsRef.current,
@@ -238,7 +274,11 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
       if (!payload || typeof payload !== 'object') return;
 
       const state = payload as { toolTabs?: unknown; activeToolTabIds?: unknown };
-      if (!Array.isArray(state.toolTabs) || !state.activeToolTabIds || typeof state.activeToolTabIds !== 'object') {
+      if (
+        !Array.isArray(state.toolTabs) ||
+        !state.activeToolTabIds ||
+        typeof state.activeToolTabIds !== 'object'
+      ) {
         return;
       }
 
@@ -281,7 +321,11 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
         if (hasReceivedStateSyncRef.current) return;
 
         const state = payload as { toolTabs?: unknown; activeToolTabIds?: unknown };
-        if (!Array.isArray(state.toolTabs) || !state.activeToolTabIds || typeof state.activeToolTabIds !== 'object') {
+        if (
+          !Array.isArray(state.toolTabs) ||
+          !state.activeToolTabIds ||
+          typeof state.activeToolTabIds !== 'object'
+        ) {
           return;
         }
 
@@ -324,42 +368,52 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
   /**
    * 创建工具标签
    */
-  const createToolTab = useCallback((toolId: string, label: string, url: string, windowId = rendererWindowIdRef.current): string => {
-    let tabId = '';
+  const createToolTab = useCallback(
+    (
+      toolId: string,
+      label: string,
+      url: string,
+      windowId = rendererWindowIdRef.current
+    ): string => {
+      let tabId = '';
 
-    setToolTabsWithRef(prev => {
-      // 使用 setToolTabs 回调函数来获取最新的 toolTabs 值，避免闭包陷阱
-      const existingTab = prev.find(tab => tab.toolId === toolId && tab.windowId === windowId);
-      if (existingTab) {
-        // 已存在，激活该标签
-        tabId = existingTab.id;
-        setActiveToolTabIdsWithRef(activePrev =>
-          (activePrev[windowId] ?? null) === existingTab.id ? activePrev : { ...activePrev, [windowId]: existingTab.id }
-        );
-        return prev; // 不修改标签列表
-      }
+      setToolTabsWithRef(prev => {
+        // 使用 setToolTabs 回调函数来获取最新的 toolTabs 值，避免闭包陷阱
+        const existingTab = prev.find(tab => tab.toolId === toolId && tab.windowId === windowId);
+        if (existingTab) {
+          // 已存在，激活该标签
+          tabId = existingTab.id;
+          setActiveToolTabIdsWithRef(activePrev =>
+            (activePrev[windowId] ?? null) === existingTab.id
+              ? activePrev
+              : { ...activePrev, [windowId]: existingTab.id }
+          );
+          return prev; // 不修改标签列表
+        }
 
-      // 生成唯一 ID
-      tabId = `tool-tab-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        // 生成唯一 ID
+        tabId = `tool-tab-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-      const newTab: ToolTab = {
-        id: tabId,
-        toolId,
-        label,
-        url,
-        canGoBack: false,
-        canGoForward: false,
-        isLoading: true,
-        windowId, // 新增：设置窗口 ID
-      };
+        const newTab: ToolTab = {
+          id: tabId,
+          toolId,
+          label,
+          url,
+          canGoBack: false,
+          canGoForward: false,
+          isLoading: true,
+          windowId, // 新增：设置窗口 ID
+        };
 
-      setActiveToolTabIdsWithRef(activePrev => ({ ...activePrev, [windowId]: tabId }));
+        setActiveToolTabIdsWithRef(activePrev => ({ ...activePrev, [windowId]: tabId }));
 
-      return [...prev, newTab];
-    });
+        return [...prev, newTab];
+      });
 
-    return tabId;
-  }, [setActiveToolTabIdsWithRef, setToolTabsWithRef]); // 移除 toolTabs 依赖，通过 setToolTabs 回调函数获取最新值
+      return tabId;
+    },
+    [setActiveToolTabIdsWithRef, setToolTabsWithRef]
+  ); // 移除 toolTabs 依赖，通过 setToolTabs 回调函数获取最新值
 
   /**
    * 关闭工具标签（支持静默模式，避免循环调用）
@@ -388,8 +442,13 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
           const currentActive = activePrev[windowId] ?? null;
           if (currentActive !== tabId) return activePrev;
 
-          const nextActive = remainingTabsInWindow.length > 0 ? remainingTabsInWindow[remainingTabsInWindow.length - 1].id : null;
-          return currentActive === nextActive ? activePrev : { ...activePrev, [windowId]: nextActive };
+          const nextActive =
+            remainingTabsInWindow.length > 0
+              ? remainingTabsInWindow[remainingTabsInWindow.length - 1].id
+              : null;
+          return currentActive === nextActive
+            ? activePrev
+            : { ...activePrev, [windowId]: nextActive };
         });
 
         // 新增：如果是 detached 窗口的最后一个标签，关闭该窗口
@@ -408,13 +467,16 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
   /**
    * 激活工具标签（传入 null 表示取消激活）
    */
-  const activateToolTab = useCallback((tabId: string | null, windowId = rendererWindowIdRef.current) => {
-    setActiveToolTabIdsWithRef(activePrev => {
-      const currentActive = activePrev[windowId] ?? null;
-      if (currentActive === tabId) return activePrev;
-      return { ...activePrev, [windowId]: tabId };
-    });
-  }, [setActiveToolTabIdsWithRef]);
+  const activateToolTab = useCallback(
+    (tabId: string | null, windowId = rendererWindowIdRef.current) => {
+      setActiveToolTabIdsWithRef(activePrev => {
+        const currentActive = activePrev[windowId] ?? null;
+        if (currentActive === tabId) return activePrev;
+        return { ...activePrev, [windowId]: tabId };
+      });
+    },
+    [setActiveToolTabIdsWithRef]
+  );
 
   /**
    * 更新标签状态
@@ -433,10 +495,15 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
           const remainingInSource = nextTabs.filter(tab => tab.windowId === sourceWindowId);
 
           setActiveToolTabIdsWithRef(activePrev => {
-            const nextActive: Record<string, string | null> = { ...activePrev, [targetWindowId]: tabId };
+            const nextActive: Record<string, string | null> = {
+              ...activePrev,
+              [targetWindowId]: tabId,
+            };
             if ((activePrev[sourceWindowId] ?? null) === tabId) {
               nextActive[sourceWindowId] =
-                remainingInSource.length > 0 ? remainingInSource[remainingInSource.length - 1].id : null;
+                remainingInSource.length > 0
+                  ? remainingInSource[remainingInSource.length - 1].id
+                  : null;
             }
             return nextActive;
           });
@@ -455,19 +522,22 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
   /**
    * 重新排序标签
    */
-  const reorderToolTabs = useCallback((tabIds: string[]) => {
-    setToolTabsWithRef(prev => {
-      // 创建 ID 到索引的映射
-      const orderMap = new Map(tabIds.map((id, index) => [id, index]));
+  const reorderToolTabs = useCallback(
+    (tabIds: string[]) => {
+      setToolTabsWithRef(prev => {
+        // 创建 ID 到索引的映射
+        const orderMap = new Map(tabIds.map((id, index) => [id, index]));
 
-      // 按照新顺序排序
-      return [...prev].sort((a, b) => {
-        const indexA = orderMap.get(a.id) ?? prev.indexOf(a);
-        const indexB = orderMap.get(b.id) ?? prev.indexOf(b);
-        return indexA - indexB;
+        // 按照新顺序排序
+        return [...prev].sort((a, b) => {
+          const indexA = orderMap.get(a.id) ?? prev.indexOf(a);
+          const indexB = orderMap.get(b.id) ?? prev.indexOf(b);
+          return indexA - indexB;
+        });
       });
-    });
-  }, [setToolTabsWithRef]);
+    },
+    [setToolTabsWithRef]
+  );
 
   /**
    * 检查工具是否已有标签
@@ -537,11 +607,14 @@ export function ToolTabProvider({ children }: { children: ReactNode }) {
       const payload = args[0] as { windowId: string; reason?: string };
       const windowId = payload?.windowId;
       if (windowId) {
-        const closeWasRequested = payload.reason === 'empty' || closingWindowIdsRef.current.has(windowId);
+        const closeWasRequested =
+          payload.reason === 'empty' || closingWindowIdsRef.current.has(windowId);
         closingWindowIdsRef.current.add(windowId);
 
         const cleanup = () => {
-          const windowTabIds = toolTabsRef.current.filter(tab => tab.windowId === windowId).map(tab => tab.id);
+          const windowTabIds = toolTabsRef.current
+            .filter(tab => tab.windowId === windowId)
+            .map(tab => tab.id);
           windowTabIds.forEach(tabId => {
             closeToolTab(tabId);
           });

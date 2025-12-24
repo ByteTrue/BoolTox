@@ -794,14 +794,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         duration: 3000,
       });
     },
-    [
-      installedModules,
-      isWindowTool,
-      isDevTool,
-      patchModuleRuntime,
-      refreshToolRegistry,
-      showToast,
-    ]
+    [installedModules, isWindowTool, isDevTool, patchModuleRuntime, refreshToolRegistry, showToast]
   );
 
   const getModuleById = useCallback(

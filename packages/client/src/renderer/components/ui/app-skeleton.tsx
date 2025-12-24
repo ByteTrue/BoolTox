@@ -205,11 +205,7 @@ export interface AppSkeletonTableProps {
   className?: string;
 }
 
-export function AppSkeletonTable({
-  rows = 5,
-  columns = 4,
-  className = '',
-}: AppSkeletonTableProps) {
+export function AppSkeletonTable({ rows = 5, columns = 4, className = '' }: AppSkeletonTableProps) {
   return (
     <Box className={className} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {/* 表头 */}
@@ -260,14 +256,7 @@ export function AppSkeletonImage({
   height = 200,
   className = '',
 }: AppSkeletonImageProps) {
-  return (
-    <AppSkeleton
-      variant="rounded"
-      width={width}
-      height={height}
-      className={className}
-    />
-  );
+  return <AppSkeleton variant="rounded" width={width} height={height} className={className} />;
 }
 
 // 导出别名

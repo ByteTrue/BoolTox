@@ -40,11 +40,7 @@ export function EmptyState({
         }}
       >
         {/* 图标 */}
-        {icon && (
-          <Box sx={{ mb: 3, color: 'text.disabled' }}>
-            {icon}
-          </Box>
-        )}
+        {icon && <Box sx={{ mb: 3, color: 'text.disabled' }}>{icon}</Box>}
 
         {/* 标题 */}
         <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -53,11 +49,7 @@ export function EmptyState({
 
         {/* 描述 */}
         {description && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ maxWidth: 400, mb: 4 }}
-          >
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mb: 4 }}>
             {description}
           </Typography>
         )}
@@ -71,9 +63,7 @@ export function EmptyState({
 
         {/* 推荐内容 */}
         {recommendations && (
-          <Box sx={{ mt: 6, width: '100%', maxWidth: 900 }}>
-            {recommendations}
-          </Box>
+          <Box sx={{ mt: 6, width: '100%', maxWidth: 900 }}>{recommendations}</Box>
         )}
       </Box>
     </Fade>

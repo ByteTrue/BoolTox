@@ -10,18 +10,18 @@ const brandColors = {
   // 浅色模式用深一点的蓝色
   light: {
     lighter: '#DBEAFE', // Blue 100
-    light: '#60A5FA',   // Blue 400
-    main: '#3B82F6',    // Blue 500
-    dark: '#2563EB',    // Blue 600
-    darker: '#1D4ED8',  // Blue 700
+    light: '#60A5FA', // Blue 400
+    main: '#3B82F6', // Blue 500
+    dark: '#2563EB', // Blue 600
+    darker: '#1D4ED8', // Blue 700
   },
   // 深色模式用亮一点的蓝色
   dark: {
     lighter: '#93C5FD', // Blue 300
-    light: '#60A5FA',   // Blue 400
-    main: '#3B82F6',    // Blue 500 (实际会用 light)
-    dark: '#2563EB',    // Blue 600
-    darker: '#1D4ED8',  // Blue 700
+    light: '#60A5FA', // Blue 400
+    main: '#3B82F6', // Blue 500 (实际会用 light)
+    dark: '#2563EB', // Blue 600
+    darker: '#1D4ED8', // Blue 700
   },
 };
 
@@ -214,25 +214,25 @@ export const lightTheme = createTheme({
       contrastText: '#FFFFFF',
     },
     secondary: {
-      light: '#94A3B8',  // Slate 400
-      main: '#64748B',   // Slate 500
-      dark: '#475569',   // Slate 600
+      light: '#94A3B8', // Slate 400
+      main: '#64748B', // Slate 500
+      dark: '#475569', // Slate 600
       contrastText: '#FFFFFF',
     },
     success: {
-      main: '#22C55E',   // Green 500
-      light: '#4ADE80',  // Green 400
-      dark: '#16A34A',   // Green 600
+      main: '#22C55E', // Green 500
+      light: '#4ADE80', // Green 400
+      dark: '#16A34A', // Green 600
     },
     warning: {
-      main: '#F59E0B',   // Amber 500
-      light: '#FBBF24',  // Amber 400
-      dark: '#D97706',   // Amber 600
+      main: '#F59E0B', // Amber 500
+      light: '#FBBF24', // Amber 400
+      dark: '#D97706', // Amber 600
     },
     error: {
-      main: '#EF4444',   // Red 500
-      light: '#F87171',  // Red 400
-      dark: '#DC2626',   // Red 600
+      main: '#EF4444', // Red 500
+      light: '#F87171', // Red 400
+      dark: '#DC2626', // Red 600
     },
     info: {
       main: brandColors.light.main,
@@ -265,7 +265,7 @@ export const lightTheme = createTheme({
     surfaceContainerHighest: surfaceLayers.light.surfaceContainerHighest,
     primaryContainer: alpha(brandColors.light.main, 0.12),
     onPrimaryContainer: brandColors.light.dark,
-  } as any,
+  },
 });
 
 // 暗色主题
@@ -275,30 +275,30 @@ export const darkTheme = createTheme({
     mode: 'dark',
     primary: {
       light: brandColors.dark.lighter,
-      main: brandColors.dark.light,    // 深色模式用亮一点的蓝色
+      main: brandColors.dark.light, // 深色模式用亮一点的蓝色
       dark: brandColors.dark.main,
       contrastText: '#000000',
     },
     secondary: {
-      light: '#CBD5E1',  // Slate 300
-      main: '#94A3B8',   // Slate 400
-      dark: '#64748B',   // Slate 500
+      light: '#CBD5E1', // Slate 300
+      main: '#94A3B8', // Slate 400
+      dark: '#64748B', // Slate 500
       contrastText: '#000000',
     },
     success: {
-      main: '#4ADE80',   // Green 400
-      light: '#86EFAC',  // Green 300
-      dark: '#22C55E',   // Green 500
+      main: '#4ADE80', // Green 400
+      light: '#86EFAC', // Green 300
+      dark: '#22C55E', // Green 500
     },
     warning: {
-      main: '#FBBF24',   // Amber 400
-      light: '#FCD34D',  // Amber 300
-      dark: '#F59E0B',   // Amber 500
+      main: '#FBBF24', // Amber 400
+      light: '#FCD34D', // Amber 300
+      dark: '#F59E0B', // Amber 500
     },
     error: {
-      main: '#F87171',   // Red 400
-      light: '#FCA5A5',  // Red 300
-      dark: '#EF4444',   // Red 500
+      main: '#F87171', // Red 400
+      light: '#FCA5A5', // Red 300
+      dark: '#EF4444', // Red 500
     },
     info: {
       main: brandColors.dark.light,
@@ -331,7 +331,7 @@ export const darkTheme = createTheme({
     surfaceContainerHighest: surfaceLayers.dark.surfaceContainerHighest,
     primaryContainer: alpha(brandColors.dark.light, 0.16),
     onPrimaryContainer: brandColors.dark.lighter,
-  } as any,
+  },
 });
 
 // 根据主题模式获取主题

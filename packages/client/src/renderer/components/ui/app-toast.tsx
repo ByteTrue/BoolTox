@@ -98,11 +98,7 @@ export function AppToast({
         {title && <AlertTitle>{title}</AlertTitle>}
         {message}
         {showProgress && progress !== undefined && (
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{ mt: 1 }}
-          />
+          <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
         )}
       </Alert>
     </Snackbar>

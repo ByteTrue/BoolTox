@@ -32,7 +32,13 @@ export interface DropdownProps {
   className?: string;
 }
 
-export function Dropdown({ trigger, items, selected, align = 'left', className = '' }: DropdownProps) {
+export function Dropdown({
+  trigger,
+  items,
+  selected,
+  align = 'left',
+  className = '',
+}: DropdownProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 

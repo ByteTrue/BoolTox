@@ -65,7 +65,11 @@ export function HomePage() {
             </Typography>
             <Box sx={createGridSx(GRID_BREAKPOINTS.QUICK_LAUNCH, 'TIGHT')}>
               {recentModules.map(module => (
-                <ModuleQuickCard key={module.id} module={module} onClick={() => openModule(module.id)} />
+                <ModuleQuickCard
+                  key={module.id}
+                  module={module}
+                  onClick={() => openModule(module.id)}
+                />
               ))}
             </Box>
           </Box>

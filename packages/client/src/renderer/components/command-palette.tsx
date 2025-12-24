@@ -139,7 +139,17 @@ export function CommandPalette() {
       }}
     >
       {/* 搜索框 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          px: 2,
+          py: 1.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+        }}
+      >
         <Search size={20} style={{ opacity: 0.5 }} />
         <InputBase
           inputRef={inputRef}
@@ -279,22 +289,37 @@ export function CommandPalette() {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}>
+          <Typography
+            variant="caption"
+            sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}
+          >
             ↑↓
           </Typography>
-          <Typography variant="caption" color="text.disabled">导航</Typography>
+          <Typography variant="caption" color="text.disabled">
+            导航
+          </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}>
+          <Typography
+            variant="caption"
+            sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}
+          >
             Enter
           </Typography>
-          <Typography variant="caption" color="text.disabled">选择</Typography>
+          <Typography variant="caption" color="text.disabled">
+            选择
+          </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}>
+          <Typography
+            variant="caption"
+            sx={{ px: 0.5, border: 1, borderColor: 'divider', borderRadius: 0.5 }}
+          >
             Esc
           </Typography>
-          <Typography variant="caption" color="text.disabled">关闭</Typography>
+          <Typography variant="caption" color="text.disabled">
+            关闭
+          </Typography>
         </Box>
       </Box>
     </Dialog>

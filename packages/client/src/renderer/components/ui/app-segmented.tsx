@@ -71,10 +71,7 @@ export function AppSegmentedControl<T extends string = string>({
   className = '',
   exclusive = true,
 }: AppSegmentedControlProps<T>) {
-  const handleChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newValue: T | null
-  ) => {
+  const handleChange = (_event: React.MouseEvent<HTMLElement>, newValue: T | null) => {
     if (newValue !== null) {
       onChange(newValue);
     }
@@ -98,19 +95,11 @@ export function AppSegmentedControl<T extends string = string>({
       }}
     >
       {options.map(option => (
-        <ToggleButton
-          key={option.value}
-          value={option.value}
-          disabled={option.disabled}
-        >
+        <ToggleButton key={option.value} value={option.value} disabled={option.disabled}>
           {option.icon}
           {option.label}
           {option.badge !== undefined && (
-            <Badge
-              badgeContent={option.badge}
-              color="primary"
-              sx={{ ml: 1 }}
-            />
+            <Badge badgeContent={option.badge} color="primary" sx={{ ml: 1 }} />
           )}
         </ToggleButton>
       ))}

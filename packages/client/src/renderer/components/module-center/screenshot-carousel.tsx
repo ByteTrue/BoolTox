@@ -148,15 +148,21 @@ export function ScreenshotCarousel({ screenshots, toolName }: ScreenshotCarousel
                     height: 6,
                     borderRadius: 3,
                     border: 'none',
-                    bgcolor: index === currentIndex
-                      ? 'primary.main'
-                      : isDark ? alpha('#fff', 0.4) : alpha('#000', 0.3),
+                    bgcolor:
+                      index === currentIndex
+                        ? 'primary.main'
+                        : isDark
+                          ? alpha('#fff', 0.4)
+                          : alpha('#000', 0.3),
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      bgcolor: index === currentIndex
-                        ? 'primary.main'
-                        : isDark ? alpha('#fff', 0.6) : alpha('#000', 0.5),
+                      bgcolor:
+                        index === currentIndex
+                          ? 'primary.main'
+                          : isDark
+                            ? alpha('#fff', 0.6)
+                            : alpha('#000', 0.5),
                     },
                   }}
                   aria-label={`跳转到截图 ${index + 1}`}

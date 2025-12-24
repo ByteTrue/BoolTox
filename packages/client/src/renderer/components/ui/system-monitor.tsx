@@ -83,7 +83,9 @@ export function SystemMonitor() {
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
             {/* 操作系统 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography sx={{ fontSize: '1.75rem' }}>{getOSIcon(systemInfo.os.platform)}</Typography>
+              <Typography sx={{ fontSize: '1.75rem' }}>
+                {getOSIcon(systemInfo.os.platform)}
+              </Typography>
               <Box>
                 <Typography variant="caption" color="text.secondary">
                   操作系统
@@ -146,7 +148,12 @@ export function SystemMonitor() {
       {systemInfo.disks.map((disk, index) => (
         <Fade in key={disk.name} timeout={350 + index * 50}>
           <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-            <ProgressBar label={`磁盘 ${disk.name}`} used={disk.used} total={disk.total} icon="💾" />
+            <ProgressBar
+              label={`磁盘 ${disk.name}`}
+              used={disk.used}
+              total={disk.total}
+              icon="💾"
+            />
           </Paper>
         </Fade>
       ))}

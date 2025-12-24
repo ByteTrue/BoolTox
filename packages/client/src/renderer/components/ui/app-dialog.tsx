@@ -85,15 +85,12 @@ export function AppDialog({
       className={className}
     >
       {(title || showCloseButton) && (
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <DialogTitle
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
           {title}
           {showCloseButton && (
-            <IconButton
-              aria-label="关闭"
-              onClick={onClose}
-              size="small"
-              sx={{ ml: 2 }}
-            >
+            <IconButton aria-label="关闭" onClick={onClose} size="small" sx={{ ml: 2 }}>
               <X size={20} />
             </IconButton>
           )}

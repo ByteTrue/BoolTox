@@ -24,8 +24,9 @@ export function DetachedWindowPage() {
   // 过滤出属于当前窗口的标签
   const windowTabs = toolTabs.filter(tab => tab.windowId === windowId);
   const windowActiveToolTabId = windowId ? getActiveToolTabId(windowId) : null;
-  const hasActiveTab = windowActiveToolTabId !== null && windowTabs.some(tab => tab.id === windowActiveToolTabId);
-  const activeTabId = hasActiveTab ? windowActiveToolTabId : windowTabs[0]?.id ?? null;
+  const hasActiveTab =
+    windowActiveToolTabId !== null && windowTabs.some(tab => tab.id === windowActiveToolTabId);
+  const activeTabId = hasActiveTab ? windowActiveToolTabId : (windowTabs[0]?.id ?? null);
 
   useEffect(() => {
     if (!hasEverHadTabs && windowTabs.length > 0) {
@@ -53,12 +54,14 @@ export function DetachedWindowPage() {
     const timer = setTimeout(() => {
       if (!isMounted || closeRequestedRef.current) return;
       closeRequestedRef.current = true;
-      window.ipc.invoke('window:close-detached', { windowId, reason: 'empty' }).catch((err: Error) => {
-        if (isMounted) {
-          closeRequestedRef.current = false;
-        }
-        console.warn('[DetachedWindowPage] 关闭空窗口失败:', err);
-      });
+      window.ipc
+        .invoke('window:close-detached', { windowId, reason: 'empty' })
+        .catch((err: Error) => {
+          if (isMounted) {
+            closeRequestedRef.current = false;
+          }
+          console.warn('[DetachedWindowPage] 关闭空窗口失败:', err);
+        });
     }, delay);
 
     return () => {
@@ -83,7 +86,10 @@ export function DetachedWindowPage() {
       {/* 工具 webview 区域 */}
       <Box component="main" sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         {windowTabs.map(tab => (
-          <Box key={tab.id} sx={{ display: tab.id === activeTabId ? 'block' : 'none', height: '100%' }}>
+          <Box
+            key={tab.id}
+            sx={{ display: tab.id === activeTabId ? 'block' : 'none', height: '100%' }}
+          >
             <ToolWebView
               url={tab.url}
               toolId={tab.toolId}
@@ -98,7 +104,9 @@ export function DetachedWindowPage() {
 
         {/* 如果窗口没有标签，显示空状态 */}
         {windowTabs.length === 0 && (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+          >
             <Box sx={{ textAlign: 'center' }}>
               <Typography color="text.secondary">
                 {hasEverHadTabs ? '窗口已无标签页，即将关闭…' : '正在载入标签页…'}

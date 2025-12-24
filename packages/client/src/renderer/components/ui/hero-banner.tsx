@@ -63,7 +63,11 @@ export function HeroBanner({
               opacity: 0.2,
             }}
           >
-            <img src={pattern} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay' }} />
+            <img
+              src={pattern}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay' }}
+            />
           </Box>
         )}
 
@@ -72,7 +76,14 @@ export function HeroBanner({
           <svg width="100%" height="100%" viewBox="0 0 400 400" fill="none">
             <circle cx="350" cy="50" r="80" fill="white" />
             <circle cx="50" cy="350" r="100" fill="white" />
-            <rect x="200" y="200" width="150" height="150" fill="white" transform="rotate(45 275 275)" />
+            <rect
+              x="200"
+              y="200"
+              width="150"
+              height="150"
+              fill="white"
+              transform="rotate(45 275 275)"
+            />
           </svg>
         </Box>
 
@@ -190,11 +201,7 @@ export function CategoryHeader({ title, showAll }: CategoryHeaderProps) {
         {title}
       </Typography>
       {showAll && (
-        <Button
-          onClick={showAll}
-          color="primary"
-          sx={{ textTransform: 'none' }}
-        >
+        <Button onClick={showAll} color="primary" sx={{ textTransform: 'none' }}>
           查看全部 →
         </Button>
       )}

@@ -32,7 +32,9 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
         bgcolor: 'background.default',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 3 }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 3 }}
+      >
         {/* 左侧: 标题区 */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="h4" fontWeight={600}>

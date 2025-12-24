@@ -88,11 +88,7 @@ export function OverviewPanel() {
 /**
  * Hero 区域：问候语 + 核心统计 + 快速操作
  */
-function HeroSection({
-  stats,
-}: {
-  stats: ReturnType<typeof useModuleStats>;
-}) {
+function HeroSection({ stats }: { stats: ReturnType<typeof useModuleStats> }) {
   return (
     <Fade in timeout={400}>
       <Paper
@@ -229,11 +225,7 @@ function RecentModulesSection({
  * 操作记录简要组件
  * 显示最近的操作记录，支持查看历史
  */
-function ActivityRecordBrief({
-  events,
-}: {
-  events: ModuleEvent[];
-}) {
+function ActivityRecordBrief({ events }: { events: ModuleEvent[] }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const latestEvent = events[0];

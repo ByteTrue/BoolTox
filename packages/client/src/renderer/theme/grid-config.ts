@@ -46,7 +46,8 @@ export function getGridColumns(config: (typeof GRID_BREAKPOINTS)[keyof typeof GR
   const result: Partial<Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', string>> = {};
 
   Object.entries(config).forEach(([breakpoint, columns]) => {
-    result[breakpoint as 'xs' | 'sm' | 'md' | 'lg' | 'xl'] = columns === 1 ? '1fr' : `repeat(${columns}, 1fr)`;
+    result[breakpoint as 'xs' | 'sm' | 'md' | 'lg' | 'xl'] =
+      columns === 1 ? '1fr' : `repeat(${columns}, 1fr)`;
   });
 
   return result as { xs: string; sm?: string; md?: string; lg?: string; xl?: string };

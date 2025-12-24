@@ -23,7 +23,7 @@ export function Toaster() {
   if (!currentToast) return null;
 
   // 将 'default' 映射为 'info'，因为 MUI Alert 不支持 'default'
-  const severity = currentToast.type === 'default' ? 'info' : (currentToast.type || 'info');
+  const severity = currentToast.type === 'default' ? 'info' : currentToast.type || 'info';
 
   return (
     <Snackbar

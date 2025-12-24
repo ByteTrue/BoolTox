@@ -86,21 +86,9 @@ export function AppCard({
       }}
       onClick={clickable ? onClick : undefined}
     >
-      {image && (
-        <CardMedia
-          component="img"
-          height={imageHeight}
-          image={image}
-          alt={title || ''}
-        />
-      )}
+      {image && <CardMedia component="img" height={imageHeight} image={image} alt={title || ''} />}
       {(title || subtitle || avatar || headerAction) && (
-        <CardHeader
-          avatar={avatar}
-          action={headerAction}
-          title={title}
-          subheader={subtitle}
-        />
+        <CardHeader avatar={avatar} action={headerAction} title={title} subheader={subtitle} />
       )}
       {children && <CardContent>{children}</CardContent>}
       {actions && <CardActions>{actions}</CardActions>}

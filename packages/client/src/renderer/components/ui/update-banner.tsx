@@ -124,15 +124,28 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
               </Typography>
             )}
           </Box>
-          <LinearProgress variant="determinate" value={progressPercent} sx={{ borderRadius: 1, mb: 1 }} />
+          <LinearProgress
+            variant="determinate"
+            value={progressPercent}
+            sx={{ borderRadius: 1, mb: 1 }}
+          />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="caption" color="text.secondary">
               {progressPercent}%
               {state.progress?.totalBytes && (
-                <> · {formatBytes(state.progress.downloadedBytes)} / {formatBytes(state.progress.totalBytes)}</>
+                <>
+                  {' '}
+                  · {formatBytes(state.progress.downloadedBytes)} /{' '}
+                  {formatBytes(state.progress.totalBytes)}
+                </>
               )}
             </Typography>
-            <Button variant="outlined" size="small" onClick={cancelDownload} sx={{ borderRadius: 50 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={cancelDownload}
+              sx={{ borderRadius: 50 }}
+            >
               取消下载
             </Button>
           </Box>
@@ -170,7 +183,12 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
             >
               前往安装
             </Button>
-            <Button variant="outlined" size="small" onClick={dismissUpdate} sx={{ borderRadius: 50 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={dismissUpdate}
+              sx={{ borderRadius: 50 }}
+            >
               稍后再说
             </Button>
           </Box>
@@ -220,7 +238,12 @@ export function UpdateBanner({ onNavigate }: UpdateBannerProps) {
                 重新检查
               </Button>
             )}
-            <Button variant="outlined" size="small" onClick={dismissUpdate} sx={{ borderRadius: 50 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={dismissUpdate}
+              sx={{ borderRadius: 50 }}
+            >
               隐藏提示
             </Button>
           </Box>

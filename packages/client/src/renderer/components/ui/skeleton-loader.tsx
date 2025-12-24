@@ -41,7 +41,9 @@ export function SkeletonLoader({
 function ModuleCardSkeleton() {
   return (
     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Skeleton variant="rounded" width={32} height={32} />
           <Skeleton variant="rounded" width={64} height={20} sx={{ borderRadius: 3 }} />

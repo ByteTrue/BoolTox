@@ -56,7 +56,9 @@ export function ModuleRecommendations({
         return (
           <Box key={section.id}>
             {/* 区域标题 */}
-            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box
+              sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="subtitle1" fontWeight={600}>
                   {section.title}

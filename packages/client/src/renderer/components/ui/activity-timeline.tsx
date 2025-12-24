@@ -23,7 +23,15 @@ export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProp
 
   if (displayEvents.length === 0) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          py: 6,
+        }}
+      >
         <Typography variant="body2" color="text.secondary">
           暂无操作记录
         </Typography>
@@ -37,7 +45,14 @@ export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProp
         <Fade in key={event.id} timeout={300 + index * 50}>
           <Box sx={{ position: 'relative', display: 'flex', gap: 2 }}>
             {/* 时间轴线和圆点 */}
-            <Box sx={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box
+              sx={{
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
               {/* 圆点 */}
               <Box
                 sx={{
@@ -91,7 +106,14 @@ export function ActivityTimeline({ events, maxItems = 10 }: ActivityTimelineProp
                 },
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 1.5,
+                }}
+              >
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="body2" fontWeight={600}>
                     {event.moduleName}

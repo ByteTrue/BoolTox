@@ -132,7 +132,12 @@ function ErrorFallback({
                 overflow: 'auto',
               }}
             >
-              <Typography variant="caption" color="error.main" fontWeight={600} sx={{ display: 'block', mb: 1 }}>
+              <Typography
+                variant="caption"
+                color="error.main"
+                fontWeight={600}
+                sx={{ display: 'block', mb: 1 }}
+              >
                 {error.name}: {error.message}
               </Typography>
               <Typography

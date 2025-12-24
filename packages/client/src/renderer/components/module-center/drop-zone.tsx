@@ -60,7 +60,15 @@ export function DropZone({ onDrop, onBrowse }: DropZoneProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, textAlign: 'center' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2,
+          textAlign: 'center',
+        }}
+      >
         <Box
           sx={{
             p: 3,
@@ -73,7 +81,9 @@ export function DropZone({ onDrop, onBrowse }: DropZoneProps) {
           <Upload
             size={48}
             style={{
-              color: isDragging ? 'var(--mui-palette-primary-main)' : 'var(--mui-palette-text-secondary)',
+              color: isDragging
+                ? 'var(--mui-palette-primary-main)'
+                : 'var(--mui-palette-text-secondary)',
             }}
           />
         </Box>
@@ -90,12 +100,18 @@ export function DropZone({ onDrop, onBrowse }: DropZoneProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <FolderOpen size={16} />
-            <Typography variant="caption" color="text.secondary">文件夹</Typography>
+            <Typography variant="caption" color="text.secondary">
+              文件夹
+            </Typography>
           </Box>
-          <Typography variant="caption" color="text.disabled">或</Typography>
+          <Typography variant="caption" color="text.disabled">
+            或
+          </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <FileArchive size={16} />
-            <Typography variant="caption" color="text.secondary">ZIP 文件</Typography>
+            <Typography variant="caption" color="text.secondary">
+              ZIP 文件
+            </Typography>
           </Box>
         </Box>
 

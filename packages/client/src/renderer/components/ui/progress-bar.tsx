@@ -58,11 +58,7 @@ export function ProgressBar({ label, used, total, icon }: ProgressBarProps) {
 
       {/* 百分比 */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Typography
-          variant="caption"
-          fontWeight={600}
-          color={`${colorMap[color]}.main`}
-        >
+        <Typography variant="caption" fontWeight={600} color={`${colorMap[color]}.main`}>
           {percentage.toFixed(1)}%
         </Typography>
       </Box>

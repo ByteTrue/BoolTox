@@ -168,7 +168,14 @@ function ActivityFeedContent({
         </Box>
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
             <Typography variant="h6" fontWeight={700}>
               {latestItem.title}
             </Typography>
@@ -264,12 +271,7 @@ function ActivityFeedContent({
             查看所有公告
           </Button>
 
-          <IconButton
-            size="small"
-            onClick={onRefresh}
-            disabled={refreshing}
-            title="刷新公告"
-          >
+          <IconButton size="small" onClick={onRefresh} disabled={refreshing} title="刷新公告">
             <Box
               component={RefreshCw}
               size={16}

@@ -58,12 +58,17 @@ export function ProgressToast({ message, progress, icon, action }: ProgressToast
         )}
 
         {/* 内容 */}
-        <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 2 }}>
-          {icon && (
-            <Box sx={{ flexShrink: 0, color: 'primary.main' }}>
-              {icon}
-            </Box>
-          )}
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            p: 2,
+          }}
+        >
+          {icon && <Box sx={{ flexShrink: 0, color: 'primary.main' }}>{icon}</Box>}
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="body2" fontWeight={500} sx={{ mb: hasProgress ? 0.5 : 0 }}>
@@ -76,7 +81,12 @@ export function ProgressToast({ message, progress, icon, action }: ProgressToast
                   value={progressPercentage}
                   sx={{ flex: 1, height: 6, borderRadius: 1 }}
                 />
-                <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ minWidth: 32 }}>
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                  sx={{ minWidth: 32 }}
+                >
                   {Math.round(progressPercentage)}%
                 </Typography>
               </Box>

@@ -176,12 +176,7 @@ export interface AppDropdownProps {
  * />
  * ```
  */
-export function AppDropdown({
-  trigger,
-  items,
-  selected,
-  className = '',
-}: AppDropdownProps) {
+export function AppDropdown({ trigger, items, selected, className = '' }: AppDropdownProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -229,7 +224,10 @@ export function AppDropdown({
               {item.icon && <ListItemIcon sx={{ color: 'inherit' }}>{item.icon}</ListItemIcon>}
               <ListItemText>{item.label}</ListItemText>
               {selected === item.id && (
-                <Check size={16} style={{ marginLeft: 8, color: 'var(--mui-palette-primary-main)' }} />
+                <Check
+                  size={16}
+                  style={{ marginLeft: 8, color: 'var(--mui-palette-primary-main)' }}
+                />
               )}
             </MenuItem>
             {item.divider && index < items.length - 1 && <Divider />}

@@ -50,12 +50,7 @@ export function BatchActionBar({ selectedCount, actions, onClear }: BatchActionB
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 3, py: 2 }}>
           {/* 选中数量 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Chip
-              label={selectedCount}
-              size="small"
-              color="primary"
-              sx={{ fontWeight: 600 }}
-            />
+            <Chip label={selectedCount} size="small" color="primary" sx={{ fontWeight: 600 }} />
             <Typography variant="body2" color="text.secondary">
               已选中
             </Typography>

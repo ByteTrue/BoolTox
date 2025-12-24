@@ -106,12 +106,7 @@ export function ModuleQuickCard({ module, onClick }: ModuleQuickCardProps) {
 
         {/* 模块信息 */}
         <Box sx={{ mt: 2, width: '100%' }}>
-          <Typography
-            variant="subtitle2"
-            fontWeight={600}
-            noWrap
-            sx={{ color: 'text.primary' }}
-          >
+          <Typography variant="subtitle2" fontWeight={600} noWrap sx={{ color: 'text.primary' }}>
             {module.definition.name}
           </Typography>
 

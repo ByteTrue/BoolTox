@@ -149,11 +149,7 @@ export interface SkeletonListProps {
   className?: string;
 }
 
-export function SkeletonList({
-  count = 5,
-  itemHeight = 60,
-  className = '',
-}: SkeletonListProps) {
+export function SkeletonList({ count = 5, itemHeight = 60, className = '' }: SkeletonListProps) {
   return (
     <Box className={className} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {Array.from({ length: count }).map((_, index) => (
