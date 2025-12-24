@@ -17,17 +17,14 @@ import {
   AddRounded,
   ArrowForwardRounded,
   HistoryRounded,
-  KeyboardCommandKeyRounded,
   PlayArrowRounded,
   SearchRounded,
-  SettingsRounded,
   StarRounded,
   StopRounded,
 } from '@mui/icons-material';
 import type { ModuleInstance } from '@/types/module';
 import { useModulePlatform } from '@/contexts/module-context';
 import { useModuleEvents } from '@/hooks/use-module-events';
-import { useCommandPalette } from '@/contexts/command-palette-context';
 import { getGreeting, getShortDate } from '@/utils/greeting';
 import { AppSegmentedControl, EmptyState } from '@/components/ui';
 import { ActivityFeed } from '@/components/ui/activity-feed';
@@ -42,7 +39,6 @@ export function HomePage() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
-  const { open: openCommandPalette } = useCommandPalette();
   const {
     installedModules,
     favoriteModules,
@@ -113,11 +109,6 @@ export function HomePage() {
 
   const displayedQuickModules = useMemo(() => quickModules.slice(0, 8), [quickModules]);
 
-  const shortcutHint = useMemo(() => {
-    const platform = navigator.userAgent.toLowerCase();
-    return platform.includes('mac') ? '⌘ K' : 'Ctrl K';
-  }, []);
-
   return (
     <Box
       className="elegant-scroll"
@@ -143,8 +134,7 @@ export function HomePage() {
           <HeroCard
             title={getGreeting()}
             subtitle={`${getShortDate()} · BoolTox`}
-            shortcutHint={shortcutHint}
-            onOpenSearch={openCommandPalette}
+            onOpenTools={() => navigate('/tools')}
             onOpenSources={() => navigate('/tools/sources')}
             onAddLocalTool={() => void addLocalBinaryTool()}
           />
@@ -339,17 +329,13 @@ export function HomePage() {
 function HeroCard({
   title,
   subtitle,
-  shortcutHint,
-  onOpenSearch,
   onOpenTools,
   onOpenSources,
   onAddLocalTool,
-  onOpenSettings,
 }: {
   title: string;
   subtitle: string;
-  shortcutHint: string;
-  onOpenSearch: () => void;
+  onOpenTools: () => void;
   onOpenSources: () => void;
   onAddLocalTool: () => void;
 }) {
@@ -394,11 +380,17 @@ function HeroCard({
           </Box>
         </Box>
 
-        <SearchTrigger shortcutHint={shortcutHint} onClick={onOpenSearch} />
-
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
           <Button
             variant="contained"
+            startIcon={<SearchRounded />}
+            onClick={onOpenTools}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            浏览工具
+          </Button>
+          <Button
+            variant="outlined"
             startIcon={<AddRounded />}
             onClick={onAddLocalTool}
             sx={{ textTransform: 'none', fontWeight: 700 }}
@@ -415,68 +407,6 @@ function HeroCard({
         </Stack>
       </Stack>
     </Paper>
-  );
-}
-
-function SearchTrigger({ shortcutHint, onClick }: { shortcutHint: string; onClick: () => void }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
-  return (
-    <Box
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.25,
-        px: 2,
-        py: 1.25,
-        borderRadius: 2.5,
-        cursor: 'pointer',
-        bgcolor: isDark ? alpha('#fff', 0.04) : '#ffffff',
-        border: '1px solid',
-        borderColor: isDark ? alpha('#fff', 0.10) : alpha('#000', 0.08),
-        transition: transitions.hover,
-        '&:hover': {
-          borderColor: isDark ? alpha('#fff', 0.16) : alpha(theme.palette.primary.main, 0.25),
-          boxShadow: isDark
-            ? `0 0 0 3px ${alpha('#60A5FA', 0.12)}`
-            : `0 0 0 3px ${alpha(theme.palette.primary.main, 0.12)}`,
-        },
-        '&:focus-visible': {
-          borderColor: 'primary.main',
-          boxShadow: isDark
-            ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.08)}`
-            : `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.06)}`,
-        },
-      }}
-    >
-      <SearchRounded sx={{ fontSize: 20, color: 'text.tertiary' }} />
-      <Typography
-        variant="body2"
-        sx={{
-          color: 'text.secondary',
-          flex: 1,
-          userSelect: 'none',
-        }}
-      >
-        搜索工具或输入命令…
-      </Typography>
-      <Stack direction="row" spacing={0.5} sx={{ opacity: 0.6, userSelect: 'none' }}>
-        <KeyboardCommandKeyRounded sx={{ fontSize: 16 }} />
-        <Typography variant="caption" sx={{ fontSize: '0.75rem', fontWeight: 700 }}>
-          {shortcutHint.replace('⌘ ', '').replace('Ctrl ', '')}
-        </Typography>
-      </Stack>
-    </Box>
   );
 }
 

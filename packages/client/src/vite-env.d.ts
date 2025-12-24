@@ -79,11 +79,6 @@ declare global {
       getCloseToTray: () => Promise<boolean>;
       setCloseToTray: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
     };
-    quickPanel: {
-      hide: () => Promise<void>;
-      showMain: () => Promise<void>;
-      navigateTo: (route: string) => Promise<void>;
-    };
     toast?: {
       success: (message: string) => void;
       error: (message: string) => void;

@@ -16,7 +16,6 @@ import RootLayout from './renderer/layout';
 
 // Import the new App Shell
 import { AppShell } from './renderer/components/app-shell';
-import { QuickPanel } from './renderer/components/quick-panel';
 
 // Import only the contexts we need
 import { ModuleProvider } from './renderer/contexts/module-context';
@@ -24,7 +23,6 @@ import { SpotlightProvider } from './renderer/contexts/spotlight-context';
 import { ToastProvider } from './renderer/contexts/toast-context';
 import { UpdateProvider } from './renderer/contexts/update-context';
 import { ActivityFeedProvider } from './renderer/contexts/activity-feed-context';
-import { CommandPaletteProvider } from './renderer/contexts/command-palette-context';
 import { AnimationProvider } from './renderer/contexts/animation-context';
 // import { initErrorTracking } from './renderer/lib/error-tracking'; // 暂时禁用，等待日志系统兼容
 import { ErrorBoundary } from './renderer/components/error-boundary';
@@ -55,48 +53,34 @@ profiler.mark('app-startup-begin');
 // initErrorTracking(); // 暂时禁用
 profiler.mark('react-render-begin');
 
-// 检测是否为快捷面板窗口
-const isQuickPanel = window.location.hash === '#/quick-panel';
-
 // 检测是否为分离窗口（使用 HashRouter）
 // 分离窗口的 URL 格式：index.html#/detached/{windowId}
 const isDetachedWindow = window.location.hash.startsWith('#/detached/');
 
 // 路由选择：分离窗口使用 HashRouter，主窗口使用 BrowserRouter
-// 注意：快捷面板有独立的渲染逻辑，不使用 Router
 const Router = isDetachedWindow ? HashRouter : BrowserRouter;
 
 // 渲染
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ErrorBoundary name={isQuickPanel ? 'Quick Panel' : 'App Root'} showHomeButton={false}>
-      {isQuickPanel ? (
-        // 快捷面板：最小化的 Provider 树
-        <RootLayout>
-          <QuickPanel />
-        </RootLayout>
-      ) : (
-        // 主窗口：完整的 Provider 树
-        <Router>
-          <AnimationProvider>
-            <ToastProvider>
-              <SpotlightProvider>
-                <ModuleProvider>
-                  <UpdateProvider>
-                    <ActivityFeedProvider>
-                      <CommandPaletteProvider>
-                        <RootLayout>
-                          <AppShell />
-                        </RootLayout>
-                      </CommandPaletteProvider>
-                    </ActivityFeedProvider>
-                  </UpdateProvider>
-                </ModuleProvider>
-              </SpotlightProvider>
-            </ToastProvider>
-          </AnimationProvider>
-        </Router>
-      )}
+    <ErrorBoundary name="App Root" showHomeButton={false}>
+      <Router>
+        <AnimationProvider>
+          <ToastProvider>
+            <SpotlightProvider>
+              <ModuleProvider>
+                <UpdateProvider>
+                  <ActivityFeedProvider>
+                    <RootLayout>
+                      <AppShell />
+                    </RootLayout>
+                  </ActivityFeedProvider>
+                </UpdateProvider>
+              </ModuleProvider>
+            </SpotlightProvider>
+          </ToastProvider>
+        </AnimationProvider>
+      </Router>
     </ErrorBoundary>
   </React.StrictMode>
 );

@@ -12,7 +12,6 @@ import { ErrorBoundary } from './error-boundary';
 import { UpdateBanner } from './ui/update-banner';
 import { ToolTabProvider, useToolTabs } from '../contexts/tool-tab-context';
 import { ToolWebView } from './tool-webview';
-import { CommandPalette } from './command-palette';
 import { PageTransition } from './motion';
 
 // 路由懒加载
@@ -178,7 +177,6 @@ export function AppShell() {
   return (
     <ToolTabProvider>
       <AppShellContent />
-      <CommandPalette />
     </ToolTabProvider>
   );
 }

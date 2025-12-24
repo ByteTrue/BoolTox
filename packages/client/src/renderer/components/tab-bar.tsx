@@ -418,7 +418,7 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
 
       updateToolTab(tab.id, { windowId: 'main' });
       activateToolTab(tab.id, 'main');
-      window.ipc.invoke('quick-panel:show-main').catch((err: Error) => {
+      window.ipc.invoke('window:focus-window', 'main').catch((err: Error) => {
         console.warn('[TabBar] 聚焦主窗口失败:', err);
       });
     },

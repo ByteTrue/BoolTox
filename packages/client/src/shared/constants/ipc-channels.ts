@@ -89,11 +89,6 @@ export enum IpcChannel {
   AutoUpdate_GetStatus = 'auto-update:get-status',
   AutoUpdate_QuitAndInstall = 'auto-update:quit-and-install',
 
-  // ==================== 快捷面板 ====================
-  QuickPanel_Hide = 'quick-panel:hide',
-  QuickPanel_ShowMain = 'quick-panel:show-main',
-  QuickPanel_Navigate = 'quick-panel:navigate',
-
   // ==================== 渲染进程日志（已废弃，使用 App_LogToMain） ====================
   RendererConsoleLog = 'renderer:console-log',
 }

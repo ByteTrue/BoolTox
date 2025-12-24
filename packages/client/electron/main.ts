@@ -26,7 +26,6 @@ import { toolManager } from './services/tool/tool-manager.js';
 import { toolRunner } from './services/tool/tool-runner.js';
 import { toolInstaller } from './services/tool/tool-installer.js';
 import { TrayService } from './services/tray.service.js';
-import { quickPanelManager } from './windows/quick-panel-manager.js';
 import { detachedWindowManager } from './windows/detached-window-manager.js';
 import { registerAllIpcHandlers } from './ipc-registry.js';
 import './services/tool/tool-api-handler.js'; // Initialize API handlers
@@ -106,8 +105,6 @@ function createWindow() {
     }
   });
 
-  // 设置主窗口引用
-  quickPanelManager.setMainWindow(mainWindow);
 }
 
 /**
@@ -150,11 +147,6 @@ app.whenReady().then(() => {
     trayService.create();
   }
 
-  // 初始化快捷面板
-  quickPanelManager.createWindow();
-  quickPanelManager.registerShortcut();
-  quickPanelManager.registerIPCHandlers();
-
   // 注册分离窗口管理器的 IPC 处理器
   detachedWindowManager.registerIPCHandlers();
 
@@ -189,9 +181,6 @@ app.on('before-quit', async () => {
     trayService.destroy();
     trayService = null;
   }
-
-  // 清理快捷面板
-  quickPanelManager.destroy();
 
   // 清理所有分离窗口
   detachedWindowManager.destroy();
