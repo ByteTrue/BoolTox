@@ -5,7 +5,7 @@ import type { StoredModuleInfo } from './shared/types/module-store.types';
 import type {
   Announcement,
   GitOpsConfig,
-  PluginRegistry,
+  ToolRegistry,
 } from '../electron/services/git-ops.service';
 import type { AutoUpdateStatus } from '../electron/services/auto-update.service';
 import type { ToolRegistryEntry, ToolInstallProgress } from '@booltox/shared';
@@ -55,7 +55,7 @@ declare global {
       getConfig: () => Promise<GitOpsConfig>;
       updateConfig: (config: Partial<GitOpsConfig>) => Promise<GitOpsConfig>;
       getAnnouncements: () => Promise<Announcement[]>;
-      getTools: () => Promise<PluginRegistry>;
+      getTools: () => Promise<ToolRegistry>;
     };
     tool: {
       start: (toolId: string) => Promise<void>;
