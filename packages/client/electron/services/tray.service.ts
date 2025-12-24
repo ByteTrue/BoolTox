@@ -40,7 +40,7 @@ export class TrayService {
 
       // 创建托盘
       this.tray = new Tray(iconPath);
-      this.tray.setToolTip('BoolTox - 工具箱');
+      this.tray.setToolTip('BoolTox - 一键运行开发者工具');
 
       // 单击托盘图标显示/隐藏窗口
       this.tray.on('click', () => {
@@ -58,34 +58,11 @@ export class TrayService {
 
   /**
    * 更新托盘菜单
-   * @param recentTools 最近使用的工具列表
    */
-  updateMenu(recentTools?: Array<{ id: string; name: string; icon?: string }>): void {
+  updateMenu(): void {
     if (!this.tray) return;
 
-    const menuItems: Electron.MenuItemConstructorOptions[] = [];
-
-    // 最近使用的工具
-    if (recentTools && recentTools.length > 0) {
-      const toolMenuItems: Electron.MenuItemConstructorOptions[] = recentTools.slice(0, 5).map(tool => ({
-        label: `${tool.icon || '🔧'} ${tool.name}`,
-        click: () => {
-          this.launchTool(tool.id);
-        },
-      }));
-
-      menuItems.push(
-        {
-          label: '最近使用',
-          enabled: false,
-        },
-        ...toolMenuItems,
-        { type: 'separator' }
-      );
-    }
-
-    // 快捷操作
-    menuItems.push(
+    const menuItems: Electron.MenuItemConstructorOptions[] = [
       {
         label: '打开 BoolTox',
         click: () => {
@@ -105,8 +82,8 @@ export class TrayService {
         click: () => {
           this.quit();
         },
-      }
-    );
+      },
+    ];
 
     const contextMenu = Menu.buildFromTemplate(menuItems);
     this.tray.setContextMenu(contextMenu);
@@ -137,19 +114,6 @@ export class TrayService {
 
     this.mainWindow.show();
     this.mainWindow.focus();
-  }
-
-  /**
-   * 启动工具
-   */
-  private launchTool(toolId: string): void {
-    if (!this.mainWindow) return;
-
-    // 显示窗口
-    this.showWindow();
-
-    // 发送启动工具的消息到渲染进程
-    this.mainWindow.webContents.send('tool:launch-from-tray', toolId);
   }
 
   /**
@@ -220,26 +184,14 @@ export class TrayService {
 
   /**
    * 设置徽章数字（显示运行中的工具数量）
-   * macOS 和 Linux 支持
    */
   setBadge(count: number): void {
     if (!this.tray) return;
 
-    // Windows 不支持徽章，可以修改图标或 tooltip
-    if (process.platform === 'win32') {
-      if (count > 0) {
-        this.tray.setToolTip(`BoolTox - ${count} 个工具运行中`);
-      } else {
-        this.tray.setToolTip('BoolTox - 工具箱');
-      }
-    } else {
-      // macOS/Linux 可以使用 overlay icon
-      // 这里简化实现，只更新 tooltip
-      if (count > 0) {
-        this.tray.setToolTip(`BoolTox - ${count} 个工具运行中`);
-      } else {
-        this.tray.setToolTip('BoolTox - 工具箱');
-      }
-    }
+    const tooltip = count > 0
+      ? `BoolTox - ${count} 个工具运行中`
+      : 'BoolTox - 一键运行开发者工具';
+
+    this.tray.setToolTip(tooltip);
   }
 }
