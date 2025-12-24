@@ -251,12 +251,12 @@ export class ToolInstallerService {
    * - 在 tools/ 目录中 → 远程工具，删除整个目录
    * - 不在 tools/ 目录中 → 本地工具，只删除配置引用
    */
-  async uninstallTool(pluginId: string): Promise<void> {
+  async uninstallTool(toolId: string): Promise<void> {
     // 从 ToolManager 获取工具信息
-    const tool = toolManager.getAllTools().find(t => t.id === pluginId);
+    const tool = toolManager.getAllTools().find(t => t.id === toolId);
 
     if (!tool) {
-      throw new Error(`工具 ${pluginId} 未找到`);
+      throw new Error(`工具 ${toolId} 未找到`);
     }
 
     const toolPath = tool.path;
@@ -266,7 +266,7 @@ export class ToolInstallerService {
       // 远程工具：删除整个目录
       const exists = await this.checkToolExists(toolPath);
       if (!exists) {
-        throw new Error(`工具 ${pluginId} 未安装`);
+        throw new Error(`工具 ${toolId} 未安装`);
       }
 
       // 检查是否为符号链接
@@ -274,29 +274,29 @@ export class ToolInstallerService {
       if (stat.isSymbolicLink()) {
         // 符号链接：只删除链接本身
         await fs.unlink(toolPath);
-        logger.info(`[ToolInstaller] 符号链接已移除: ${pluginId}`);
+        logger.info(`[ToolInstaller] 符号链接已移除: ${toolId}`);
       } else {
         // 普通目录：递归删除
         await fs.rm(toolPath, { recursive: true, force: true });
-        logger.info(`[ToolInstaller] 工具已卸载: ${pluginId}`);
+        logger.info(`[ToolInstaller] 工具已卸载: ${toolId}`);
       }
     } else {
       // 本地工具：只删除配置引用
       const config = configService.get('toolSources');
-      config.localToolRefs = config.localToolRefs.filter(ref => ref.id !== pluginId);
+      config.localToolRefs = config.localToolRefs.filter(ref => ref.id !== toolId);
       configService.set('toolSources', config);
-      logger.info(`[ToolInstaller] 本地工具引用已移除: ${pluginId}`);
+      logger.info(`[ToolInstaller] 本地工具引用已移除: ${toolId}`);
     }
   }
 
   /**
    * 取消下载
    */
-  cancelDownload(pluginId: string): void {
-    const controller = this.downloadingTools.get(pluginId);
+  cancelDownload(toolId: string): void {
+    const controller = this.downloadingTools.get(toolId);
     if (controller) {
       controller.abort();
-      this.downloadingTools.delete(pluginId);
+      this.downloadingTools.delete(toolId);
     }
   }
 

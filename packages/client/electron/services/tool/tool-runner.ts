@@ -21,7 +21,7 @@ import { isPortAvailable, cleanupPort } from '../../utils/port-utils.js';
 
 const logger = createLogger('ToolRunner');
 
-interface PluginState {
+interface ToolState {
   runtime: ToolRuntime;
   process?: ChildProcess;
   mode: 'standalone'; // 只支持 standalone 模式（包括 http-service 和 binary）
@@ -32,13 +32,13 @@ interface PluginState {
 }
 
 export class ToolRunner {
-  // Map toolId -> PluginState
-  private states: Map<string, PluginState> = new Map();
+  // Map toolId -> ToolState
+  private states: Map<string, ToolState> = new Map();
 
   /**
    * 获取所有运行中的工具（用于退出时清理）
    */
-  getAllRunningTools(): PluginState[] {
+  getAllRunningTools(): ToolState[] {
     return Array.from(this.states.values()).filter(state => state.process && !state.process.killed);
   }
 
@@ -63,7 +63,7 @@ export class ToolRunner {
   /**
    * 强制停止工具（不经过 refCount 检查）
    */
-  private async forceStopTool(state: PluginState): Promise<void> {
+  private async forceStopTool(state: ToolState): Promise<void> {
     const toolId = state.runtime.id;
     logger.info(`[ToolRunner] 强制停止工具: ${toolId}`);
 
@@ -85,11 +85,11 @@ export class ToolRunner {
     }
 
     state.process = undefined;
-    backendRunner.disposeAllForPlugin(toolId);
+    backendRunner.disposeAllForTool(toolId);
     this.states.delete(toolId);
   }
 
-  private emitState(state: PluginState, status: ToolRuntime['status'] | 'launching' | 'stopping', extra: Record<string, unknown> = {}) {
+  private emitState(state: ToolState, status: ToolRuntime['status'] | 'launching' | 'stopping', extra: Record<string, unknown> = {}) {
     const payload = {
       toolId: state.runtime.id,
       status,
@@ -107,12 +107,12 @@ export class ToolRunner {
     let state = this.states.get(toolId);
 
     if (!state) {
-      const plugin = toolManager.getTool(toolId);
-      if (!plugin) {
+      const tool = toolManager.getTool(toolId);
+      if (!tool) {
         throw new Error(`工具 ${toolId} 未找到`);
       }
       state = {
-        runtime: plugin,
+        runtime: tool,
         refCount: 0,
         mode: 'standalone' // 所有工具都是 standalone 模式
       };
@@ -211,7 +211,7 @@ export class ToolRunner {
         return state.process.pid ?? -1;
       }
       state.runtime.status = 'loading';
-      state.loadingPromise = this.launchStandalonePlugin(state);
+      state.loadingPromise = this.launchStandaloneTool(state);
       return state.loadingPromise;
     }
 
@@ -249,7 +249,7 @@ export class ToolRunner {
           logger.info(`[ToolRunner] 外部工具 ${toolId} 已清理状态（工具在外部独立运行）`);
           // 只清理状态，不杀进程
           state.process = undefined;
-          backendRunner.disposeAllForPlugin(state.runtime.id);
+          backendRunner.disposeAllForTool(state.runtime.id);
           state.runtime.status = 'stopped';
           state.runtime.viewId = undefined;
           state.runtime.windowId = undefined;
@@ -257,14 +257,14 @@ export class ToolRunner {
           this.states.delete(toolId);
         } else {
           // HTTP 服务和 Standalone 工具：正常清理进程树
-          this.destroyPlugin(state);
+          this.destroyTool(state);
           this.states.delete(toolId);
         }
       }, 1000);
     }
   }
 
-  private destroyPlugin(state: PluginState) {
+  private destroyTool(state: ToolState) {
     if (state.process && !state.process.killed) {
       try {
         const pid = state.process.pid;
@@ -300,7 +300,7 @@ export class ToolRunner {
       }
     }
     state.process = undefined;
-    backendRunner.disposeAllForPlugin(state.runtime.id);
+    backendRunner.disposeAllForTool(state.runtime.id);
     state.runtime.status = 'stopped';
     state.runtime.viewId = undefined;
     state.runtime.windowId = undefined;
@@ -308,10 +308,10 @@ export class ToolRunner {
     logger.info(`[ToolRunner] 工具已销毁: ${state.runtime.id}`);
   }
 
-  private handlePluginDestroyed(toolId: string) {
+  private handleToolDestroyed(toolId: string) {
     const state = this.states.get(toolId);
     if (state) {
-      backendRunner.disposeAllForPlugin(state.runtime.id);
+      backendRunner.disposeAllForTool(state.runtime.id);
       state.runtime.status = 'stopped';
       state.runtime.viewId = undefined;
       state.runtime.windowId = undefined;
@@ -365,7 +365,7 @@ export class ToolRunner {
     this.emitState(state, 'running', { external: true, pid: state.process?.pid });
   }
 
-  private async launchStandalonePlugin(state: PluginState): Promise<number> {
+  private async launchStandaloneTool(state: ToolState): Promise<number> {
     const toolId = state.runtime.id;
     const runtimeConfig = state.runtime.manifest.runtime;
 
@@ -504,7 +504,8 @@ export class ToolRunner {
           ...env,
           ...(environment.venvPath ? { VIRTUAL_ENV: environment.venvPath } : {}),
           PYTHONPATH: pythonPathValue,
-          BOOLTOX_PLUGIN_ID: toolId,
+          BOOLTOX_TOOL_ID: toolId,
+          BOOLTOX_PLUGIN_ID: toolId, // 向后兼容
         },
         pythonPath: environment.pythonPath,
         venvPath: environment.venvPath,
@@ -559,11 +560,11 @@ export class ToolRunner {
     state.runtime.status = 'stopped';
     state.refCount = 0;
     this.states.delete(toolId);
-    backendRunner.disposeAllForPlugin(toolId);
+    backendRunner.disposeAllForTool(toolId);
     this.emitState(state, 'stopped', { exitCode: code, external: true });
   }
 
-  private async launchHttpServiceTool(state: PluginState): Promise<number> {
+  private async launchHttpServiceTool(state: ToolState): Promise<number> {
     const toolId = state.runtime.id;
     const runtimeConfig = state.runtime.manifest.runtime;
 
@@ -690,7 +691,8 @@ export class ToolRunner {
             ...env,
             ...(environment.venvPath ? { VIRTUAL_ENV: environment.venvPath } : {}),
             PYTHONPATH: pythonPathValue,
-            BOOLTOX_PLUGIN_ID: toolId,
+            BOOLTOX_TOOL_ID: toolId,
+            BOOLTOX_PLUGIN_ID: toolId, // 向后兼容
           },
           pythonPath: environment.pythonPath,
           venvPath: environment.venvPath,
@@ -701,7 +703,8 @@ export class ToolRunner {
         const env = {
           ...process.env,
           ...backendConfig.env,
-          BOOLTOX_PLUGIN_ID: toolId,
+          BOOLTOX_TOOL_ID: toolId,
+          BOOLTOX_PLUGIN_ID: toolId, // 向后兼容
         };
 
         child = spawn('node', [entryPath, ...args], {
@@ -820,7 +823,7 @@ export class ToolRunner {
   /**
    * 启动 CLI 工具（在系统终端中运行）
    */
-  private async launchCliTool(state: PluginState): Promise<number> {
+  private async launchCliTool(state: ToolState): Promise<number> {
     const toolId = state.runtime.id;
     const runtimeConfig = state.runtime.manifest.runtime;
 
@@ -1020,7 +1023,6 @@ export class ToolRunner {
     // Python 工具
     if (backend.type === 'python' && backend.requirements) {
       const requirementsPath = path.join(toolPath, backend.requirements);
-      const venvPath = path.join(toolPath, 'venv');
 
       // 检查 requirements.txt 是否存在
       try {
@@ -1030,13 +1032,11 @@ export class ToolRunner {
         return;
       }
 
-      // 检查 venv 是否存在
-      try {
-        await fsPromises.access(venvPath);
-        logger.info(`[ToolRunner] Python 环境已存在: ${toolId}`);
-        return; // venv 存在，跳过安装
-      } catch {
-        // venv 不存在，需要安装
+      // 使用 pythonManager 的正确检查方法（检查 toolEnvsDir 而不是 toolPath/venv）
+      const needsSetup = pythonManager.needsToolRequirementsSetup(toolId, requirementsPath);
+      if (!needsSetup) {
+        logger.info(`[ToolRunner] Python 环境已存在且无变化: ${toolId}`);
+        return;
       }
 
       logger.info(`[ToolRunner] 首次启动 ${toolId}，准备 Python 环境...`);

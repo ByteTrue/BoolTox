@@ -42,8 +42,8 @@ export interface Announcement {
   type: 'announcement' | 'update';
 }
 
-export interface PluginRegistry {
-  plugins: ToolRegistryEntry[];
+export interface ToolRegistry {
+  tools: ToolRegistryEntry[];
 }
 
 interface CacheEntry<T> {
@@ -150,7 +150,7 @@ export class GitOpsService {
   /**
    * 构建工具仓库的 Raw 文件 URL
    */
-  private getPluginRepoUrl(filePath: string, repoConfig: ToolSourceConfig, useCdn = true): string {
+  private getToolRepoUrl(filePath: string, repoConfig: ToolSourceConfig, useCdn = true): string {
     const { provider, owner, repo, branch } = repoConfig;
 
     // 移除开头的斜杠
@@ -350,26 +350,26 @@ export class GitOpsService {
    * - remote: 远程 Git 仓库（自动检测多工具/单工具模式）
    * - local: 本地目录（读取 booltox.json 或 booltox-index.json）
    */
-  private async getPluginsFromRepo(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
+  private async getToolsFromRepo(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
     try {
-      logger.info(`[GitOps] Loading plugins from tool source: ${source.name} (${source.type})`);
+      logger.info(`[GitOps] Loading tools from tool source: ${source.name} (${source.type})`);
 
       // 本地类型
       if (source.type === 'local') {
-        return await this.getPluginsFromLocal(source);
+        return await this.getToolsFromLocal(source);
       }
 
       // 远程类型：尝试两种模式
       // 1. 尝试加载 booltox-index.json（多工具模式）
       try {
-        return await this.getPluginsFromIndexMode(source);
+        return await this.getToolsFromIndexMode(source);
       } catch {
         logger.debug(`[GitOps] No booltox-index.json found, trying single tool mode`);
         // 2. 降级到单工具模式（读取根目录 booltox.json）
-        return await this.getPluginsFromSingleMode(source);
+        return await this.getToolsFromSingleMode(source);
       }
     } catch (error) {
-      logger.error(`[GitOps] Error loading plugins from ${source.name}:`, error);
+      logger.error(`[GitOps] Error loading tools from ${source.name}:`, error);
       return [];
     }
   }
@@ -377,9 +377,9 @@ export class GitOpsService {
   /**
    * 多工具模式：从 booltox-index.json 加载
    */
-  private async getPluginsFromIndexMode(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
+  private async getToolsFromIndexMode(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
     // 1. 获取索引文件
-    const indexUrl = this.getPluginRepoUrl('booltox-index.json', source, false);
+    const indexUrl = this.getToolRepoUrl('booltox-index.json', source, false);
     logger.debug(`[GitOps] Fetching index from: ${indexUrl}`);
 
     const headers: Record<string, string> = {};
@@ -405,7 +405,7 @@ export class GitOpsService {
     // 2. 并行加载所有工具的 booltox.json
     const metadataPromises = index.tools.map(async (item) => {
       try {
-        const booltoxUrl = this.getPluginRepoUrl(`${item.path}/booltox.json`, source);
+        const booltoxUrl = this.getToolRepoUrl(`${item.path}/booltox.json`, source);
         const res = await fetch(booltoxUrl, { headers });
 
         if (!res.ok) {
@@ -433,17 +433,17 @@ export class GitOpsService {
       }
     });
 
-    const plugins = (await Promise.all(metadataPromises)).filter((p): p is ToolRegistryEntry & { sourceId: string; sourceName: string; _uniqueKey: string } => p !== null);
-    logger.info(`[GitOps] Loaded ${plugins.length} tools from ${source.name} (index mode)`);
+    const tools = (await Promise.all(metadataPromises)).filter((p): p is ToolRegistryEntry & { sourceId: string; sourceName: string; _uniqueKey: string } => p !== null);
+    logger.info(`[GitOps] Loaded ${tools.length} tools from ${source.name} (index mode)`);
 
-    return plugins as unknown as ToolRegistryEntry[];
+    return tools as unknown as ToolRegistryEntry[];
   }
 
   /**
    * 单工具模式：读取根目录 booltox.json
    */
-  private async getPluginsFromSingleMode(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
-    const booltoxUrl = this.getPluginRepoUrl('booltox.json', source);
+  private async getToolsFromSingleMode(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
+    const booltoxUrl = this.getToolRepoUrl('booltox.json', source);
     logger.debug(`[GitOps] Fetching single tool config from: ${booltoxUrl}`);
 
     const headers: Record<string, string> = {};
@@ -481,7 +481,7 @@ export class GitOpsService {
    * 从本地目录加载工具
    * 支持两种模式：多工具（booltox-index.json）和单工具（booltox.json）
    */
-  private async getPluginsFromLocal(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
+  private async getToolsFromLocal(source: ToolSourceConfig): Promise<ToolRegistryEntry[]> {
     if (!source.localPath) {
       throw new Error('本地路径未设置');
     }
@@ -493,7 +493,7 @@ export class GitOpsService {
       const content = await fs.readFile(indexPath, 'utf-8');
       const index = JSON.parse(content) as { tools: Array<{ id: string; path: string }> };
 
-      const plugins = await Promise.all(
+      const tools = await Promise.all(
         index.tools.map(async (item) => {
           try {
             const booltoxPath = path.join(source.localPath!, item.path, 'booltox.json');
@@ -514,9 +514,9 @@ export class GitOpsService {
         })
       );
 
-      const validPlugins = plugins.filter(p => p !== null) as ToolRegistryEntry[];
-      logger.info(`[GitOps] Loaded ${validPlugins.length} local tools from index`);
-      return validPlugins;
+      const validTools = tools.filter(p => p !== null) as ToolRegistryEntry[];
+      logger.info(`[GitOps] Loaded ${validTools.length} local tools from index`);
+      return validTools;
     } catch {
       logger.debug(`[GitOps] No booltox-index.json in ${source.localPath}, trying single tool mode`);
     }
@@ -563,13 +563,13 @@ export class GitOpsService {
    * 获取工具列表
    * 从所有配置的工具源加载
    */
-  async getPluginRegistry(): Promise<PluginRegistry> {
-    const cacheKey = 'plugins';
+  async getToolRegistry(): Promise<ToolRegistry> {
+    const cacheKey = 'tools';
 
     // 检查缓存
-    const cached = this.getCache<PluginRegistry>(cacheKey);
+    const cached = this.getCache<ToolRegistry>(cacheKey);
     if (cached) {
-      logger.debug('[GitOps] Using cached plugin registry');
+      logger.debug('[GitOps] Using cached tool registry');
       return cached;
     }
 
@@ -580,29 +580,29 @@ export class GitOpsService {
 
       if (remoteSources.length === 0) {
         logger.warn('[GitOps] No enabled remote tool sources found');
-        return { plugins: [] };
+        return { tools: [] };
       }
 
-      logger.info(`[GitOps] Loading plugins from ${remoteSources.length} remote tool sources`);
+      logger.info(`[GitOps] Loading tools from ${remoteSources.length} remote tool sources`);
 
       // 并发从所有远程工具源加载工具
-      const allPluginsArrays = await Promise.all(
-        remoteSources.map(source => this.getPluginsFromRepo(source))
+      const allToolsArrays = await Promise.all(
+        remoteSources.map(source => this.getToolsFromRepo(source))
       );
 
       // 展平（不合并同 ID 工具，全部保留）
-      const plugins = allPluginsArrays.flat();
+      const tools = allToolsArrays.flat();
 
-      const result = { plugins };
+      const result = { tools };
 
       // 缓存结果
       this.setCache(cacheKey, result);
-      logger.info(`[GitOps] Loaded ${plugins.length} total plugins from all tool sources`);
+      logger.info(`[GitOps] Loaded ${tools.length} total tools from all tool sources`);
 
       return result;
     } catch (error) {
-      logger.error('[GitOps] Error fetching plugin registry:', error);
-      return { plugins: [] };
+      logger.error('[GitOps] Error fetching tool registry:', error);
+      return { tools: [] };
     }
   }
 
@@ -630,23 +630,23 @@ export class GitOpsService {
   ): Promise<void> {
     // 开发模式：检测本地 booltox-plugins 仓库，创建符号链接
     if (!app.isPackaged) {
-      const localPluginPath = path.resolve(process.cwd(), '..', 'booltox-plugins', toolPath);
+      const localToolPath = path.resolve(process.cwd(), '..', 'booltox-plugins', toolPath);
 
       // 如果本地存在，创建符号链接
-      if (fsSync.existsSync(localPluginPath)) {
-        logger.info(`[GitOps] 开发模式：创建符号链接 ${targetDir} → ${localPluginPath}`);
+      if (fsSync.existsSync(localToolPath)) {
+        logger.info(`[GitOps] 开发模式：创建符号链接 ${targetDir} → ${localToolPath}`);
 
         // 确保父目录存在
         await fs.mkdir(path.dirname(targetDir), { recursive: true });
 
         // 创建符号链接（目录类型）
-        await fs.symlink(localPluginPath, targetDir, 'dir');
+        await fs.symlink(localToolPath, targetDir, 'dir');
 
         logger.info(`[GitOps] 符号链接创建成功，修改源码将立即生效`);
         return;
       }
 
-      logger.warn(`[GitOps] 本地工具目录不存在: ${localPluginPath}，降级到 GitHub 下载`);
+      logger.warn(`[GitOps] 本地工具目录不存在: ${localToolPath}，降级到 GitHub 下载`);
     }
 
     // 生产模式或本地不存在：从 Git 仓库下载

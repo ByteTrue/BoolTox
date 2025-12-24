@@ -112,7 +112,7 @@ class BooltoxExtensionHostService {
     });
 
     // Forward backend events (JSON-RPC $event notifications) to renderer
-    backendRunner.on('backend-event', (payload: { channelId: string; pluginId: string; event: string; data: unknown; webContentsId: number }) => {
+    backendRunner.on('backend-event', (payload: { channelId: string; toolId: string; event: string; data: unknown; webContentsId: number }) => {
       const target = webContents.fromId(payload.webContentsId);
       if (target && !target.isDestroyed()) {
         target.send('booltox:backend:event', {
@@ -124,7 +124,7 @@ class BooltoxExtensionHostService {
     });
 
     // Forward backend ready notifications to renderer
-    backendRunner.on('ready', (payload: { channelId: string; pluginId: string; webContentsId: number }) => {
+    backendRunner.on('ready', (payload: { channelId: string; toolId: string; webContentsId: number }) => {
       const target = webContents.fromId(payload.webContentsId);
       if (target && !target.isDestroyed()) {
         target.send('booltox:backend:ready', { channelId: payload.channelId });
@@ -234,11 +234,11 @@ class BooltoxExtensionHostService {
           const timeout = typeof data.timeoutMs === 'number' ? data.timeoutMs : undefined;
           const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
 
-          const pluginPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
+          const toolPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
           return pythonManager.runScript(scriptPath, args, {
             timeout,
             env: {
-              PYTHONPATH: pluginPackagesDir,
+              PYTHONPATH: toolPackagesDir,
               ...env,
             },
           });
@@ -407,11 +407,11 @@ class BooltoxExtensionHostService {
           const timeout = typeof data.timeout === 'number' ? data.timeout : undefined;
           const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
 
-          const pluginPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
+          const toolPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
           return pythonManager.runCode(code, {
             timeout,
             env: {
-              PYTHONPATH: pluginPackagesDir,
+              PYTHONPATH: toolPackagesDir,
               ...env,
             },
           });
@@ -424,11 +424,11 @@ class BooltoxExtensionHostService {
           const timeout = typeof data.timeout === 'number' ? data.timeout : undefined;
           const env = typeof data.env === 'object' ? (data.env as Record<string, string>) : undefined;
 
-          const pluginPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
+          const toolPackagesDir = pythonManager.getToolPackagesDir(ctx.tool.id);
           return pythonManager.runScript(scriptPath, args, {
             timeout,
             env: {
-              PYTHONPATH: pluginPackagesDir,
+              PYTHONPATH: toolPackagesDir,
               ...env,
             },
           });

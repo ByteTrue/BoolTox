@@ -13,19 +13,19 @@ import { pythonManager } from '../python-manager.service.js';
 
 const logger = createLogger('ToolDevServer');
 
-export interface PluginDevServerOptions {
+export interface ToolDevServerOptions {
   toolId: string;
   toolPath: string;
   backend?: ToolBackendConfig;
   onRestart?: (info: { reason: string }) => void;
 }
 
-export class PluginDevServer {
+export class ToolDevServer {
   private watcher?: FSWatcher;
   private proc?: ChildProcess;
-  private options?: PluginDevServerOptions;
+  private options?: ToolDevServerOptions;
 
-  async start(options: PluginDevServerOptions): Promise<void> {
+  async start(options: ToolDevServerOptions): Promise<void> {
     this.options = options;
     if (!options.backend) {
       logger.info(`[DevServer] 工具 ${options.toolId} 未声明 backend，跳过后端监听`);
@@ -90,7 +90,7 @@ export class PluginDevServer {
         PYTHONPATH: [pythonManager.getToolPackagesDir(toolId), path.join(process.resourcesPath, 'python-sdk')]
           .filter(Boolean)
           .join(path.delimiter),
-        BOOLTOX_PLUGIN_ID: toolId,
+        BOOLTOX_TOOL_ID: toolId,
       };
       this.proc = pythonManager.spawnPython(
         resolveEntryPath(backend.entry, toolPath),
@@ -106,7 +106,7 @@ export class PluginDevServer {
       const env = {
         ...process.env,
         NODE_PATH: path.join(process.resourcesPath, 'node-sdk'),
-        BOOLTOX_PLUGIN_ID: toolId,
+        BOOLTOX_TOOL_ID: toolId,
         ...(backend.env ?? {}),
       };
       const entryPath = resolveEntryPath(backend.entry, toolPath);

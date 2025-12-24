@@ -385,7 +385,7 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
   });
 
   ipcMain.handle(IpcChannel.GitOps_GetTools, async () => {
-    return await gitOpsService.getPluginRegistry();
+    return await gitOpsService.getToolRegistry();
   });
 
   // ==================== 仓库管理 ====================
@@ -479,12 +479,12 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
       const gitOps = new GitOpsService();
       gitOps.updateConfig(repo);
 
-      const registry = await gitOps.getPluginRegistry();
+      const registry = await gitOps.getToolRegistry();
 
       return {
         success: true,
-        pluginCount: registry.plugins.length,
-        plugins: registry.plugins.slice(0, 5).map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })),
+        toolCount: registry.tools.length,
+        tools: registry.tools.slice(0, 5).map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })),
       };
     } catch (error) {
       logger.error(`[IPC] Failed to test repository ${repo.name}:`, error);
@@ -550,13 +550,13 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
     }
   });
 
-  ipcMain.handle(IpcChannel.Tool_Uninstall, async (_event, pluginId: string) => {
+  ipcMain.handle(IpcChannel.Tool_Uninstall, async (_event, toolId: string) => {
     try {
       if (mainWindow) {
-        toolRunner.stopTool(pluginId, mainWindow);
+        toolRunner.stopTool(toolId, mainWindow);
       }
 
-      await toolInstaller.uninstallTool(pluginId);
+      await toolInstaller.uninstallTool(toolId);
       await toolManager.loadTools();
 
       return { success: true };
@@ -569,8 +569,8 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
     }
   });
 
-  ipcMain.handle(IpcChannel.Tool_CancelInstall, (_event, pluginId: string) => {
-    toolInstaller.cancelDownload(pluginId);
+  ipcMain.handle(IpcChannel.Tool_CancelInstall, (_event, toolId: string) => {
+    toolInstaller.cancelDownload(toolId);
     return { success: true };
   });
 
@@ -622,8 +622,8 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
         const id = `local.${baseName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`;
 
         // 创建工具目录
-        const pluginsDir = path.join(app.getPath('userData'), 'plugins');
-        const toolDir = path.join(pluginsDir, id);
+        const toolsDir = path.join(app.getPath('userData'), 'tools');
+        const toolDir = path.join(toolsDir, id);
         await fs.promises.mkdir(toolDir, { recursive: true });
 
         // 生成 booltox.json

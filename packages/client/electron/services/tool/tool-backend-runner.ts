@@ -102,10 +102,10 @@ function loadPythonDepsInstaller() {
 
 
 // ============================================================================
-// PluginBackendRunner Class
+// ToolBackendRunner Class
 // ============================================================================
 
-export class PluginBackendRunner extends EventEmitter {
+export class ToolBackendRunner extends EventEmitter {
   private processes = new Map<string, BackendProcess>();
 
   /**
@@ -177,7 +177,7 @@ export class PluginBackendRunner extends EventEmitter {
           ...env,
           ...(environment.venvPath ? { VIRTUAL_ENV: environment.venvPath } : {}),
           PYTHONPATH: pythonPathValue,
-          BOOLTOX_PLUGIN_ID: tool.id,
+          BOOLTOX_TOOL_ID: tool.id,
           BOOLTOX_CHANNEL_ID: '', // Will be set after channelId is generated
         },
         pythonPath: environment.pythonPath,
@@ -198,7 +198,7 @@ export class PluginBackendRunner extends EventEmitter {
         cwd: tool.path,
         env: {
           ...env,
-          BOOLTOX_PLUGIN_ID: tool.id,
+          BOOLTOX_TOOL_ID: tool.id,
         },
         stdio: 'pipe',
       });
@@ -594,7 +594,7 @@ export class PluginBackendRunner extends EventEmitter {
   /**
    * Dispose all backends for a tool
    */
-  disposeAllForPlugin(toolId: string): void {
+  disposeAllForTool(toolId: string): void {
     for (const [channelId, proc] of this.processes.entries()) {
       if (proc.toolId === toolId) {
         this.dispose(channelId);
@@ -621,8 +621,8 @@ export class PluginBackendRunner extends EventEmitter {
    * Ensure the Node.js SDK symlink exists in the tool's node_modules directory
    * This allows standard Node.js module resolution to find 'booltox-backend'
    */
-  private ensureNodeSdkSymlink(pluginPath: string, sdkPath: string): void {
-    const nodeModulesDir = path.join(pluginPath, 'node_modules');
+  private ensureNodeSdkSymlink(toolPath: string, sdkPath: string): void {
+    const nodeModulesDir = path.join(toolPath, 'node_modules');
     const symlinkPath = path.join(nodeModulesDir, 'booltox-backend');
 
     // Create node_modules directory if it doesn't exist
@@ -634,7 +634,7 @@ export class PluginBackendRunner extends EventEmitter {
     if (fs.existsSync(symlinkPath)) {
       try {
         const linkTarget = fs.readlinkSync(symlinkPath);
-        if (linkTarget === sdkPath || path.resolve(pluginPath, 'node_modules', linkTarget) === sdkPath) {
+        if (linkTarget === sdkPath || path.resolve(toolPath, 'node_modules', linkTarget) === sdkPath) {
           return; // Symlink already correct
         }
         // Remove incorrect symlink
@@ -680,4 +680,4 @@ export class PluginBackendRunner extends EventEmitter {
   }
 }
 
-export const backendRunner = new PluginBackendRunner();
+export const backendRunner = new ToolBackendRunner();

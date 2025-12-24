@@ -89,7 +89,7 @@ function spawnBackend(pluginPath, backend, pluginId) {
     : path.join(pluginPath, backend.entry);
   let cmd;
   let args = backend.args ?? [];
-  const env = { ...process.env, ...(backend.env ?? {}), BOOLTOX_PLUGIN_ID: pluginId || '' };
+  const env = { ...process.env, ...(backend.env ?? {}), BOOLTOX_TOOL_ID: pluginId || '' };
 
   if (backend.type === 'python') {
     cmd = PYTHON_CMD;

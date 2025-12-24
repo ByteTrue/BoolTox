@@ -12,7 +12,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { IpcRendererEvent } from 'electron';
 import type { StoredModuleInfo } from '../src/shared/types/module-store.types';
-import type { Announcement, GitOpsConfig, PluginRegistry } from './services/git-ops.service';
+import type { Announcement, GitOpsConfig, ToolRegistry } from './services/git-ops.service';
 import type { AutoUpdateStatus } from './services/auto-update.service';
 import { IpcChannel } from '../src/shared/constants/ipc-channels';
 
@@ -161,8 +161,8 @@ const gitOpsAPI = {
   getAnnouncements: async (): Promise<Announcement[]> => {
     return await ipcRenderer.invoke('git-ops:get-announcements') as Announcement[];
   },
-  getTools: async (): Promise<PluginRegistry> => {
-    return await ipcRenderer.invoke('git-ops:get-tools') as PluginRegistry;
+  getTools: async (): Promise<ToolRegistry> => {
+    return await ipcRenderer.invoke('git-ops:get-tools') as ToolRegistry;
   },
 };
 
@@ -185,11 +185,11 @@ const toolAPI = {
   install: async (entry: unknown): Promise<{success: boolean; path?: string; error?: string}> => {
     return await ipcRenderer.invoke(IpcChannel.Tool_Install, entry) as {success: boolean; path?: string; error?: string};
   },
-  uninstall: async (pluginId: string): Promise<{success: boolean; error?: string}> => {
-    return await ipcRenderer.invoke(IpcChannel.Tool_Uninstall, pluginId) as {success: boolean; error?: string};
+  uninstall: async (toolId: string): Promise<{success: boolean; error?: string}> => {
+    return await ipcRenderer.invoke(IpcChannel.Tool_Uninstall, toolId) as {success: boolean; error?: string};
   },
-  cancelInstall: async (pluginId: string): Promise<{success: boolean}> => {
-    return await ipcRenderer.invoke(IpcChannel.Tool_CancelInstall, pluginId) as {success: boolean};
+  cancelInstall: async (toolId: string): Promise<{success: boolean}> => {
+    return await ipcRenderer.invoke(IpcChannel.Tool_CancelInstall, toolId) as {success: boolean};
   },
   onInstallProgress: (callback: (progress: unknown) => void): (() => void) => {
     const listener = (_event: IpcRendererEvent, progress: unknown) => callback(progress);
