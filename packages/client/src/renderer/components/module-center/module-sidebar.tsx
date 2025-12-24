@@ -13,6 +13,7 @@ import {
   StorefrontRounded,
   AddRounded,
 } from '@mui/icons-material';
+import { sidebarBg, transitions } from '@/theme/animations';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -45,7 +46,7 @@ function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
             ? alpha('#fff', 0.06)
             : alpha(theme.palette.primary.main, 0.08)
           : 'transparent',
-        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: transitions.fast,
         '&:hover': {
           bgcolor: isDark ? alpha('#fff', 0.06) : alpha(theme.palette.primary.main, 0.06),
           color: 'text.primary',
@@ -61,7 +62,7 @@ function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
           height: 16,
           borderRadius: 1.5,
           bgcolor: 'primary.main',
-          transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: transitions.accent,
         },
       }}
     >
@@ -71,7 +72,7 @@ function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
           alignItems: 'center',
           justifyContent: 'center',
           color: active ? 'primary.main' : 'inherit',
-          transition: 'color 0.15s ease',
+          transition: transitions.color,
         }}
       >
         {icon}
@@ -158,7 +159,7 @@ export function ModuleSidebar({
         display: 'flex',
         flexDirection: 'column',
         // 用背景色差异替代边框分割
-        bgcolor: isDark ? '#0c0c0e' : '#f8f9fb',
+        bgcolor: isDark ? sidebarBg.dark : sidebarBg.light,
         // 左右留出空间，让选中项有呼吸间距
         px: 1.5,
       }}
@@ -245,7 +246,7 @@ export function ModuleSidebar({
               borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.25),
               color: isDark ? 'text.secondary' : theme.palette.primary.main,
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              transition: transitions.fast,
               '&:hover': {
                 borderColor: 'primary.main',
                 color: 'primary.main',

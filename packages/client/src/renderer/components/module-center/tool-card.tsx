@@ -1,5 +1,5 @@
 /**
- * ToolCard - 惊艳版
+ * ToolCard
  * 特性：悬停升起、图标渐变、呼吸灯、精致动画
  */
 
@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
-import { alpha, useTheme, keyframes } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
   PlayArrowRounded,
   StarBorderRounded,
@@ -18,28 +18,14 @@ import {
   DownloadRounded,
 } from '@mui/icons-material';
 import type { ModuleInstance } from '@/types/module';
-
-// 呼吸灯脉冲动画
-const pulse = keyframes`
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.2);
-  }
-`;
-
-// 微光闪烁动画
-const shimmer = keyframes`
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-`;
+import {
+  pulse,
+  shimmer,
+  brandGradient,
+  shimmerColors,
+  transitions,
+  elevations,
+} from '@/theme/animations';
 
 interface ToolCardProps {
   tool: ModuleInstance;
@@ -70,13 +56,9 @@ export function ToolCard({
   // 所有已安装且运行中的工具都可以停止（http-service、standalone、binary）
   const canStop = isInstalled && isRunning;
 
-  // 双品牌色渐变 - 蓝色 + 橙色
-  const brandGradient = isDark
-    ? 'linear-gradient(135deg, #60A5FA 0%, #F97316 100%)'
-    : 'linear-gradient(135deg, #3B82F6 0%, #F97316 100%)';
-
-  // 浅色模式下 shimmer 使用黑色渐变
-  const shimmerColor = isDark ? alpha('#fff', 0.3) : alpha('#000', 0.15);
+  // 使用统一的动画常量
+  const gradientValue = isDark ? brandGradient.dark : brandGradient.light;
+  const shimmerColor = isDark ? shimmerColors.dark : shimmerColors.light;
 
   return (
     <Box
@@ -91,19 +73,23 @@ export function ToolCard({
         bgcolor: isDark ? alpha('#fff', 0.02) : '#ffffff',
         border: '1px solid',
         borderColor: isHovered
-          ? isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.2)
-          : isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06),
+          ? isDark
+            ? alpha('#fff', 0.12)
+            : alpha(theme.palette.primary.main, 0.2)
+          : isDark
+            ? alpha('#fff', 0.06)
+            : alpha('#000', 0.06),
         // 悬停升起效果
         transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
         // 柔和的光晕效果
         boxShadow: isHovered
           ? isDark
-            ? `0 8px 24px ${alpha('#000', 0.4)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.15)}`
-            : `0 8px 24px ${alpha('#000', 0.06)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`
+            ? elevations.card.hover.dark
+            : elevations.card.hover.light
           : isDark
-            ? 'none'
-            : `0 1px 3px ${alpha('#000', 0.04)}`,
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            ? elevations.card.idle.dark
+            : elevations.card.idle.light,
+        transition: transitions.hover,
       }}
     >
       {/* 主内容 */}
@@ -117,7 +103,7 @@ export function ToolCard({
             borderRadius: 2.5,
             // 渐变背景：运行时用品牌渐变，否则深色用白色渐变，浅色用黑色渐变
             background: isRunning
-              ? brandGradient
+              ? gradientValue
               : isDark
                 ? `linear-gradient(135deg, ${alpha('#fff', 0.08)} 0%, ${alpha('#fff', 0.04)} 100%)`
                 : `linear-gradient(135deg, ${alpha('#000', 0.06)} 0%, ${alpha('#000', 0.02)} 100%)`,
@@ -129,7 +115,7 @@ export function ToolCard({
             // 文字颜色：运行时白色，否则深色模式用浅色，浅色模式用深色
             color: isRunning ? '#fff' : isDark ? alpha('#fff', 0.7) : alpha('#000', 0.7),
             flexShrink: 0,
-            transition: 'all 0.3s ease',
+            transition: transitions.hover,
             // 悬停时的微光效果：深色用白色shimmer，浅色用黑色shimmer
             '&::after': {
               content: '""',
@@ -360,7 +346,9 @@ export function ToolCard({
                 '&:hover': {
                   bgcolor: tool.isFavorite
                     ? alpha('#F59E0B', 0.1)
-                    : isDark ? alpha('#fff', 0.08) : alpha('#000', 0.06),
+                    : isDark
+                      ? alpha('#fff', 0.08)
+                      : alpha('#000', 0.06),
                   transform: 'scale(1.05)',
                   color: '#F59E0B',
                 },

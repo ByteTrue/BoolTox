@@ -19,7 +19,6 @@ import {
   PlayArrowRounded,
   DeleteOutlineRounded,
   DownloadRounded,
-  FiberManualRecord,
   OpenInNewRounded,
   CategoryRounded,
   UpdateRounded,
@@ -170,9 +169,11 @@ export function ModuleDetailModal({
               width: 72,
               height: 72,
               borderRadius: 3,
-              background: isRunning ? brandGradient : isDark
-                ? `linear-gradient(135deg, ${alpha('#fff', 0.1)} 0%, ${alpha('#fff', 0.05)} 100%)`
-                : `linear-gradient(135deg, ${alpha('#000', 0.08)} 0%, ${alpha('#000', 0.03)} 100%)`,
+              background: isRunning
+                ? brandGradient
+                : isDark
+                  ? `linear-gradient(135deg, ${alpha('#fff', 0.1)} 0%, ${alpha('#fff', 0.05)} 100%)`
+                  : `linear-gradient(135deg, ${alpha('#000', 0.08)} 0%, ${alpha('#000', 0.03)} 100%)`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -245,14 +246,16 @@ export function ModuleDetailModal({
                       position: 'relative',
                       width: 8,
                       height: 8,
-                      '&::before': statusInfo.pulse ? {
-                        content: '""',
-                        position: 'absolute',
-                        inset: -2,
-                        borderRadius: '50%',
-                        bgcolor: alpha(statusInfo.color, 0.3),
-                        animation: `${pulse} 2s ease-in-out infinite`,
-                      } : undefined,
+                      '&::before': statusInfo.pulse
+                        ? {
+                            content: '""',
+                            position: 'absolute',
+                            inset: -2,
+                            borderRadius: '50%',
+                            bgcolor: alpha(statusInfo.color, 0.3),
+                            animation: `${pulse} 2s ease-in-out infinite`,
+                          }
+                        : undefined,
                       '&::after': {
                         content: '""',
                         position: 'absolute',
@@ -334,7 +337,13 @@ export function ModuleDetailModal({
                     },
                   }}
                 >
-                  {isLaunching ? '启动中...' : isStopping ? '停止中...' : isRunning ? '聚焦窗口' : '打开工具'}
+                  {isLaunching
+                    ? '启动中...'
+                    : isStopping
+                      ? '停止中...'
+                      : isRunning
+                        ? '聚焦窗口'
+                        : '打开工具'}
                 </Button>
               )}
               {onUninstall && (
@@ -408,9 +417,12 @@ export function ModuleDetailModal({
               borderRadius: 2,
               cursor: 'pointer',
               color: activeTab === tab ? 'text.primary' : 'text.tertiary',
-              bgcolor: activeTab === tab
-                ? isDark ? alpha('#fff', 0.06) : alpha('#000', 0.04)
-                : 'transparent',
+              bgcolor:
+                activeTab === tab
+                  ? isDark
+                    ? alpha('#fff', 0.06)
+                    : alpha('#000', 0.04)
+                  : 'transparent',
               fontWeight: activeTab === tab ? 600 : 500,
               fontSize: '0.8125rem',
               transition: 'all 0.15s ease',
@@ -445,7 +457,8 @@ export function ModuleDetailModal({
             {/* 截图轮播 - 只在有有效截图时显示 */}
             {(() => {
               const validScreenshots = (definition.screenshots || []).filter(
-                (s): s is string => typeof s === 'string' && s.trim().length > 0 && s.startsWith('http')
+                (s): s is string =>
+                  typeof s === 'string' && s.trim().length > 0 && s.startsWith('http')
               );
               return validScreenshots.length > 0 ? (
                 <ScreenshotCarousel screenshots={validScreenshots} toolName={definition.name} />
@@ -536,14 +549,12 @@ export function ModuleDetailModal({
                   icon={<UpdateRounded sx={{ fontSize: 16 }} />}
                   label="版本"
                   value={definition.version}
-                  isDark={isDark}
                 />
                 {definition.author && (
                   <InfoRow
                     icon={<PersonRounded sx={{ fontSize: 16 }} />}
                     label="作者"
                     value={definition.author}
-                    isDark={isDark}
                   />
                 )}
                 {definition.category && (
@@ -551,14 +562,12 @@ export function ModuleDetailModal({
                     icon={<CategoryRounded sx={{ fontSize: 16 }} />}
                     label="分类"
                     value={definition.category}
-                    isDark={isDark}
                   />
                 )}
                 <InfoRow
                   icon={<InventoryRounded sx={{ fontSize: 16 }} />}
                   label="来源"
                   value={definition.source === 'remote' ? '远程工具' : '本地工具'}
-                  isDark={isDark}
                 />
               </Stack>
             </Box>
@@ -577,10 +586,7 @@ export function ModuleDetailModal({
                 textAlign: 'center',
               }}
             >
-              <Typography
-                variant="body2"
-                sx={{ color: 'text.tertiary' }}
-              >
+              <Typography variant="body2" sx={{ color: 'text.tertiary' }}>
                 暂无更新日志
               </Typography>
             </Box>
@@ -593,17 +599,7 @@ export function ModuleDetailModal({
 }
 
 // 信息行组件
-function InfoRow({
-  icon,
-  label,
-  value,
-  isDark,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  isDark: boolean;
-}) {
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <Stack direction="row" alignItems="center" justifyContent="space-between">
       <Stack direction="row" alignItems="center" spacing={1} sx={{ color: 'text.tertiary' }}>

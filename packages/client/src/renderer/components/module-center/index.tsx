@@ -3,7 +3,7 @@
  * 原则：大量留白、高对比度、克制的色彩、精致的细节
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -14,13 +14,13 @@ import Stack from '@mui/material/Stack';
 import { alpha, useTheme } from '@mui/material/styles';
 import { SearchRounded, AddRounded, KeyboardCommandKeyRounded } from '@mui/icons-material';
 import { useModulePlatform } from '@/contexts/module-context';
+import { sidebarBg, contentBg } from '@/theme/animations';
 import { ModuleDetailModal } from './module-detail-modal';
 import { ModuleSidebar } from './module-sidebar';
 import { ToolCard } from './tool-card';
 import { useModuleSearch, useSearchInput } from './hooks/use-module-search';
 import { useModuleSort } from './hooks/use-module-sort';
 import type { ModuleInstance } from '@/types/module';
-import type { ToolSourceConfig } from '@booltox/shared';
 
 // 默认排序配置（不需要状态，因为不会改变）
 const DEFAULT_SORT_CONFIG = { by: 'default' as const, order: 'asc' as const };
@@ -49,19 +49,6 @@ export function ModuleCenter() {
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
   const { inputValue, debouncedValue, setInputValue } = useSearchInput();
-  const [toolSources, setToolSources] = useState<ToolSourceConfig[]>([]);
-
-  useEffect(() => {
-    const loadToolSources = async () => {
-      try {
-        const sources = (await window.ipc.invoke('tool-sources:list')) as ToolSourceConfig[] | undefined;
-        setToolSources(sources || []);
-      } catch {
-        setToolSources([]);
-      }
-    };
-    loadToolSources();
-  }, []);
 
   // 数据处理
   const allAvailableModules = useMemo(() => {
@@ -217,11 +204,16 @@ export function ModuleCenter() {
 
   const getViewTitle = () => {
     switch (currentView) {
-      case 'installed': return '全部工具';
-      case 'favorites': return '收藏';
-      case 'running': return '运行中';
-      case 'official': return '官方市场';
-      default: return '工具';
+      case 'installed':
+        return '全部工具';
+      case 'favorites':
+        return '收藏';
+      case 'running':
+        return '运行中';
+      case 'official':
+        return '官方市场';
+      default:
+        return '工具';
     }
   };
 
@@ -231,8 +223,8 @@ export function ModuleCenter() {
         display: 'flex',
         height: '100%',
         overflow: 'hidden',
-        // 基础背景色（与侧边栏同色，作为底层）
-        bgcolor: isDark ? '#0c0c0e' : '#f8f9fb',
+        // 侧边栏层（中间层）
+        bgcolor: isDark ? sidebarBg.dark : sidebarBg.light,
       }}
     >
       {/* 侧边栏 */}
@@ -251,19 +243,19 @@ export function ModuleCenter() {
         categories={availableCategories}
       />
 
-      {/* 主内容区 */}
+      {/* 主内容区 - 下沉层（最暗） */}
       <Box
         sx={{
           display: 'flex',
           flex: 1,
           flexDirection: 'column',
           overflow: 'hidden',
-          // 主内容区使用稍亮的背景，与侧边栏形成层次
-          bgcolor: isDark ? '#111113' : '#ffffff',
-          // 左侧内阴影，创造"嵌入"效果
+          // 内容区下沉：比侧边栏更暗
+          bgcolor: isDark ? contentBg.dark : contentBg.light,
+          // 内阴影增强下沉感
           boxShadow: isDark
-            ? 'inset 4px 0 12px -4px rgba(0,0,0,0.3)'
-            : 'inset 2px 0 8px -2px rgba(0,0,0,0.04)',
+            ? 'inset 0 2px 8px rgba(0,0,0,0.4)'
+            : 'inset 0 2px 6px rgba(0,0,0,0.06)',
           // 圆角让边缘更柔和
           borderTopLeftRadius: 16,
           borderBottomLeftRadius: 16,
@@ -280,8 +272,8 @@ export function ModuleCenter() {
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            // 毛玻璃效果
-            bgcolor: isDark ? alpha('#111113', 0.8) : alpha('#ffffff', 0.85),
+            // 毛玻璃效果（匹配下沉的内容区背景）
+            bgcolor: isDark ? alpha(contentBg.dark, 0.8) : alpha(contentBg.light, 0.85),
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             // 继承主内容区的左上圆角
@@ -344,7 +336,9 @@ export function ModuleCenter() {
                 <InputAdornment position="end">
                   <Stack direction="row" spacing={0.25} sx={{ opacity: 0.5 }}>
                     <KeyboardCommandKeyRounded sx={{ fontSize: 14 }} />
-                    <Typography variant="caption" sx={{ fontSize: '0.6875rem' }}>K</Typography>
+                    <Typography variant="caption" sx={{ fontSize: '0.6875rem' }}>
+                      K
+                    </Typography>
                   </Stack>
                 </InputAdornment>
               ),
