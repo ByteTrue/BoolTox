@@ -18,7 +18,11 @@ import { FileText, FolderOpen, AlertCircle, CheckCircle } from 'lucide-react';
  * 日志管理组件
  * 用于设置页面,提供日志查看和管理功能
  */
-export function LogManager() {
+interface LogManagerProps {
+  showHeader?: boolean;
+}
+
+export function LogManager({ showHeader = true }: LogManagerProps) {
   const [logPath, setLogPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -52,14 +56,16 @@ export function LogManager() {
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h6" fontWeight={700}>
-          日志管理
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          查看和管理应用日志文件
-        </Typography>
-      </Box>
+      {showHeader && (
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            日志管理
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            查看和管理应用日志文件
+          </Typography>
+        </Box>
+      )}
 
       {/* 消息提示 */}
       {message && (
