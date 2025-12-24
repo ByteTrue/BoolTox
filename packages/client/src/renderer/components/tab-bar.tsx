@@ -143,6 +143,7 @@ function SortableTab({
       {windowId === 'main' && tab.type === 'tool' && (
         <Box
           component="button"
+          type="button"
           data-action="popout"
           onClick={e => onPopOut(tab, e)}
           title="在新窗口中打开"
@@ -155,6 +156,7 @@ function SortableTab({
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
+            color: 'inherit',
             '&:hover': { bgcolor: 'action.hover' },
           }}
         >
@@ -166,6 +168,7 @@ function SortableTab({
       {windowId !== 'main' && tab.type === 'tool' && (
         <Box
           component="button"
+          type="button"
           data-action="dock"
           onClick={e => onDockToMain(tab, e)}
           title="移回主窗口"
@@ -178,6 +181,7 @@ function SortableTab({
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
+            color: 'inherit',
             '&:hover': { bgcolor: 'action.hover' },
           }}
         >
@@ -189,6 +193,7 @@ function SortableTab({
       {tab.closable && (
         <Box
           component="button"
+          type="button"
           data-action="close"
           onClick={e => onCloseTab(tab, e)}
           title="关闭"
@@ -201,6 +206,7 @@ function SortableTab({
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
+            color: 'inherit',
             '&:hover': { bgcolor: 'action.hover' },
           }}
         >
@@ -327,6 +333,8 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
     return [...routeTabs, ...toolTabsData];
   }, [toolTabs, windowId]);
 
+  const prevWindowActiveToolTabIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (windowId !== 'main') {
       if (windowActiveToolTabId) {
@@ -336,6 +344,21 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
       }
       return;
     }
+
+    // 主窗口：检查工具标签是否被移走
+    const hadToolTab = prevWindowActiveToolTabIdRef.current !== null;
+    const hasNoToolTab = windowActiveToolTabId === null;
+
+    // 如果之前有活动的工具标签，现在没有了，且主窗口没有其他工具标签，导航到 /tools
+    if (hadToolTab && hasNoToolTab) {
+      const mainToolTabs = toolTabs.filter(t => t.windowId === 'main');
+      if (mainToolTabs.length === 0) {
+        navigate('/tools');
+        setActiveTabId('tools');
+      }
+    }
+
+    prevWindowActiveToolTabIdRef.current = windowActiveToolTabId;
 
     if (windowActiveToolTabId) {
       setActiveTabId(windowActiveToolTabId);
@@ -352,7 +375,7 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
     if (routeTab) {
       setActiveTabId(routeTab.id);
     }
-  }, [allTabs, location.pathname, windowActiveToolTabId, windowId]);
+  }, [allTabs, location.pathname, navigate, toolTabs, windowActiveToolTabId, windowId]);
 
   const handleTabClick = useCallback(
     (tab: Tab) => {
@@ -396,14 +419,29 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
 
       try {
         const currentState = exportState();
+        const sourceWindowId = windowId;
+
+        // 计算移动后源窗口剩余的标签
+        const updatedTabs = currentState.toolTabs.map(t =>
+          t.id === tabId ? { ...t, windowId: newWindowId } : t
+        );
+        const remainingInSource = updatedTabs.filter(t => t.windowId === sourceWindowId);
+
+        // 正确设置 activeToolTabIds：清理源窗口，设置新窗口
+        const newActiveToolTabIds = {
+          ...currentState.activeToolTabIds,
+          [newWindowId]: tabId,
+          [sourceWindowId]:
+            currentState.activeToolTabIds[sourceWindowId] === tabId
+              ? remainingInSource.length > 0
+                ? remainingInSource[remainingInSource.length - 1].id
+                : null
+              : currentState.activeToolTabIds[sourceWindowId],
+        };
+
         const bootState = {
-          toolTabs: currentState.toolTabs.map(t =>
-            t.id === tabId ? { ...t, windowId: newWindowId } : t
-          ),
-          activeToolTabIds: {
-            ...currentState.activeToolTabIds,
-            [newWindowId]: tabId,
-          },
+          toolTabs: updatedTabs,
+          activeToolTabIds: newActiveToolTabIds,
         };
 
         await window.ipc.invoke('window:create-detached', {
@@ -459,14 +497,29 @@ export function TabBar({ windowId = 'main' }: TabBarProps = {}) {
 
       try {
         const currentState = exportState();
+        const sourceWindowId = windowId;
+
+        // 计算移动后源窗口剩余的标签
+        const updatedTabs = currentState.toolTabs.map(t =>
+          t.id === tab.id ? { ...t, windowId: newWindowId } : t
+        );
+        const remainingInSource = updatedTabs.filter(t => t.windowId === sourceWindowId);
+
+        // 正确设置 activeToolTabIds：清理源窗口，设置新窗口
+        const newActiveToolTabIds = {
+          ...currentState.activeToolTabIds,
+          [newWindowId]: tab.id,
+          [sourceWindowId]:
+            currentState.activeToolTabIds[sourceWindowId] === tab.id
+              ? remainingInSource.length > 0
+                ? remainingInSource[remainingInSource.length - 1].id
+                : null
+              : currentState.activeToolTabIds[sourceWindowId],
+        };
+
         const bootState = {
-          toolTabs: currentState.toolTabs.map(t =>
-            t.id === tab.id ? { ...t, windowId: newWindowId } : t
-          ),
-          activeToolTabIds: {
-            ...currentState.activeToolTabIds,
-            [newWindowId]: tab.id,
-          },
+          toolTabs: updatedTabs,
+          activeToolTabIds: newActiveToolTabIds,
         };
 
         await window.ipc.invoke('window:create-detached', {

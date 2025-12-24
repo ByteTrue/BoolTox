@@ -186,12 +186,16 @@ export function ToolWebView({
   }
 
   return (
-    <Box component="webview" ref={webviewRef} src={url} sx={{ width: '100%', height: '100%' }}
+    <webview
+      ref={webviewRef as React.RefObject<Electron.WebviewTag>}
+      src={url}
+      style={{ width: '100%', height: '100%' }}
       // 安全配置：禁用 Node 集成，启用上下文隔离
-      nodeintegration={false}
+      // nodeintegration 默认为 false，不需要显式设置
       webpreferences="contextIsolation=true,enableRemoteModule=false"
       // 允许弹出窗口（由 new-window 事件处理）
-      allowpopups={true}
+      // @ts-expect-error webview allowpopups 需要字符串
+      allowpopups="true"
     />
   );
 }
