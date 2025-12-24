@@ -195,21 +195,9 @@ export class TrayService {
    * 创建占位图标（临时方案）
    */
   private createPlaceholderIcon(): NativeImage {
-    // 创建一个简单的 16x16 图标（蓝色方块 + "B" 字母）
-    const size = 16;
-    const canvas = `
-      <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-        <!-- 背景圆角矩形 -->
-        <rect x="0" y="0" width="${size}" height="${size}" rx="3" fill="#65BBE9"/>
-        <!-- 字母 B -->
-        <text x="${size / 2}" y="${size / 2 + 5}"
-              font-family="Arial" font-size="12" font-weight="bold"
-              text-anchor="middle" fill="white">B</text>
-      </svg>
-    `;
-
-    // 创建 nativeImage
-    const icon = nativeImage.createFromBuffer(Buffer.from(canvas));
+    const fallbackIconDataUrl =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACTSURBVHgBpZKBCYAgEEV/TeAIjuIIbdQIuUGt0CS1gW1iZ2jIVaTnhw+Cvs8/OYDJA4Y8kR3ZR2/kmazxJbpUEfQ/Dm/UG7wVwHkjlQdMFfDdJMFaACebnjJGyDWgcnZu1/lrCrl6NCoEHJBrDwEr5NrT6ko/UV8xdLAC2N49mlc5CylpYh8wCwqrvbBGLoKGvz8Bfq0QPWEUo/EAAAAASUVORK5CYII=';
+    const icon = nativeImage.createFromDataURL(fallbackIconDataUrl);
 
     // macOS 需要模板图标（单色，系统自动适配主题）
     if (process.platform === 'darwin') {
