@@ -4,23 +4,30 @@
  */
 
 /**
- * 关于页面
+ * AboutSettings - 关于页面
+ * 使用新的 SettingCard 组件重构，添加品牌渐变效果
  */
 
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Link from '@mui/material/Link';
-import { ExternalLink } from 'lucide-react';
+import { alpha, useTheme } from '@mui/material/styles';
+import { ExternalLink, Github, Globe, MessageSquare, Package } from 'lucide-react';
+import { SettingCard } from '@/components/settings';
+import { brandGradient, shimmer, transitions } from '@/theme/animations';
+import { APP_VERSION } from '@/config/app-info';
+
+const LINKS = [
+  { label: '官网', url: 'https://booltox.com', icon: Globe },
+  { label: 'GitHub', url: 'https://github.com/ByteTrue/BoolTox', icon: Github },
+  { label: '工具仓库', url: 'https://github.com/ByteTrue/booltox-plugins', icon: Package },
+  { label: '问题反馈', url: 'https://github.com/ByteTrue/BoolTox/issues', icon: MessageSquare },
+];
 
 export function AboutSettings() {
-  const links = [
-    { label: '官网', url: 'https://booltox.com' },
-    { label: 'GitHub', url: 'https://github.com/ByteTrue/BoolTox' },
-    { label: '工具仓库', url: 'https://github.com/ByteTrue/booltox-plugins' },
-    { label: '问题反馈', url: 'https://github.com/ByteTrue/BoolTox/issues' },
-  ];
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   return (
     <Box
@@ -31,86 +38,146 @@ export function AboutSettings() {
         minHeight: '100%',
       }}
     >
-      <Stack spacing={4} sx={{ maxWidth: 600, width: '100%', px: 4 }}>
-        {/* Logo 和标题 */}
+      <Stack spacing={4} sx={{ maxWidth: 500, width: '100%' }}>
+        {/* ============================================================
+            Logo 和标题
+            ============================================================ */}
         <Box sx={{ textAlign: 'center' }}>
+          {/* Logo 容器 - 品牌渐变 */}
           <Box
             sx={{
               display: 'inline-flex',
-              borderRadius: 3,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              p: 1.5,
-              boxShadow: 3,
-              mb: 2,
+              borderRadius: 4,
+              background: isDark ? brandGradient.dark : brandGradient.light,
+              p: 2,
+              boxShadow: isDark
+                ? `0 8px 32px ${alpha('#60A5FA', 0.25)}`
+                : `0 8px 32px ${alpha('#3B82F6', 0.2)}`,
+              mb: 3,
+              position: 'relative',
+              overflow: 'hidden',
+              // Shimmer 效果 - 慢速单次
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.3)}, transparent)`,
+                backgroundSize: '200% 100%',
+                animation: `${shimmer} 2s ease-out`,
+              },
             }}
           >
-            <Typography variant="h2">📦</Typography>
+            <Typography
+              variant="h2"
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+              }}
+            >
+              📦
+            </Typography>
           </Box>
-          <Typography variant="h3" fontWeight={700} sx={{ mb: 1 }}>
+
+          <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ mb: 0.5 }}>
             BoolTox
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            版本 0.0.1
+            版本 {APP_VERSION}
           </Typography>
         </Box>
 
-        {/* 简介 */}
-        <Paper
-          sx={{
-            p: 3,
-            borderRadius: 2,
-            bgcolor: 'action.hover',
-          }}
-        >
-          <Typography variant="body1" textAlign="center" color="text.primary">
-            开源、可扩展的工具箱平台
-          </Typography>
-          <Typography variant="body2" textAlign="center" color="text.secondary" sx={{ mt: 1 }}>
-            Web 优先 · 工具生态 · 本地 Agent · 隐私优先
-          </Typography>
-        </Paper>
+        {/* ============================================================
+            简介卡片
+            ============================================================ */}
+        <SettingCard title="关于">
+          <Box sx={{ textAlign: 'center', py: 1 }}>
+            <Typography variant="body1" fontWeight={500} sx={{ mb: 1 }}>
+              开源、可扩展的工具箱平台
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Web 优先 · 工具生态 · 本地 Agent · 隐私优先
+            </Typography>
+          </Box>
+        </SettingCard>
 
-        {/* 链接 */}
-        <Stack spacing={1}>
-          {links.map(link => (
-            <Link
-              key={link.label}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              underline="none"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                p: 2,
-                borderRadius: 2,
-                border: 1,
-                borderColor: 'divider',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-            >
-              <Typography variant="body1" color="text.primary">
-                {link.label}
-              </Typography>
-              <ExternalLink size={16} color="var(--mui-palette-text-secondary)" />
-            </Link>
-          ))}
-        </Stack>
+        {/* ============================================================
+            链接卡片
+            ============================================================ */}
+        <SettingCard title="链接">
+          <Stack spacing={1}>
+            {LINKS.map(link => (
+              <LinkItem key={link.label} {...link} />
+            ))}
+          </Stack>
+        </SettingCard>
 
-        {/* 许可证 */}
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="body2" color="text.disabled">
+        {/* ============================================================
+            许可证
+            ============================================================ */}
+        <Box sx={{ textAlign: 'center', pt: 2 }}>
+          <Typography variant="caption" color="text.disabled">
             Copyright © 2025 ByteTrue
           </Typography>
-          <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+          <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5 }}>
             Licensed under CC-BY-NC-4.0
           </Typography>
         </Box>
       </Stack>
+    </Box>
+  );
+}
+
+// 链接项组件
+function LinkItem({ label, url, icon: Icon }: { label: string; url: string; icon: typeof Globe }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  return (
+    <Box
+      component="a"
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        p: 1.5,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: isHovered
+          ? isDark
+            ? alpha('#fff', 0.15)
+            : alpha(theme.palette.primary.main, 0.3)
+          : 'divider',
+        textDecoration: 'none',
+        color: 'text.primary',
+        bgcolor: isHovered
+          ? isDark
+            ? alpha('#fff', 0.03)
+            : alpha(theme.palette.primary.main, 0.02)
+          : 'transparent',
+        transform: isHovered ? 'translateX(4px)' : 'translateX(0)',
+        transition: transitions.hover,
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Icon size={18} />
+        <Typography variant="body2" fontWeight={500}>
+          {label}
+        </Typography>
+      </Box>
+      <ExternalLink
+        size={16}
+        style={{
+          opacity: isHovered ? 1 : 0.5,
+          transition: 'opacity 0.15s ease',
+        }}
+      />
     </Box>
   );
 }

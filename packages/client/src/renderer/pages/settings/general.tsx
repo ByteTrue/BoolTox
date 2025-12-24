@@ -3,42 +3,46 @@
  * Licensed under CC-BY-NC-4.0
  */
 
+/**
+ * GeneralSettings - 通用设置页面
+ * 使用新的 SettingCard 和 SettingToggle 组件重构
+ */
+
 import { useMemo, useState, useEffect } from 'react';
-import type { ElementType, ReactNode } from 'react';
 import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useUpdate } from '@/contexts/update-context';
 import { APP_VERSION } from '@/config/app-info';
-import { LogManager } from './settings/log-manager';
+import { useTheme } from '@/components/theme-provider';
+import { formatBytes } from '@/utils/format';
+import { SettingCard, SettingToggle, SettingInfo, SettingGroup } from '@/components/settings';
+import { LogManager } from '@/components/settings/log-manager';
 import {
-  Settings as SettingsIcon,
   Info,
-  RefreshCw,
-  Download,
-  CheckCircle2,
-  Loader2,
+  Palette,
   Package,
   FileText,
-  Sliders,
   Sun,
   Moon,
   Rocket,
   Minimize2,
+  RefreshCw,
+  Download,
+  CheckCircle2,
+  Loader2,
 } from 'lucide-react';
-import { useTheme } from './theme-provider';
 
-export function SettingsPanel() {
+export function GeneralSettings() {
   const { theme, setThemeMode } = useTheme();
   const { state, details, retryCheck, downloadUpdate, installUpdate } = useUpdate();
   const [showNotes, setShowNotes] = useState(false);
@@ -47,32 +51,17 @@ export function SettingsPanel() {
   const [closeToTray, setCloseToTray] = useState(true);
   const [isLoadingCloseToTray, setIsLoadingCloseToTray] = useState(false);
 
-  // 加载开机启动状态
+  // 加载应用设置
   useEffect(() => {
-    if (window.appSettings) {
-      window.appSettings
-        .getAutoLaunch()
-        .then(enabled => {
-          setAutoLaunch(enabled);
-        })
-        .catch(err => {
-          console.error('Failed to load auto launch status:', err);
-        });
-    }
-  }, []);
-
-  // 加载关闭到托盘状态
-  useEffect(() => {
-    if (window.appSettings) {
-      window.appSettings
-        .getCloseToTray()
-        .then(enabled => {
-          setCloseToTray(enabled);
-        })
-        .catch(err => {
-          console.error('Failed to load close to tray status:', err);
-        });
-    }
+    if (!window.appSettings) return;
+    Promise.all([window.appSettings.getAutoLaunch(), window.appSettings.getCloseToTray()])
+      .then(([autoLaunchEnabled, closeToTrayEnabled]) => {
+        setAutoLaunch(autoLaunchEnabled);
+        setCloseToTray(closeToTrayEnabled);
+      })
+      .catch(err => {
+        console.error('Failed to load app settings:', err);
+      });
   }, []);
 
   // 切换开机启动
@@ -115,21 +104,58 @@ export function SettingsPanel() {
     }
   };
 
+  // 更新操作
   const primaryAction = useMemo(() => {
     switch (state.phase) {
       case 'available':
-        return { label: '立即下载', icon: Download, handler: downloadUpdate, disabled: false, spinning: false } as const;
+        return {
+          label: '立即下载',
+          icon: Download,
+          handler: downloadUpdate,
+          disabled: false,
+          spinning: false,
+        } as const;
       case 'downloading':
-        return { label: '下载中...', icon: Loader2, handler: undefined, disabled: true, spinning: true } as const;
+        return {
+          label: '下载中...',
+          icon: Loader2,
+          handler: undefined,
+          disabled: true,
+          spinning: true,
+        } as const;
       case 'downloaded':
-        return { label: '安装更新', icon: CheckCircle2, handler: installUpdate, disabled: false, spinning: false } as const;
+        return {
+          label: '安装更新',
+          icon: CheckCircle2,
+          handler: installUpdate,
+          disabled: false,
+          spinning: false,
+        } as const;
       case 'checking':
-        return { label: '检查中...', icon: Loader2, handler: undefined, disabled: true, spinning: true } as const;
+        return {
+          label: '检查中...',
+          icon: Loader2,
+          handler: undefined,
+          disabled: true,
+          spinning: true,
+        } as const;
       case 'error':
-        return { label: '重新检查', icon: RefreshCw, handler: retryCheck, disabled: false, spinning: false } as const;
+        return {
+          label: '重新检查',
+          icon: RefreshCw,
+          handler: retryCheck,
+          disabled: false,
+          spinning: false,
+        } as const;
       case 'idle':
       default:
-        return { label: '检查更新', icon: RefreshCw, handler: retryCheck, disabled: false, spinning: false } as const;
+        return {
+          label: '检查更新',
+          icon: RefreshCw,
+          handler: retryCheck,
+          disabled: false,
+          spinning: false,
+        } as const;
     }
   }, [state.phase, downloadUpdate, installUpdate, retryCheck]);
 
@@ -143,15 +169,9 @@ export function SettingsPanel() {
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto' }}>
       <Stack spacing={3}>
-        {/* 标题 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <SettingsIcon size={28} />
-          <Typography variant="h5" fontWeight="bold">
-            设置
-          </Typography>
-        </Box>
-
-        {/* 两列布局 */}
+        {/* ============================================================
+            第一行：应用信息 + 外观设置
+            ============================================================ */}
         <Box
           sx={{
             display: 'grid',
@@ -159,53 +179,65 @@ export function SettingsPanel() {
             gap: 3,
           }}
         >
-          {/* 左列：应用信息 */}
+          {/* 应用信息 */}
           <SettingCard title="应用信息" icon={Info}>
-            <Stack spacing={1.5}>
-              <SettingItem label="应用名称" value="BoolTox" />
-              <SettingItem label="当前版本" value={APP_VERSION} />
-            </Stack>
+            <SettingGroup>
+              <SettingInfo label="应用名称" value="BoolTox" />
+              <SettingInfo label="当前版本" value={APP_VERSION} />
+            </SettingGroup>
           </SettingCard>
 
-          {/* 右列：偏好设置 */}
-          <SettingCard title="偏好设置" icon={Sliders}>
-            <Stack spacing={2}>
-              {/* 主题切换 */}
+          {/* 外观设置 */}
+          <SettingCard title="外观" icon={Palette}>
+            <SettingGroup>
               <SettingToggle
-                label="主题模式"
-                description={theme === 'dark' ? '深色' : '浅色'}
+                label="深色模式"
+                description={theme === 'dark' ? '已启用' : '已禁用'}
                 icon={theme === 'dark' ? Moon : Sun}
                 checked={theme === 'dark'}
                 onChange={() => setThemeMode(theme === 'dark' ? 'light' : 'dark')}
               />
-
-              {/* 开机启动 */}
-              <SettingToggle
-                label="开机启动"
-                description={autoLaunch ? '已启用' : '未启用'}
-                icon={Rocket}
-                checked={autoLaunch}
-                onChange={handleAutoLaunchToggle}
-                disabled={isLoadingAutoLaunch}
-              />
-
-              {/* 关闭到托盘 */}
-              <SettingToggle
-                label="关闭到托盘"
-                description={closeToTray ? '关闭窗口时最小化到托盘' : '关闭窗口时直接退出'}
-                icon={Minimize2}
-                checked={closeToTray}
-                onChange={handleCloseToTrayToggle}
-                disabled={isLoadingCloseToTray}
-              />
-            </Stack>
+            </SettingGroup>
           </SettingCard>
         </Box>
 
-        {/* 版本更新（独占一行） */}
+        {/* ============================================================
+            第二行：行为设置
+            ============================================================ */}
+        <SettingCard title="行为" icon={Rocket}>
+          <SettingGroup>
+            <SettingToggle
+              label="开机启动"
+              description={autoLaunch ? '系统启动时自动运行' : '已禁用'}
+              icon={Rocket}
+              checked={autoLaunch}
+              onChange={handleAutoLaunchToggle}
+              loading={isLoadingAutoLaunch}
+            />
+            <SettingToggle
+              label="关闭到托盘"
+              description={closeToTray ? '关闭窗口时最小化到系统托盘' : '关闭窗口时直接退出'}
+              icon={Minimize2}
+              checked={closeToTray}
+              onChange={handleCloseToTrayToggle}
+              loading={isLoadingCloseToTray}
+            />
+          </SettingGroup>
+        </SettingCard>
+
+        {/* ============================================================
+            第三行：版本更新
+            ============================================================ */}
         <SettingCard title="版本更新" icon={Package}>
           <Stack spacing={2}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* 更新状态 */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <Box sx={{ flex: 1 }}>
                 <Typography variant="body2" fontWeight={500}>
                   更新状态
@@ -229,7 +261,12 @@ export function SettingsPanel() {
                 {state.phase === 'downloaded' && <CheckCircle2 size={20} color="green" />}
 
                 {details && (
-                  <Button variant="outlined" size="small" startIcon={<FileText size={16} />} onClick={() => setShowNotes(true)}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<FileText size={16} />}
+                    onClick={() => setShowNotes(true)}
+                  >
                     更新详情
                   </Button>
                 )}
@@ -262,9 +299,17 @@ export function SettingsPanel() {
               </Box>
             </Box>
 
+            {/* 版本详情 */}
             {details && (
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                  }}
+                >
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5 }}>
                       版本 {details.version}
@@ -291,9 +336,16 @@ export function SettingsPanel() {
           </Stack>
         </SettingCard>
 
-        {/* 日志管理（独占一行） */}
-        <SettingCard title="日志管理" icon={FileText}>
-          <LogManager />
+        {/* ============================================================
+            第四行：日志管理
+            ============================================================ */}
+        <SettingCard title="日志" icon={FileText}>
+          <Stack spacing={2}>
+            <Typography variant="body2" color="text.secondary">
+              查看和管理应用日志文件，用于问题排查
+            </Typography>
+            <LogManager showHeader={false} />
+          </Stack>
         </SettingCard>
       </Stack>
 
@@ -329,84 +381,4 @@ export function SettingsPanel() {
       </Dialog>
     </Box>
   );
-}
-
-function SettingCard({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: ElementType;
-  children: ReactNode;
-}) {
-  return (
-    <Paper sx={{ p: 3, borderRadius: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Icon size={18} />
-        <Typography variant="subtitle1" fontWeight="bold">
-          {title}
-        </Typography>
-      </Box>
-      {children}
-    </Paper>
-  );
-}
-
-function SettingItem({ label, value }: { label: string; value: string }) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography variant="body2" fontWeight={500}>
-        {value}
-      </Typography>
-    </Box>
-  );
-}
-
-function SettingToggle({
-  label,
-  description,
-  icon: Icon,
-  checked,
-  onChange,
-  disabled = false,
-}: {
-  label: string;
-  description: string;
-  icon: ElementType;
-  checked: boolean;
-  onChange: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Icon size={16} />
-        <Box>
-          <Typography variant="body2" fontWeight={500}>
-            {label}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {description}
-          </Typography>
-        </Box>
-      </Box>
-      <Switch checked={checked} onChange={onChange} disabled={disabled} size="small" />
-    </Box>
-  );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  let value = bytes;
-  let unitIndex = -1;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  return `${value.toFixed(1)} ${units[unitIndex]}`;
 }
