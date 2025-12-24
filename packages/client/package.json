@@ -2,7 +2,7 @@
   "name": "@booltox/client",
   "private": true,
   "version": "0.0.1",
-  "description": "BoolTox - Modular Electron toolbox with installable native modules",
+  "description": "BoolTox - Run dev tools with a single click",
   "author": "ByteTrue",
   "license": "CC-BY-NC-4.0",
   "type": "module",

@@ -93,10 +93,10 @@ export function AboutSettings() {
         <SettingCard title="关于">
           <Box sx={{ textAlign: 'center', py: 1 }}>
             <Typography variant="body1" fontWeight={500} sx={{ mb: 1 }}>
-              开源、可扩展的工具箱平台
+              一键运行开发者工具
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Web 优先 · 工具生态 · 本地 Agent · 隐私优先
+              去中心化 · 零 SDK 依赖 · 自动环境管理 · 隐私优先
             </Typography>
           </Box>
         </SettingCard>
