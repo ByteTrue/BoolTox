@@ -21,6 +21,7 @@ import { ToolCard } from './tool-card';
 import { useModuleSearch, useSearchInput } from './hooks/use-module-search';
 import { useModuleSort } from './hooks/use-module-sort';
 import type { ModuleInstance } from '@/types/module';
+import { StaggerList, StaggerItem } from '@/components/motion';
 
 // 默认排序配置（不需要状态，因为不会改变）
 const DEFAULT_SORT_CONFIG = { by: 'default' as const, order: 'asc' as const };
@@ -318,7 +319,9 @@ export function ModuleCenter() {
                 '&.Mui-focused': {
                   bgcolor: isDark ? alpha('#fff', 0.06) : '#ffffff',
                   borderColor: 'primary.main',
-                  boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.12)}, 0 0 16px ${alpha(theme.palette.primary.main, 0.08)}`,
+                  boxShadow: isDark
+                    ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.10)}`
+                    : `0 0 0 3px ${alpha(theme.palette.primary.main, 0.12)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.08)}`,
                 },
               },
               '& .MuiInputBase-input': {
@@ -417,18 +420,19 @@ export function ModuleCenter() {
               </Typography>
             </Box>
           ) : (
-            <Stack spacing={1}>
+            <Stack component={StaggerList} spacing={0.75}>
               {finalModules.map(tool => (
-                <ToolCard
-                  key={tool.id}
-                  tool={tool}
-                  onOpen={handleOpen}
-                  onStop={stopModule}
-                  onInstall={handleInstall}
-                  onToggleFavorite={handleToggleFavorite}
-                  onClick={setSelectedModuleId}
-                  isInstalling={processingModuleId === tool.id}
-                />
+                <StaggerItem key={tool.id}>
+                  <ToolCard
+                    tool={tool}
+                    onOpen={handleOpen}
+                    onStop={stopModule}
+                    onInstall={handleInstall}
+                    onToggleFavorite={handleToggleFavorite}
+                    onClick={setSelectedModuleId}
+                    isInstalling={processingModuleId === tool.id}
+                  />
+                </StaggerItem>
               ))}
             </Stack>
           )}

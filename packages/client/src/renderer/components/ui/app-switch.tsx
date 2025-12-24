@@ -10,6 +10,7 @@
 import React from 'react';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import { durations, easings } from '@/theme/animations';
 
 export interface AppSwitchProps {
   /** 是否选中 */
@@ -66,6 +67,16 @@ export function AppSwitch({
       size={sizeMap[size]}
       color={color}
       name={name}
+      sx={{
+        // Spring 动画效果：thumb 移动时的弹性感
+        '& .MuiSwitch-thumb': {
+          transition: `transform ${durations.spring}s ${easings.spring}`,
+        },
+        // Track 的渐变动画
+        '& .MuiSwitch-track': {
+          transition: `background-color ${durations.standard}s ${easings.standard}, border-color ${durations.standard}s ${easings.standard}`,
+        },
+      }}
     />
   );
 

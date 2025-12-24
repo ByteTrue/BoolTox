@@ -13,6 +13,7 @@ import { UpdateBanner } from './ui/update-banner';
 import { ToolTabProvider, useToolTabs } from '../contexts/tool-tab-context';
 import { ToolWebView } from './tool-webview';
 import { CommandPalette } from './command-palette';
+import { PageTransition } from './motion';
 
 // 路由懒加载
 const HomePage = lazy(() => import('../pages/home-page').then(m => ({ default: m.HomePage })));
@@ -112,11 +113,20 @@ function AppShellContent() {
           <ErrorBoundary name="MainContent">
             <Suspense fallback={<PageLoading />}>
               <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/tools" element={<ToolsPage />} />
-                <Route path="/tools/add-source" element={<AddToolSourcePage />} />
-                <Route path="/tools/sources" element={<ToolSourcesPage />} />
-                <Route path="/settings/*" element={<SettingsPage />} />
+                <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+                <Route path="/tools" element={<PageTransition><ToolsPage /></PageTransition>} />
+                <Route
+                  path="/tools/add-source"
+                  element={<PageTransition><AddToolSourcePage /></PageTransition>}
+                />
+                <Route
+                  path="/tools/sources"
+                  element={<PageTransition><ToolSourcesPage /></PageTransition>}
+                />
+                <Route
+                  path="/settings/*"
+                  element={<PageTransition><SettingsPage /></PageTransition>}
+                />
               </Routes>
             </Suspense>
           </ErrorBoundary>

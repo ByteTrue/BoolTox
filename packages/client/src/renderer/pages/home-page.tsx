@@ -3,7 +3,7 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -32,7 +32,8 @@ import { getGreeting, getShortDate } from '@/utils/greeting';
 import { AppSegmentedControl, EmptyState } from '@/components/ui';
 import { ActivityFeed } from '@/components/ui/activity-feed';
 import { ActivityTimeline } from '@/components/ui/activity-timeline';
-import { brandGradient, elevations, pulse, transitions } from '@/theme/animations';
+import { brandGradient, elevations, pulse, transitions, contentBg } from '@/theme/animations';
+import { StaggerList, StaggerItem } from '@/components/motion';
 
 type QuickView = 'favorites' | 'recent' | 'running';
 
@@ -76,19 +77,26 @@ export function HomePage() {
   }, [availableTools, toolRegistry]);
 
   const [quickView, setQuickView] = useState<QuickView>('favorites');
+  const userSelectedRef = useRef(false);
 
+  // 仅在数据长度变化且当前视图无内容时自动切换（不干预用户手动选择）
   useEffect(() => {
+    // 用户手动选择过，不自动切换
+    if (userSelectedRef.current) return;
+
     const hasItems =
       (quickView === 'favorites' && favoriteModules.length > 0) ||
       (quickView === 'recent' && recentModules.length > 0) ||
       (quickView === 'running' && runningModules.length > 0);
 
+    // 如果当前视图有内容，不自动切换
     if (hasItems) return;
 
+    // 只在当前视图无内容时，自动切换到有内容的视图
     setQuickView(
       favoriteModules.length > 0 ? 'favorites' : recentModules.length > 0 ? 'recent' : 'running'
     );
-  }, [favoriteModules.length, quickView, recentModules.length, runningModules.length]);
+  }, [quickView, favoriteModules.length, recentModules.length, runningModules.length]);
 
   const quickModules = useMemo(() => {
     switch (quickView) {
@@ -111,9 +119,20 @@ export function HomePage() {
   }, []);
 
   return (
-    <Box className="elegant-scroll" sx={{ height: '100%', overflow: 'auto', px: 4, py: 3 }}>
+    <Box
+      className="elegant-scroll"
+      sx={{
+        height: '100%',
+        overflow: 'auto',
+        // 添加内容区下沉效果，与工具页保持一致
+        bgcolor: isDark ? contentBg.dark : contentBg.light,
+        boxShadow: isDark ? 'inset 0 2px 8px rgba(0,0,0,0.4)' : 'inset 0 2px 6px rgba(0,0,0,0.06)',
+      }}
+    >
       <Box
         sx={{
+          px: 4,
+          py: 3,
           display: 'grid',
           gap: 3,
           gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.6fr) minmax(0, 1fr)' },
@@ -126,10 +145,8 @@ export function HomePage() {
             subtitle={`${getShortDate()} · BoolTox`}
             shortcutHint={shortcutHint}
             onOpenSearch={openCommandPalette}
-            onOpenTools={() => navigate('/tools')}
             onOpenSources={() => navigate('/tools/sources')}
             onAddLocalTool={() => void addLocalBinaryTool()}
-            onOpenSettings={() => navigate('/settings/general')}
           />
 
           <Paper
@@ -157,21 +174,15 @@ export function HomePage() {
                   收藏、最近使用、运行中工具的快捷入口
                 </Typography>
               </Box>
-
-              <Button
-                size="small"
-                endIcon={<ArrowForwardRounded sx={{ fontSize: 18 }} />}
-                onClick={() => navigate('/tools')}
-                sx={{ flexShrink: 0, textTransform: 'none', fontWeight: 600 }}
-              >
-                打开工具库
-              </Button>
             </Box>
 
             <Box sx={{ mt: 2 }}>
               <AppSegmentedControl<QuickView>
                 value={quickView}
-                onChange={setQuickView}
+                onChange={view => {
+                  userSelectedRef.current = true;
+                  setQuickView(view);
+                }}
                 size="sm"
                 options={[
                   {
@@ -200,6 +211,7 @@ export function HomePage() {
 
             {displayedQuickModules.length > 0 ? (
               <Box
+                component={StaggerList}
                 sx={{
                   display: 'grid',
                   gap: 1.5,
@@ -207,16 +219,17 @@ export function HomePage() {
                 }}
               >
                 {displayedQuickModules.map(m => (
-                  <HomeToolTile
-                    key={m.id}
-                    module={m}
-                    onOpen={() => void openModule(m.id)}
-                    onStop={
-                      m.runtime.launchState === 'running'
-                        ? () => void stopModule(m.id)
-                        : undefined
-                    }
-                  />
+                  <StaggerItem key={m.id}>
+                    <HomeToolTile
+                      module={m}
+                      onOpen={() => void openModule(m.id)}
+                      onStop={
+                        m.runtime.launchState === 'running'
+                          ? () => void stopModule(m.id)
+                          : undefined
+                      }
+                    />
+                  </StaggerItem>
                 ))}
               </Box>
             ) : installedModules.length === 0 ? (
@@ -275,27 +288,6 @@ export function HomePage() {
               <MetricRow label="运行中" value={runningModules.length} />
               <MetricRow label="可更新" value={updateAvailableCount} />
               <MetricRow label="可安装" value={remoteAvailableCount} />
-            </Stack>
-
-            <Divider sx={{ my: 2 }} />
-
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => navigate('/tools')}
-                sx={{ textTransform: 'none', fontWeight: 600 }}
-              >
-                工具库
-              </Button>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={() => navigate('/settings/general')}
-                sx={{ textTransform: 'none', fontWeight: 600 }}
-              >
-                设置
-              </Button>
             </Stack>
           </Paper>
 
@@ -358,10 +350,8 @@ function HeroCard({
   subtitle: string;
   shortcutHint: string;
   onOpenSearch: () => void;
-  onOpenTools: () => void;
   onOpenSources: () => void;
   onAddLocalTool: () => void;
-  onOpenSettings: () => void;
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -409,14 +399,6 @@ function HeroCard({
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
           <Button
             variant="contained"
-            startIcon={<PlayArrowRounded />}
-            onClick={onOpenTools}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
-          >
-            启动工具
-          </Button>
-          <Button
-            variant="outlined"
             startIcon={<AddRounded />}
             onClick={onAddLocalTool}
             sx={{ textTransform: 'none', fontWeight: 700 }}
@@ -430,23 +412,6 @@ function HeroCard({
           >
             工具源
           </Button>
-          <IconButton
-            onClick={onOpenSettings}
-            title="设置"
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              bgcolor: isDark ? alpha('#fff', 0.04) : alpha('#000', 0.04),
-              border: '1px solid',
-              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
-              '&:hover': {
-                bgcolor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06),
-              },
-            }}
-          >
-            <SettingsRounded sx={{ fontSize: 20 }} />
-          </IconButton>
         </Stack>
       </Stack>
     </Paper>
@@ -488,7 +453,9 @@ function SearchTrigger({ shortcutHint, onClick }: { shortcutHint: string; onClic
         },
         '&:focus-visible': {
           borderColor: 'primary.main',
-          boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}`,
+          boxShadow: isDark
+            ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.08)}`
+            : `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.06)}`,
         },
       }}
     >

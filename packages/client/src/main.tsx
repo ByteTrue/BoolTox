@@ -25,6 +25,7 @@ import { ToastProvider } from './renderer/contexts/toast-context';
 import { UpdateProvider } from './renderer/contexts/update-context';
 import { ActivityFeedProvider } from './renderer/contexts/activity-feed-context';
 import { CommandPaletteProvider } from './renderer/contexts/command-palette-context';
+import { AnimationProvider } from './renderer/contexts/animation-context';
 // import { initErrorTracking } from './renderer/lib/error-tracking'; // 暂时禁用，等待日志系统兼容
 import { ErrorBoundary } from './renderer/components/error-boundary';
 import { profiler } from './renderer/lib/performance-profiler';
@@ -77,21 +78,23 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       ) : (
         // 主窗口：完整的 Provider 树
         <Router>
-          <ToastProvider>
-            <SpotlightProvider>
-              <ModuleProvider>
-                <UpdateProvider>
-                  <ActivityFeedProvider>
-                    <CommandPaletteProvider>
-                      <RootLayout>
-                        <AppShell />
-                      </RootLayout>
-                    </CommandPaletteProvider>
-                  </ActivityFeedProvider>
-                </UpdateProvider>
-              </ModuleProvider>
-            </SpotlightProvider>
-          </ToastProvider>
+          <AnimationProvider>
+            <ToastProvider>
+              <SpotlightProvider>
+                <ModuleProvider>
+                  <UpdateProvider>
+                    <ActivityFeedProvider>
+                      <CommandPaletteProvider>
+                        <RootLayout>
+                          <AppShell />
+                        </RootLayout>
+                      </CommandPaletteProvider>
+                    </ActivityFeedProvider>
+                  </UpdateProvider>
+                </ModuleProvider>
+              </SpotlightProvider>
+            </ToastProvider>
+          </AnimationProvider>
         </Router>
       )}
     </ErrorBoundary>

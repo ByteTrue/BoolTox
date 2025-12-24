@@ -30,7 +30,7 @@ export {
 export type { AppDialogProps, AppConfirmDialogProps } from './app-dialog';
 
 // Switch 开关
-export { AppSwitch, Toggle as MuiToggle } from './app-switch';
+export { AppSwitch, AppSwitch as Toggle } from './app-switch';
 export type { AppSwitchProps } from './app-switch';
 
 // Toast 提示
@@ -121,7 +121,6 @@ export { HeroBanner, CategoryHeader, ScrollContainer } from './hero-banner';
 export { ChangelogDrawer } from './changelog-drawer';
 
 // 原有组件（即将弃用）
-export { Toggle } from './toggle';
 export { Dropdown, Select } from './dropdown';
 export { Toast, ToastContainer, useToast } from './toast';
 export {

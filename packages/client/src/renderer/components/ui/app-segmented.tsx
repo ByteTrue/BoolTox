@@ -10,7 +10,7 @@
 import React, { type ReactNode } from 'react';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Badge from '@mui/material/Badge';
+import Box from '@mui/material/Box';
 
 export interface AppSegmentOption<T extends string = string> {
   value: T;
@@ -95,11 +95,36 @@ export function AppSegmentedControl<T extends string = string>({
       }}
     >
       {options.map(option => (
-        <ToggleButton key={option.value} value={option.value} disabled={option.disabled}>
+        <ToggleButton
+          key={option.value}
+          value={option.value}
+          disabled={option.disabled}
+          sx={{
+            // 确保内容不会溢出
+            overflow: 'hidden',
+          }}
+        >
           {option.icon}
           {option.label}
           {option.badge !== undefined && (
-            <Badge badgeContent={option.badge} color="primary" sx={{ ml: 1 }} />
+            <Box
+              component="span"
+              sx={{
+                ml: 0.5,
+                px: 0.75,
+                py: 0.25,
+                borderRadius: 1,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                lineHeight: 1,
+                minWidth: 18,
+                textAlign: 'center',
+              }}
+            >
+              {option.badge}
+            </Box>
           )}
         </ToggleButton>
       ))}
