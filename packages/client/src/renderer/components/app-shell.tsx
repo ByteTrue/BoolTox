@@ -12,6 +12,7 @@ import { ErrorBoundary } from './error-boundary';
 import { UpdateBanner } from './ui/update-banner';
 import { ToolTabProvider, useToolTabs } from '../contexts/tool-tab-context';
 import { ToolWebView } from './tool-webview';
+import { CommandPalette } from './command-palette';
 
 // 路由懒加载
 const HomePage = lazy(() => import('../pages/home-page').then(m => ({ default: m.HomePage })));
@@ -167,6 +168,7 @@ export function AppShell() {
   return (
     <ToolTabProvider>
       <AppShellContent />
+      <CommandPalette />
     </ToolTabProvider>
   );
 }

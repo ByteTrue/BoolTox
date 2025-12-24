@@ -3,161 +3,641 @@
  * Licensed under CC-BY-NC-4.0
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Divider from '@mui/material/Divider';
+import { alpha, useTheme } from '@mui/material/styles';
+import {
+  AddRounded,
+  ArrowForwardRounded,
+  HistoryRounded,
+  KeyboardCommandKeyRounded,
+  PlayArrowRounded,
+  SearchRounded,
+  SettingsRounded,
+  StarRounded,
+  StopRounded,
+} from '@mui/icons-material';
+import type { ModuleInstance } from '@/types/module';
 import { useModulePlatform } from '@/contexts/module-context';
-import { useModuleStats } from '@/hooks/use-module-stats';
 import { useModuleEvents } from '@/hooks/use-module-events';
-import { getGreeting, getShortDate, getTimeEmoji } from '@/utils/greeting';
-import { ModuleQuickCard } from '../components/ui/module-quick-card';
-import { createGridSx, GRID_BREAKPOINTS } from '@/theme/grid-config';
-import { ActivityFeed } from '../components/ui/activity-feed';
-import { ActivityTimeline } from '../components/ui/activity-timeline';
-import { SystemMonitor } from '../components/ui/system-monitor';
+import { useCommandPalette } from '@/contexts/command-palette-context';
+import { getGreeting, getShortDate } from '@/utils/greeting';
+import { AppSegmentedControl, EmptyState } from '@/components/ui';
+import { ActivityFeed } from '@/components/ui/activity-feed';
+import { ActivityTimeline } from '@/components/ui/activity-timeline';
+import { brandGradient, elevations, pulse, transitions } from '@/theme/animations';
+
+type QuickView = 'favorites' | 'recent' | 'running';
 
 export function HomePage() {
-  const { installedModules, openModule } = useModulePlatform();
-  const stats = useModuleStats();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  const { open: openCommandPalette } = useCommandPalette();
+  const {
+    installedModules,
+    favoriteModules,
+    toolRegistry,
+    availableTools,
+    openModule,
+    stopModule,
+    addLocalBinaryTool,
+  } = useModulePlatform();
   const { events, getRecentlyActiveModules } = useModuleEvents();
 
-  // 最近使用的模块（最多 6 个）
-  const recentModules = useMemo(
-    () => getRecentlyActiveModules(installedModules, 6),
-    [installedModules, getRecentlyActiveModules]
+  const runningModules = useMemo(
+    () => installedModules.filter(m => m.runtime.launchState === 'running'),
+    [installedModules]
   );
 
-  // 最近 5 条事件
-  const recentEvents = useMemo(() => events.slice(0, 5), [events]);
+  const recentModules = useMemo(
+    () => getRecentlyActiveModules(installedModules, 12),
+    [getRecentlyActiveModules, installedModules]
+  );
+
+  const recentEvents = useMemo(() => events.slice(0, 6), [events]);
+
+  const updateAvailableCount = useMemo(
+    () => installedModules.filter(m => m.runtime.updateAvailable).length,
+    [installedModules]
+  );
+
+  const remoteAvailableCount = useMemo(() => {
+    const installedToolIds = new Set(toolRegistry.filter(p => !p.isDev).map(p => p.id));
+    return availableTools.filter(p => !installedToolIds.has(p.id)).length;
+  }, [availableTools, toolRegistry]);
+
+  const [quickView, setQuickView] = useState<QuickView>('favorites');
+
+  useEffect(() => {
+    const hasItems =
+      (quickView === 'favorites' && favoriteModules.length > 0) ||
+      (quickView === 'recent' && recentModules.length > 0) ||
+      (quickView === 'running' && runningModules.length > 0);
+
+    if (hasItems) return;
+
+    setQuickView(
+      favoriteModules.length > 0 ? 'favorites' : recentModules.length > 0 ? 'recent' : 'running'
+    );
+  }, [favoriteModules.length, quickView, recentModules.length, runningModules.length]);
+
+  const quickModules = useMemo(() => {
+    switch (quickView) {
+      case 'favorites':
+        return favoriteModules;
+      case 'running':
+        return runningModules;
+      case 'recent':
+        return recentModules;
+      default:
+        return favoriteModules;
+    }
+  }, [favoriteModules, quickView, recentModules, runningModules]);
+
+  const displayedQuickModules = useMemo(() => quickModules.slice(0, 8), [quickModules]);
+
+  const shortcutHint = useMemo(() => {
+    const platform = navigator.userAgent.toLowerCase();
+    return platform.includes('mac') ? '⌘ K' : 'Ctrl K';
+  }, []);
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', px: 4, py: 3 }}>
-      <Stack spacing={4}>
-        {/* Hero 区域 - 问候语 */}
-        <Box sx={{ mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-            <Typography variant="h2" component="span">
-              {getTimeEmoji()}
-            </Typography>
-            <Typography variant="h3" fontWeight="700">
-              {getGreeting()}
-            </Typography>
-          </Box>
-          <Typography variant="body1" color="text.secondary">
-            {getShortDate()}
-          </Typography>
-        </Box>
+    <Box className="elegant-scroll" sx={{ height: '100%', overflow: 'auto', px: 4, py: 3 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 3,
+          gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.6fr) minmax(0, 1fr)' },
+        }}
+      >
+        {/* 左侧主列 */}
+        <Stack spacing={3}>
+          <HeroCard
+            title={getGreeting()}
+            subtitle={`${getShortDate()} · BoolTox`}
+            shortcutHint={shortcutHint}
+            onOpenSearch={openCommandPalette}
+            onOpenTools={() => navigate('/tools')}
+            onOpenSources={() => navigate('/tools/sources')}
+            onAddLocalTool={() => void addLocalBinaryTool()}
+            onOpenSettings={() => navigate('/settings/general')}
+          />
 
-        {/* 统计卡片 Grid */}
-        <Box sx={createGridSx(GRID_BREAKPOINTS.STAT_CARD)}>
-          <StatCard label="已安装" value={stats.installed} icon="📦" />
-          <StatCard label="运行中" value={stats.enabled} icon="✅" highlight />
-          <StatCard label="远程可用" value={stats.remote} icon="🌐" />
-        </Box>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  快速启动
+                </Typography>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  收藏、最近使用、运行中工具的快捷入口
+                </Typography>
+              </Box>
 
-        {/* 最近使用 - Grid 布局 */}
-        {recentModules.length > 0 && (
-          <Box>
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-              🚀 最近使用
-            </Typography>
-            <Box sx={createGridSx(GRID_BREAKPOINTS.QUICK_LAUNCH, 'TIGHT')}>
-              {recentModules.map(module => (
-                <ModuleQuickCard
-                  key={module.id}
-                  module={module}
-                  onClick={() => openModule(module.id)}
-                />
-              ))}
+              <Button
+                size="small"
+                endIcon={<ArrowForwardRounded sx={{ fontSize: 18 }} />}
+                onClick={() => navigate('/tools')}
+                sx={{ flexShrink: 0, textTransform: 'none', fontWeight: 600 }}
+              >
+                打开工具库
+              </Button>
             </Box>
-          </Box>
-        )}
 
-        {/* 公告 + 操作记录 */}
-        <Box sx={createGridSx(GRID_BREAKPOINTS.TWO_COLUMN)}>
-          {/* 公告 */}
+            <Box sx={{ mt: 2 }}>
+              <AppSegmentedControl<QuickView>
+                value={quickView}
+                onChange={setQuickView}
+                size="sm"
+                options={[
+                  {
+                    value: 'favorites',
+                    label: '收藏',
+                    icon: <StarRounded sx={{ fontSize: 18 }} />,
+                    badge: favoriteModules.length,
+                  },
+                  {
+                    value: 'recent',
+                    label: '最近',
+                    icon: <HistoryRounded sx={{ fontSize: 18 }} />,
+                    badge: recentModules.length,
+                  },
+                  {
+                    value: 'running',
+                    label: '运行中',
+                    icon: <PlayArrowRounded sx={{ fontSize: 18 }} />,
+                    badge: runningModules.length,
+                  },
+                ]}
+              />
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            {displayedQuickModules.length > 0 ? (
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 1.5,
+                  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                }}
+              >
+                {displayedQuickModules.map(m => (
+                  <HomeToolTile
+                    key={m.id}
+                    module={m}
+                    onOpen={() => void openModule(m.id)}
+                    onStop={
+                      m.runtime.launchState === 'running'
+                        ? () => void stopModule(m.id)
+                        : undefined
+                    }
+                  />
+                ))}
+              </Box>
+            ) : installedModules.length === 0 ? (
+              <EmptyState
+                title="这里还什么都没有"
+                description="先添加工具源或导入一个本地工具，然后就可以在这里一键启动。"
+                actions={
+                  <>
+                    <Button variant="contained" onClick={() => navigate('/tools/sources')}>
+                      管理工具源
+                    </Button>
+                    <Button variant="outlined" onClick={() => void addLocalBinaryTool()}>
+                      添加本地工具
+                    </Button>
+                  </>
+                }
+              />
+            ) : (
+              <EmptyState
+                title="当前分组暂无内容"
+                description="换个分组看看，或者去工具库里收藏一些常用工具。"
+                actions={
+                  <>
+                    <Button variant="contained" onClick={() => navigate('/tools')}>
+                      打开工具库
+                    </Button>
+                    <Button variant="outlined" onClick={() => setQuickView('favorites')}>
+                      回到收藏
+                    </Button>
+                  </>
+                }
+              />
+            )}
+          </Paper>
+
           <ActivityFeed />
+        </Stack>
 
-          {/* 操作记录 */}
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-              📝 操作记录
+        {/* 右侧信息列 */}
+        <Stack spacing={3}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+              概览
             </Typography>
+            <Stack spacing={1.25}>
+              <MetricRow label="已安装" value={installedModules.length} />
+              <MetricRow label="收藏" value={favoriteModules.length} />
+              <MetricRow label="运行中" value={runningModules.length} />
+              <MetricRow label="可更新" value={updateAvailableCount} />
+              <MetricRow label="可安装" value={remoteAvailableCount} />
+            </Stack>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => navigate('/tools')}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                工具库
+              </Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => navigate('/settings/general')}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                设置
+              </Button>
+            </Stack>
+          </Paper>
+
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+              minHeight: 280,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 2,
+                mb: 2,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={700}>
+                最近操作
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
+              >
+                {recentEvents.length > 0 ? `最近 ${recentEvents.length} 条` : '暂无记录'}
+              </Typography>
+            </Box>
+
             {recentEvents.length > 0 ? (
-              <ActivityTimeline events={recentEvents} maxItems={5} />
+              <ActivityTimeline events={recentEvents} maxItems={6} />
             ) : (
               <Typography variant="body2" color="text.secondary">
-                暂无操作记录
+                你还没有做过任何操作。
               </Typography>
             )}
           </Paper>
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
+function HeroCard({
+  title,
+  subtitle,
+  shortcutHint,
+  onOpenSearch,
+  onOpenTools,
+  onOpenSources,
+  onAddLocalTool,
+  onOpenSettings,
+}: {
+  title: string;
+  subtitle: string;
+  shortcutHint: string;
+  onOpenSearch: () => void;
+  onOpenTools: () => void;
+  onOpenSources: () => void;
+  onAddLocalTool: () => void;
+  onOpenSettings: () => void;
+}) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  const gradientValue = isDark ? brandGradient.dark : brandGradient.light;
+
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        p: 3,
+        borderRadius: 3,
+        bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+        borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: -120,
+          background: gradientValue,
+          opacity: isDark ? 0.16 : 0.12,
+          filter: 'blur(80px)',
+          transform: 'translate(40px, -40px)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <Stack spacing={2} sx={{ position: 'relative' }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: -0.3 }}>
+              {title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {subtitle}
+            </Typography>
+          </Box>
         </Box>
 
-        {/* 系统监控 */}
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-            💻 系统监控
-          </Typography>
-          <SystemMonitor />
-        </Paper>
+        <SearchTrigger shortcutHint={shortcutHint} onClick={onOpenSearch} />
+
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            startIcon={<PlayArrowRounded />}
+            onClick={onOpenTools}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            启动工具
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<AddRounded />}
+            onClick={onAddLocalTool}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            添加本地工具
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={onOpenSources}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            工具源
+          </Button>
+          <IconButton
+            onClick={onOpenSettings}
+            title="设置"
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: isDark ? alpha('#fff', 0.04) : alpha('#000', 0.04),
+              border: '1px solid',
+              borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+              '&:hover': {
+                bgcolor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06),
+              },
+            }}
+          >
+            <SettingsRounded sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Stack>
+      </Stack>
+    </Paper>
+  );
+}
+
+function SearchTrigger({ shortcutHint, onClick }: { shortcutHint: string; onClick: () => void }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  return (
+    <Box
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.25,
+        px: 2,
+        py: 1.25,
+        borderRadius: 2.5,
+        cursor: 'pointer',
+        bgcolor: isDark ? alpha('#fff', 0.04) : '#ffffff',
+        border: '1px solid',
+        borderColor: isDark ? alpha('#fff', 0.10) : alpha('#000', 0.08),
+        transition: transitions.hover,
+        '&:hover': {
+          borderColor: isDark ? alpha('#fff', 0.16) : alpha(theme.palette.primary.main, 0.25),
+          boxShadow: isDark
+            ? `0 0 0 3px ${alpha('#60A5FA', 0.12)}`
+            : `0 0 0 3px ${alpha(theme.palette.primary.main, 0.12)}`,
+        },
+        '&:focus-visible': {
+          borderColor: 'primary.main',
+          boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}`,
+        },
+      }}
+    >
+      <SearchRounded sx={{ fontSize: 20, color: 'text.tertiary' }} />
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+          flex: 1,
+          userSelect: 'none',
+        }}
+      >
+        搜索工具或输入命令…
+      </Typography>
+      <Stack direction="row" spacing={0.5} sx={{ opacity: 0.6, userSelect: 'none' }}>
+        <KeyboardCommandKeyRounded sx={{ fontSize: 16 }} />
+        <Typography variant="caption" sx={{ fontSize: '0.75rem', fontWeight: 700 }}>
+          {shortcutHint.replace('⌘ ', '').replace('Ctrl ', '')}
+        </Typography>
       </Stack>
     </Box>
   );
 }
 
-// 统计卡片组件
-function StatCard({
-  label,
-  value,
-  icon,
-  highlight = false,
-}: {
-  label: string;
-  value: number;
-  icon: string;
-  highlight?: boolean;
-}) {
+function MetricRow({ label, value }: { label: string; value: number }) {
   return (
-    <Paper
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="body2" fontWeight={800} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+function HomeToolTile({
+  module,
+  onOpen,
+  onStop,
+}: {
+  module: ModuleInstance;
+  onOpen: () => void;
+  onStop?: () => void;
+}) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const isRunning = module.runtime.launchState === 'running';
+
+  const gradientValue = isDark ? brandGradient.dark : brandGradient.light;
+
+  return (
+    <Box
+      onClick={onOpen}
       sx={{
-        p: 3,
+        position: 'relative',
+        p: 2,
         borderRadius: 3,
-        transition: 'all 0.2s',
+        cursor: 'pointer',
+        bgcolor: isDark ? alpha('#fff', 0.02) : '#ffffff',
+        border: '1px solid',
+        borderColor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06),
+        boxShadow: isDark ? elevations.card.idle.dark : elevations.card.idle.light,
+        transition: transitions.hover,
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: highlight ? 8 : 4,
+          transform: 'translateY(-2px)',
+          borderColor: isDark ? alpha('#fff', 0.12) : alpha(theme.palette.primary.main, 0.2),
+          boxShadow: isDark ? elevations.card.hover.dark : elevations.card.hover.light,
         },
-        ...(highlight && {
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText',
-          '& .MuiTypography-root': {
-            color: 'inherit',
-          },
-        }),
       }}
-      elevation={highlight ? 4 : 1}
     >
-      <Stack spacing={1}>
-        <Typography variant="h4" component="div">
-          {icon}
-        </Typography>
-        <Typography
-          variant="caption"
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        <Box
           sx={{
-            textTransform: 'uppercase',
-            letterSpacing: 1.2,
-            fontWeight: 600,
-            color: highlight ? 'inherit' : 'text.secondary',
+            width: 44,
+            height: 44,
+            borderRadius: 2.5,
+            background: isRunning
+              ? gradientValue
+              : isDark
+                ? `linear-gradient(135deg, ${alpha('#fff', 0.08)} 0%, ${alpha('#fff', 0.04)} 100%)`
+                : `linear-gradient(135deg, ${alpha('#000', 0.06)} 0%, ${alpha('#000', 0.02)} 100%)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: isRunning ? '#fff' : isDark ? alpha('#fff', 0.7) : alpha('#000', 0.7),
+            flexShrink: 0,
           }}
         >
-          {label}
-        </Typography>
-        <Typography variant="h4" fontWeight="700">
-          {value}
-        </Typography>
+          {module.definition.icon?.startsWith('http') ? (
+            <Box
+              component="img"
+              src={module.definition.icon}
+              alt=""
+              sx={{ width: 26, height: 26, borderRadius: 1.5 }}
+            />
+          ) : (
+            <Typography sx={{ fontSize: '1rem', fontWeight: 800 }}>
+              {module.definition.icon || '•'}
+            </Typography>
+          )}
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" fontWeight={700} noWrap>
+              {module.definition.name}
+            </Typography>
+            {isRunning ? (
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: '#22C55E',
+                  animation: `${pulse} 1.6s ease-in-out infinite`,
+                }}
+              />
+            ) : null}
+          </Box>
+          <Typography variant="caption" color="text.secondary" noWrap>
+            {module.definition.description || '暂无描述'}
+          </Typography>
+        </Box>
+
+        {onStop ? (
+          <IconButton
+            size="small"
+            onClick={e => {
+              e.stopPropagation();
+              onStop();
+            }}
+            title="停止"
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 2,
+              color: '#EF4444',
+              bgcolor: alpha('#EF4444', 0.10),
+              '&:hover': { bgcolor: alpha('#EF4444', 0.18) },
+            }}
+          >
+            <StopRounded sx={{ fontSize: 18 }} />
+          </IconButton>
+        ) : (
+          <ArrowForwardRounded sx={{ fontSize: 18, color: 'text.tertiary' }} />
+        )}
       </Stack>
-    </Paper>
+    </Box>
   );
 }

@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -26,11 +27,29 @@ interface CommandItem {
 }
 
 export function CommandPalette() {
-  const { isOpen, close } = useCommandPalette();
+  const navigate = useNavigate();
+  const { isOpen, close, toggle } = useCommandPalette();
   const { installedModules, openModule } = useModulePlatform();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // 全局快捷键：Ctrl/Cmd + K 打开命令面板
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+
+      const key = e.key.toLowerCase();
+      const isShortcut = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && key === 'k';
+      if (!isShortcut) return;
+
+      e.preventDefault();
+      toggle();
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [toggle]);
 
   // 构建命令列表
   const commands = useMemo<CommandItem[]>(() => {
@@ -49,19 +68,59 @@ export function CommandPalette() {
 
     const actionCommands: CommandItem[] = [
       {
+        id: 'home',
+        type: 'action' as const,
+        label: '首页',
+        description: '返回首页概览',
+        onSelect: () => {
+          navigate('/');
+          close();
+        },
+      },
+      {
+        id: 'tools',
+        type: 'action' as const,
+        label: '工具库',
+        description: '打开工具中心',
+        onSelect: () => {
+          navigate('/tools');
+          close();
+        },
+      },
+      {
+        id: 'tool-sources',
+        type: 'action' as const,
+        label: '工具源管理',
+        description: '管理远程工具源',
+        onSelect: () => {
+          navigate('/tools/sources');
+          close();
+        },
+      },
+      {
+        id: 'add-tool-source',
+        type: 'action' as const,
+        label: '添加工具源',
+        description: '添加一个新的远程工具源',
+        onSelect: () => {
+          navigate('/tools/add-source');
+          close();
+        },
+      },
+      {
         id: 'settings',
         type: 'action' as const,
         label: '设置',
         description: '打开应用设置',
         onSelect: () => {
-          // TODO: 导航到设置页面
+          navigate('/settings/general');
           close();
         },
       },
     ];
 
     return [...toolCommands, ...actionCommands];
-  }, [installedModules, openModule, close]);
+  }, [close, installedModules, navigate, openModule]);
 
   // 模糊搜索
   const fuse = useMemo(
