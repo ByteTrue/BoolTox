@@ -58,7 +58,7 @@ class ConfigService {
               type: 'remote',
               provider: 'github',
               owner: 'ByteTrue',
-              repo: 'booltox-plugins',
+              repo: 'booltox-tools',
               branch: 'main',
               priority: 0,
             },
