@@ -70,12 +70,13 @@ export class ToolInstallerService {
     this.downloadingTools.set(id, abortController);
 
     try {
-      // 优先使用 GitOps 下载（从 Git 仓库直接拉取源码）
-      if (entry.gitPath && !entry.downloadUrl) {
+      // 优先使用 GitOps 下载（从 Git 仓库直接拉取源码，支持 tarball）
+      // 注：gitPath 存在时优先走此路径，因为 downloadUrl 可能是 tarball URL（非 zip）
+      if (entry.gitPath) {
         return await this.installFromGitOps(entry, onProgress, window);
       }
 
-      // 降级到 .zip 下载（兼容旧工具或有 Release 的工具）
+      // 降级到 .zip 下载（仅用于有独立 Release zip 的工具）
       if (entry.downloadUrl) {
         return await this.installFromZip(entry, abortController, onProgress, window);
       }
@@ -102,56 +103,72 @@ export class ToolInstallerService {
 
     const toolDir = path.join(this.toolsDir, id);
 
-    // 检查是否为本地工具源
-    if (sourceId) {
-      const sources = configService.get('toolSources', 'sources');
-      const source = sources.find(s => s.id === sourceId);
+    try {
+      // 检查是否为本地工具源
+      if (sourceId) {
+        const sources = configService.get('toolSources', 'sources');
+        const source = sources.find(s => s.id === sourceId);
 
-      if (source && source.type === 'local' && source.localPath) {
-        // 本地工具源：创建符号链接
-        this.reportProgress(onProgress, window, {
-          stage: 'downloading',
-          percent: 50,
-          message: '正在创建符号链接...',
-        });
+        if (source && source.type === 'local' && source.localPath) {
+          // 本地工具源：创建符号链接
+          this.reportProgress(onProgress, window, {
+            stage: 'downloading',
+            percent: 50,
+            message: '正在创建符号链接...',
+          }, id);
 
-        const sourcePath = path.join(source.localPath, gitPath);
+          const sourcePath = path.join(source.localPath, gitPath);
 
-        // 确保父目录存在
-        await fs.mkdir(path.dirname(toolDir), { recursive: true });
+          // 确保父目录存在
+          await fs.mkdir(path.dirname(toolDir), { recursive: true });
 
-        // 创建符号链接
-        await fs.symlink(sourcePath, toolDir, 'dir');
+          // 创建符号链接
+          await fs.symlink(sourcePath, toolDir, 'dir');
 
-        logger.info(`[ToolInstaller] 本地工具符号链接创建成功: ${toolDir} → ${sourcePath}`);
+          logger.info(`[ToolInstaller] 本地工具符号链接创建成功: ${toolDir} → ${sourcePath}`);
 
-        this.reportProgress(onProgress, window, {
-          stage: 'complete',
-          percent: 100,
-          message: '安装完成',
-        });
+          this.reportProgress(onProgress, window, {
+            stage: 'complete',
+            percent: 100,
+            message: '安装完成',
+          }, id);
 
-        return toolDir;
+          return toolDir;
+        }
       }
+
+      // 远程工具源：从 Git 下载
+      this.reportProgress(onProgress, window, {
+        stage: 'downloading',
+        percent: 50,
+        message: '正在从 Git 仓库下载源码...',
+      }, id);
+
+      // 使用 GitOpsService 下载
+      await gitOpsService.downloadToolSource(gitPath, toolDir);
+
+      this.reportProgress(onProgress, window, {
+        stage: 'complete',
+        percent: 100,
+        message: '安装完成',
+      }, id);
+
+      return toolDir;
+    } catch (error) {
+      // 清理失败的安装
+      await this.cleanup(toolDir, id);
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.reportProgress(onProgress, window, {
+        stage: 'error',
+        percent: 0,
+        message: '安装失败',
+        error: errorMessage,
+      }, id);
+
+      logger.error(`[ToolInstaller] GitOps 安装失败: ${id}`, error);
+      throw error;
     }
-
-    // 远程工具源：从 Git 下载
-    this.reportProgress(onProgress, window, {
-      stage: 'downloading',
-      percent: 50,
-      message: '正在从 Git 仓库下载源码...',
-    });
-
-    // 使用 GitOpsService 下载
-    await gitOpsService.downloadToolSource(gitPath, toolDir);
-
-    this.reportProgress(onProgress, window, {
-      stage: 'complete',
-      percent: 100,
-      message: '安装完成',
-    });
-
-    return toolDir;
   }
 
   /**
@@ -170,78 +187,77 @@ export class ToolInstallerService {
     }
 
     const toolDir = path.join(this.toolsDir, id);
-
-    // 1. 下载
-    this.reportProgress(onProgress, window, {
-      stage: 'downloading',
-      percent: 0,
-      message: '正在下载工具包...',
-    });
-
     const tempZipPath = path.join(this.tempDir, `${id}-${version}.zip`);
-    await this.downloadFile(
-      downloadUrl,
-      tempZipPath,
-      abortController.signal,
-      (percent) => {
-        this.reportProgress(onProgress, window, {
-          stage: 'downloading',
-          percent,
-          message: `正在下载: ${percent.toFixed(1)}%`,
-        });
-      }
-    );
 
-    // 2. 验证哈希
-    if (hash) {
+    try {
+      // 1. 下载
       this.reportProgress(onProgress, window, {
-        stage: 'verifying',
-        percent: 80,
-        message: '正在验证文件完整性...',
-      });
+        stage: 'downloading',
+        percent: 0,
+        message: '正在下载工具包...',
+      }, id);
 
-      const fileHash = await this.calculateFileHash(tempZipPath);
-      if (fileHash !== hash) {
-        throw new Error('文件校验失败,可能已被篡改');
+      await this.downloadFile(
+        downloadUrl,
+        tempZipPath,
+        abortController.signal,
+        (percent) => {
+          this.reportProgress(onProgress, window, {
+            stage: 'downloading',
+            percent,
+            message: `正在下载: ${percent.toFixed(1)}%`,
+          }, id);
+        }
+      );
+
+      // 2. 验证哈希
+      if (hash) {
+        this.reportProgress(onProgress, window, {
+          stage: 'verifying',
+          percent: 80,
+          message: '正在验证文件完整性...',
+        }, id);
+
+        const fileHash = await this.calculateFileHash(tempZipPath);
+        if (fileHash !== hash) {
+          throw new Error('文件校验失败,可能已被篡改');
+        }
       }
-    }
 
-    // 3. 解压
-    this.reportProgress(onProgress, window, {
-      stage: 'extracting',
-      percent: 85,
-      message: '正在解压工具...',
-    });
+      // 3. 解压
+      this.reportProgress(onProgress, window, {
+        stage: 'extracting',
+        percent: 85,
+        message: '正在解压工具...',
+      }, id);
 
-    await this.extractZip(tempZipPath, toolDir);
+      await this.extractZip(tempZipPath, toolDir);
 
-    // 4. 清理临时文件
-    await fs.unlink(tempZipPath).catch(() => {});
+      // 4. 清理临时文件
+      await fs.unlink(tempZipPath).catch(() => {});
 
-    this.reportProgress(onProgress, window, {
-      stage: 'complete',
-      percent: 100,
-      message: '安装完成',
-    });
+      this.reportProgress(onProgress, window, {
+        stage: 'complete',
+        percent: 100,
+        message: '安装完成',
+      }, id);
 
-    logger.info(`[ToolInstaller] 工具安装成功: ${id}`);
-    return toolDir;
-  }
+      logger.info(`[ToolInstaller] 工具安装成功: ${id}`);
+      return toolDir;
+    } catch (error) {
+      // 清理失败的安装
+      await this.cleanup(toolDir, id);
 
-  /**
-   * 安装二进制工具
-      
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.reportProgress(onProgress, window, {
         stage: 'error',
         percent: 0,
         message: '安装失败',
         error: errorMessage,
-      });
+      }, id);
 
+      logger.error(`[ToolInstaller] Zip 安装失败: ${id}`, error);
       throw error;
-    } finally {
-      this.downloadingTools.delete(id);
     }
   }
 
@@ -249,7 +265,7 @@ export class ToolInstallerService {
    * 卸载工具
    * 通过路径判断来源：
    * - 在 tools/ 目录中 → 远程工具，删除整个目录
-   * - 不在 tools/ 目录中 → 本地工具，只删除配置引用
+   * - 不在 tools/ 目录中 → 本地工具，删除配置引用和对应的工具源
    */
   async uninstallTool(toolId: string): Promise<void> {
     // 从 ToolManager 获取工具信息
@@ -260,6 +276,11 @@ export class ToolInstallerService {
     }
 
     const toolPath = tool.path;
+
+    // 防御性检查：确保 toolPath 有效
+    if (!toolPath) {
+      throw new Error(`工具 ${toolId} 的路径为空，无法卸载`);
+    }
 
     // 判断是否为远程工具（在 tools/ 目录中）
     if (toolPath.startsWith(this.toolsDir)) {
@@ -281,11 +302,33 @@ export class ToolInstallerService {
         logger.info(`[ToolInstaller] 工具已卸载: ${toolId}`);
       }
     } else {
-      // 本地工具：只删除配置引用
+      // 本地工具：删除配置引用（通过路径匹配，而非 ID）
       const config = configService.get('toolSources');
-      config.localToolRefs = config.localToolRefs.filter(ref => ref.id !== toolId);
+
+      // 1. 删除 localToolRefs 中匹配路径的引用
+      const originalRefsCount = config.localToolRefs.length;
+      config.localToolRefs = config.localToolRefs.filter(ref => ref.path !== toolPath);
+      const removedRefsCount = originalRefsCount - config.localToolRefs.length;
+
+      // 2. 对于单工具本地源，删除对应的工具源
+      //    注意：只删除单工具源（localPath === toolPath）
+      //    多工具源的 localPath 是父目录，不会匹配
+      const sourceToRemove = config.sources.find(
+        s => s.type === 'local' && s.localPath === toolPath
+      );
+      if (sourceToRemove) {
+        // 额外检查：确保该工具源下没有其他工具引用
+        const otherRefsFromSource = config.localToolRefs.filter(
+          ref => ref.sourceId === sourceToRemove.id
+        );
+        if (otherRefsFromSource.length === 0) {
+          config.sources = config.sources.filter(s => s.id !== sourceToRemove.id);
+          logger.info(`[ToolInstaller] 本地工具源已移除: ${sourceToRemove.name}`);
+        }
+      }
+
       configService.set('toolSources', config);
-      logger.info(`[ToolInstaller] 本地工具引用已移除: ${toolId}`);
+      logger.info(`[ToolInstaller] 本地工具引用已移除: ${toolId} (${removedRefsCount} refs)`);
     }
   }
 
@@ -462,31 +505,46 @@ export class ToolInstallerService {
    */
   private async cleanup(toolDir: string, tempZipId: string): Promise<void> {
     // 删除工具目录
-    await fs.rm(toolDir, { recursive: true, force: true }).catch(() => {});
-    
+    await fs.rm(toolDir, { recursive: true, force: true }).catch((error) => {
+      logger.warn(`[ToolInstaller] 清理工具目录失败: ${toolDir}`, error);
+    });
+
     // 删除临时ZIP文件
     const tempFiles = await fs.readdir(this.tempDir).catch(() => []);
     for (const file of tempFiles) {
       if (file.startsWith(tempZipId)) {
-        await fs.unlink(path.join(this.tempDir, file)).catch(() => {});
+        await fs.unlink(path.join(this.tempDir, file)).catch((error) => {
+          logger.warn(`[ToolInstaller] 清理临时文件失败: ${file}`, error);
+        });
       }
     }
   }
 
   /**
    * 报告进度
+   * @param callback 进度回调函数
+   * @param window BrowserWindow 实例
+   * @param progress 进度信息
+   * @param toolId 工具 ID（强烈建议传递，用于前端区分不同工具的进度）
    */
   private reportProgress(
     callback: ((progress: ToolInstallProgress) => void) | undefined,
     window: BrowserWindow | undefined,
-    progress: ToolInstallProgress
+    progress: ToolInstallProgress,
+    toolId?: string
   ): void {
+    // 警告：toolId 应该始终提供，以便前端能区分不同工具的进度
+    if (!toolId) {
+      logger.warn('[ToolInstaller] reportProgress 调用时未提供 toolId，建议修复');
+    }
+
     if (callback) {
       callback(progress);
     }
 
     if (window && !window.isDestroyed()) {
-      window.webContents.send('tool:install-progress', progress);
+      // 包含 toolId 以便渲染进程知道是哪个工具的进度
+      window.webContents.send('tool:install-progress', { ...progress, toolId });
     }
   }
 
@@ -529,7 +587,7 @@ export class ToolInstallerService {
         stage: 'downloading',
         percent: 0,
         message: '正在下载工具...',
-      });
+      }, id);
 
       const tempFile = path.join(
         this.tempDir,
@@ -541,7 +599,7 @@ export class ToolInstallerService {
           stage: 'downloading',
           percent,
           message: `正在下载: ${percent.toFixed(1)}%`,
-        });
+        }, id);
       });
 
       // 2. 验证校验和
@@ -549,7 +607,7 @@ export class ToolInstallerService {
         stage: 'verifying',
         percent: 80,
         message: '正在验证文件完整性...',
-      });
+      }, id);
 
       const fileHash = await this.calculateFileHash(tempFile);
       if (fileHash !== assetInfo.checksum) {
@@ -562,7 +620,7 @@ export class ToolInstallerService {
         stage: 'installing',
         percent: 90,
         message: '正在安装工具...',
-      });
+      }, id);
 
       await fs.mkdir(toolDir, { recursive: true });
 
@@ -597,7 +655,7 @@ export class ToolInstallerService {
         stage: 'complete',
         percent: 100,
         message: '安装完成',
-      });
+      }, id);
 
       logger.info(`[ToolInstaller] Binary tool ${id} installed successfully at ${toolDir}`);
       return toolDir;
@@ -611,7 +669,7 @@ export class ToolInstallerService {
         percent: 0,
         message: '安装失败',
         error: errorMessage,
-      });
+      }, id);
 
       throw error;
     } finally {
