@@ -22,8 +22,8 @@
 ## 📁 文件结构
 
 ```
-com.booltox.python-standalone-demo/
-├── manifest.json      # 声明 runtime.type = "standalone"
+python-standalone-demo/
+├── booltox.json       # 声明 runtime.type = "standalone"
 ├── main.py            # 应用入口 + UI/业务逻辑
 ├── requirements.txt   # PySide6 / QFluentWidgets / plyer
 └── README.md

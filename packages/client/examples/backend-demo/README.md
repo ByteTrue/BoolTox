@@ -14,13 +14,13 @@
 ## 📁 结构
 
 ```
-com.booltox.backend-demo/
-├── manifest.json              # 声明 runtime.type = "http-service"
+backend-demo/
+├── booltox.json               # 声明 runtime.type = "http-service"
 ├── backend/
 │   ├── http_server.py         # FastAPI HTTP 服务器 (新架构)
-│   └── server.py              # 旧的 STDIO 版本 (已废弃)
 ├── src/                       # 前端源代码 (TypeScript/Vue/React)
 ├── dist/                      # 构建后的静态文件
+├── package.json               # 前端构建依赖
 └── requirements.txt           # Python 依赖
 
 ```
@@ -38,8 +38,8 @@ pip install -r requirements.txt
 如果需要修改前端代码：
 
 ```bash
-pnpm install
-pnpm build
+npm install --legacy-peer-deps
+npm run build
 ```
 
 ### 3. 独立运行

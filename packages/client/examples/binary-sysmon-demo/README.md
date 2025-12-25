@@ -172,7 +172,7 @@ binary-sysmon-demo/
 │   ├── sysmon-macos-x64
 │   ├── sysmon-windows-x64.exe
 │   └── sysmon-linux-x64
-├── manifest.json        # BoolTox 工具配置
+├── booltox.json         # BoolTox 工具配置
 └── README.md            # 本文档
 ```
 

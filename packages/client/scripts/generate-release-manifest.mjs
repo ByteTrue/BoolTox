@@ -19,7 +19,7 @@ async function ensureReleaseDir(version) {
     }
     return releaseDir;
   } catch (error) {
-    throw new Error(`找不到 release 目录：${releaseDir}，请先运行 npm run build。`);
+    throw new Error(`找不到 release 目录：${releaseDir}，请先运行 pnpm build。`);
   }
 }
 

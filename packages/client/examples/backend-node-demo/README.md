@@ -6,7 +6,7 @@
 
 **BoolTox = 进程管理器 + 工具市场**，不是工具运行容器。
 
-- ✅ 工具完全独立，可以手动启动：`node backend/dist/http_server.cjs`
+- ✅ 工具完全独立，可以手动启动：`node backend/dist/http_server.js`
 - ✅ 不依赖任何 BoolTox SDK
 - ✅ 在系统默认浏览器中运行
 - ✅ BoolTox 只负责：发现、安装、启动、停止工具
@@ -22,17 +22,16 @@
 ## 📁 目录结构
 
 ```
-com.booltox.backend-node-demo/
-├── manifest.json              # 声明 runtime.type = "http-service"
+backend-node-demo/
+├── booltox.json               # 声明 runtime.type = "http-service"
 ├── package.json               # Express + TypeScript 依赖
 ├── backend/
 │   ├── src/
 │   │   ├── http_server.ts     # Express HTTP 服务器（新架构）
-│   │   ├── server.ts          # 旧的 JSON-RPC 版本（已废弃）
 │   │   └── regex-worker.ts    # Worker 线程执行正则任务
 │   └── dist/
-│       ├── http_server.cjs    # 编译后的 HTTP 服务器
-│       └── regex-worker.cjs   # 编译后的 Worker
+│       ├── http_server.js     # 编译后的 HTTP 服务器
+│       └── regex-worker.js    # 编译后的 Worker
 ├── src/                       # 前端源代码 (TypeScript/Vite)
 ├── dist/                      # 构建后的静态文件
 └── README.md
@@ -43,19 +42,19 @@ com.booltox.backend-node-demo/
 ### 1. 安装依赖
 
 ```bash
-pnpm install
+npm install --legacy-peer-deps
 ```
 
 ### 2. 构建前端和后端
 
 ```bash
-pnpm build
+npm run build
 ```
 
 ### 3. 独立运行
 
 ```bash
-node backend/dist/http_server.cjs
+node backend/dist/http_server.js
 ```
 
 服务器将在 `http://127.0.0.1:8002` 启动，在浏览器中打开即可使用。
@@ -92,7 +91,7 @@ BoolTox 会自动：
 {
   "runtime": {
     "ui": { "type": "webview", "entry": "dist/index.html" },
-    "backend": { "type": "node", "entry": "backend/dist/server.cjs" }
+    "backend": { "type": "node", "entry": "backend/dist/server.js" }
   }
 }
 ```
@@ -104,7 +103,7 @@ BoolTox 会自动：
     "type": "http-service",
     "backend": {
       "type": "node",
-      "entry": "backend/dist/http_server.cjs",
+      "entry": "backend/dist/http_server.js",
       "port": 8002
     }
   }
@@ -115,17 +114,17 @@ BoolTox 会自动：
 
 ### 前端开发
 ```bash
-pnpm dev  # Vite 开发服务器
+npm run dev  # Vite 开发服务器
 ```
 
 ### 后端开发
 ```bash
-pnpm dev:http  # ts-node 热调试 HTTP 服务器
+npm run dev:http  # ts-node 热调试 HTTP 服务器
 ```
 
 ### 完整构建
 ```bash
-pnpm build  # 构建后端 + 前端
+npm run build  # 构建后端 + 前端
 ```
 
 ## ✨ 优势

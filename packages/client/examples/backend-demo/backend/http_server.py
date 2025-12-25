@@ -190,7 +190,7 @@ async def index():
     index_file = dist_path / "index.html"
     if index_file.exists():
         return FileResponse(index_file)
-    return {"error": "前端文件未找到，请先构建前端: pnpm build"}
+    return {"error": "前端文件未找到，请先构建前端: npm run build"}
 
 
 @app.get("/api/system")

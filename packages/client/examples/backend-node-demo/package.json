@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:http": "node --loader ts-node/esm backend/src/http_server.ts",
     "build:backend": "tsc -p backend/tsconfig.json",
-    "build": "pnpm build:backend && vite build",
+    "build": "tsc -p backend/tsconfig.json && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

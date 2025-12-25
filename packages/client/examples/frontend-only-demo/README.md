@@ -42,8 +42,8 @@
 ## 📁 项目结构
 
 ```
-com.booltox.frontend-only-demo/
-├── manifest.json           # 声明 runtime.type = "http-service"
+frontend-only-demo/
+├── booltox.json            # 声明 runtime.type = "http-service"
 ├── package.json            # Express 依赖
 ├── server.js               # 简单的静态文件服务器
 ├── src/
@@ -60,13 +60,13 @@ com.booltox.frontend-only-demo/
 ### 1. 安装依赖
 
 ```bash
-pnpm install
+npm install --legacy-peer-deps
 ```
 
 ### 2. 构建前端
 
 ```bash
-pnpm build
+npm run build
 ```
 
 ### 3. 独立运行
@@ -120,17 +120,17 @@ BoolTox 会自动：
 
 ### 前端开发
 ```bash
-pnpm dev  # Vite 开发服务器
+npm run dev  # Vite 开发服务器
 ```
 
 ### 完整构建
 ```bash
-pnpm build  # 构建前端静态文件
+npm run build  # 构建前端静态文件
 ```
 
 ### 本地测试
 ```bash
-pnpm serve  # 启动生产服务器
+npm run serve  # 启动生产服务器
 ```
 
 ## ✨ 优势

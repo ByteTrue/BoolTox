@@ -133,7 +133,7 @@ export const getPackageVersion = async () => {
 
 export const ensureBuild = async ({ skipBuild } = {}) => {
   if (!skipBuild) {
-    await runCommand('npm', ['run', 'build']);
+    await runCommand('pnpm', ['build']);
     return;
   }
   const version = await getPackageVersion();
@@ -141,7 +141,7 @@ export const ensureBuild = async ({ skipBuild } = {}) => {
   try {
     await fs.access(manifestPath);
   } catch {
-    throw new Error('未找到 manifest.json，请先执行 npm run build');
+    throw new Error('未找到 manifest.json，请先执行 pnpm build');
   }
 };
 

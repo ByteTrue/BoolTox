@@ -4,7 +4,7 @@
 """
 简化配置示例工具
 
-演示使用简化的 manifest.json 配置（只需 4 个字段）
+演示使用简化的 booltox.json 配置（只需 4 个字段）
 """
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -52,7 +52,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
         <body>
             <div class="card">
                 <h1>🎉 简化配置示例工具</h1>
-                <p>这是使用 <strong>简化 manifest.json 配置</strong> 的示例工具。</p>
+                <p>这是使用 <strong>简化 booltox.json 配置</strong> 的示例工具。</p>
 
                 <h2>📝 配置文件</h2>
                 <div class="config">

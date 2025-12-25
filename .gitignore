@@ -2,6 +2,8 @@
 node_modules/
 .pnp
 .pnp.js
+package-lock.json
+npm-shrinkwrap.json
 
 # 构建产物
 dist/
@@ -62,9 +64,6 @@ __pycache__/
 venv/
 ENV/
 env/
-
-# GitHub 配置
-.github/
 
 # 其他
 *.bak
