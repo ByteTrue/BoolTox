@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import { alpha, useTheme } from '@mui/material/styles';
 import {
   PlayArrowRounded,
@@ -16,8 +17,10 @@ import {
   StarRounded,
   StopRounded,
   DownloadRounded,
+  DeleteOutlineRounded,
 } from '@mui/icons-material';
 import type { ModuleInstance } from '@/types/module';
+import type { ToolInstallProgress } from '@booltox/shared';
 import {
   pulse,
   shimmer,
@@ -32,9 +35,11 @@ interface ToolCardProps {
   onOpen: (toolId: string) => void;
   onStop: (toolId: string) => void;
   onInstall?: (toolId: string) => void;
+  onUninstall?: (toolId: string) => void;
   onToggleFavorite: (toolId: string) => void;
   onClick: (toolId: string) => void;
   isInstalling?: boolean;
+  installProgress?: ToolInstallProgress | null;
 }
 
 export function ToolCard({
@@ -42,9 +47,11 @@ export function ToolCard({
   onOpen,
   onStop,
   onInstall,
+  onUninstall,
   onToggleFavorite,
   onClick,
   isInstalling = false,
+  installProgress,
 }: ToolCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const theme = useTheme();
@@ -361,8 +368,77 @@ export function ToolCard({
               )}
             </IconButton>
           )}
+          {/* 卸载按钮 - 仅已安装时显示 */}
+          {isInstalled && onUninstall && (
+            <IconButton
+              size="small"
+              onClick={e => {
+                e.stopPropagation();
+                onUninstall(tool.id);
+              }}
+              title="卸载"
+              sx={{
+                width: 32,
+                height: 32,
+                color: 'text.tertiary',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: alpha('#EF4444', 0.1),
+                  transform: 'scale(1.05)',
+                  color: '#EF4444',
+                },
+              }}
+            >
+              <DeleteOutlineRounded sx={{ fontSize: 18 }} />
+            </IconButton>
+          )}
         </Stack>
       </Stack>
+
+      {/* 安装进度条 */}
+      {installProgress && installProgress.stage !== 'complete' && installProgress.stage !== 'error' && (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '0 0 12px 12px',
+            overflow: 'hidden',
+          }}
+        >
+          <LinearProgress
+            variant="determinate"
+            value={installProgress.percent}
+            sx={{
+              height: 3,
+              bgcolor: isDark ? alpha('#fff', 0.05) : alpha('#000', 0.05),
+              '& .MuiLinearProgress-bar': {
+                bgcolor: 'primary.main',
+                transition: 'transform 0.2s ease',
+              },
+            }}
+          />
+          {installProgress.message && (
+            <Typography
+              variant="caption"
+              sx={{
+                position: 'absolute',
+                bottom: 6,
+                left: 12,
+                fontSize: '0.65rem',
+                color: 'text.tertiary',
+                bgcolor: isDark ? alpha('#000', 0.6) : alpha('#fff', 0.8),
+                px: 0.75,
+                py: 0.25,
+                borderRadius: 1,
+              }}
+            >
+              {installProgress.message}
+            </Typography>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
