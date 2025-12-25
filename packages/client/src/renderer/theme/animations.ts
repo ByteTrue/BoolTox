@@ -224,3 +224,22 @@ export const card3DConfig = {
   maxRotate: 10, // 最大倾斜角度（度）
   intensity: 0.5, // 倾斜强度（0-1）
 } as const;
+
+// ============================================================
+// 样式工厂函数
+// ============================================================
+
+/**
+ * 创建卡片容器样式
+ * 统一卡片的边框、背景、阴影等样式
+ * @param isDark 是否为暗色模式
+ */
+export function createCardStyle(isDark: boolean) {
+  return {
+    p: 3,
+    borderRadius: 3,
+    bgcolor: isDark ? alpha('#fff', 0.02) : 'background.paper',
+    borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+    boxShadow: isDark ? elevations.card.idle.dark : elevations.card.idle.light,
+  };
+}
