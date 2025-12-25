@@ -19,14 +19,12 @@ import { createHash } from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const templatesRoot = path.resolve(__dirname, '../../../packages/client/examples');
-const repoNodeSdk = path.resolve(__dirname, '../../../sdks/node');
-const repoPythonSdk = path.resolve(__dirname, '../../../sdks/python');
+const TOOL_CONFIG_FILES = ['booltox.json', 'manifest.json'];
 
 const logInfo = (msg) => console.log(chalk.cyan(`[booltox] ${msg}`));
 const logWarn = (msg) => console.warn(chalk.yellow(`[booltox] ${msg}`));
 const logError = (msg) => console.error(chalk.red(`[booltox] ${msg}`));
 
-const templateNames = ['backend-demo', 'backend-node-demo', 'frontend-only-demo', 'python-standalone-demo'];
 const PYTHON_CMD = process.env.BOOLTOX_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
 
 async function copyTemplate(template, dest) {
@@ -54,39 +52,122 @@ async function runCreate(template, name) {
   }
 }
 
-function loadManifest(pluginPath) {
-  const manifestPath = path.join(pluginPath, 'manifest.json');
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error(`未找到 manifest.json: ${manifestPath}`);
+function listTemplatesSync() {
+  if (!fs.existsSync(templatesRoot)) {
+    return [];
   }
-  const content = fs.readFileSync(manifestPath, 'utf-8');
-  return JSON.parse(content);
+
+  const entries = fs.readdirSync(templatesRoot, { withFileTypes: true });
+  const templates = entries
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+    .map((entry) => entry.name)
+    .filter((name) =>
+      TOOL_CONFIG_FILES.some((file) => fs.existsSync(path.join(templatesRoot, name, file))),
+    )
+    .sort();
+
+  return templates;
+}
+
+function loadToolConfig(toolPath) {
+  for (const fileName of TOOL_CONFIG_FILES) {
+    const configPath = path.join(toolPath, fileName);
+    if (fs.existsSync(configPath)) {
+      const content = fs.readFileSync(configPath, 'utf-8');
+      return { configPath, manifest: JSON.parse(content) };
+    }
+  }
+  throw new Error(`未找到 ${TOOL_CONFIG_FILES.join(' 或 ')}: ${toolPath}`);
+}
+
+function resolveToolId(manifest, toolPath) {
+  return manifest?.id || path.basename(toolPath);
+}
+
+function currentPlatformKey() {
+  let arch = process.arch;
+  if (arch === 'arm') {
+    arch = 'armv7';
+  }
+  return `${process.platform}-${arch}`;
+}
+
+function resolvePlatformSpecificEntry(entry) {
+  if (typeof entry === 'string') {
+    return entry;
+  }
+  if (!entry || typeof entry !== 'object') {
+    throw new Error('backend.entry 不是有效路径');
+  }
+
+  const key = currentPlatformKey();
+  if (entry[key]) {
+    return entry[key];
+  }
+
+  const fallback = Object.values(entry).find(Boolean);
+  if (!fallback) {
+    throw new Error(`backend.entry 未匹配当前平台: ${key}`);
+  }
+
+  logWarn(`未找到当前平台 ${key} 的 entry，回退使用: ${fallback}`);
+  return fallback;
 }
 
 function validateManifest(manifest) {
-  if (!manifest.id || !manifest.version || !manifest.name) {
-    throw new Error('manifest 缺少 id/version/name');
+  if (!manifest?.version || !manifest?.name) {
+    throw new Error('配置缺少 name/version');
   }
+
+  if (manifest.start) {
+    return { mode: 'start', start: manifest.start, port: manifest.port };
+  }
+
   const runtime = manifest.runtime;
   if (!runtime) {
-    throw new Error('manifest.runtime 缺失');
+    throw new Error('配置缺少 runtime 或 start');
   }
+
   if (runtime.type === 'standalone') {
     if (!runtime.entry) {
       throw new Error('standalone runtime 需要 entry');
     }
-    return { mode: 'standalone' };
+    return { mode: 'standalone', runtime };
   }
-  if (!runtime.ui?.entry) {
-    throw new Error('webview runtime 缺少 ui.entry');
+
+  if (runtime.type === 'binary') {
+    if (!runtime.command) {
+      throw new Error('binary runtime 需要 command');
+    }
+    return { mode: 'binary', runtime };
   }
-  return { mode: 'webview', backend: runtime.backend };
+
+  if (runtime.type === 'http-service' || runtime.type === 'cli') {
+    if (!runtime.backend) {
+      throw new Error(`${runtime.type} runtime 需要 backend`);
+    }
+    if (!runtime.backend.entry) {
+      throw new Error(`${runtime.type} runtime 缺少 backend.entry`);
+    }
+    return { mode: runtime.type, backend: runtime.backend };
+  }
+
+  // legacy webview
+  if ((runtime.type ?? 'webview') === 'webview') {
+    if (!runtime.ui?.entry) {
+      throw new Error('webview runtime 缺少 ui.entry');
+    }
+    return { mode: 'webview', backend: runtime.backend };
+  }
+
+  throw new Error(`不支持的 runtime.type: ${runtime.type}`);
 }
 
 function spawnBackend(pluginPath, backend, pluginId) {
-  const entry = path.isAbsolute(backend.entry)
-    ? backend.entry
-    : path.join(pluginPath, backend.entry);
+  const resolvedEntry = resolvePlatformSpecificEntry(backend.entry);
+  const entry = path.isAbsolute(resolvedEntry)
+    ? resolvedEntry
+    : path.join(pluginPath, resolvedEntry);
   let cmd;
   let args = backend.args ?? [];
   const env = { ...process.env, ...(backend.env ?? {}), BOOLTOX_TOOL_ID: pluginId || '' };
@@ -94,17 +175,9 @@ function spawnBackend(pluginPath, backend, pluginId) {
   if (backend.type === 'python') {
     cmd = PYTHON_CMD;
     args = [entry, ...args];
-    const pythonSdk = fs.existsSync(repoPythonSdk) ? repoPythonSdk : undefined;
-    if (pythonSdk) {
-      env.PYTHONPATH = env.PYTHONPATH ? `${env.PYTHONPATH}${path.delimiter}${pythonSdk}` : pythonSdk;
-    }
   } else if (backend.type === 'node') {
     cmd = process.execPath;
     args = [entry, ...args];
-    const nodeSdk = fs.existsSync(repoNodeSdk) ? repoNodeSdk : undefined;
-    if (nodeSdk) {
-      env.NODE_PATH = env.NODE_PATH ? `${env.NODE_PATH}${path.delimiter}${nodeSdk}` : nodeSdk;
-    }
   } else {
     cmd = entry;
   }
@@ -137,8 +210,8 @@ function maybeRunFrontend(pluginPath) {
     logWarn('package.json 中未定义 dev/start 脚本，跳过前端 dev');
     return null;
   }
-  logInfo(`启动前端脚本: pnpm run ${script}`);
-  const proc = spawn('pnpm', ['run', script], {
+  logInfo(`启动前端脚本: npm run ${script}`);
+  const proc = spawn('npm', ['run', script], {
     cwd: pluginPath,
     stdio: 'inherit',
     env: process.env,
@@ -151,52 +224,106 @@ function maybeRunFrontend(pluginPath) {
 
 async function runDev(pluginPath = process.cwd(), options = { frontend: true }) {
   try {
-    const manifest = loadManifest(pluginPath);
+    const { manifest } = loadToolConfig(pluginPath);
+    const toolId = resolveToolId(manifest, pluginPath);
     const info = validateManifest(manifest);
-    const backend = manifest.runtime.backend;
 
-    let backendProc = null;
-    if (backend) {
-      const resolvedBackend = { ...backend, entry: backend.entry };
-      backendProc = spawnBackend(pluginPath, resolvedBackend, manifest.id);
+    const inferBackendType = (entry) => {
+      const lower = entry.toLowerCase();
+      if (lower.endsWith('.py')) return 'python';
+      if (lower.endsWith('.js') || lower.endsWith('.mjs') || lower.endsWith('.cjs')) return 'node';
+      return 'process';
+    };
 
-      const watchPath = path.isAbsolute(backend.entry)
-        ? backend.entry
-        : path.join(pluginPath, backend.entry);
-      const watcher = chokidar.watch(path.dirname(watchPath), { ignoreInitial: true });
-
-      watcher.on('all', (event, filePath) => {
-        logInfo(`检测到变更(${event}): ${filePath}，正在重启后端...`);
-        if (backendProc && !backendProc.killed) {
-          backendProc.kill();
-        }
-        backendProc = spawnBackend(pluginPath, resolvedBackend, manifest.id);
+    const spawnShellCommand = (command) => {
+      const proc = spawn(command, {
+        cwd: pluginPath,
+        env: { ...process.env, BOOLTOX_TOOL_ID: toolId },
+        stdio: 'inherit',
+        shell: true,
       });
+      proc.on('exit', (code) => logWarn(`进程退出 code=${code}`));
+      proc.on('error', (err) => logError(`进程启动失败: ${err.message}`));
+      return proc;
+    };
 
-      const shutdown = async () => {
-        await watcher.close();
-        if (backendProc && !backendProc.killed) {
-          backendProc.kill();
+    let runnerProc = null;
+    let watcher = null;
+
+    const startWithWatch = (backend) => {
+      runnerProc = spawnBackend(pluginPath, backend, toolId);
+
+      try {
+        const resolvedEntry = resolvePlatformSpecificEntry(backend.entry);
+        const watchPath = path.isAbsolute(resolvedEntry)
+          ? resolvedEntry
+          : path.join(pluginPath, resolvedEntry);
+
+        if (fs.existsSync(watchPath)) {
+          watcher = chokidar.watch(path.dirname(watchPath), { ignoreInitial: true });
+          watcher.on('all', (event, filePath) => {
+            logInfo(`检测到变更(${event}): ${filePath}，正在重启...`);
+            if (runnerProc && !runnerProc.killed) {
+              runnerProc.kill();
+            }
+            runnerProc = spawnBackend(pluginPath, backend, toolId);
+          });
         }
-        process.exit(0);
-      };
+      } catch (err) {
+        logWarn(`文件监听初始化失败: ${err.message || err}`);
+      }
+    };
 
-      process.on('SIGINT', shutdown);
-      process.on('SIGTERM', shutdown);
+    if (info.mode === 'start') {
+      runnerProc = spawnShellCommand(info.start);
+    } else if (info.mode === 'standalone') {
+      startWithWatch({
+        type: inferBackendType(info.runtime.entry),
+        entry: info.runtime.entry,
+        args: info.runtime.args ?? [],
+        env: info.runtime.env ?? {},
+      });
+    } else if (info.mode === 'binary') {
+      runnerProc = spawnBackend(pluginPath, {
+        type: 'process',
+        entry: info.runtime.command,
+        args: info.runtime.args ?? [],
+        env: info.runtime.env ?? {},
+      }, toolId);
+    } else if (info.backend) {
+      startWithWatch({
+        type: info.backend.type ?? 'process',
+        entry: info.backend.entry,
+        args: info.backend.args ?? [],
+        env: info.backend.env ?? {},
+      });
     } else {
-      logWarn('未声明 backend，后端热重载跳过');
+      logWarn('未找到可启动的后端配置');
     }
 
-    let frontendProc = null;
-    if (options.frontend) {
-      frontendProc = maybeRunFrontend(pluginPath);
-    }
+    const frontendProc = options.frontend ? maybeRunFrontend(pluginPath) : null;
 
-    if (!backend && !frontendProc) {
+    if (!runnerProc && !frontendProc) {
       logWarn('dev 模式未启动任何进程');
     } else {
-      logInfo('Dev 模式运行中：后端变更自动重启，前端通过脚本运行（如存在）。');
+      logInfo('Dev 模式运行中：变更自动重启（如启用 watch），前端通过脚本运行（如存在）。');
     }
+
+    const shutdown = async () => {
+      if (watcher) {
+        await watcher.close();
+      }
+      if (runnerProc && !runnerProc.killed) {
+        runnerProc.kill();
+      }
+      if (frontendProc && !frontendProc.killed) {
+        frontendProc.kill();
+      }
+      process.exit(0);
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
   } catch (error) {
     logError(error.message);
     process.exitCode = 1;
@@ -215,9 +342,9 @@ function computeHash(filePath) {
 
 async function runBuild(pluginPath = process.cwd()) {
   try {
-    const manifest = loadManifest(pluginPath);
+    const { manifest } = loadToolConfig(pluginPath);
     validateManifest(manifest);
-    logWarn('build 命令暂未集成构建流程，请在工具目录自行执行前端/后端构建（如 pnpm build）。');
+    logWarn('build 命令暂未集成构建流程，请在工具目录自行执行前端/后端构建（如 npm run build）。');
   } catch (error) {
     logError(error.message);
     process.exitCode = 1;
@@ -227,56 +354,43 @@ async function runBuild(pluginPath = process.cwd()) {
 async function runPack(pluginPath = process.cwd()) {
   const spinner = ora('打包中...').start();
   try {
-    const manifest = loadManifest(pluginPath);
+    const { manifest } = loadToolConfig(pluginPath);
     validateManifest(manifest);
-
-    const clientPackScript = path.resolve(__dirname, '../../client/scripts/package-plugin.mjs');
-    const repoPluginDir = path.resolve(__dirname, `../../client/plugins/${manifest.id}`);
-    const useClientScript =
-      fs.existsSync(clientPackScript) && path.resolve(pluginPath) === repoPluginDir;
-
-    if (useClientScript) {
-      spinner.text = '调用客户端打包脚本...';
-      await new Promise((resolve, reject) => {
-        const proc = spawn(process.execPath, [clientPackScript, manifest.id], {
-          cwd: path.dirname(clientPackScript),
-          stdio: 'inherit',
-        });
-        proc.on('exit', (code) => {
-          if (code === 0) resolve(undefined);
-          else reject(new Error(`package-plugin.mjs 退出码 ${code}`));
-        });
-        proc.on('error', reject);
-      });
-      spinner.succeed('客户端打包完成（resources/plugins 下生成 plugin.zip + metadata.json）');
-      return;
-    }
+    const toolId = resolveToolId(manifest, pluginPath);
 
     const outputDir = path.join(pluginPath, 'dist');
     await fs.ensureDir(outputDir);
-    const outputPath = path.join(outputDir, `${manifest.id}.booltox`);
+    const outputPath = path.join(outputDir, `${toolId}.booltox`);
 
     const output = fs.createWriteStream(outputPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
 
-    archive.on('error', (err) => {
-      throw err;
+    // 用 Promise 包装归档过程，正确传播错误
+    await new Promise((resolve, reject) => {
+      output.on('close', resolve);
+      output.on('error', reject);
+      archive.on('error', reject);
+      archive.on('warning', (err) => {
+        if (err.code !== 'ENOENT') {
+          logWarn(`归档警告: ${err.message}`);
+        }
+      });
+
+      archive.pipe(output);
+
+      archive.glob('**/*', {
+        cwd: pluginPath,
+        dot: false,
+        ignore: ['node_modules/**', '.git/**', '*.log'],
+      });
+
+      archive.finalize();
     });
-
-    archive.pipe(output);
-
-    archive.glob('**/*', {
-      cwd: pluginPath,
-      dot: false,
-      ignore: ['node_modules/**', '.git/**', '*.log'],
-    });
-
-    await archive.finalize();
     spinner.text = '计算哈希...';
     const hash = await computeHash(outputPath);
     spinner.text = '写入 metadata...';
     const metadata = {
-      id: manifest.id,
+      id: toolId,
       version: manifest.version,
       name: manifest.name,
       description: manifest.description || '',
@@ -306,18 +420,21 @@ program
   .command('templates')
   .description('列出可用模板')
   .action(() => {
-    templateNames.forEach((t) => console.log(t));
+    listTemplatesSync().forEach((t) => console.log(t));
   });
 
 program
   .command('create')
   .description('从模板创建工具')
   .argument('<name>', '工具目录名称')
-  .option('-t, --template <template>', '模板名称', 'python-backend')
+  .option('-t, --template <template>', '模板名称', 'backend-demo')
   .action(async (name, options) => {
+    const templates = listTemplatesSync();
     const template = options.template;
-    if (!templateNames.includes(template)) {
-      logWarn(`未知模板 ${template}，可选: ${templateNames.join(', ')}`);
+    if (!templates.includes(template)) {
+      logError(`未知模板 ${template}，可选: ${templates.join(', ')}`);
+      process.exitCode = 1;
+      return;
     }
     await runCreate(template, name);
   });
