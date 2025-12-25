@@ -95,6 +95,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const installedModulesRef = useRef<ModuleInstance[]>([]);
   const toastHistoryRef = useRef<Map<string, number>>(new Map());
   const [toolUpdates, setToolUpdates] = useState<Map<string, unknown>>(new Map()); // 工具更新信息
+  const hasRestoredRef = useRef(false); // 标记是否已从存储恢复（避免重复恢复覆盖新添加的工具）
 
   useEffect(() => {
     installedModulesRef.current = installedModules;
@@ -110,6 +111,8 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('[ModuleContext] 获取工具列表失败:', error);
+      // 使用 window.toast 而非 showToast，因为初始化时 hook 可能尚未就绪
+      window.toast?.error('工具列表加载失败，请尝试刷新');
     }
   }, []);
 
@@ -124,6 +127,8 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       setAvailableTools(registry.tools || []);
     } catch (error) {
       console.error('[ModuleContext] 获取在线工具列表失败:', error);
+      // 在线工具列表加载失败不阻塞主流程，仅记录日志
+      // 用户仍可使用已安装的本地工具
     }
   }, []);
 
@@ -431,17 +436,27 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   );
 
   // 从持久化存储恢复已安装工具（包含收藏信息等元数据）
+  // 注意：此 effect 只在首次加载时执行，避免与 syncTools 竞态导致新添加的工具丢失
   useEffect(() => {
+    // 已经恢复过，跳过（后续同步由 syncTools 处理）
+    if (hasRestoredRef.current) {
+      return;
+    }
+
+    // 等待 toolDefinitions 加载完成
     if (toolDefinitions.length === 0) {
-      setInstalledModules([]);
       return;
     }
 
     const restoreInstalledModules = async () => {
       try {
         const storedModules = await window.moduleStore.getAll();
+
+        // 标记已恢复（即使 storedModules 为空）
+        hasRestoredRef.current = true;
+
         if (storedModules.length === 0) {
-          setInstalledModules([]);
+          // 不清空，让 syncTools 处理新工具
           return;
         }
 
@@ -476,10 +491,22 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           logger.info(`[ModuleContext] 已清理孤立工具记录: ${id}`);
         }
 
-        setInstalledModules(restoredModules);
+        // 使用 updater 函数合并，避免覆盖 syncTools 可能已添加的工具
+        setInstalledModules(current => {
+          const currentIds = new Set(current.map(m => m.id));
+          // 只添加当前列表中没有的工具
+          const toAdd = restoredModules.filter(m => !currentIds.has(m.id));
+          if (toAdd.length > 0) {
+            logger.info(`[ModuleContext] 从存储恢复 ${toAdd.length} 个工具`);
+            return [...current, ...toAdd];
+          }
+          return current;
+        });
       } catch (error) {
         console.error('[ModuleContext] 恢复工具失败:', error);
-        setInstalledModules([]);
+        hasRestoredRef.current = true; // 即使失败也标记，避免反复重试
+        // 告知用户恢复失败
+        window.toast?.error('工具列表恢复失败，部分工具可能无法显示');
       }
     };
 
