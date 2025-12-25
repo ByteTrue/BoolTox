@@ -16,7 +16,6 @@ export interface ToolCliRuntimeConfig {
 }
 
 export type ToolRuntimeConfig =
-  | ToolWebRuntimeConfig
   | ToolStandaloneRuntimeConfig
   | ToolBinaryRuntimeConfig
   | ToolHttpServiceRuntimeConfig

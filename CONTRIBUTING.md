@@ -46,15 +46,3 @@ pnpm lint
 pnpm type-check
 pnpm --filter @booltox/client test:run
 ```
-
-## 📦 开发工具（工具生态）
-
-插件提交到 [booltox-plugins](https://github.com/ByteTrue/booltox-plugins) 仓库。
-
-详见 [工具开发指南](docs/plugins/development-guide.md)
-
-## 📞 联系我们
-
-- Issues: https://github.com/ByteTrue/BoolTox/issues
-- Discussions: https://github.com/ByteTrue/BoolTox/discussions
-- Email: team@booltox.com

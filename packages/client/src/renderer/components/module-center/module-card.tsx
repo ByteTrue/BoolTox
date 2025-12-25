@@ -46,10 +46,9 @@ export function ModuleCard({
   const isStopping = launchState === 'stopping';
   const isRunning = launchState === 'running';
   const isLaunchError = launchState === 'error';
-  const isStandalone = module.definition.runtimeMode === 'standalone';
-
   const runtimeType = module.definition.runtime?.type;
   const isExternalTool = runtimeType === 'cli' || runtimeType === 'binary';
+  const isStandalone = runtimeType === 'standalone';
 
   const launchStateBadge = isLaunching
     ? { label: '启动中…', color: 'warning' as const }

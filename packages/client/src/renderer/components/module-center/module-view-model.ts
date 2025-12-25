@@ -77,14 +77,9 @@ export interface ModuleViewModel {
   };
 
   /**
-   * 运行模式（用于判断是否显示"停止"按钮）
-   */
-  runtimeMode?: 'webview' | 'standalone';
-
-  /**
    * 运行时类型（用于判断是否为外部工具）
    */
-  runtimeType?: 'webview' | 'http-service' | 'cli' | 'binary' | 'standalone';
+  runtimeType?: 'http-service' | 'cli' | 'binary' | 'standalone';
 }
 
 /**
@@ -149,7 +144,6 @@ export function toModuleViewModel(
           lastError: instance.runtime.lastError,
         },
         isFavorite: instance.isFavorite,
-        runtimeMode: instance.definition.runtimeMode,
         runtimeType: instance.definition.runtime?.type,
       };
     }
@@ -200,11 +194,4 @@ export function isRegistryModule(vm: ModuleViewModel): boolean {
  */
 export function isExternalTool(vm: ModuleViewModel): boolean {
   return vm.runtimeType === 'cli' || vm.runtimeType === 'binary';
-}
-
-/**
- * 类型守卫 - 判断是否为独立窗口模式
- */
-export function isStandaloneTool(vm: ModuleViewModel): boolean {
-  return vm.runtimeMode === 'standalone';
 }

@@ -61,7 +61,6 @@ export interface ToolRuntime {
   /** Absolute path to the tool directory on disk */
   path: string;
   status: 'stopped' | 'running' | 'loading' | 'error';
-  mode?: 'webview' | 'standalone';
   /** WebContents ID of the BrowserView (if running) */
   viewId?: number;
   /** BrowserWindow ID (when running in dedicated window mode) */

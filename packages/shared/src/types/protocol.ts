@@ -226,26 +226,6 @@ export interface PlatformSpecificEntry {
   'linux-arm64'?: string;   // Linux ARM64（如树莓派）
 }
 
-/**
- * @deprecated 不再支持 webview 类型，请使用 ToolHttpServiceRuntimeConfig 代替
- * 工具应启动独立 HTTP 服务器，在系统默认浏览器中运行
- */
-export interface ToolUiRuntime {
-  type: 'webview';
-  entry: string;
-  assetsDir?: string;
-}
-
-/**
- * @deprecated 不再支持 webview 类型，请使用 ToolHttpServiceRuntimeConfig 代替
- * 工具应启动独立 HTTP 服务器，在系统默认浏览器中运行
- */
-export interface ToolWebRuntimeConfig {
-  type?: 'webview';
-  ui: ToolUiRuntime;
-  backend?: ToolBackendConfig;
-}
-
 export interface ToolStandaloneRuntimeConfig {
   type: 'standalone';
   entry: string;
@@ -307,7 +287,6 @@ export interface ToolCliRuntimeConfig {
 }
 
 export type ToolRuntimeConfig =
-  | ToolWebRuntimeConfig
   | ToolStandaloneRuntimeConfig
   | ToolBinaryRuntimeConfig
   | ToolHttpServiceRuntimeConfig

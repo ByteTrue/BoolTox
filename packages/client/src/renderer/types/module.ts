@@ -23,8 +23,7 @@ export interface ModuleDefinition {
   installedByDefault?: boolean;
   loader?: ModuleLoader;
   source?: ModuleSource;
-  runtimeMode?: 'webview' | 'standalone';
-  runtime?: ToolRuntimeConfig; // 新增：运行时配置（用于判断工具类型）
+  runtime?: ToolRuntimeConfig;
 }
 
 export type ModuleLaunchState = 'idle' | 'launching' | 'running' | 'stopping' | 'error';

@@ -152,15 +152,7 @@ function validateManifest(manifest) {
     return { mode: runtime.type, backend: runtime.backend };
   }
 
-  // legacy webview
-  if ((runtime.type ?? 'webview') === 'webview') {
-    if (!runtime.ui?.entry) {
-      throw new Error('webview runtime 缺少 ui.entry');
-    }
-    return { mode: 'webview', backend: runtime.backend };
-  }
-
-  throw new Error(`不支持的 runtime.type: ${runtime.type}`);
+  throw new Error(`不支持的 runtime.type: ${runtime.type}。支持的类型: standalone, binary, http-service, cli`);
 }
 
 function spawnBackend(pluginPath, backend, pluginId) {

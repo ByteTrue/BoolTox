@@ -180,7 +180,6 @@ export class ToolManager {
         path: toolPath,
         status: 'stopped',
         isDev,
-        mode: 'standalone' // 所有工具都是 standalone 模式
       };
 
       this.tools.set(manifest.id, runtime);

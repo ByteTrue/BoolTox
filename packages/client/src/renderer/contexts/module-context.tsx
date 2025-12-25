@@ -202,10 +202,6 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const toolDefinitions = useMemo<ModuleDefinition[]>(() => {
     return toolRegistry.map(tool => {
       const manifest = tool.manifest;
-      const runtimeType = tool.manifest.runtime?.type;
-      // 新架构：http-service | standalone | binary
-      const runtimeMode =
-        runtimeType === 'standalone' || runtimeType === 'binary' ? runtimeType : 'http-service';
 
       return {
         id: manifest.id,
@@ -217,8 +213,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         icon: manifest.icon || '🔌',
         installedByDefault: false,
         source: tool.isDev ? 'dev' : 'remote',
-        runtimeMode,
-        runtime: manifest.runtime, // 传入运行时配置，用于判断工具类型
+        runtime: manifest.runtime,
       } as ModuleDefinition;
     });
   }, [toolRegistry]);
