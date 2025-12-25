@@ -249,8 +249,8 @@ export function HomePage() {
                     gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
                   }}
                 >
-                  {displayedQuickModules.map(m => (
-                    <StaggerItem key={m.id}>
+                  {displayedQuickModules.map((m, index) => (
+                    <StaggerItem key={m.id} index={index}>
                       <HomeToolTile
                         module={m}
                         onOpen={() => void openModule(m.id)}

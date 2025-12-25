@@ -3,7 +3,7 @@
  * 原则：大量留白、高对比度、克制的色彩、精致的细节
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -21,6 +21,7 @@ import { ToolCard } from './tool-card';
 import { useModuleSearch, useSearchInput } from './hooks/use-module-search';
 import { useModuleSort } from './hooks/use-module-sort';
 import type { ModuleInstance } from '@/types/module';
+import type { ToolInstallProgress } from '@booltox/shared';
 import { StaggerList, StaggerItem } from '@/components/motion';
 
 // 默认排序配置（不需要状态，因为不会改变）
@@ -49,7 +50,38 @@ export function ModuleCenter() {
   const [currentCategory, setCurrentCategory] = useState<string>('all');
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [processingModuleId, setProcessingModuleId] = useState<string | null>(null);
+  const [installProgressMap, setInstallProgressMap] = useState<Map<string, ToolInstallProgress>>(new Map());
   const { inputValue, debouncedValue, setInputValue } = useSearchInput();
+
+  // 监听工具安装进度
+  useEffect(() => {
+    const handleProgress = (progress: ToolInstallProgress & { toolId?: string }) => {
+      const toolId = progress.toolId || processingModuleId;
+      if (!toolId) return;
+
+      if (progress.stage === 'complete' || progress.stage === 'error') {
+        // 安装完成或出错，延迟清除进度
+        setTimeout(() => {
+          setInstallProgressMap(prev => {
+            const next = new Map(prev);
+            next.delete(toolId);
+            return next;
+          });
+        }, 1000);
+      } else {
+        setInstallProgressMap(prev => {
+          const next = new Map(prev);
+          next.set(toolId, progress);
+          return next;
+        });
+      }
+    };
+
+    window.ipc?.on('tool:install-progress', handleProgress as (...args: unknown[]) => void);
+    return () => {
+      window.ipc?.off('tool:install-progress', handleProgress as (...args: unknown[]) => void);
+    };
+  }, [processingModuleId]);
 
   // 数据处理
   const allAvailableModules = useMemo(() => {
@@ -421,16 +453,18 @@ export function ModuleCenter() {
             </Box>
           ) : (
             <Stack component={StaggerList} spacing={0.75}>
-              {finalModules.map(tool => (
-                <StaggerItem key={tool.id}>
+              {finalModules.map((tool, index) => (
+                <StaggerItem key={tool.id} index={index}>
                   <ToolCard
                     tool={tool}
                     onOpen={handleOpen}
                     onStop={stopModule}
                     onInstall={handleInstall}
+                    onUninstall={handleUninstall}
                     onToggleFavorite={handleToggleFavorite}
                     onClick={setSelectedModuleId}
                     isInstalling={processingModuleId === tool.id}
+                    installProgress={installProgressMap.get(tool.id) || null}
                   />
                 </StaggerItem>
               ))}
