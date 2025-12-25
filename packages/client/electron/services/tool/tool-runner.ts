@@ -380,9 +380,12 @@ export class ToolRunner {
     if (runtimeConfig.type === 'binary') {
       try {
         // 1. 确定可执行文件路径
+        // 优先使用 localExecutablePath，其次检查 command 是否为绝对路径
         const exePath = runtimeConfig.localExecutablePath
           ? runtimeConfig.localExecutablePath // 本地工具：使用绝对路径
-          : path.join(state.runtime.path, runtimeConfig.command); // 官方工具：相对路径
+          : path.isAbsolute(runtimeConfig.command)
+            ? runtimeConfig.command // command 已是绝对路径，直接使用
+            : path.join(state.runtime.path, runtimeConfig.command); // 官方工具：相对路径
 
         // 2. 验证文件存在
         if (!fs.existsSync(exePath)) {
