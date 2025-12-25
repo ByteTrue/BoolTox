@@ -1,226 +1,67 @@
-# 二进制工具架构 - 最终设计
+# 二进制工具架构（现行实现）
 
-> **基于 GitOps 的官方工具分发 + 用户本地工具管理**
+## 核心结论
 
----
+- 工具来源统一为 **Tool Source**：`remote`（GitHub/GitLab 仓库）或 `local`（本地目录）
+- 工具元数据统一为 `booltox.json`；多工具仓库用 `booltox-index.json` 做索引
+- 安装目录统一为 `$userData/tools/<toolId>/`（由 `ToolManager` 管理）
 
-## 核心架构
+## 工具源（Tool Source）
 
-### 两种工具类型
+### 远程仓库（remote）
 
-| 类型 | 来源 | 安装方式 | 更新方式 |
-|------|------|---------|---------|
-| **官方工具** | Git 仓库 (`resources/tools/`) | 从工具市场安装（Git + jsDelivr CDN） | 手动检查 + 一键更新 |
-| **本地工具** | 用户本地文件 | "添加本地工具"按钮 | 用户自己管理 |
+- 多工具模式：仓库根目录提供 `booltox-index.json`，列出 `{ id, path }`
+- 单工具模式：仓库根目录直接提供 `booltox.json`
 
----
+客户端下载逻辑见 `packages/client/electron/services/git-ops.service.ts`：
+- 通过 GitHub/GitLab **tarball** 下载仓库
+- 只提取目标工具目录（`toolPath`），移动到 `$userData/tools/<toolId>/`
+- 开发模式下，如果检测到本地 `../booltox-plugins/<toolPath>`，会创建符号链接以便热修改
 
-## 官方工具发布流程
+### 本地目录（local）
 
-### 1. 目录结构
+本地目录同样支持两种模式：
+- 根目录 `booltox-index.json`（多工具）
+- 根目录 `booltox.json`（单工具）
 
-```
-packages/client/
-├── plugins/                    # 官方工具源码
-│   ├── uiautodev/              # 源码工具
-│   │   ├── manifest.json
-│   │   ├── dist/
-│   │   └── backend/
-│   └── cc-switch/              # 二进制工具（待创建）
-│       ├── manifest.json
-│       └── bin/
-│           ├── windows/
-│           │   └── cc-switch.exe
-│           ├── darwin/
-│           │   └── cc-switch
-│           └── linux/
-│               └── cc-switch
-│
-└── resources/tools/            # 打包后的发布物
-    ├── index.json              # 工具索引
-    ├── uiautodev.zip           # 源码工具（打包）
-    └── cc-switch.zip           # 二进制工具（打包）
-```
+## 二进制工具怎么写
 
-### 2. ZIP 包结构
-
-**源码工具（uiautodev.zip）**：
-```
-uiautodev.zip
-├── manifest.json
-├── index.html
-├── dist/
-├── backend/
-└── requirements.txt
-```
-
-**二进制工具（cc-switch.zip）**：
-```
-cc-switch.zip
-├── manifest.json
-└── bin/
-    ├── windows/
-    │   └── cc-switch.exe
-    ├── darwin/
-    │   └── cc-switch
-    └── linux/
-        └── cc-switch
-```
-
-### 3. manifest.json（二进制工具）
+推荐用 `cli` + `backend.type: "process"`，并用平台映射解决跨平台二进制：
 
 ```json
 {
-  "id": "com.booltox.cc-switch",
-  "version": "3.0.0",
-  "name": "CC Switch",
-  "description": "API 配置切换工具",
+  "id": "com.booltox.binary-sysmon-demo",
+  "name": "系统监控（Binary TUI）",
+  "version": "1.0.0",
   "runtime": {
-    "type": "binary",
-    "command": "bin/{{platform}}/cc-switch{{ext}}"
+    "type": "cli",
+    "backend": {
+      "type": "process",
+      "entry": {
+        "darwin-arm64": "bin/sysmon-macos-arm64",
+        "darwin-x64": "bin/sysmon-macos-x64",
+        "win32-x64": "bin/sysmon-windows-x64.exe",
+        "linux-x64": "bin/sysmon-linux-x64"
+      }
+    },
+    "title": "系统监控 TUI",
+    "keepOpen": true
   }
 }
 ```
 
-**安装时替换**：
-- Windows: `bin/windows/cc-switch.exe`
-- macOS: `bin/darwin/cc-switch`
-- Linux: `bin/linux/cc-switch`
+示例目录：`packages/client/examples/binary-sysmon-demo/`
 
----
+## 运行/加载
 
-## GitOps 下载流程
+客户端会从以下位置加载工具（按顺序）：
+- 已安装工具：`$userData/tools/`
+- 开发工具目录：`BOOLTOX_DEV_TOOLS_DIR`（仅开发模式）
+- 本地工具引用：从配置恢复的本地路径
+- `packages/client/examples/`（仅开发模式）
 
-### URL 结构
+## 相关代码
 
-**生产环境**（jsDelivr CDN）：
-```
-https://cdn.jsdelivr.net/gh/ByteTrue/BoolTox@main/packages/client/resources/tools/index.json
-https://cdn.jsdelivr.net/gh/ByteTrue/BoolTox@main/packages/client/resources/tools/cc-switch.zip
-```
-
-**开发环境**（本地文件）：
-```
-E:\Code\TS\BoolTox\booltox-web\packages\client\resources\tools\index.json
-```
-
-### 安装流程
-
-```
-Client 启动
-  ↓
-1. 读取 resources/tools/index.json
-   → 获取所有官方工具列表
-  ↓
-2. 用户在"工具市场" Tab 选择工具
-  ↓
-3. 点击"安装"
-  ↓
-4. 下载 ZIP（通过 jsDelivr CDN）
-  ↓
-5. 解压到 $userData/plugins/{id}/
-  ↓
-6. 替换 manifest 中的 {{platform}} 和 {{ext}}
-  ↓
-7. 完成安装
-```
-
----
-
-## 更新流程
-
-### 检查更新
-
-```
-用户点击"检查更新"按钮
-  ↓
-1. 读取 resources/tools/index.json
-  ↓
-2. 对比：
-   - 本地版本：$userData/plugins/{id}/manifest.json
-   - 远程版本：index.json 中的 version
-  ↓
-3. 如果远程版本 > 本地版本
-   → 显示"有新版本"徽章
-```
-
-### 一键更新
-
-```
-用户点击"更新"按钮
-  ↓
-1. 下载新版本 ZIP
-  ↓
-2. 停止旧版本（如果正在运行）
-  ↓
-3. 备份旧版本（可选）
-  ↓
-4. 删除旧版本
-  ↓
-5. 解压新版本
-  ↓
-6. 启动新版本
-  ↓
-7. 完成更新
-```
-
----
-
-## 待实现的功能
-
-### Phase 1: 打包脚本（支持二进制）
-
-创建：`scripts/package-tool.mjs`
-
-功能：
-- 支持源码工具（现有逻辑）
-- 支持二进制工具（跨平台 ZIP）
-- 输出到 `resources/tools/`
-- 更新 `resources/tools/index.json`
-
-### Phase 2: 检查更新
-
-在 `ToolInstallerService` 中添加：
-```typescript
-async checkUpdate(pluginId: string): Promise<string | null>
-```
-
-### Phase 3: 一键更新
-
-在 `ToolInstallerService` 中添加：
-```typescript
-async updateTool(pluginId: string): Promise<void>
-```
-
-### Phase 4: UI 集成
-
-- 在工具卡片上显示"有新版本"徽章
-- 添加"更新"按钮
-- 添加"检查更新"全局按钮
-
----
-
-## 今天完成的功能
-
-✅ **本地工具添加**（完全可用）
-- UI 按钮："添加本地工具"
-- 文件选择对话框
-- 自动生成 manifest
-- 一键启动
-
-✅ **架构清理**
-- 统一 Monorepo
-- GitOps 路径更新
-- 5 个工具正常加载
-
----
-
-## 下一步
-
-1. **立即测试**：本地添加功能
-2. **后续实现**：官方工具打包和更新系统
-
----
-
-**维护者**: BoolTox Team
-**更新时间**: 2025-12-11
+- 工具加载/校验：`packages/client/electron/services/tool/tool-manager.ts`
+- 工具源拉取：`packages/client/electron/services/git-ops.service.ts`
+- 协议与运行时类型：`packages/shared/src/types/protocol.ts`

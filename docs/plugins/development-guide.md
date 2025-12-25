@@ -1,406 +1,133 @@
 # BoolTox 工具开发指南
 
-> **最后更新**: 2025-12-06
-> **适用版本**: v1.0.0+
+## 核心原则
 
----
+- 工具必须能脱离 BoolTox **独立运行**
+- BoolTox 只负责：安装依赖、启动/停止进程、打开浏览器/终端
 
-## 📋 目录
+## 工具最小结构
 
-- [快速开始](#快速开始)
-- [工具类型](#工具类型)
-- [工具结构](#工具结构)
-- [开发流程](#开发流程)
-- [API 参考](#api-参考)
-- [发布工具](#发布工具)
-- [最佳实践](#最佳实践)
+```
+my-tool/
+├── booltox.json
+└── (你的代码/脚本/二进制)
+```
 
----
+## `booltox.json`
 
-## 🚀 快速开始
+### 1) 推荐：简化配置（最少字段）
 
-### 1. 克隆工具仓库
-
-\`\`\`bash
-git clone https://github.com/ByteTrue/booltox-plugins.git
-cd booltox-plugins
-pnpm install
-\`\`\`
-
-### 2. 创建新工具
-
-\`\`\`bash
-# 使用 CLI 创建（推荐）
-pnpm create:plugin my-plugin
-
-# 或手动创建
-mkdir -p packages/official/my-plugin
-\`\`\`
-
-### 3. 开发工具
-
-\`\`\`bash
-cd packages/official/my-plugin
-pnpm dev  # 启动热重载
-\`\`\`
-
-### 4. 测试工具
-
-\`\`\`bash
-# 在主仓库中配置环境变量
-export BOOLTOX_DEV_PLUGINS_DIR="/path/to/booltox-plugins/packages"
-
-# 启动 Agent
-cd BoolTox
-pnpm dev:agent
-\`\`\`
-
----
-
-## 🔌 工具类型
-
-### 1. 纯 TypeScript 工具（纯前端）
-
-**适用场景**: 不需要系统权限的工具（计算器、颜色选择器等）
-
-**特点**:
-- ✅ 最轻量，加载快
-- ✅ 跨平台兼容
-- ❌ 无法访问文件系统
-- ❌ 无法执行系统命令
-
-**示例**: 颜色选择器、JSON 格式化
-
-### 2. 纯 Python 工具（独立应用）
-
-**适用场景**: 命令行工具、脚本工具
-
-**特点**:
-- ✅ 强大的 Python 生态
-- ✅ 适合数据处理
-- ❌ 无 UI 界面
-
-**示例**: 批量重命名、图片压缩
-
-### 3. TS 前端 + TS 后端
-
-**适用场景**: 需要后端逻辑但不依赖 Python
-
-**特点**:
-- ✅ 全栈 TypeScript
-- ✅ 类型安全
-- ✅ 轻量快速
-
-**示例**: HTTP 客户端、API 测试工具
-
-### 4. TS 前端 + Python 后端
-
-**适用场景**: UI 工具 + Python 处理逻辑
-
-**特点**:
-- ✅ 最强大的组合
-- ✅ React UI + Python 后端
-- ✅ 适合复杂工具
-
-**示例**: 番茄钟、屏幕录制、自动化脚本
-
----
-
-## 📁 工具结构
-
-### 基础结构（TS + Python 后端）
-
-\`\`\`
-my-plugin/
-├── manifest.json          # 工具清单（必需）
-├── package.json           # npm 配置
-├── vite.config.ts         # Vite 构建配置
-├── tsconfig.json          # TypeScript 配置
-├── requirements.txt       # Python 依赖
-│
-├── src/                   # 前端源码
-│   ├── App.tsx           # React 主组件
-│   ├── main.tsx          # 入口文件
-│   └── style.css         # 样式
-│
-├── backend/               # 后端源码（可选）
-│   └── server.py         # Python 服务器
-│
-├── dist/                  # 构建产物（自动生成）
-│   ├── index.html
-│   └── assets/
-│
-├── icon.png               # 工具图标
-└── README.md              # 工具说明
-\`\`\`
-
-### manifest.json 示例
-
-\`\`\`json
+```json
 {
-  "id": "com.booltox.my-plugin",
-  "version": "1.0.0",
   "name": "我的工具",
-  "description": "工具描述",
-  "protocol": "^2.0.0",
+  "version": "1.0.0",
+  "start": "python main.py",
+  "port": 8001
+}
+```
 
+- `start`：启动命令（如 `python main.py` / `node server.js`）
+- `port`：存在则视为 `http-service`，BoolTox 会打开浏览器访问该端口
+
+### 2) 完整配置：`runtime`（更精细的控制）
+
+支持的运行时类型（见 `packages/shared/src/types/protocol.ts`）：
+- `http-service`
+- `cli`
+- `standalone`
+- `binary`
+
+#### `http-service`（推荐）
+
+工具启动本地 HTTP 服务，BoolTox 轮询就绪后打开浏览器：
+
+```json
+{
+  "id": "com.example.my-tool",
+  "name": "我的工具",
+  "version": "1.0.0",
   "runtime": {
-    "ui": {
-      "type": "webview",
-      "entry": "dist/index.html"
-    },
+    "type": "http-service",
     "backend": {
       "type": "python",
-      "entry": "backend/server.py",
-      "requirements": "requirements.txt"
+      "entry": "backend/http_server.py",
+      "requirements": "requirements.txt",
+      "host": "127.0.0.1",
+      "port": 8001
     }
-  },
-
-  "permissions": [
-    "backend.register",
-    "backend.message",
-    "python.run",
-    "storage.get",
-    "storage.set",
-    "window.setTitle"
-  ],
-
-  "window": {
-    "width": 800,
-    "height": 600,
-    "resizable": true
-  },
-
-  "author": "Your Name",
-  "homepage": "https://github.com/...",
-  "keywords": ["tag1", "tag2"],
-  "category": "productivity",
-  "icon": "icon.png"
+  }
 }
-\`\`\`
+```
 
----
+#### `cli`
 
-## 🔧 API 参考
+工具在系统终端中运行：
 
-### window.booltox API
+```json
+{
+  "name": "我的 CLI 工具",
+  "version": "1.0.0",
+  "runtime": {
+    "type": "cli",
+    "backend": {
+      "type": "node",
+      "entry": "cli.js"
+    },
+    "title": "My Tool",
+    "keepOpen": true
+  }
+}
+```
 
-工具前端可以通过全局 \`window.booltox\` API 与 Agent 通信。
+#### `standalone`
 
-#### 后端通信
+工具自行创建 GUI 窗口（Qt/Tk 等），BoolTox 仅管理进程：
 
-\`\`\`typescript
-// 注册后端
-const { channelId } = await window.booltox.backend.register();
+```json
+{
+  "name": "我的 GUI 工具",
+  "version": "1.0.0",
+  "runtime": {
+    "type": "standalone",
+    "entry": "main.py",
+    "requirements": "requirements.txt"
+  }
+}
+```
 
-// 调用后端方法
-const result = await window.booltox.backend.call(channelId, 'methodName', params);
+#### `binary` / 跨平台二进制
 
-// 发送通知（不等待响应）
-await window.booltox.backend.notify(channelId, 'methodName', params);
+`binary` 运行时用于直接执行本地可执行文件（`command` 为字符串）。如果你需要**跨平台分发**，推荐使用 `cli` + `backend.type: "process"` 并通过 `entry` 提供平台映射（示例见 `packages/client/examples/binary-sysmon-demo`）：
 
-// 监听后端事件
-window.booltox.backend.on(channelId, '$event', (data) => {
-  console.log('Backend event:', data);
-});
-
-// 等待后端就绪
-await window.booltox.backend.waitForReady(channelId, 10000);
-\`\`\`
-
-#### 窗口管理
-
-\`\`\`typescript
-// 设置窗口标题
-await window.booltox.window.setTitle('我的工具');
-\`\`\`
-
-#### 本地存储
-
-\`\`\`typescript
-// 读取存储
-const value = await window.booltox.storage.get<string>('key');
-
-// 写入存储
-await window.booltox.storage.set('key', 'value');
-
-// 删除存储
-await window.booltox.storage.remove('key');
-\`\`\`
-
-### Python 后端 API
-
-Python 后端使用 JSON-RPC 2.0 协议通过 stdin/stdout 通信。
-
-\`\`\`python
-import sys
-import json
-
-def send(method: str, params: dict = None):
-    """发送 JSON-RPC 通知到前端"""
-    message = {
-        "jsonrpc": "2.0",
-        "method": method,
-        "params": params or {}
+```json
+{
+  "name": "我的二进制工具",
+  "version": "1.0.0",
+  "runtime": {
+    "type": "cli",
+    "backend": {
+      "type": "process",
+      "entry": {
+        "darwin-arm64": "bin/tool-macos-arm64",
+        "win32-x64": "bin/tool-windows-x64.exe"
+      }
     }
-    sys.stdout.write(json.dumps(message) + "\\n")
-    sys.stdout.flush()
+  }
+}
+```
 
-def send_response(request_id, result=None, error=None):
-    """发送 JSON-RPC 响应"""
-    response = {"jsonrpc": "2.0", "id": request_id}
-    if error:
-        response["error"] = error
-    else:
-        response["result"] = result
-    sys.stdout.write(json.dumps(response) + "\\n")
-    sys.stdout.flush()
+## 开发与调试
 
-# 发送就绪通知
-send("$ready", {
-    "version": "1.0.0",
-    "methods": ["start", "stop", "getStatus"]
-})
+1. **先独立运行工具**（这是唯一可靠的调试方式）
+2. 再在 BoolTox 里加载
+   - 开发模式可设置环境变量 `BOOLTOX_DEV_TOOLS_DIR` 指向你的“工具集合目录”（目录下每个子目录一个工具）
+   - 或在客户端 UI 中添加本地工具源（会尝试读取 `booltox.json`）
 
-# 主循环：读取请求
-while True:
-    line = sys.stdin.readline()
-    if not line:
-        break
+## 依赖与环境（BoolTox 侧行为）
 
-    request = json.loads(line)
-    method = request.get("method")
-    params = request.get("params", {})
-    request_id = request.get("id")
+- Node 工具：BoolTox 使用 **npm** 安装依赖与运行（避免 pnpm 软链接导致分发/打包问题）
+- Python 工具：BoolTox 使用内置 **uv** 管理 Python 环境，并按 `requirements.txt` 安装依赖
 
-    # 处理方法调用
-    if method == "start":
-        result = {"success": True}
-        send_response(request_id, result=result)
+## 示例工具
 
-    # 发送事件到前端
-    send("$event", {"type": "progress", "value": 50})
-\`\`\`
-
----
-
-## 📤 发布工具
-
-### 1. 构建工具
-
-\`\`\`bash
-pnpm build
-\`\`\`
-
-### 2. 打包工具
-
-\`\`\`bash
-# 创建 ZIP 包
-cd dist
-zip -r ../my-plugin-1.0.0.zip .
-\`\`\`
-
-### 3. 计算 SHA-256
-
-\`\`\`bash
-shasum -a 256 my-plugin-1.0.0.zip
-\`\`\`
-
-### 4. 创建 Pull Request
-
-1. 上传 ZIP 到 \`plugins/official/my-plugin/releases/\`
-2. 更新 \`plugins/official/my-plugin/metadata.json\`
-3. 更新 \`plugins/index.json\`
-4. 提交 PR 到 booltox-plugins 仓库
-
-### 5. 审核和发布
-
-官方工具需要审核：
-- ✅ 代码质量检查
-- ✅ 安全扫描
-- ✅ 功能测试
-- ✅ 文档完整性
-
-通过后自动发布到工具市场 🎉
-
----
-
-## 💡 最佳实践
-
-### 代码规范
-
-1. **TypeScript**: 使用严格模式，避免 \`any\` 类型
-2. **Python**: 遵循 PEP 8，使用类型注解
-3. **命名**: 使用语义化的变量和函数名
-4. **注释**: 关键逻辑添加注释
-
-### 性能优化
-
-1. **懒加载**: 大型组件使用 React.lazy
-2. **防抖节流**: 频繁操作使用 debounce/throttle
-3. **虚拟化**: 长列表使用 react-window
-4. **缓存**: 合理使用 localStorage 缓存
-
-### 错误处理
-
-1. **Try-Catch**: 所有 API 调用都应该有错误处理
-2. **用户反馈**: 使用 Toast 通知而不是 console.log
-3. **日志记录**: 关键错误记录到 stderr
-
-### 安全
-
-1. **输入验证**: 所有用户输入都应验证
-2. **权限最小化**: 只请求必需的权限
-3. **依赖安全**: 定期更新依赖，扫描漏洞
-
----
-
-## 🐛 调试
-
-### 前端调试
-
-打开浏览器开发者工具（F12），查看：
-- Console: 日志和错误
-- Network: HTTP 请求
-- Sources: 断点调试
-
-### 后端调试
-
-查看 Agent 日志：
-\`\`\`bash
-cd ~/.booltox/agent/packages/agent
-pnpm dev  # 开发模式，显示详细日志
-\`\`\`
-
-### 常见问题
-
-**Q: 工具无法启动？**
-A: 检查 \`manifest.json\` 配置是否正确，Python 依赖是否安装
-
-**Q: 后端调用失败？**
-A: 检查 Python 脚本是否正确发送 JSON-RPC 响应
-
-**Q: 事件未收到？**
-A: 确保使用 \`send("$event", {...})\` 发送事件
-
----
-
-## 📚 示例工具
-
-查看官方示例：
-- [番茄钟](../booltox-plugins/packages/official/pomodoro) - TS + Python
-- [密码生成器](../booltox-plugins/packages/examples/password-generator) - 纯 TS
-- [系统监控](../booltox-plugins/packages/examples/system-monitor) - 纯 Python
-
----
-
-## 📞 获取帮助
-
-- [FAQ](docs/FAQ.md)
-- [Issues](https://github.com/ByteTrue/BoolTox/issues)
-- [Discussions](https://github.com/ByteTrue/BoolTox/discussions)
-- Email: dev@booltox.com
-
----
-
-**祝开发愉快！🎉**
+仓库内示例：`packages/client/examples/`（覆盖 `http-service` / `cli` / `standalone` / `binary`）。

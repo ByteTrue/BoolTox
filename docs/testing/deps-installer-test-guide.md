@@ -13,15 +13,14 @@
 
 ### 准备工作
 
-1. **确保客户端已构建**：
+1. **启动客户端**：
    ```bash
-   cd packages/client
-   pnpm build
+   pnpm dev:client
    ```
 
 2. **删除测试工具的依赖**（模拟首次安装）：
    ```bash
-   cd examples/backend-node-demo
+   cd packages/client/examples/backend-node-demo
    rm -rf node_modules
 
    cd ../frontend-only-demo
@@ -116,7 +115,9 @@
 
 1. **删除 Python 虚拟环境**（如果已存在）：
    ```bash
-   rm -rf ~/Library/Application\ Support/@booltox/client/plugin-envs/com.booltox.backend-demo
+   # 具体位置随平台变化，统一在 userData 下的 tool-envs/
+   # macOS 示例：
+   rm -rf ~/Library/Application\ Support/@booltox/client/tool-envs/com.booltox.backend-demo
    ```
 
 2. **在客户端中点击"系统信息监控"**

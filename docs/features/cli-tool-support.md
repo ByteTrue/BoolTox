@@ -1,10 +1,12 @@
 # CLI 工具支持方案
 
+> 注：本文中的 `manifest.json` 为历史叫法，现行配置文件为 `booltox.json`。
+
 ## 🎯 回答：能否零改动集成任意项目？
 
 ### ✅ HTTP 服务器项目（FastAPI、Express）
 
-**需要的改动**: 只需添加 `manifest.json`（~20 行）
+**需要的改动**: 只需添加 `booltox.json`（~20 行）
 
 **示例**：
 ```python
@@ -13,13 +15,13 @@ from fastapi import FastAPI
 uvicorn.run(app, host="127.0.0.1", port=8000)
 ```
 
-只需添加 `manifest.json`，完成！✅
+只需添加 `booltox.json`，完成！✅
 
 ---
 
 ### ✅ GUI 项目（Qt、Tkinter）
 
-**需要的改动**: 只需添加 `manifest.json`（~15 行）
+**需要的改动**: 只需添加 `booltox.json`（~15 行）
 
 完全零代码改动！✅
 
@@ -49,7 +51,7 @@ spawn('cmd.exe', ['/c', 'start', 'cmd.exe', '/k', `cd ${toolPath} && python cli.
 spawn('gnome-terminal', ['--', 'bash', '-c', `cd ${toolPath} && python cli.py`]);
 ```
 
-**需要的改动**: 只需添加 `manifest.json`
+**需要的改动**: 只需添加 `booltox.json`
 ```json
 {
   "runtime": {
@@ -74,7 +76,7 @@ spawn('gnome-terminal', ['--', 'bash', '-c', `cd ${toolPath} && python cli.py`])
 - Python: PyInstaller（30-50MB）
 - Node.js: pkg（20-40MB）
 
-**需要的改动**: 添加打包脚本 + manifest.json
+**需要的改动**: 添加打包脚本 + booltox.json
 
 **优势**：
 - ✅ 零运行时依赖
@@ -105,10 +107,10 @@ spawn('gnome-terminal', ['--', 'bash', '-c', `cd ${toolPath} && python cli.py`])
 
 | 项目类型 | 必需改动 | 改动量 | 改造成本 |
 |---------|---------|--------|---------|
-| HTTP 服务器 | manifest.json | ~20 行 | ⭐ 极低 |
-| GUI 项目 | manifest.json | ~15 行 | ⭐ 极低 |
-| **CLI 工具** | **manifest.json** | **~20 行** | ⭐ **极低（如果实现）** |
-| 纯前端项目 | manifest.json + server.js | ~30 行 | ⭐⭐ 低 |
+| HTTP 服务器 | booltox.json | ~20 行 | ⭐ 极低 |
+| GUI 项目 | booltox.json | ~15 行 | ⭐ 极低 |
+| **CLI 工具** | **booltox.json** | **~20 行** | ⭐ **极低（如果实现）** |
+| 纯前端项目 | booltox.json + server.js | ~30 行 | ⭐⭐ 低 |
 
 ---
 
@@ -116,7 +118,7 @@ spawn('gnome-terminal', ['--', 'bash', '-c', `cd ${toolPath} && python cli.py`])
 
 **能否零改动集成任意项目？**
 
-✅ **几乎可以**（只需添加 manifest.json）
+✅ **几乎可以**（只需添加 booltox.json）
 
 **不需要的改动**：
 - ❌ 不需要引入 BoolTox SDK
@@ -125,17 +127,17 @@ spawn('gnome-terminal', ['--', 'bash', '-c', `cd ${toolPath} && python cli.py`])
 - ❌ 不需要改变项目结构
 
 **唯一必需的改动**：
-- ✅ 添加 `manifest.json`（10-20 行，工具元信息）
+- ✅ 添加 `booltox.json`（10-20 行，工具元信息）
 
 **如果实现 CLI 模式**：
-- ✅ CLI 工具也只需 manifest.json
+- ✅ CLI 工具也只需 booltox.json
 - ✅ 所有类型的项目都支持（Web、GUI、CLI）
 
 ---
 
 ## 🔮 未来改进
 
-### 自动生成 manifest.json
+### 自动生成 booltox.json
 
 ```bash
 # BoolTox CLI 工具
@@ -148,7 +150,7 @@ booltox init
 ? 入口文件: main.py
 ? 端口（如果是 HTTP）: 8000
 
-✅ manifest.json 已生成
+✅ booltox.json 已生成
 ```
 
 **实现后**：

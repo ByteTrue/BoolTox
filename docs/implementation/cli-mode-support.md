@@ -39,7 +39,7 @@ export type ToolRuntimeConfig =
 
 **文件**: `packages/client/electron/services/tool/tool-manager.ts:289-302`
 
-添加 CLI 模式解析逻辑，验证 manifest.json 配置。
+添加 CLI 模式解析逻辑，验证 booltox.json 配置。
 
 ### 4. 工具运行器集成
 
@@ -67,7 +67,7 @@ export type ToolRuntimeConfig =
 **文件**:
 - `cli.py` - 主程序（180 行）
 - `requirements.txt` - 依赖（click>=8.1.0）
-- `manifest.json` - 工具配置
+- `booltox.json` - 工具配置
 - `README.md` - 使用说明
 
 **命令**:
@@ -86,7 +86,7 @@ python cli.py stats
 **文件**:
 - `cli.js` - 主程序（140 行）
 - `package.json` - 依赖（commander、chalk）
-- `manifest.json` - 工具配置
+- `booltox.json` - 工具配置
 - `README.md` - 使用说明
 
 **命令**:
@@ -103,7 +103,7 @@ node cli.js mkdir test-dir
 
 ### 1. 零改造集成
 
-**任意 CLI 工具只需添加 manifest.json**：
+**任意 CLI 工具只需添加 booltox.json**：
 
 ```json
 {
@@ -221,7 +221,7 @@ node cli.js list --long
 node cli.js find "*.json"
 
 # 查看文件信息
-node cli.js info manifest.json
+node cli.js info booltox.json
 ```
 
 ---
@@ -306,12 +306,12 @@ BoolTox 工具（3 大类，4 种运行模式）
 
 | 工具类型 | 技术栈 | 运行模式 | 改造成本 |
 |---------|-------|---------|---------|
-| Web 应用 | FastAPI、Express | http-service | manifest.json |
-| 桌面应用 | Qt、Tkinter | standalone | manifest.json |
-| **CLI 工具** | **Click、Commander** | **cli** | **manifest.json** ✨ |
-| 编译工具 | Rust、Go 二进制 | binary | manifest.json |
+| Web 应用 | FastAPI、Express | http-service | booltox.json |
+| 桌面应用 | Qt、Tkinter | standalone | booltox.json |
+| **CLI 工具** | **Click、Commander** | **cli** | **booltox.json** ✨ |
+| 编译工具 | Rust、Go 二进制 | binary | booltox.json |
 
-**所有工具都只需添加 manifest.json（10-20 行）！** 🎉
+**所有工具都只需添加 booltox.json（10-20 行）！** 🎉
 
 ### 代码统计
 
@@ -337,7 +337,7 @@ BoolTox 工具（3 大类，4 种运行模式）
 
 1. **准备 CLI 工具**（已有项目，无需改动）
 
-2. **创建 manifest.json**：
+2. **创建 booltox.json**：
    ```json
    {
      "id": "com.example.my-cli",
@@ -375,7 +375,7 @@ BoolTox 工具（3 大类，4 种运行模式）
 
 | 特性 | 打包成二进制 | CLI 模式（当前实现） |
 |------|------------|-------------------|
-| **改造成本** | 需要打包脚本 | 只需 manifest.json ✅ |
+| **改造成本** | 需要打包脚本 | 只需 booltox.json ✅ |
 | **运行时依赖** | 零依赖 | Python/Node.js |
 | **分发体积** | 30-50MB | 源码（几十 KB） |
 | **更新便利性** | 需重新打包 | 修改源码即可 ✅ |
@@ -437,7 +437,7 @@ python cli.py clear
 node cli.js list .
 node cli.js list --long --all
 node cli.js find "*.json"
-node cli.js info manifest.json
+node cli.js info booltox.json
 ```
 
 ### 预期日志
@@ -521,7 +521,7 @@ my-tool convert --input file.txt --output result.json --format yaml
 - CLI 工具（cli）✨ **新增**
 - 二进制工具（binary）
 
-**所有工具都只需 manifest.json，零代码改造！** 🎉
+**所有工具都只需 booltox.json，零代码改造！** 🎉
 
 ---
 

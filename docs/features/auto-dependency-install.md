@@ -14,7 +14,7 @@ BoolTox 2.0 现在支持 Node.js 工具的依赖自动安装，确保工具在�
 
 ```javascript
 // 打包内容
-archive.file('manifest.json');  // 工具配置
+archive.file('booltox.json');  // 工具配置
 archive.file('package.json');   // ✅ Node.js 依赖声明
 archive.directory('dist/');     // 前端构建文件
 archive.directory('backend/');  // 后端代码
@@ -242,7 +242,7 @@ npm install --production  # 只安装生产依赖
    ```
 
 3. 应该包含：
-   - ✅ manifest.json
+   - ✅ booltox.json
    - ✅ package.json  ← 关键
    - ✅ dist/
    - ✅ server.js（或 backend/）

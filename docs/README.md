@@ -64,13 +64,13 @@
 
 ### 我想了解历史演进
 
-👉 查看 [history/](./history/) 目录和根目录的 [CLAUDE.md](../CLAUDE.md)
+👉 查看 [history/](./history/)（包含历史设计与计划归档）
 
 ---
 
 ## 📖 阅读顺序（推荐）
 
-1. **入门**：根目录 [README.md](../README.md) + [CLAUDE.md](../CLAUDE.md)
+1. **入门**：根目录 [README.md](../README.md)
 2. **架构理解**：[architecture-evolution.md](./architecture-evolution.md)
 3. **工具开发**：[plugins/development-guide.md](./plugins/development-guide.md)
 4. **深入细节**：根据需要查看 features/ 和 implementation/ 目录

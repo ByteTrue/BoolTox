@@ -40,7 +40,7 @@ BoolTox 2.0 采用全新的架构理念：**BoolTox = 进程管理器 + 工具�
 
 ## 核心变化
 
-### 1. manifest.json 配置变化
+### 1. booltox.json 配置变化
 
 #### 旧架构（已弃用）
 
@@ -290,7 +290,7 @@ if (Notification.permission === 'granted') {
    import { useStorage, useBackend } from '@booltox/tool-sdk';
    ```
 
-### Step 3: 更新 manifest.json
+### Step 3: 更新 booltox.json
 
 ```json
 {
@@ -350,7 +350,7 @@ node server.js
 **旧架构**：
 ```
 my-tool/
-├── manifest.json
+├── booltox.json
 ├── backend/
 │   └── main.py (纯后端)
 ├── frontend/
@@ -363,7 +363,7 @@ my-tool/
 **新架构**：
 ```
 my-tool/
-├── manifest.json (更新配置)
+├── booltox.json (更新配置)
 ├── main.py (FastAPI 服务器 + API)
 ├── frontend/
 │   ├── src/
@@ -375,7 +375,7 @@ my-tool/
 
 #### 关键文件对比
 
-**旧 manifest.json**：
+**旧 booltox.json**：
 ```json
 {
   "runtime": {
@@ -386,7 +386,7 @@ my-tool/
 }
 ```
 
-**新 manifest.json**：
+**新 booltox.json**：
 ```json
 {
   "runtime": {
