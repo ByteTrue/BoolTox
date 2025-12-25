@@ -496,10 +496,12 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         const storedModules = await window.moduleStore.getAll();
         const storedIds = new Set(storedModules.map(m => m.id));
 
+        // 先计算需要更新的模块和需要存储的信息（纯计算，无副作用）
+        const toStore: StoredModuleInfo[] = [];
+
         setInstalledModules(current => {
           const currentIds = new Set(current.map(m => m.id));
           const updates = [...current];
-          const toStore: StoredModuleInfo[] = [];
 
           // 遍历所有工具
           for (const tool of toolRegistry) {
@@ -549,7 +551,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
                 favoritedAt: undefined,
               });
 
-              // 持久化到存储
+              // 记录需要持久化的工具（不在此处执行异步操作）
               if (!storedIds.has(toolId)) {
                 toStore.push({
                   id: toolId,
@@ -565,22 +567,22 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
             }
           }
 
-          // 异步存储新工具
-          if (toStore.length > 0) {
-            void (async () => {
-              for (const info of toStore) {
-                try {
-                  await window.moduleStore.add(info);
-                  logger.info(`[ModuleContext] 工具已存储: ${info.id}`);
-                } catch (error) {
-                  console.error(`[ModuleContext] 存储工具失败 ${info.id}:`, error);
-                }
-              }
-            })();
-          }
-
           return updates;
         });
+
+        // 异步存储新工具（在 setState 之后执行，避免在 updater 中产生副作用）
+        // 去重：React concurrent mode 下 updater 可能被调用多次
+        const uniqueToStore = Array.from(new Map(toStore.map(info => [info.id, info])).values());
+        if (uniqueToStore.length > 0) {
+          for (const info of uniqueToStore) {
+            try {
+              await window.moduleStore.add(info);
+              logger.info(`[ModuleContext] 工具已存储: ${info.id}`);
+            } catch (error) {
+              console.error(`[ModuleContext] 存储工具失败 ${info.id}:`, error);
+            }
+          }
+        }
       } catch (error) {
         console.error('[ModuleContext] 同步工具失败:', error);
       }
@@ -936,7 +938,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const addLocalBinaryTool = useCallback(async () => {
     try {
       // 1. 打开文件选择对话框
-      const result = (await window.ipc.invoke('dialog:openFile', {
+      const filePath = (await window.ipc.invoke('dialog:openFile', {
         filters: [
           {
             name: '可执行文件',
@@ -944,13 +946,12 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           },
         ],
         properties: ['openFile'],
-      })) as { canceled: boolean; filePaths: string[] } | null;
+      })) as string | null;
 
-      if (!result || result.canceled || !result.filePaths[0]) {
+      if (!filePath) {
         return;
       }
 
-      const filePath = result.filePaths[0];
       const fileName =
         filePath
           .split(/[\\/]/)
@@ -958,19 +959,19 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           ?.replace(/\.[^.]*$/, '') || '未命名工具';
 
       // 2. 调用 IPC 添加工具
-      const response = (await window.ipc.invoke('tool:add-local-binary', {
+      const response = (await window.ipc.invoke('tool:add-local-binary-tool', {
         name: fileName,
         exePath: filePath,
         description: '从本地添加的工具',
-      })) as { success: boolean; toolId?: string; error?: string };
+      })) as { success: boolean; id?: string; path?: string; error?: string };
 
-      if (response.success && response.toolId) {
+      if (response.success && response.id) {
         // 3. 刷新工具列表
         await refreshToolRegistry();
 
         // 4. 写入 moduleStore（让工具出现在已安装列表）
         await window.moduleStore.add({
-          id: response.toolId,
+          id: response.id,
           installedAt: new Date().toISOString(),
           lastUsedAt: new Date().toISOString(),
           source: 'local',
@@ -982,7 +983,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
           duration: 3000,
         });
 
-        logger.info(`[ModuleContext] Local binary tool added: ${response.toolId}`);
+        logger.info(`[ModuleContext] Local binary tool added: ${response.id}`);
       } else {
         throw new Error(response.error || '添加失败');
       }
