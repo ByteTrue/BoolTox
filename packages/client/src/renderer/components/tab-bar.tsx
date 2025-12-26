@@ -159,16 +159,22 @@ function SortableTab({
       {/* Pop Out 按钮 */}
       {windowId === 'main' && tab.type === 'tool' && (
         <Box
-          component="button"
-          type="button"
+          component="div"
+          role="button"
+          tabIndex={0}
           data-action="popout"
           onClick={e => onPopOut(tab, e)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onPopOut(tab, e as unknown as React.MouseEvent);
+            }
+          }}
           title="在新窗口中打开"
           sx={{
             ml: 0.5,
             p: 0.25,
             borderRadius: 0.5,
-            border: 'none',
             bgcolor: 'transparent',
             cursor: 'pointer',
             display: 'flex',
@@ -184,16 +190,22 @@ function SortableTab({
       {/* Dock 按钮 */}
       {windowId !== 'main' && tab.type === 'tool' && (
         <Box
-          component="button"
-          type="button"
+          component="div"
+          role="button"
+          tabIndex={0}
           data-action="dock"
           onClick={e => onDockToMain(tab, e)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onDockToMain(tab, e as unknown as React.MouseEvent);
+            }
+          }}
           title="移回主窗口"
           sx={{
             ml: 0.5,
             p: 0.25,
             borderRadius: 0.5,
-            border: 'none',
             bgcolor: 'transparent',
             cursor: 'pointer',
             display: 'flex',
@@ -209,16 +221,22 @@ function SortableTab({
       {/* 关闭按钮 */}
       {tab.closable && (
         <Box
-          component="button"
-          type="button"
+          component="div"
+          role="button"
+          tabIndex={0}
           data-action="close"
           onClick={e => onCloseTab(tab, e)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onCloseTab(tab, e as unknown as React.MouseEvent);
+            }
+          }}
           title="关闭"
           sx={{
             ml: 0.5,
             p: 0.25,
             borderRadius: 0.5,
-            border: 'none',
             bgcolor: 'transparent',
             cursor: 'pointer',
             display: 'flex',
