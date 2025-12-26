@@ -39,6 +39,21 @@ export class ToolInstallerService {
   }
 
   /**
+   * 验证工具 ID 是否安全（防止路径遍历攻击）
+   */
+  private validateToolId(id: string): void {
+    // 只允许字母、数字、点、连字符和下划线
+    const safePattern = /^[a-zA-Z0-9._-]+$/;
+    if (!safePattern.test(id)) {
+      throw new Error(`Invalid tool ID: ${id}. Only alphanumeric characters, dots, hyphens, and underscores are allowed.`);
+    }
+    // 额外检查：不允许以点开头（避免隐藏文件）或包含连续的点（避免 ..）
+    if (id.startsWith('.') || id.includes('..')) {
+      throw new Error(`Invalid tool ID: ${id}. Cannot start with dot or contain consecutive dots.`);
+    }
+  }
+
+  /**
    * 安装工具
    */
   async installTool(
@@ -52,6 +67,9 @@ export class ToolInstallerService {
     }
 
     const { id } = entry;
+
+    // 验证工具 ID（防止路径遍历攻击）
+    this.validateToolId(id);
 
     // 检查是否已在下载
     if (this.downloadingTools.has(id)) {
@@ -96,6 +114,9 @@ export class ToolInstallerService {
     window?: BrowserWindow
   ): Promise<string> {
     const { id, gitPath, sourceId } = entry;
+
+    // 验证工具 ID（防止路径遍历攻击）
+    this.validateToolId(id);
 
     if (!gitPath) {
       throw new Error(`工具 ${id} 缺少 gitPath`);
@@ -181,6 +202,9 @@ export class ToolInstallerService {
     window?: BrowserWindow
   ): Promise<string> {
     const { id, version, hash, downloadUrl } = entry;
+
+    // 验证工具 ID（防止路径遍历攻击）
+    this.validateToolId(id);
 
     if (!downloadUrl) {
       throw new Error(`工具 ${id} 缺少下载地址`);
@@ -557,6 +581,9 @@ export class ToolInstallerService {
     window?: BrowserWindow
   ): Promise<string> {
     const { id } = entry;
+
+    // 验证工具 ID（防止路径遍历攻击）
+    this.validateToolId(id);
 
     const platform = this.getPlatform();
     const assetInfo = this.selectAssetForPlatform(entry, platform);
