@@ -34,6 +34,29 @@ import { detachedWindowManager } from './windows/detached-window-manager.js';
 
 const logger = createLogger('IPC');
 
+/**
+ * 验证路径是否在允许的目录内（防止任意文件写入）
+ */
+function validatePathIsInAllowedDirectory(targetPath: string): void {
+  const normalizedPath = path.resolve(targetPath);
+
+  // 允许的目录
+  const allowedDirs = [
+    path.resolve(app.getPath('userData')),
+    path.resolve(app.getPath('temp')),
+    path.resolve(app.getPath('documents')),
+  ];
+
+  // 检查路径是否在允许的目录内
+  const isAllowed = allowedDirs.some(allowedDir => {
+    return normalizedPath.startsWith(allowedDir + path.sep) || normalizedPath === allowedDir;
+  });
+
+  if (!isAllowed) {
+    throw new Error(`Access denied: Path ${targetPath} is outside allowed directories`);
+  }
+}
+
 // CPU 使用率计算
 let previousCpuUsage = {
   idle: 0,
@@ -725,6 +748,9 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
    */
   ipcMain.handle('fs:writeToolConfig', async (_event, localPath: string, config: unknown) => {
     try {
+      // 验证路径在允许的目录内
+      validatePathIsInAllowedDirectory(localPath);
+
       const configPath = path.join(localPath, 'booltox.json');
       await fsPromises.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
       logger.info(`Generated booltox.json at: ${configPath}`);
@@ -740,6 +766,9 @@ export function registerAllIpcHandlers(mainWindow: BrowserWindow | null) {
    */
   ipcMain.handle('fs:writeToolIndex', async (_event, localPath: string, indexData: { tools: Array<{ id: string; path: string }> }) => {
     try {
+      // 验证路径在允许的目录内
+      validatePathIsInAllowedDirectory(localPath);
+
       const indexPath = path.join(localPath, 'booltox-index.json');
       await fsPromises.writeFile(indexPath, JSON.stringify(indexData, null, 2), 'utf-8');
       logger.info(`Generated booltox-index.json at: ${indexPath}`);

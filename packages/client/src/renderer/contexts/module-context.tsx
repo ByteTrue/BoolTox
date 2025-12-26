@@ -96,6 +96,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const toastHistoryRef = useRef<Map<string, number>>(new Map());
   const [toolUpdates, setToolUpdates] = useState<Map<string, unknown>>(new Map()); // 工具更新信息
   const hasRestoredRef = useRef(false); // 标记是否已从存储恢复（避免重复恢复覆盖新添加的工具）
+  const syncToolsInProgress = useRef(false); // 防止并发执行 syncTools
 
   useEffect(() => {
     installedModulesRef.current = installedModules;
@@ -521,6 +522,14 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     if (toolRegistry.length === 0) return;
 
     const syncTools = async () => {
+      // 防止并发执行
+      if (syncToolsInProgress.current) {
+        logger.info('[ModuleContext] syncTools already in progress, skipping');
+        return;
+      }
+
+      syncToolsInProgress.current = true;
+
       try {
         // 获取存储中的所有模块
         const storedModules = await window.moduleStore.getAll();
@@ -615,6 +624,8 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('[ModuleContext] 同步工具失败:', error);
+      } finally {
+        syncToolsInProgress.current = false;
       }
     };
 
