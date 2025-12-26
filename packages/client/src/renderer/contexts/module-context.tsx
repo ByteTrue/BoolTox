@@ -342,6 +342,14 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // 记录启动事件
+      logModuleEvent({
+        moduleId,
+        moduleName: module.definition.name,
+        action: 'enable',
+        category: module.definition.category || 'unknown',
+      });
+
       if (isWindowTool(moduleId)) {
         patchModuleRuntime(moduleId, {
           launchState: 'launching',
