@@ -50,62 +50,36 @@ pnpm dev:client
 
 ## 品牌元素定制
 
-### 1. 应用名称和描述
+### 1. 应用名称和 App ID
 
-**配置文件**：`packages/client/src/shared/brand-config.ts`
+**修改文件**：`packages/client/package.json` 和 `packages/client/electron-builder.json5`
 
-创建或修改：
-```typescript
-/**
- * 品牌配置
- * Fork 定制时修改此文件
- */
-export const brandConfig = {
-  // ==================== 基本信息 ====================
-  /** 应用内部名称（英文，无空格） */
-  appName: 'MyCompanyTools',
+**步骤**：
 
-  /** 应用显示名称（中文） */
-  displayName: '公司工具平台',
-
-  /** 应用 ID（反向域名） */
-  appId: 'com.mycompany.tools',
-
-  /** 组织/作者 */
-  author: 'MyCompany',
-
-  /** 应用描述 */
-  description: '企业内部开发工具统一管理平台',
-
-  /** 主页 URL */
-  homepage: 'https://tools.mycompany.com',
-
-  /** 仓库 URL */
-  repository: 'https://github.com/mycompany/tools',
-
-  // ==================== 视觉样式 ====================
-  /** 主题色 */
-  colors: {
-    primary: '#1E88E5',    // 主色调
-    secondary: '#43A047',  // 辅助色
-    accent: '#FF6F00',     // 强调色
-  },
-
-  // ==================== 功能开关 ====================
-  features: {
-    /** 是否启用自动更新 */
-    autoUpdate: true,
-
-    /** 是否启用遥测（匿名使用统计） */
-    telemetry: false,
-
-    /** 是否显示官方工具源 */
-    showOfficialSource: false,
-  },
-};
+1. 修改 `package.json`:
+```json
+{
+  "name": "@mycompany/tools",
+  "productName": "MyCompanyTools",
+  "version": "1.0.0",
+  "description": "企业工具管理平台",
+  "author": {
+    "name": "MyCompany",
+    "email": "dev@mycompany.com"
+  }
+}
 ```
 
-### 2. 更新 package.json
+2. 修改 `electron-builder.json5`:
+```json5
+{
+  "appId": "com.mycompany.tools",
+  "productName": "MyCompanyTools",
+  "copyright": "Copyright © 2025 MyCompany"
+}
+```
+
+### 2. 更新 package.json（完整示例）
 
 **文件**：`packages/client/package.json`
 
@@ -133,13 +107,7 @@ export const brandConfig = {
 
 ### 3. 修改应用图标
 
-**图标位置**：
-```
-packages/client/build/
-├── icon.icns          # macOS 图标
-├── icon.ico           # Windows 图标
-└── icon.png           # Linux 图标
-```
+> ⚠️ **注意**: `packages/client/build/` 目录可能不存在或路径不同,请根据实际项目结构查找图标文件位置。图标可能在 `resources/`、`assets/` 或其他目录。
 
 **图标尺寸要求**：
 
@@ -180,21 +148,21 @@ sips -z 1024 1024 logo.png --out MyIcon.iconset/icon_512x512@2x.png
 iconutil -c icns MyIcon.iconset -o packages/client/build/icon.icns
 ```
 
-### 4. 定制主题色
+### 3. 定制主题色
 
-**文件**：`packages/client/src/theme/theme.ts`
+**文件**：`packages/client/src/renderer/theme/theme.ts`
+
+直接修改主题配置中的颜色值：
 
 ```typescript
-import { brandConfig } from '@/shared/brand-config';
-
 export const lightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: brandConfig.colors.primary,  // 使用品牌主色
+      main: '#1E88E5',  // 修改为你的品牌主色
     },
     secondary: {
-      main: brandConfig.colors.secondary,
+      main: '#43A047',  // 修改为你的辅助色
     },
   },
 });
@@ -203,10 +171,10 @@ export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: brandConfig.colors.primary,
+      main: '#42A5F5',  // 深色模式的主色
     },
     secondary: {
-      main: brandConfig.colors.secondary,
+      main: '#66BB6A',  // 深色模式的辅助色
     },
   },
 });
@@ -279,7 +247,7 @@ function createMainWindow() {
     height: 900,                // 默认高度
     minWidth: 1200,             // 最小宽度
     minHeight: 700,             // 最小高度
-    title: brandConfig.displayName,
+    title: 'MyCompanyTools',    // 修改为你的应用名称
     titleBarStyle: 'hiddenInset',
     // ...
   });
@@ -353,38 +321,26 @@ function createMainWindow() {
 
 ### 1. 移除官方工具源
 
-如果希望完全使用内部工具源：
+如果希望完全使用内部工具源，可以修改默认配置：
 
 **文件**：`packages/client/electron/services/config.service.ts`
 
 ```typescript
-// 移除官方工具源
+// 移除官方工具源，使用自定义工具源
 const defaultToolSources: ToolSourceConfig[] = [
-  // 不包含官方源
+  {
+    id: 'company-internal',
+    name: '公司内部工具源',
+    type: 'github',
+    enabled: true,
+    owner: 'mycompany',
+    repo: 'tools',
+    branch: 'main',
+  },
 ];
-
-// 或者禁用官方源
-export const brandConfig = {
-  features: {
-    showOfficialSource: false,  // 隐藏官方源入口
-  },
-};
 ```
 
-### 2. 禁用遥测
-
-**文件**：`packages/client/src/shared/brand-config.ts`
-
-```typescript
-export const brandConfig = {
-  features: {
-    telemetry: false,         // 关闭匿名统计
-    crashReporting: false,    // 关闭崩溃报告
-  },
-};
-```
-
-### 3. 自定义欢迎页面
+### 2. 自定义欢迎页面
 
 **文件**：`packages/client/src/renderer/pages/home-page.tsx`
 
@@ -393,10 +349,10 @@ function HomePage() {
   return (
     <Box>
       <Typography variant="h4">
-        欢迎使用 {brandConfig.displayName}
+        欢迎使用 MyCompanyTools
       </Typography>
       <Typography variant="body1">
-        {brandConfig.description}
+        企业内部开发工具统一管理平台
       </Typography>
       {/* 自定义内容 */}
     </Box>
@@ -404,18 +360,18 @@ function HomePage() {
 }
 ```
 
-### 4. 添加自定义帮助链接
+### 3. 添加自定义帮助链接
 
-**文件**：`packages/client/src/shared/brand-config.ts`
+可以在设置页面或关于页面中添加自定义链接。
+
+**示例**：修改 `packages/client/src/renderer/pages/settings-page.tsx`
 
 ```typescript
-export const brandConfig = {
-  support: {
-    documentation: 'https://docs.mycompany.com/tools',
-    feedback: 'https://feedback.mycompany.com',
-    contact: 'support@mycompany.com',
-  },
-};
+const helpLinks = [
+  { label: '文档', url: 'https://docs.mycompany.com/tools' },
+  { label: '反馈', url: 'https://feedback.mycompany.com' },
+  { label: '联系我们', url: 'mailto:support@mycompany.com' },
+];
 ```
 
 ---
@@ -572,10 +528,10 @@ git push origin main
 - `packages/client/package.json`
 
 **建议**：
-使用 `.gitattributes` 标记品牌文件：
+使用 `.gitattributes` 标记品牌文件，避免上游合并覆盖：
 ```
 # .gitattributes
-packages/client/src/shared/brand-config.ts merge=ours
+packages/client/package.json merge=ours
 packages/client/electron-builder.json5 merge=ours
 ```
 
@@ -641,16 +597,14 @@ server {
 
 ### Fork 定制清单
 
-- [ ] 修改品牌配置（`brand-config.ts`）
-- [ ] 更新 `package.json`（名称、作者、URL）
-- [ ] 替换应用图标（macOS/Windows/Linux）
+- [ ] 更新 `package.json` 和 `electron-builder.json5`（名称、App ID、作者）
+- [ ] 替换应用图标（如果需要自定义）
 - [ ] 定制主题色（`theme.ts`）
 - [ ] 配置默认工具源（`config.service.ts`）
-- [ ] 更新 `electron-builder.json5`（appId, productName）
 - [ ] 修改许可证（`LICENSE`）
 - [ ] 添加 Fork 声明（`README.md`）
 - [ ] 测试构建（`pnpm build && pnpm release`）
-- [ ] 配置代码签名证书
+- [ ] 配置代码签名证书（生产环境）
 - [ ] 设置自动更新服务器
 - [ ] 配置 CI/CD 流水线
 

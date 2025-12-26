@@ -412,27 +412,34 @@ BoolTox 支持 Fork 后自定义品牌（应用名称、图标、配色）。
 
 ### 1. 品牌配置
 
-**配置文件**：`packages/client/src/shared/brand-config.ts`
-
-```typescript
-export const brandConfig = {
-  appName: 'MyCompanyTools',
-  displayName: '公司工具平台',
-  appId: 'com.mycompany.tools',
-  author: 'MyCompany',
-  description: '企业内部开发工具管理平台',
-  homepage: 'https://tools.mycompany.com',
-  repository: 'https://github.com/mycompany/tools',
-  colors: {
-    primary: '#1E88E5',
-    secondary: '#43A047',
-  },
-};
+**修改 `packages/client/package.json`**：
+```json
+{
+  "name": "@mycompany/tools",
+  "productName": "MyCompanyTools",
+  "version": "1.0.0",
+  "description": "企业工具管理平台",
+  "author": {
+    "name": "MyCompany",
+    "email": "dev@mycompany.com"
+  }
+}
 ```
 
-### 2. 修改图标
+**修改 `packages/client/electron-builder.json5`**：
+```json5
+{
+  "appId": "com.mycompany.tools",
+  "productName": "MyCompanyTools",
+  "copyright": "Copyright © 2025 MyCompany"
+}
+```
 
-**替换以下文件**：
+更多定制选项请参考 [品牌定制指南](brand-customization.md)。
+
+### 2. 修改图标（可选）
+
+**如果需要自定义图标**，替换以下文件位置的图标（实际路径可能不同，请根据项目结构查找）：
 ```
 packages/client/build/
 ├── icon.icns          # macOS 图标

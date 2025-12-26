@@ -178,14 +178,21 @@ python -m pip install --upgrade pip
 
 **回答**：
 BoolTox 使用独立 venv 方案：
-- 每个工具一个 venv（`~/.booltox/tool-envs/{toolId}/`）
+- 每个工具一个独立 venv
 - 使用 `uv` 自动下载 Python（无需用户预装）
 - SHA256 哈希检测依赖变化（避免重复安装）
 - 卸载工具时自动清理 venv
 
-**查看工具 venv**：
+**查看工具 venv**（路径因平台而异）：
 ```bash
-ls ~/.booltox/tool-envs/
+# macOS
+ls ~/Library/Application\ Support/BoolTox/tool-envs/
+
+# Windows (PowerShell)
+ls $env:APPDATA\BoolTox\tool-envs\
+
+# Linux
+ls ~/.config/BoolTox/tool-envs/
 ```
 
 ### Q: 如何使用系统 Python 而不是 BoolTox 下载的 Python
@@ -406,23 +413,24 @@ cp -r ~/.config/BoolTox backup/
 **macOS**：
 ```bash
 rm -rf ~/Library/Application\ Support/BoolTox
-rm -rf ~/Library/Logs/BoolTox
 rm -rf ~/Library/Caches/BoolTox
-rm -rf ~/.booltox
 ```
 
 **Windows**：
 ```bash
+# CMD
 rd /s /q %APPDATA%\BoolTox
 rd /s /q %LOCALAPPDATA%\BoolTox
-rd /s /q %USERPROFILE%\.booltox
+
+# PowerShell
+Remove-Item -Recurse -Force $env:APPDATA\BoolTox
+Remove-Item -Recurse -Force $env:LOCALAPPDATA\BoolTox
 ```
 
 **Linux**：
 ```bash
 rm -rf ~/.config/BoolTox
 rm -rf ~/.cache/BoolTox
-rm -rf ~/.booltox
 ```
 
 ---
@@ -494,13 +502,13 @@ BoolTox 内置 jsDelivr CDN 加速（自动）。
 **命令行方式**：
 ```bash
 # macOS
-tail -f ~/Library/Logs/BoolTox/main.log
+tail -f ~/Library/Application\ Support/BoolTox/logs/app.*.log
 
-# Windows
-type %APPDATA%\BoolTox\logs\main.log
+# Windows (PowerShell)
+Get-Content $env:APPDATA\BoolTox\logs\app.*.log -Wait
 
 # Linux
-tail -f ~/.config/BoolTox/logs/main.log
+tail -f ~/.config/BoolTox/logs/app.*.log
 ```
 
 ### Q: 应用崩溃后如何恢复

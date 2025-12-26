@@ -94,17 +94,32 @@ backend-demo/
 │       └── script.js
 ```
 
-**booltox.json**：
+**booltox.json**（实际配置）：
 ```json
 {
-  "name": "Python FastAPI 示例",
-  "version": "1.0.0",
-  "description": "演示 Python + FastAPI 后端服务",
-  "icon": "🐍",
-  "start": "python backend/http_server.py",
-  "port": 8001
+  "id": "com.booltox.backend-demo",
+  "version": "2.0.0",
+  "name": "系统信息监控",
+  "description": "实时监控系统 CPU、内存、磁盘和进程信息，展示 Python 后端与前端通信",
+  "protocol": "^2.0.0",
+  "runtime": {
+    "type": "http-service",
+    "backend": {
+      "type": "python",
+      "entry": "backend/http_server.py",
+      "requirements": "requirements.txt",
+      "port": 8001,
+      "host": "127.0.0.1"
+    },
+    "path": "/",
+    "readyTimeout": 30000
+  },
+  "author": "BoolTox Team",
+  "keywords": ["system", "monitor", "backend", "python", "psutil"]
 }
 ```
+
+> 💡 **提示**: 也可以使用简化配置 `{"start": "python backend/http_server.py", "port": 8001}`,BoolTox 会自动推断为完整配置。
 
 **功能演示**：
 - RESTful API 端点（`/api/hello`）

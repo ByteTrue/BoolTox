@@ -453,9 +453,14 @@ pandas
 ```
 
 BoolTox 会：
-1. 为每个工具创建独立 venv（`~/.booltox/tool-envs/{toolId}/`）
+1. 为每个工具创建独立 venv（避免依赖冲突）
 2. 使用 SHA256 哈希检测 `requirements.txt` 变化
 3. 仅在依赖变化时重新安装（避免重复安装）
+
+**venv 路径**（因平台而异）：
+- macOS: `~/Library/Application Support/BoolTox/tool-envs/{toolId}/`
+- Windows: `%APPDATA%\BoolTox\tool-envs\{toolId}\`
+- Linux: `~/.config/BoolTox/tool-envs/{toolId}/`
 
 **指定依赖文件路径**：
 ```json

@@ -193,23 +193,31 @@ interface ToolState {
 
 **职责**：
 - 使用 `uv` 自动下载 Python（无需用户预装）
-- 为每个工具创建独立 venv（`~/.booltox/tool-envs/{toolId}/`）
+- 为每个工具创建独立 venv
 - 哈希检测依赖变化（`requirements.txt.hash`）
-- 注入 BoolTox SDK（`booltox_sdk.py`）
+- 管理 Python 依赖安装
 
 **关键代码**：`packages/client/electron/services/python-manager.service.ts`
 
-**目录结构**：
+**目录结构**（不同平台路径不同）：
 ```
-~/.booltox/
-├── python/                    # uv 下载的 Python
-│   └── python-3.12.1/
-├── python-sdk/                # BoolTox SDK
-│   └── booltox_sdk.py
-└── tool-envs/{toolId}/        # 每个工具独立 venv
+# macOS
+~/Library/Application Support/BoolTox/
+├── python-runtime/           # uv 下载的 Python
+├── python-venv/             # 共享 venv
+├── tool-packages/           # 工具包缓存
+└── tool-envs/{toolId}/      # 每个工具独立 venv
     ├── .venv/
-    ├── requirements.txt       # 原始依赖文件
-    └── requirements.txt.hash  # SHA256 哈希（依赖变化检测）
+    ├── requirements.txt
+    └── requirements.txt.hash
+
+# Windows
+%APPDATA%\BoolTox\
+└── tool-envs\{toolId}\      # 同上
+
+# Linux
+~/.config/BoolTox/
+└── tool-envs/{toolId}/      # 同上
 ```
 
 **依赖安装判断**：
@@ -530,10 +538,11 @@ const result = await window.tool.start(toolId);
 
 **问题**：工具应共享全局 Python 环境还是独立 venv？
 
-**方案**：独立 venv（`~/.booltox/tool-envs/{toolId}/`）
+**方案**：独立 venv（每个工具一个）
 - 每个工具一个 venv
 - 哈希检测依赖变化（避免重复安装）
 - 使用 `uv` 自动下载 Python（无需用户预装）
+- 路径：`{userData}/tool-envs/{toolId}/`（userData 路径因平台而异）
 
 **权衡**：
 - ✅ 避免依赖冲突
