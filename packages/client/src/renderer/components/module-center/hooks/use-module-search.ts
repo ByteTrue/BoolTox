@@ -1,5 +1,10 @@
-import { useMemo, useState, useCallback } from "react";
-import type { ModuleDefinition, ModuleInstance } from "@core/modules/types";
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+import { useMemo, useState, useCallback } from 'react';
+import type { ModuleDefinition, ModuleInstance } from '@/types/module';
 
 /**
  * 搜索 Hook - 提供实时搜索功能
@@ -10,16 +15,16 @@ export function useModuleSearch<T extends ModuleDefinition | ModuleInstance>(
   searchQuery: string
 ): T[] {
   const filteredModules = useMemo(() => {
-    if (!searchQuery || searchQuery.trim() === "") {
+    if (!searchQuery || searchQuery.trim() === '') {
       return modules;
     }
 
     const query = searchQuery.toLowerCase().trim();
 
-    return modules.filter((module) => {
+    return modules.filter(module => {
       // 获取模块定义
-      const definition: ModuleDefinition = "definition" in module ? module.definition : module;
-      
+      const definition: ModuleDefinition = 'definition' in module ? module.definition : module;
+
       // 搜索名称
       if (definition.name.toLowerCase().includes(query)) {
         return true;
@@ -50,24 +55,27 @@ export function useModuleSearch<T extends ModuleDefinition | ModuleInstance>(
 /**
  * 搜索输入 Hook - 管理搜索输入状态和防抖
  */
-export function useSearchInput(initialValue = "", delay = 300) {
+export function useSearchInput(initialValue = '', delay = 300) {
   const [inputValue, setInputValue] = useState(initialValue);
   const [debouncedValue, setDebouncedValue] = useState(initialValue);
 
-  const handleChange = useCallback((value: string) => {
-    setInputValue(value);
-    
-    // 简单防抖实现
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+  const handleChange = useCallback(
+    (value: string) => {
+      setInputValue(value);
 
-    return () => clearTimeout(timer);
-  }, [delay]);
+      // 简单防抖实现
+      const timer = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    },
+    [delay]
+  );
 
   const clearSearch = useCallback(() => {
-    setInputValue("");
-    setDebouncedValue("");
+    setInputValue('');
+    setDebouncedValue('');
   }, []);
 
   return {

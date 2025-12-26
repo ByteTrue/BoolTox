@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 export enum RoleSlug {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
@@ -11,8 +16,6 @@ export enum PermissionCode {
   RELEASE_WRITE = 'releases.write',
   MODULE_READ = 'modules.read',
   MODULE_WRITE = 'modules.write',
-  ANNOUNCEMENT_READ = 'announcements.read',
-  ANNOUNCEMENT_WRITE = 'announcements.write',
   LOG_READ = 'logs.read',
   LOG_WRITE = 'logs.write',
   GITHUB_SYNC = 'system.github.sync',
@@ -26,8 +29,6 @@ export const ALL_PERMISSION_CODES: PermissionCode[] = [
   PermissionCode.RELEASE_WRITE,
   PermissionCode.MODULE_READ,
   PermissionCode.MODULE_WRITE,
-  PermissionCode.ANNOUNCEMENT_READ,
-  PermissionCode.ANNOUNCEMENT_WRITE,
   PermissionCode.LOG_READ,
   PermissionCode.LOG_WRITE,
   PermissionCode.GITHUB_SYNC,

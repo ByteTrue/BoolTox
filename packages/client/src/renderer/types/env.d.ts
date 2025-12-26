@@ -1,3 +1,5 @@
+/// <reference path="../../../electron/electron-env.d.ts" />
+
 interface ImportMetaEnv {
   readonly VITE_ADMIN_API_BASE?: string;
   readonly VITE_CLIENT_API_TOKEN?: string;

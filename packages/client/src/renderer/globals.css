@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/**
+ * BoolTox Client - 全局样式
+ * 完全基于 MUI + 原生 CSS，无 Tailwind 依赖
+ */
 
 :root {
   color-scheme: light;
@@ -26,12 +27,30 @@
   --spacing-lg: clamp(24px, 1.5rem + 0.5vw, 32px);
   --spacing-xl: clamp(32px, 2rem + 1vw, 48px);
   --spacing-2xl: clamp(48px, 3rem + 1vw, 64px);
+
+  /* 双品牌色渐变 - 蓝色 (#3B82F6) + 橙色 (#F97316) */
+  --background-image-brand-gradient: linear-gradient(135deg, #60a5fa 0%, #f97316 100%);
+  --background-image-brand-gradient-secondary: linear-gradient(135deg, #3b82f6 0%, #f97316 100%);
+  --background-image-brand-gradient-accent: linear-gradient(135deg, #93c5fd 0%, #fb923c 100%);
+
+  /* 动画时长 */
+  --transition-duration-150: 150ms;
+  --transition-duration-250: 250ms;
+  --transition-duration-350: 350ms;
+  --transition-duration-500: 500ms;
+
+  /* 缓动函数 */
+  --ease-swift: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-gentle: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-spring-out: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
   --titlebar-height: 44px;
 }
+
 html,
 body {
   min-height: 100%;
@@ -39,8 +58,16 @@ body {
 
 body {
   margin: 0;
-  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family:
+    var(--font-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Helvetica,
+    Arial,
+    sans-serif;
   letter-spacing: -0.01em;
+  font-display: swap;
 }
 
 /* ============================================
@@ -81,18 +108,18 @@ body {
 
 /* 键盘导航模式（显示焦点环） */
 body.keyboard-navigation *:focus-visible {
-  outline: 2px solid rgba(101, 187, 233, 0.8) !important;
+  outline: 2px solid rgba(59, 130, 246, 0.8) !important;
   outline-offset: 2px;
 }
 
 /* 禁用交互元素的焦点样式优化 */
 button:disabled:focus-visible,
-a[aria-disabled="true"]:focus-visible {
+a[aria-disabled='true']:focus-visible {
   outline-color: rgba(120, 125, 135, 0.5) !important;
 }
 
 /* ============================================
-   原有样式
+   基础样式
    ============================================ */
 
 a {
@@ -110,162 +137,154 @@ a {
   outline: none !important;
 }
 
-/* 移除 Tailwind 的默认 ring */
-*:focus-visible {
-  --tw-ring-shadow: 0 0 transparent !important;
-  --tw-ring-offset-shadow: 0 0 transparent !important;
-  box-shadow: none !important;
-}
-
-/* 为交互元素添加圆角光晕效果 - 增强版 */
+/* 为交互元素添加圆角光晕效果 */
 button:focus-visible,
 a:focus-visible,
-[role="button"]:focus-visible {
-  box-shadow: 0 0 0 4px rgba(101, 187, 233, 0.4) !important;
+[role='button']:focus-visible {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4) !important;
   transition: box-shadow 0.2s ease-in-out;
 }
 
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  box-shadow: 0 0 0 3px rgba(101, 187, 233, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.45) !important;
   transition: box-shadow 0.2s ease-in-out;
 }
 
 ::selection {
-  background: rgba(101, 187, 233, 0.3);
+  background: rgba(59, 130, 246, 0.3);
   color: #ffffff;
 }
 
-.sidebar-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(120, 125, 135, 0.28) transparent;
-}
+/* ============================================
+   现代化滚动条设计
+   ============================================ */
 
-.sidebar-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(120, 125, 135, 0.24), rgba(120, 125, 135, 0.36));
-  border-radius: 999px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(120, 125, 135, 0.32), rgba(120, 125, 135, 0.42));
-}
-
-
-.content-scroll-area {
-  height: 100%;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(120, 125, 135, 0.35) transparent;
-}
-
-.content-scroll-area::-webkit-scrollbar {
-  width: 10px;
-}
-
-.content-scroll-area::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.content-scroll-area::-webkit-scrollbar-thumb {
-  background: rgba(120, 125, 135, 0.28);
-  border-radius: 10px;
-  border: 2px solid transparent;
-}
-
-.content-scroll-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 125, 135, 0.4);
-}
-
-/* 优雅滚动条 - 用于 Drawer 和弹窗 */
-/* 现代化滚动条设计 */
 .elegant-scroll {
   overflow-y: auto;
   scroll-behavior: smooth;
+  /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Firefox 滚动条显示 */
-.elegant-scroll:hover,
-.elegant-scroll:active,
-.elegant-scroll.scrolling {
-  scrollbar-color: rgba(101, 187, 233, 0.3) transparent;
-}
-
-/* Webkit 滚动条容器 - 更窄的设计 */
+/* Webkit 滚动条 */
 .elegant-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
-/* 滚动条轨道 - 完全透明 */
 .elegant-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* 滚动条滑块 - 默认隐藏 */
 .elegant-scroll::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 999px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  transition: background 0.2s ease;
 }
 
-/* 悬停或滚动时显示滚动条 - 毛玻璃效果 */
+/* 滚动时显示 - 浅色主题 */
 .elegant-scroll:hover::-webkit-scrollbar-thumb,
-.elegant-scroll:active::-webkit-scrollbar-thumb,
 .elegant-scroll.scrolling::-webkit-scrollbar-thumb {
-  background: rgba(101, 187, 233, 0.25);
-  backdrop-filter: blur(8px) saturate(170%);
-  box-shadow: 0 2px 8px rgba(101, 187, 233, 0.15);
+  background: rgba(0, 0, 0, 0.15);
 }
 
-/* 滑块悬停效果 */
-.elegant-scroll:hover::-webkit-scrollbar-thumb:hover,
-.elegant-scroll:active::-webkit-scrollbar-thumb:hover,
-.elegant-scroll.scrolling::-webkit-scrollbar-thumb:hover {
-  background: rgba(101, 187, 233, 0.4);
-  box-shadow: 0 4px 12px rgba(101, 187, 233, 0.25);
-  transform: scaleX(1.2);
+.elegant-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
-/* 深色模式优化 - 更亮的滚动条 */
-[data-theme="dark"] .elegant-scroll:hover,
-[data-theme="dark"] .elegant-scroll:active,
-[data-theme="dark"] .elegant-scroll.scrolling {
-  scrollbar-color: rgba(101, 187, 233, 0.4) transparent;
+/* Firefox - 浅色主题 */
+.elegant-scroll:hover,
+.elegant-scroll.scrolling {
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
 
-[data-theme="dark"] .elegant-scroll:hover::-webkit-scrollbar-thumb,
-[data-theme="dark"] .elegant-scroll:active::-webkit-scrollbar-thumb,
-[data-theme="dark"] .elegant-scroll.scrolling::-webkit-scrollbar-thumb {
-  background: rgba(101, 187, 233, 0.35);
-  backdrop-filter: blur(8px) saturate(170%);
-  box-shadow: 0 2px 8px rgba(101, 187, 233, 0.2);
+/* 深色模式 */
+[data-theme='dark'] .elegant-scroll:hover::-webkit-scrollbar-thumb,
+[data-theme='dark'] .elegant-scroll.scrolling::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
 }
 
-[data-theme="dark"] .elegant-scroll:hover::-webkit-scrollbar-thumb:hover,
-[data-theme="dark"] .elegant-scroll:active::-webkit-scrollbar-thumb:hover,
-[data-theme="dark"] .elegant-scroll.scrolling::-webkit-scrollbar-thumb:hover {
-  background: rgba(101, 187, 233, 0.5);
-  box-shadow: 0 4px 12px rgba(101, 187, 233, 0.3);
-  transform: scaleX(1.2);
+[data-theme='dark'] .elegant-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
-[data-animate] {
-  opacity: 0;
-  transform: translateY(26px) scale(0.985);
-  animation: float-in 0.7s var(--ease-spring-out) forwards;
+[data-theme='dark'] .elegant-scroll:hover,
+[data-theme='dark'] .elegant-scroll.scrolling {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* 完全隐藏滚动条 - 用于标签栏等不需要显示滚动条的区域 */
+.scrollbar-hide,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ============================================
+   动画定义
+   ============================================ */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes float-in {
@@ -281,7 +300,8 @@ textarea:focus-visible {
 
 /* 呼吸动画 */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.2;
   }
@@ -291,14 +311,71 @@ textarea:focus-visible {
   }
 }
 
-/* Apple-style 隐藏滚动条 */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* 网格渐变动画 - 柔和漂浮效果 */
+@keyframes blob-float-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(80px, -60px) scale(1.2);
+  }
+  66% {
+    transform: translate(-60px, 80px) scale(0.85);
+  }
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+@keyframes blob-float-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-70px, 70px) scale(1.15);
+  }
+  66% {
+    transform: translate(70px, -50px) scale(0.9);
+  }
+}
+
+@keyframes blob-float-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(50px, 60px) scale(1.25);
+  }
+}
+
+@keyframes shadow-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  }
+  50% {
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
+  }
+}
+
+[data-animate] {
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+  animation: float-in 0.7s var(--ease-spring-out) forwards;
+}
+
+.wave-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wave-layer {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  will-change: transform;
 }
 
 /* ============================================
@@ -323,7 +400,7 @@ textarea:focus-visible {
     opacity: 1 !important;
     transform: none !important;
   }
-  
+
   /* Framer Motion 组件回退 */
   [data-framer-component] {
     animation: none !important;
@@ -336,65 +413,16 @@ textarea:focus-visible {
   * {
     border-width: 2px !important;
   }
-  
-  button, a {
+
+  button,
+  a {
     text-decoration: underline;
   }
 }
 
 /* ============================================
-   动画定义
+   性能优化
    ============================================ */
-
-/* 网格渐变动画 - 柔和漂浮效果 */
-@keyframes blob-float-1 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(80px, -60px) scale(1.2);
-  }
-  66% {
-    transform: translate(-60px, 80px) scale(0.85);
-  }
-}
-
-@keyframes blob-float-2 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-70px, 70px) scale(1.15);
-  }
-  66% {
-    transform: translate(70px, -50px) scale(0.9);
-  }
-}
-
-@keyframes blob-float-3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(50px, 60px) scale(1.25);
-  }
-}
-
-.wave-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.wave-layer {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  will-change: transform;
-}
-
-/* ==================== 性能优化 ==================== */
 
 /* GPU 加速 - 强制硬件加速 */
 .gpu-accelerated {
@@ -406,17 +434,19 @@ textarea:focus-visible {
 /* 动画性能优化 - 仅使用 transform 和 opacity */
 .animate-optimized {
   will-change: transform, opacity;
-  transform: translateZ(0); /* 强制 GPU 加速 */
+  transform: translateZ(0);
 }
 
 /* Framer Motion 组件优化 */
-[data-framer-motion] {
+[data-framer-motion],
+[data-framer-component] {
   will-change: transform;
   transform: translateZ(0);
 }
 
 /* 布局动画优化 */
-.layout-animate {
+.layout-animate,
+[data-layout-animate] {
   will-change: transform;
   contain: layout style paint;
 }
@@ -426,7 +456,7 @@ textarea:focus-visible {
   will-change: scroll-position;
   contain: layout style paint;
   overflow: auto;
-  -webkit-overflow-scrolling: touch; /* iOS 滚动优化 */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 避免重排的动画 */
@@ -446,21 +476,32 @@ textarea:focus-visible {
   contain: paint;
 }
 
+.contain-layout {
+  contain: layout;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
 /* Hover 交互优化 */
 .hover-optimized {
   will-change: transform;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
 }
 
 .hover-optimized:hover {
   transform: scale(1.02) translateZ(0);
+  will-change: transform, opacity, box-shadow;
 }
 
 /* 卡片 Hover 优化 */
 .card-hover-optimized {
   will-change: transform, box-shadow;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 按钮点击反馈优化 */
@@ -477,50 +518,6 @@ textarea:focus-visible {
 .will-change-auto {
   will-change: auto;
 }
-/* ========== 动画性能优化 ========== */
-
-/* GPU 加速基础类 - 强制硬件加速 */
-.gpu-accelerated {
-  transform: translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
-  perspective: 1000px;
-}
-
-/* Framer Motion 组件优化 */
-[data-framer-component] {
-  will-change: transform, opacity;
-  transform: translateZ(0);
-}
-
-/* 频繁动画的元素 - 提前告知浏览器 */
-.animate-optimized {
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* 布局动画优化 */
-[data-layout-animate] {
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-/* 悬停动画优化 - 仅在 hover 时启用 will-change */
-.hover-optimized {
-  transform: translateZ(0);
-}
-
-.hover-optimized:hover {
-  will-change: transform, opacity, box-shadow;
-}
-
-/* 滚动性能优化 */
-.scroll-optimized {
-  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
-  scroll-behavior: smooth;
-  will-change: scroll-position;
-}
 
 /* 玻璃材质动画优化 */
 .glass-optimized {
@@ -533,35 +530,7 @@ textarea:focus-visible {
   contain: layout style;
 }
 
-/* 阴影动画优化 - 使用 transform 模拟 */
-@keyframes shadow-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-  }
-  50% {
-    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
-  }
-}
-
-/* 防止字体加载时的布局偏移 */
-body {
-  font-display: swap;
-}
-
 /* 图片加载优化 */
 img {
   content-visibility: auto;
-}
-
-/* 减少重绘区域 */
-.contain-paint {
-  contain: paint;
-}
-
-.contain-layout {
-  contain: layout;
-}
-
-.contain-strict {
-  contain: strict;
 }

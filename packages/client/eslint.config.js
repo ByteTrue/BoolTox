@@ -7,7 +7,19 @@ import tseslintParser from '@typescript-eslint/parser';
 
 export default [
   {
-    ignores: ['dist', 'dist-electron', 'node_modules', 'public/**/*', 'docs/**/*', '**/*.d.ts'],
+    ignores: [
+      '**/.turbo/**',
+      '**/.next/**',
+      '**/dist/**',
+      '**/dist-electron/**',
+      '**/node_modules/**',
+      '**/*.d.ts',
+      'docs/**/*',
+      'logs/**/*',
+      'public/**/*',
+      'release/**/*',
+      'plugins/**/dist/**/*',
+    ],
   },
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
@@ -41,7 +53,7 @@ export default [
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': ['error', { allow: ['warn', 'error', 'time', 'timeEnd', 'group', 'groupEnd'] }],
-      'no-undef': 'error',
+      'no-undef': 'off',
       'no-control-regex': 'error',
       'no-dupe-class-members': 'error',
       'no-useless-escape': 'error',
@@ -51,6 +63,13 @@ export default [
     },
   },
   // 测试文件特殊配置 (遵循单一职责原则，分离测试环境配置)
+  {
+    files: ['scripts/**/*.{js,ts,mjs,cjs}', 'examples/**/*.{js,ts,tsx,jsx,mjs,cjs}'],
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
   {
     files: ['**/*.test.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}', '**/src/test/**/*.{ts,tsx}'],
     languageOptions: {
@@ -92,7 +111,7 @@ export default [
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': ['error', { allow: ['warn', 'error', 'time', 'timeEnd', 'group', 'groupEnd'] }],
-      'no-undef': 'error',
+      'no-undef': 'off',
       'no-control-regex': 'error',
       'no-dupe-class-members': 'error',
       'no-useless-escape': 'error',

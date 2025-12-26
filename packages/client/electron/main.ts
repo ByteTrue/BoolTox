@@ -1,28 +1,40 @@
 /**
- * Electron Main Process - 极简版
- * 
- * 只做必要的事情：
- * 1. 创建窗口
- * 2. 注册IPC处理器
- * 3. 管理内部模块
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+/**
+ * Electron Main Process - 简洁版
+ *
+ * 职责：
+ * 1. 创建窗口
+ * 2. 初始化服务
+ * 3. 管理应用生命周期
+ *
+ * IPC handlers 已迁移到 electron/ipc-registry.ts
+ */
+
+import { app, BrowserWindow } from 'electron';
+import type { BrowserWindowConstructorOptions } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import os from 'os';
-import { getAllDisksInfo, formatOSName } from './utils/system-info.js';
+import { setupLogger, createLogger } from './utils/logger.js';
+import { getPlatformWindowConfig } from './utils/window-platform-config.js';
 import { moduleStoreService } from './services/module-store.service.js';
-import { UpdateManager, type UpdateDownloadPayload } from './services/update-manager.service.js';
-import type { StoredModuleInfo } from '../src/shared/types/module-store.types.js';
+import { AutoUpdateService } from './services/auto-update.service.js';
+import { toolManager } from './services/tool/tool-manager.js';
+import { toolRunner } from './services/tool/tool-runner.js';
+import { toolInstaller } from './services/tool/tool-installer.js';
+import { TrayService } from './services/tray.service.js';
+import { detachedWindowManager } from './windows/detached-window-manager.js';
+import { registerAllIpcHandlers } from './ipc-registry.js';
+import './services/tool/tool-api-handler.js'; // Initialize API handlers
+
+// 初始化日志系统
+setupLogger();
+const logger = createLogger('Main');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// CPU 使用率计算相关变量
-let previousCpuUsage = {
-  idle: 0,
-  total: 0,
-};
 
 // 环境变量
 process.env.APP_ROOT = path.join(__dirname, '..');
@@ -30,61 +42,34 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist');
 
 let mainWindow: BrowserWindow | null = null;
-const updateManager = new UpdateManager(() => mainWindow);
+let trayService: TrayService | null = null;
 
 /**
  * 创建主窗口
  */
 function createWindow() {
   // 基础窗口配置
-  const baseConfig: Electron.BrowserWindowConstructorOptions = {
+  const baseConfig: BrowserWindowConstructorOptions = {
     width: 1200,
     height: 800,
-    minWidth: 960,  // 最小宽度：侧边栏 268px + 内容区最小 650px + 间距
-    minHeight: 720, // 最小高度：标题栏 + 内容区合理显示
-    frame: false, // 无边框窗口
-    resizable: true, // 允许调整窗口大小
-    maximizable: true, // 允许最大化窗口
+    minWidth: 960,
+    minHeight: 720,
+    frame: false,
+    resizable: true,
+    maximizable: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      v8CacheOptions: 'code', // 启用 V8 代码缓存
-      backgroundThrottling: false, // 防止后台限流影响性能
+      webviewTag: true, // 启用 webview 支持，用于嵌入工具前端
+      v8CacheOptions: 'code',
+      backgroundThrottling: false,
     },
   };
 
   // 平台特定优化
-  const platformConfig: Partial<Electron.BrowserWindowConstructorOptions> = (() => {
-    switch (process.platform) {
-      case 'win32':
-        // Windows 11 特定优化
-        return {
-          backgroundMaterial: 'mica', // Mica 材质（自动圆角）
-          titleBarStyle: 'hidden', // 隐藏标题栏但保留窗口控制
-        };
-      
-      case 'darwin':
-        // macOS 特定优化
-        return {
-          titleBarStyle: 'hiddenInset', // macOS 隐藏标题栏（保留红绿灯按钮）
-          trafficLightPosition: { x: 16, y: 16 }, // 红绿灯按钮位置
-          vibrancy: 'under-window', // macOS 毛玻璃效果
-          visualEffectState: 'active', // 始终激活视觉效果
-          transparent: false, // macOS 不需要透明窗口即可圆角
-        };
-      
-      case 'linux':
-        // Linux 特定优化
-        return {
-          transparent: false, // Linux 避免透明窗口问题
-          backgroundColor: '#1c1e23', // 深色背景（与应用主题一致）
-        };
-      
-      default:
-        return {};
-    }
-  })();
+  // macOS 需要显示红绿灯按钮，不使用 frameless 模式
+  const platformConfig = getPlatformWindowConfig({ frameless: false });
 
   mainWindow = new BrowserWindow({
     ...baseConfig,
@@ -95,255 +80,32 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
   mainWindow.setMenu(null);
 
-  // macOS 特定：设置窗口外观
-  if (process.platform === 'darwin') {
-    // 自动跟随系统深色模式
-    mainWindow.setWindowButtonVisibility(true);
-  }
+  // macOS 使用系统原生按钮，Windows/Linux 使用自定义按钮
+  // 不需要隐藏 macOS 的红绿灯按钮，window-platform-config 已正确配置 trafficLightPosition
 
   // 加载页面
   if (VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
-    // 开发环境打开开发者工具（独立窗口）
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
   }
-}
 
-/**
- * 窗口控制
- */
-ipcMain.handle('window:control', (_event, action: string) => {
-  if (!mainWindow) return;
+  // 窗口关闭事件处理
+  mainWindow.on('close', (event) => {
+    const store = moduleStoreService.getStore();
+    const closeToTray = store.get('settings.closeToTray', true) as boolean;
 
-  switch (action) {
-    case 'minimize':
-      mainWindow.minimize();
-      break;
-    case 'toggle-maximize':
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-      } else {
-        mainWindow.maximize();
-      }
-      break;
-    case 'close':
-      mainWindow.close();
-      break;
-  }
-});
-
-/**
- * 计算 CPU 使用率
- */
-function getCpuUsage(): number {
-  const cpus = os.cpus();
-  
-  let idle = 0;
-  let total = 0;
-  
-  for (const cpu of cpus) {
-    for (const type in cpu.times) {
-      total += cpu.times[type as keyof typeof cpu.times];
-    }
-    idle += cpu.times.idle;
-  }
-  
-  const idleDiff = idle - previousCpuUsage.idle;
-  const totalDiff = total - previousCpuUsage.total;
-  
-  previousCpuUsage = { idle, total };
-  
-  if (totalDiff === 0) return 0;
-  
-  const usage = 100 - (100 * idleDiff / totalDiff);
-  return Math.max(0, Math.min(100, Math.round(usage * 10) / 10)); // 保留1位小数，限制在0-100
-}
-
-/**
- * 获取系统信息
- */
-ipcMain.handle('get-system-info', async () => {
-  try {
-    const cpus = os.cpus();
-    const disks = await getAllDisksInfo();
-    const cpuUsage = getCpuUsage();
-
-    return {
-      os: {
-        platform: os.platform(),
-        release: os.release(),
-        type: os.type(),
-        name: formatOSName(),
-        arch: os.arch(),
-      },
-      cpu: {
-        model: cpus[0]?.model || 'Unknown',
-        cores: cpus.length,
-        speed: cpus[0]?.speed || 0,
-        architecture: os.arch(),
-        usage: cpuUsage,
-      },
-      memory: {
-        total: os.totalmem(),
-        free: os.freemem(),
-        used: os.totalmem() - os.freemem(),
-      },
-      disks,
-      uptime: process.uptime(),
-    };
-  } catch (error) {
-    console.error('Failed to get system info:', error);
-    return {
-      os: { platform: 'unknown', release: '', type: '', name: 'Unknown' },
-      cpu: { model: 'Unknown', cores: 0, speed: 0, usage: 0 },
-      memory: { total: 0, free: 0, used: 0 },
-      disks: [],
-      uptime: 0,
-    };
-  }
-});
-
-/**
- * 模块存储服务 - IPC Handlers
- */
-
-// 获取所有已安装模块
-ipcMain.handle('module-store:get-all', () => {
-  try {
-    return moduleStoreService.getInstalledModules();
-  } catch (error) {
-    console.error('[IPC] Failed to get installed modules:', error);
-    return [];
-  }
-});
-
-// 获取单个模块信息
-ipcMain.handle('module-store:get', (_event, id: string) => {
-  try {
-    return moduleStoreService.getModuleInfo(id) || null;
-  } catch (error) {
-    console.error('[IPC] Failed to get module info:', error);
-    return null;
-  }
-});
-
-// 添加模块记录
-ipcMain.handle('module-store:add', (_event, info: StoredModuleInfo) => {
-  try {
-    moduleStoreService.addModule(info);
-    return { success: true };
-  } catch (error) {
-    console.error('[IPC] Failed to add module:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-// 更新模块信息 (完整更新)
-ipcMain.handle('module-store:update', (_event, id: string, partialInfo: Partial<StoredModuleInfo>) => {
-  try {
-    moduleStoreService.updateModuleInfo(id, partialInfo);
-    return { success: true };
-  } catch (error) {
-    console.error('[IPC] Failed to update module info:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-// 更新模块状态
-ipcMain.handle('module-store:update-status', (_event, id: string, status: 'enabled' | 'disabled') => {
-  try {
-    moduleStoreService.updateModuleStatus(id, status);
-    return { success: true };
-  } catch (error) {
-    console.error('[IPC] Failed to update module status:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-// 删除模块记录
-ipcMain.handle('module-store:remove', (_event, id: string) => {
-  try {
-    moduleStoreService.removeModule(id);
-    return { success: true };
-  } catch (error) {
-    console.error('[IPC] Failed to remove module:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-// 获取模块缓存路径
-ipcMain.handle('module-store:get-cache-path', (_event, moduleId: string) => {
-  try {
-    return moduleStoreService.getModuleCachePath(moduleId);
-  } catch (error) {
-    console.error('[IPC] Failed to get cache path:', error);
-    return null;
-  }
-});
-
-// 删除模块缓存
-ipcMain.handle('module-store:remove-cache', (_event, moduleId: string) => {
-  try {
-    return moduleStoreService.removeModuleCache(moduleId);
-  } catch (error) {
-    console.error('[IPC] Failed to remove module cache:', error);
-    return false;
-  }
-});
-
-// 获取配置文件路径（调试用）
-ipcMain.handle('module-store:get-config-path', () => {
-  try {
-    return moduleStoreService.getConfigPath();
-  } catch (error) {
-    console.error('[IPC] Failed to get config path:', error);
-    return null;
-  }
-});
-
-/**
- * 应用更新 - IPC Handlers
- */
-ipcMain.handle('update:download', async (_event, payload: UpdateDownloadPayload) => {
-  try {
-    return await updateManager.download(payload);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[IPC] update:download failed:', message);
-    return { success: false, error: message };
-  }
-});
-
-ipcMain.handle('update:cancel', async () => {
-  return await updateManager.cancel();
-});
-
-ipcMain.handle('update:install', async () => {
-  return await updateManager.install();
-});
-
-ipcMain.handle('update:get-status', () => {
-  return updateManager.getStatus();
-});
-
-/**
- * 应用启动
- */
-app.whenReady().then(() => {
-  // 平台特定的应用级优化
-  setupPlatformOptimizations();
-  
-  createWindow();
-
-  app.on('activate', () => {
-    // macOS 特性：点击 Dock 图标时重新创建窗口
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+    if (closeToTray && trayService) {
+      event.preventDefault();
+      mainWindow?.hide();
+      logger.info('窗口最小化到托盘');
+    } else {
+      logger.info('应用关闭');
     }
   });
-});
+
+}
 
 /**
  * 平台特定的应用级优化
@@ -351,52 +113,101 @@ app.whenReady().then(() => {
 function setupPlatformOptimizations() {
   switch (process.platform) {
     case 'win32':
-      // Windows 特定优化
-      // 1. 设置应用用户模型 ID（用于任务栏分组）
       app.setAppUserModelId('com.booltox.app');
-      // 2. 禁用硬件加速（如果遇到渲染问题）
-      // app.disableHardwareAcceleration();
       break;
-    
+
     case 'darwin':
-      // macOS 特定优化
-      // 1. 设置 Dock 图标显示
       if (app.dock) {
-        // app.dock.setIcon('path/to/icon.png'); // 可设置自定义图标
         app.dock.show();
       }
-      // 2. 设置应用名称
       app.setName('Booltox');
-      // 3. 关闭窗口时不退出应用（macOS 标准行为）
-      app.on('window-all-closed', () => {
-        // macOS 应用通常在所有窗口关闭后仍然保持运行
-        // 不调用 app.quit()
-      });
       break;
-    
+
     case 'linux':
-      // Linux 特定优化
-      // 1. 设置应用名称
-      app.setName('Booltox');
-      // 2. 禁用 GPU 沙盒（某些 Linux 发行版需要）
-      app.commandLine.appendSwitch('disable-gpu-sandbox');
+      app.commandLine.appendSwitch('enable-features', 'VaapiVideoDecoder');
       break;
-  }
-  
-  // 通用优化：启用流畅滚动
-  app.commandLine.appendSwitch('enable-smooth-scrolling');
-  
-  // 通用优化：启用原生窗口框架（如果支持）
-  if (process.platform !== 'win32') {
-    app.commandLine.appendSwitch('enable-transparent-visuals');
   }
 }
 
 /**
- * 所有窗口关闭时退出（macOS除外）
+ * 应用启动
+ */
+app.whenReady().then(() => {
+  setupPlatformOptimizations();
+
+  createWindow();
+  new AutoUpdateService(() => mainWindow);
+
+  // 注册所有 IPC handlers（集中管理）
+  registerAllIpcHandlers(mainWindow);
+
+  // 初始化系统托盘
+  if (mainWindow) {
+    trayService = new TrayService(mainWindow);
+    trayService.create();
+  }
+
+  // 注册分离窗口管理器的 IPC 处理器
+  detachedWindowManager.registerIPCHandlers();
+
+  // 初始化工具系统
+  toolInstaller.init().catch(err => logger.error('工具安装器初始化失败:', err));
+  toolManager.init().catch(err => logger.error('工具管理器初始化失败:', err));
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+
+/**
+ * 窗口全部关闭时退出（Windows/Linux）
  */
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+/**
+ * 应用退出前清理资源
+ */
+app.on('before-quit', async () => {
+  logger.info('应用退出，清理资源...');
+
+  // 销毁托盘
+  if (trayService) {
+    trayService.destroy();
+    trayService = null;
+  }
+
+  // 清理所有分离窗口
+  detachedWindowManager.destroy();
+
+  // 停止所有运行中的工具
+  try {
+    await toolRunner.cleanupAllTools();
+    logger.info('所有工具已停止');
+  } catch (error) {
+    logger.error('停止工具失败:', error);
+  }
+});
+
+/**
+ * 清理所有工具进程
+ */
+app.on('will-quit', async (event) => {
+  event.preventDefault();
+
+  logger.info('清理所有运行中的工具进程...');
+
+  try {
+    await toolRunner.cleanupAllTools();
+    logger.info('✅ 所有工具进程已清理');
+    app.exit(0);
+  } catch (error) {
+    logger.error('清理工具进程失败:', error);
+    app.exit(1);
   }
 });

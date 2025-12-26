@@ -1,21 +1,28 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { APP_VERSION } from '@/config/app-info';
-import { checkForAppUpdate } from '@/lib/update-service';
-import { useToast } from './toast-context';
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
 
-type NativeUpdateStatus =
-  | { state: 'idle' }
-  | { state: 'downloading'; version: string; downloadedBytes: number; totalBytes?: number }
-  | { state: 'ready'; version: string; filePath: string }
-  | { state: 'error'; message: string };
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import type { AutoUpdateStatus } from '../../../electron/services/auto-update.service';
+import type { UpdateInfo } from 'electron-updater';
+import { useToast } from './toast-context';
 
 type UpdateDetails = {
   version: string;
   notes?: string | null;
-  downloadUrl: string;
-  checksum?: string;
   sizeBytes?: number;
   mandatory?: boolean;
+  date?: string;
+  name?: string;
 };
 
 type UpdatePhase = 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error';
@@ -25,14 +32,15 @@ type UpdateState = {
   progress?: {
     downloadedBytes: number;
     totalBytes?: number;
+    percent?: number;
   };
   error?: string;
-  downloadPath?: string;
 };
 
 interface UpdateContextValue {
   state: UpdateState;
   details: UpdateDetails | null;
+  bannerDismissed: boolean;
   downloadUpdate: () => Promise<void>;
   cancelDownload: () => Promise<void>;
   installUpdate: () => Promise<void>;
@@ -45,7 +53,46 @@ const UpdateContext = createContext<UpdateContextValue | null>(null);
 export function UpdateProvider({ children }: { children: ReactNode }) {
   const [details, setDetails] = useState<UpdateDetails | null>(null);
   const [state, setState] = useState<UpdateState>({ phase: 'checking' });
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (state.phase === 'available' && details?.version && !details.notes) {
+      const fetchNotes = async () => {
+        try {
+          // 这里的 owner/repo 暂时硬编码，后续可从配置读取
+          const owner = 'ByteTrue';
+          const repo = 'BoolTox';
+          const tags = [`v${details.version}`, details.version];
+
+          for (const tag of tags) {
+            const res = await fetch(
+              `https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (data.body) {
+                setDetails(prev => {
+                  if (!prev || prev.version !== details.version) return prev;
+                  return {
+                    ...prev,
+                    notes: data.body,
+                    name: data.name || prev.name,
+                    date: data.published_at || prev.date,
+                  };
+                });
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to fetch release notes from GitHub:', error);
+        }
+      };
+
+      void fetchNotes();
+    }
+  }, [state.phase, details?.version, details?.notes]);
 
   const ensureUpdateAvailable = useCallback(() => {
     if (!details) {
@@ -54,92 +101,139 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     return details;
   }, [details]);
 
-  const mapNativeStatus = useCallback(
-    (status: NativeUpdateStatus): void => {
-      setState((current) => {
-        switch (status.state) {
-          case 'idle':
-            return details ? { phase: 'available' } : { phase: 'idle' };
-          case 'downloading':
-            return {
-              phase: 'downloading',
-              progress: {
-                downloadedBytes: status.downloadedBytes,
-                totalBytes: status.totalBytes,
-              },
-            };
-          case 'ready':
-            return {
-              phase: 'downloaded',
-              downloadPath: status.filePath,
-            };
-          case 'error':
-            return {
-              phase: 'error',
-              error: status.message,
-            };
-          default:
-            return current;
-        }
-      });
-    },
-    [details],
-  );
-
-  const performCheck = useCallback(async () => {
-    setState({ phase: 'checking' });
-    try {
-      const info = await checkForAppUpdate(APP_VERSION);
-      if (!info.updateAvailable || !info.version || !info.downloadUrl) {
-        setDetails(null);
-        setState({ phase: 'idle' });
-        return;
-      }
-
-      const updateDetails: UpdateDetails = {
-        version: info.version,
-        notes: info.notes ?? null,
-        downloadUrl: info.downloadUrl,
-        checksum: info.checksum ?? undefined,
-        sizeBytes: info.sizeBytes,
-        mandatory: info.mandatory,
-      };
-      setDetails(updateDetails);
-      setState({ phase: 'available' });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setState({ phase: 'error', error: message });
+  const extractDetails = useCallback((info?: UpdateInfo | null): UpdateDetails | null => {
+    if (!info) return null;
+    const releaseNotes = info.releaseNotes;
+    let notes: string | null = null;
+    if (typeof releaseNotes === 'string') {
+      notes = releaseNotes;
+    } else if (Array.isArray(releaseNotes)) {
+      notes = releaseNotes
+        .map(note => {
+          if (!note) return '';
+          if (typeof note === 'string') return note;
+          return note.note ?? '';
+        })
+        .filter(Boolean)
+        .join('\n');
     }
+
+    const sizeBytes = info.files?.find(file => typeof file.size === 'number')?.size;
+
+    return {
+      version: info.version,
+      notes,
+      sizeBytes,
+      mandatory: false,
+      date: info.releaseDate,
+      name: info.releaseName || undefined,
+    };
   }, []);
 
-  useEffect(() => {
-    void performCheck();
-  }, [performCheck]);
+  const handleStatus = useCallback(
+    (status: AutoUpdateStatus): void => {
+      switch (status.state) {
+        case 'checking':
+          setState(prev =>
+            prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'checking' }
+          );
+          break;
+        case 'available': {
+          setBannerDismissed(false);
+          const info = extractDetails(status.info);
+          setDetails(info);
+          setState({ phase: 'available' });
+          break;
+        }
+        case 'downloading': {
+          setBannerDismissed(false);
+          const { transferred, total, percent } = status.progress;
+          const normalizedPercent =
+            typeof percent === 'number'
+              ? Math.max(0, Math.min(100, percent))
+              : total && total > 0
+                ? Math.max(0, Math.min(100, (transferred / total) * 100))
+                : undefined;
+          setState({
+            phase: 'downloading',
+            progress: {
+              downloadedBytes: transferred,
+              totalBytes: total,
+              percent: normalizedPercent,
+            },
+          });
+          break;
+        }
+        case 'downloaded': {
+          setBannerDismissed(false);
+          const info = extractDetails(status.info);
+          setDetails(info);
+          setState({ phase: 'downloaded' });
+          break;
+        }
+        case 'not-available':
+          setDetails(null);
+          setState({ phase: 'idle' });
+          break;
+        case 'error':
+          setBannerDismissed(false);
+          setState({ phase: 'error', error: status.error });
+          break;
+        case 'idle':
+        default:
+          setState(prev =>
+            prev.phase === 'available' || prev.phase === 'downloaded' ? prev : { phase: 'idle' }
+          );
+          break;
+      }
+    },
+    [extractDetails]
+  );
 
   useEffect(() => {
-    if (!window.update?.getStatus) {
+    if (!window.update) {
+      setState({ phase: 'idle' });
       return;
     }
 
     let mounted = true;
+    let unsubscribe: (() => void) | undefined;
 
-    const syncStatus = async () => {
-      const nativeStatus = await window.update.getStatus();
-      if (!mounted) return;
-      mapNativeStatus(nativeStatus as NativeUpdateStatus);
+    const bootstrap = async () => {
+      try {
+        const status = (await window.update?.getStatus?.()) as AutoUpdateStatus | undefined;
+        if (status && mounted) {
+          handleStatus(status);
+        }
+      } catch (error) {
+        console.error('获取自动更新状态失败:', error);
+        if (mounted) {
+          setState({
+            phase: 'error',
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      unsubscribe = window.update?.onStatus?.(status => {
+        if (!mounted) return;
+        handleStatus(status as AutoUpdateStatus);
+      });
+
+      try {
+        await window.update.check();
+      } catch (error) {
+        console.error('自动更新检查失败:', error);
+      }
     };
 
-    void syncStatus();
-
-    const unsubscribe = window.update.onStatus((status) => {
-      mapNativeStatus(status as NativeUpdateStatus);
-    });
+    void bootstrap();
 
     return () => {
       mounted = false;
       unsubscribe?.();
     };
-  }, [mapNativeStatus]);
+  }, [handleStatus]);
 
   const downloadUpdate = useCallback(async () => {
     const info = ensureUpdateAvailable();
@@ -151,65 +245,83 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setState({ phase: 'downloading', progress: { downloadedBytes: 0, totalBytes: info.sizeBytes } });
-    const result = await window.update.download({
-      version: info.version,
-      downloadUrl: info.downloadUrl,
-      checksum: info.checksum,
-      sizeBytes: info.sizeBytes,
+    setState({
+      phase: 'downloading',
+      progress: { downloadedBytes: 0, totalBytes: info.sizeBytes },
     });
-
-    if (!result.success && !result.aborted) {
-      setState({ phase: 'error', error: result.error ?? '下载失败，请稍后重试' });
-      showToast({
-        message: result.error ?? '下载更新时出现问题，请检查网络后重试。',
-        type: 'error',
-      });
+    try {
+      await window.update.download();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '下载失败，请稍后重试';
+      setState({ phase: 'error', error: message });
+      showToast({ message, type: 'error' });
     }
   }, [ensureUpdateAvailable, showToast]);
 
   const cancelDownload = useCallback(async () => {
-    if (!window.update) return;
-    const result = await window.update.cancel();
-    if (!result.success && result.error !== 'no-download') {
-      showToast({ message: result.error ?? '取消下载失败，请稍后重试。', type: 'error' });
-      return;
-    }
-    if (details) {
-      setState({ phase: 'available' });
-    } else {
-      setState({ phase: 'idle' });
-    }
-  }, [details, showToast]);
+    showToast({ message: '当前自动更新通道暂不支持取消下载，请耐心等待完成。', type: 'default' });
+  }, [showToast]);
 
   const installUpdate = useCallback(async () => {
-    if (!window.update) return;
-    const result = await window.update.install();
-    if (!result.success && result.error) {
-      showToast({ message: result.error ?? '安装失败，请稍后重试。', type: 'error' });
+    if (!window.update) {
+      showToast({ message: '当前环境不支持自动更新。', type: 'error' });
       return;
     }
-    showToast({ message: '安装包已打开，请按照安装程序指引完成更新。', type: 'success' });
+
+    try {
+      await window.update.install();
+      showToast({ message: '安装程序已启动，请按指引完成更新。', type: 'success' });
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : '安装失败，请稍后重试。',
+        type: 'error',
+      });
+    }
   }, [showToast]);
 
   const dismissUpdate = useCallback(() => {
-    if (details?.mandatory) {
-      showToast({ message: '此更新为强制更新，请尽快完成升级。', type: 'default' });
+    setBannerDismissed(true);
+  }, []);
+
+  const retryCheck = useCallback(async () => {
+    if (!window.update) {
+      showToast({ message: '当前环境不支持自动更新。', type: 'error' });
       return;
     }
-    setDetails(null);
-    setState({ phase: 'idle' });
-  }, [details, showToast]);
 
-  const value = useMemo<UpdateContextValue>(() => ({
-    state,
-    details,
-    downloadUpdate,
-    cancelDownload,
-    installUpdate,
-    dismissUpdate,
-    retryCheck: performCheck,
-  }), [state, details, downloadUpdate, cancelDownload, installUpdate, dismissUpdate, performCheck]);
+    setBannerDismissed(false);
+    setState({ phase: 'checking' });
+    try {
+      await window.update.check();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '检查更新失败，请稍后重试。';
+      setState({ phase: 'error', error: message });
+      showToast({ message, type: 'error' });
+    }
+  }, [showToast]);
+
+  const value = useMemo<UpdateContextValue>(
+    () => ({
+      state,
+      details,
+      bannerDismissed,
+      downloadUpdate,
+      cancelDownload,
+      installUpdate,
+      dismissUpdate,
+      retryCheck,
+    }),
+    [
+      state,
+      details,
+      bannerDismissed,
+      downloadUpdate,
+      cancelDownload,
+      installUpdate,
+      dismissUpdate,
+      retryCheck,
+    ]
+  );
 
   return <UpdateContext.Provider value={value}>{children}</UpdateContext.Provider>;
 }

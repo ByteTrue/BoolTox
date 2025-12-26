@@ -1,7 +1,12 @@
-"use client";
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
 
-import { createContext, useContext, useState, useMemo } from "react";
-import type { ReactNode } from "react";
+'use client';
+
+import { createContext, useContext, useState, useMemo } from 'react';
+import type { ReactNode } from 'react';
 
 type SpotlightState = {
   x: number;
@@ -24,26 +29,22 @@ export function SpotlightProvider({ children }: { children: ReactNode }) {
     y: 0,
     visible: false,
     size: 2000,
-    color: "rgba(29, 78, 216, 0.05)",
+    color: 'rgba(29, 78, 216, 0.05)',
   });
 
   const setSpotlight = (state: Partial<SpotlightState>) => {
-    setSpotlightState((prevState) => ({ ...prevState, ...state }));
+    setSpotlightState(prevState => ({ ...prevState, ...state }));
   };
 
   const contextValue = useMemo(() => ({ spotlight, setSpotlight }), [spotlight]);
 
-  return (
-    <SpotlightContext.Provider value={contextValue}>
-      {children}
-    </SpotlightContext.Provider>
-  );
+  return <SpotlightContext.Provider value={contextValue}>{children}</SpotlightContext.Provider>;
 }
 
 export function useSpotlight() {
   const context = useContext(SpotlightContext);
   if (!context) {
-    throw new Error("useSpotlight must be used within a SpotlightProvider");
+    throw new Error('useSpotlight must be used within a SpotlightProvider');
   }
   return context;
 }

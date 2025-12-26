@@ -1,0 +1,13 @@
+{
+  "name": "@booltox/cli-node-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "file-manager": "./cli.js"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "inquirer": "^12.2.0"
+  }
+}

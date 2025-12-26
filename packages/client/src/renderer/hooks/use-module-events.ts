@@ -1,5 +1,10 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { useCallback, useEffect, useState } from 'react';
-import type { ModuleInstance } from '@core/modules/types';
+import type { ModuleInstance } from '@/types/module';
 import {
   type ModuleEvent,
   getAllEvents,

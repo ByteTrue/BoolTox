@@ -1,7 +1,25 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 性能监控工具 - Performance Profiler
  * 用于测量和验证 Phase 1 优化效果
  */
+
+type ChromePerformance = Performance & {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+};
+
+type MemorySnapshot = {
+  time: number;
+  memory: NonNullable<ChromePerformance['memory']>;
+};
 
 export class PerformanceProfiler {
   private marks: Map<string, number> = new Map();
@@ -33,7 +51,7 @@ export class PerformanceProfiler {
     // 使用原生 performance API 记录
     try {
       performance.measure(name, startMark, endMark);
-    } catch (e) {
+    } catch {
       // 忽略错误（标记可能不存在）
     }
 
@@ -64,7 +82,7 @@ export class PerformanceProfiler {
     console.group(`📊 ${title}`);
     for (const [name, duration] of this.measures.entries()) {
       const status = this.getStatus(name, duration);
-      console.log(`${status} ${name}: ${duration.toFixed(2)}ms`);
+      console.warn(`${status} ${name}: ${duration.toFixed(2)}ms`);
     }
     console.groupEnd();
   }
@@ -110,7 +128,7 @@ export const profiler = new PerformanceProfiler();
  * 内存使用监控
  */
 export class MemoryMonitor {
-  private snapshots: Array<{ time: number; memory: any }> = [];
+  private snapshots: MemorySnapshot[] = [];
   private intervalId: number | null = null;
 
   /**
@@ -129,7 +147,7 @@ export class MemoryMonitor {
       this.takeSnapshot();
     }, intervalMs);
 
-    console.log(`🔍 [MemoryMonitor] Started (interval: ${intervalMs}ms)`);
+    console.warn(`🔍 [MemoryMonitor] Started (interval: ${intervalMs}ms)`);
   }
 
   /**
@@ -139,7 +157,7 @@ export class MemoryMonitor {
     if (this.intervalId !== null) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('🛑 [MemoryMonitor] Stopped');
+      console.warn('🛑 [MemoryMonitor] Stopped');
     }
   }
 
@@ -147,8 +165,9 @@ export class MemoryMonitor {
    * 采样内存使用情况
    */
   private takeSnapshot(): void {
-    if ('memory' in performance && (performance as any).memory) {
-      const memory = (performance as any).memory;
+    const perf = performance as ChromePerformance;
+    if (perf.memory) {
+      const memory = perf.memory;
       this.snapshots.push({
         time: Date.now(),
         memory: {
@@ -171,7 +190,7 @@ export class MemoryMonitor {
     }
 
     // 计算内存使用趋势
-    const usages = this.snapshots.map((s) => s.memory.usedJSHeapSize);
+    const usages = this.snapshots.map(s => s.memory.usedJSHeapSize);
     const first = usages[0];
     const last = usages[usages.length - 1];
     const increase = last - first;
@@ -204,24 +223,25 @@ export class MemoryMonitor {
     const analysis = this.analyzeLeaks();
     const first = this.snapshots[0].memory;
     const last = this.snapshots[this.snapshots.length - 1].memory;
-    const duration = (this.snapshots[this.snapshots.length - 1].time - this.snapshots[0].time) / 1000;
+    const duration =
+      (this.snapshots[this.snapshots.length - 1].time - this.snapshots[0].time) / 1000;
 
     console.group('💾 Memory Usage Report');
-    console.log(`Duration: ${duration.toFixed(1)}s (${this.snapshots.length} samples)`);
-    console.log(
+    console.warn(`Duration: ${duration.toFixed(1)}s (${this.snapshots.length} samples)`);
+    console.warn(
       `Initial: ${(first.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB / ${(first.totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`
     );
-    console.log(
+    console.warn(
       `Current: ${(last.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB / ${(last.totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`
     );
-    console.log(
+    console.warn(
       `Change: ${((last.usedJSHeapSize - first.usedJSHeapSize) / 1024 / 1024).toFixed(2)} MB (${(
         ((last.usedJSHeapSize - first.usedJSHeapSize) / first.usedJSHeapSize) *
         100
       ).toFixed(1)}%)`
     );
-    console.log(`Trend: ${analysis.trend}`);
-    console.log(`Leak Detected: ${analysis.hasLeak ? '❌ YES' : '✅ NO'}`);
+    console.warn(`Trend: ${analysis.trend}`);
+    console.warn(`Leak Detected: ${analysis.hasLeak ? '❌ YES' : '✅ NO'}`);
     console.groupEnd();
 
     // 绘制简单的内存趋势图
@@ -234,18 +254,18 @@ export class MemoryMonitor {
   private drawTrend(): void {
     if (this.snapshots.length === 0) return;
 
-    const usages = this.snapshots.map((s) => s.memory.usedJSHeapSize / 1024 / 1024);
+    const usages = this.snapshots.map(s => s.memory.usedJSHeapSize / 1024 / 1024);
     const min = Math.min(...usages);
     const max = Math.max(...usages);
     const range = max - min || 1;
 
-    console.log('\n📈 Memory Trend (MB):');
+    console.warn('\n📈 Memory Trend (MB):');
     for (let i = 0; i < usages.length; i++) {
       const value = usages[i];
       const normalized = ((value - min) / range) * 20; // 0-20 个字符宽度
       const bar = '█'.repeat(Math.round(normalized)) + '░'.repeat(20 - Math.round(normalized));
       const time = new Date(this.snapshots[i].time).toLocaleTimeString();
-      console.log(`${time} [${bar}] ${value.toFixed(2)} MB`);
+      console.warn(`${time} [${bar}] ${value.toFixed(2)} MB`);
     }
   }
 
@@ -297,7 +317,7 @@ export class FPSMonitor {
     };
 
     this.rafId = requestAnimationFrame(measureFPS);
-    console.log('🎬 [FPSMonitor] Started');
+    console.warn('🎬 [FPSMonitor] Started');
   }
 
   /**
@@ -307,7 +327,7 @@ export class FPSMonitor {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
-      console.log('🛑 [FPSMonitor] Stopped');
+      console.warn('🛑 [FPSMonitor] Stopped');
     }
   }
 

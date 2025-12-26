@@ -2,6 +2,8 @@
   "name": "@booltox/shared",
   "version": "1.0.0",
   "description": "Shared types and utilities for BoolTox",
+  "author": "ByteTrue",
+  "license": "CC-BY-NC-4.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,6 +15,10 @@
     "./types/*": {
       "types": "./dist/types/*.d.ts",
       "import": "./dist/types/*.js"
+    },
+    "./schemas/*": {
+      "types": "./dist/schemas/*.d.ts",
+      "import": "./dist/schemas/*.js"
     }
   },
   "scripts": {

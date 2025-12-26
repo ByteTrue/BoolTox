@@ -1,12 +1,21 @@
 /**
- * 全局错误边界 - React Error Boundary
- * 捕获组件树中的 JavaScript 错误，防止整个应用崩溃
- * 提供 Apple 风格的错误回退 UI
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { getGlassStyle, getGlassShadow, GLASS_BORDERS } from '../utils/glass-layers';
+/**
+ * 全局错误边界 - React Error Boundary
+ * 捕获组件树中的 JavaScript 错误，防止整个应用崩溃
+ */
+
+import { Component, ErrorInfo, ReactNode } from 'react';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
+import { AlertTriangle, RefreshCw, Home, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -27,7 +36,7 @@ interface ErrorBoundaryState {
 }
 
 /**
- * Apple 风格错误回退 UI
+ * 错误回退 UI
  */
 function ErrorFallback({
   error,
@@ -35,151 +44,157 @@ function ErrorFallback({
   onReset,
   onGoHome,
   showHomeButton = true,
-  theme = 'dark',
 }: {
   error: Error;
   errorInfo: ErrorInfo;
   onReset: () => void;
   onGoHome?: () => void;
   showHomeButton?: boolean;
-  theme?: 'light' | 'dark';
 }) {
-  const isDark = theme === 'dark';
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
-    <div
-      className="flex h-full w-full items-center justify-center p-8"
-      style={{
-        background: isDark
-          ? 'linear-gradient(135deg, rgba(30, 40, 60, 0.95) 0%, rgba(20, 25, 40, 0.95) 100%)'
-          : 'linear-gradient(135deg, rgba(240, 245, 250, 0.95) 0%, rgba(230, 235, 245, 0.95) 100%)',
+    <Box
+      sx={{
+        display: 'flex',
+        height: '100%',
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 4,
+        bgcolor: 'background.default',
       }}
     >
-      <div
-        className={`w-full max-w-2xl rounded-3xl border p-8 ${getGlassShadow(theme)}`}
-        style={{
-          ...getGlassStyle('MODAL', theme, {
-            withBorderGlow: true,
-            withInnerShadow: true,
-          }),
+      <Paper
+        elevation={3}
+        sx={{
+          width: '100%',
+          maxWidth: 600,
+          borderRadius: 3,
+          p: 4,
         }}
       >
         {/* 错误图标 */}
-        <div className="mb-6 flex justify-center">
-          <div
-            className="inline-flex rounded-full p-4"
-            style={{
-              background: isDark
-                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%)'
-                : 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.12) 100%)',
-              boxShadow: isDark
-                ? '0 0 20px rgba(239, 68, 68, 0.3)'
-                : '0 0 20px rgba(239, 68, 68, 0.2)',
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              borderRadius: '50%',
+              p: 2,
+              bgcolor: 'error.main',
+              color: 'error.contrastText',
+              opacity: 0.15,
             }}
           >
-            <AlertTriangle
-              size={48}
-              className={isDark ? 'text-red-400' : 'text-red-600'}
-              strokeWidth={1.5}
-            />
-          </div>
-        </div>
+            <AlertTriangle size={48} strokeWidth={1.5} />
+          </Box>
+        </Box>
 
         {/* 错误标题 */}
-        <h2
-          className={`mb-3 text-center text-2xl font-bold ${
-            isDark ? 'text-white' : 'text-slate-800'
-          }`}
-        >
+        <Typography variant="h5" fontWeight={700} textAlign="center" sx={{ mb: 1.5 }}>
           出错了
-        </h2>
+        </Typography>
 
         {/* 错误描述 */}
-        <p
-          className={`mb-6 text-center text-sm ${
-            isDark ? 'text-white/70' : 'text-slate-600'
-          }`}
-        >
+        <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 3 }}>
           应用程序遇到了一个意外错误。您可以尝试重新加载此组件，或返回首页继续使用。
-        </p>
+        </Typography>
 
         {/* 错误详情（可折叠） */}
-        <details
-          className={`mb-6 rounded-xl border p-4`}
-          style={{
-            ...getGlassStyle('CARD', theme),
-            borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT,
-            maxHeight: '200px',
-            overflow: 'auto',
+        <Paper
+          variant="outlined"
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            overflow: 'hidden',
           }}
         >
-          <summary
-            className={`cursor-pointer text-sm font-semibold ${
-              isDark ? 'text-white/80' : 'text-slate-700'
-            }`}
+          <Button
+            fullWidth
+            onClick={() => setDetailsOpen(!detailsOpen)}
+            sx={{
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1.5,
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
+            endIcon={detailsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           >
             查看错误详情
-          </summary>
-          <div className={`mt-3 text-xs ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-            <p className="mb-2 font-semibold">{error.name}: {error.message}</p>
-            <pre className="overflow-auto whitespace-pre-wrap break-words">
-              {errorInfo.componentStack}
-            </pre>
-          </div>
-        </details>
-
-        {/* 操作按钮 */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onReset}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ${
-              isDark
-                ? 'border-blue-500/30 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
-                : 'border-blue-600/30 bg-blue-600/20 text-blue-600 hover:bg-blue-600/30'
-            }`}
-            style={getGlassStyle('BUTTON', theme, {
-              withBorderGlow: true,
-              withInnerShadow: true,
-            })}
-          >
-            <RefreshCw size={16} />
-            重新加载
-          </button>
-
-          {showHomeButton && onGoHome && (
-            <button
-              type="button"
-              onClick={onGoHome}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ${
-                isDark
-                  ? 'bg-white/10 text-white hover:bg-white/15'
-                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-              }`}
-              style={{
-                ...getGlassStyle('BUTTON', theme),
-                borderColor: isDark ? GLASS_BORDERS.DARK : GLASS_BORDERS.LIGHT
+          </Button>
+          <Collapse in={detailsOpen}>
+            <Box
+              sx={{
+                p: 2,
+                pt: 0,
+                maxHeight: 200,
+                overflow: 'auto',
               }}
             >
-              <Home size={16} />
+              <Typography
+                variant="caption"
+                color="error.main"
+                fontWeight={600}
+                sx={{ display: 'block', mb: 1 }}
+              >
+                {error.name}: {error.message}
+              </Typography>
+              <Typography
+                component="pre"
+                variant="caption"
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  color: 'text.secondary',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {errorInfo.componentStack}
+              </Typography>
+            </Box>
+          </Collapse>
+        </Paper>
+
+        {/* 操作按钮 */}
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            startIcon={<RefreshCw size={16} />}
+            onClick={onReset}
+            sx={{ borderRadius: 2, fontWeight: 600 }}
+          >
+            重新加载
+          </Button>
+
+          {showHomeButton && onGoHome && (
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<Home size={16} />}
+              onClick={onGoHome}
+              sx={{ borderRadius: 2, fontWeight: 600 }}
+            >
               回到首页
-            </button>
+            </Button>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Paper>
+    </Box>
   );
 }
 
 /**
  * 错误边界组件
- * 
+ *
  * 使用方式：
  * ```tsx
  * <ErrorBoundary name="App Root" showHomeButton={false}>
  *   <App />
  * </ErrorBoundary>
- * 
+ *
  * <ErrorBoundary name="Route: ModuleCenter">
  *   <ModuleCenter />
  * </ErrorBoundary>
@@ -213,17 +228,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     });
 
     // TODO: 发送错误到 Sentry 或其他错误追踪服务
-    // if (window.electronAPI?.reportError) {
-    //   window.electronAPI.reportError({
-    //     boundary: boundaryName,
-    //     error: {
-    //       name: error.name,
-    //       message: error.message,
-    //       stack: error.stack,
-    //     },
-    //     componentStack: errorInfo.componentStack,
-    //   });
-    // }
   }
 
   handleReset = (): void => {
@@ -238,15 +242,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   handleGoHome = (): void => {
     // 重置错误并导航到首页
     this.handleReset();
-    // 触发导航逻辑（如果需要）
+    // 触发导航逻辑
     window.location.hash = '#/';
   };
 
   render() {
     if (this.state.hasError && this.state.error && this.state.errorInfo) {
-      // 获取当前主题（从 localStorage 或默认）
-      const theme = (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
-
       return (
         <ErrorFallback
           error={this.state.error}
@@ -254,7 +255,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           onReset={this.handleReset}
           onGoHome={this.handleGoHome}
           showHomeButton={this.props.showHomeButton}
-          theme={theme}
         />
       );
     }

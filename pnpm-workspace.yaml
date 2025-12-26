@@ -1,2 +1,4 @@
 packages:
   - 'packages/*'
+  # examples/ 不参与 workspace，仅用于开发和测试
+  # - 'examples/*'

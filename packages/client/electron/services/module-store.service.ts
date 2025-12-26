@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 模块存储服务
  * @description 使用 electron-store 管理模块配置的持久化存储
  */
@@ -78,19 +83,7 @@ class ModuleStoreService {
     this.store.set('installedModules', modules);
   }
 
-  /**
-   * 更新模块状态
-   */
-  updateModuleStatus(id: string, status: 'enabled' | 'disabled'): void {
-    const modules = this.getInstalledModules();
-    const module = modules.find(m => m.id === id);
-    
-    if (module) {
-      module.status = status;
-      module.lastUsedAt = new Date().toISOString();
-      this.store.set('installedModules', modules);
-    }
-  }
+
 
   /**
    * 更新模块信息 (部分更新)
@@ -163,6 +156,13 @@ class ModuleStoreService {
    */
   getConfigPath(): string {
     return this.store.path;
+  }
+
+  /**
+   * 获取底层 Store 实例（用于直接访问设置）
+   */
+  getStore(): Store<ModulesConfig> {
+    return this.store;
   }
 }
 

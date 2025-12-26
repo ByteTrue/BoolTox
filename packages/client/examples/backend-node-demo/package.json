@@ -1,0 +1,23 @@
+{
+  "name": "@booltox/tool-regex-tester",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:http": "node --loader ts-node/esm backend/src/http_server.ts",
+    "build:backend": "tsc -p backend/tsconfig.json",
+    "build": "tsc -p backend/tsconfig.json && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7"
+  }
+}

@@ -1,6 +1,11 @@
-import { APP_VERSION } from "@/config/app-info";
-import { CLIENT_IDENTIFIER, INGEST_SHARED_SECRET } from "@/config/api";
-import { apiFetch } from "@/lib/backend-client";
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+import { APP_VERSION } from '@/config/app-info';
+import { CLIENT_IDENTIFIER, INGEST_SHARED_SECRET } from '@/config/api';
+import { apiFetch } from '@/lib/backend-client';
 
 export interface LogRecord {
   level: string;
@@ -19,7 +24,7 @@ const FLUSH_INTERVAL = 5_000;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let inflight = false;
 
-const runtimeMode = typeof import.meta !== "undefined" ? import.meta.env.MODE : undefined;
+const runtimeMode = typeof import.meta !== 'undefined' ? import.meta.env.MODE : undefined;
 
 const shouldUpload = () => CLIENT_IDENTIFIER.length > 0;
 
@@ -40,23 +45,23 @@ const sanitizeValue = (value: unknown): unknown => {
     };
   }
 
-  if (typeof value === "bigint") {
+  if (typeof value === 'bigint') {
     return value.toString();
   }
 
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value;
   }
 
   if (Array.isArray(value)) {
-    return value.slice(0, 20).map((item) => sanitizeValue(item));
+    return value.slice(0, 20).map(item => sanitizeValue(item));
   }
 
-  if (typeof value === "object") {
+  if (typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>).slice(0, 20);
     const result: Record<string, unknown> = {};
     for (const [key, val] of entries) {
-      if (typeof val === "function" || typeof val === "symbol") {
+      if (typeof val === 'function' || typeof val === 'symbol') {
         continue;
       }
       result[key] = sanitizeValue(val);
@@ -76,7 +81,7 @@ const sanitizeRecord = (record: LogRecord): LogRecord => {
   };
 
   if (record.args) {
-    sanitized.args = record.args.map((item) => sanitizeValue(item));
+    sanitized.args = record.args.map(item => sanitizeValue(item));
   }
 
   if (record.context) {
@@ -87,28 +92,28 @@ const sanitizeRecord = (record: LogRecord): LogRecord => {
 };
 
 const encodeBase64 = (value: string) => {
-  if (typeof window !== "undefined" && typeof window.btoa === "function") {
+  if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
     const bytes = new TextEncoder().encode(value);
-    let binary = "";
+    let binary = '';
     for (let i = 0; i < bytes.length; i += 1) {
       binary += String.fromCharCode(bytes[i]);
     }
     return window.btoa(binary);
   }
 
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(value, "utf-8").toString("base64");
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(value, 'utf-8').toString('base64');
   }
 
-  throw new Error("Base64 encoding not supported");
+  throw new Error('Base64 encoding not supported');
 };
 
 const computeChecksum = async (value: string) => {
-  if (typeof crypto !== "undefined" && crypto.subtle) {
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
     const data = new TextEncoder().encode(value);
-    const digest = await crypto.subtle.digest("SHA-256", data);
+    const digest = await crypto.subtle.digest('SHA-256', data);
     const bytes = Array.from(new Uint8Array(digest));
-    return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    return bytes.map(byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
   return undefined;
@@ -129,8 +134,8 @@ const buildMetadata = (batchSize: number) => ({
   appVersion: APP_VERSION,
   mode: runtimeMode,
   batchSize,
-  userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-  locale: typeof navigator !== "undefined" ? navigator.language : undefined,
+  userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+  locale: typeof navigator !== 'undefined' ? navigator.language : undefined,
   timestamp: Date.now(),
 });
 
@@ -167,11 +172,11 @@ export const flushLogs = async () => {
     const headers: Record<string, string> = {};
 
     if (INGEST_SHARED_SECRET) {
-      headers["x-ingest-secret"] = INGEST_SHARED_SECRET;
+      headers['x-ingest-secret'] = INGEST_SHARED_SECRET;
     }
 
-    await apiFetch<unknown>("/api/logs/ingest", {
-      method: "POST",
+    await apiFetch<unknown>('/api/logs/ingest', {
+      method: 'POST',
       body: JSON.stringify({
         clientIdentifier: CLIENT_IDENTIFIER,
         payload,

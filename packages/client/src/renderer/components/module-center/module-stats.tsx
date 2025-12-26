@@ -1,84 +1,89 @@
-import { Package, CheckCircle, PauseCircle } from "lucide-react";
-import { motion } from "framer-motion";
-import { useTheme } from "../theme-provider";
-import { getGlassStyle, getGlassShadow } from "@/utils/glass-layers";
-import { cardHover } from "@/utils/animation-presets";
-import type { ModuleStatsData } from "./types";
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import { Package, CheckCircle, PauseCircle } from 'lucide-react';
+import type { ModuleStatsData } from './types';
 
 interface ModuleStatsProps {
   stats: ModuleStatsData;
 }
 
 export function ModuleStats({ stats }: ModuleStatsProps) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-
   const statsCards = [
     {
-      label: "已安装",
+      label: '工具总数',
       value: stats.total,
       icon: Package,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
+      color: 'primary.main',
+      bgColor: 'primary.main',
     },
     {
-      label: "已启用",
+      label: '正在使用',
       value: stats.enabled,
       icon: CheckCircle,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
+      color: 'success.main',
+      bgColor: 'success.main',
     },
     {
-      label: "已停用",
+      label: '已停用',
       value: stats.disabled,
       icon: PauseCircle,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10",
+      color: 'warning.main',
+      bgColor: 'warning.main',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      {statsCards.map((card, index) => {
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+        gap: 2,
+      }}
+    >
+      {statsCards.map(card => {
         const Icon = card.icon;
         return (
-          <motion.div
-            {...cardHover}
+          <Paper
             key={card.label}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              delay: index * 0.05, 
-              duration: 0.25,
-              ease: [0.4, 0, 0.2, 1]
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 3,
+              },
             }}
-            className={`rounded-2xl border p-4 transition-shadow duration-250 ease-swift ${getGlassShadow(theme)}`}
-            style={getGlassStyle('CARD', theme)}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-sm font-medium ${
-                    isDark ? "text-white/60" : "text-slate-500"
-                  }`}
-                >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
                   {card.label}
-                </p>
-                <p
-                  className={`mt-2 text-3xl font-bold ${
-                    isDark ? "text-white" : "text-slate-800"
-                  }`}
-                >
+                </Typography>
+                <Typography variant="h4" fontWeight="bold" sx={{ mt: 1 }}>
                   {card.value}
-                </p>
-              </div>
-              <div className={`rounded-xl ${card.bgColor} p-3`}>
-                <Icon className={card.color} size={24} />
-              </div>
-            </div>
-          </motion.div>
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: card.bgColor,
+                  opacity: 0.1,
+                }}
+              >
+                <Icon size={24} />
+              </Box>
+            </Box>
+          </Paper>
         );
       })}
-    </div>
+    </Box>
   );
 }

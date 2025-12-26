@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import { spawn } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { promises as fs } from 'node:fs';
@@ -14,8 +19,6 @@ const DEFAULTS = {
   RELEASE_PLATFORM: 'github',
   RELEASE_TAG_PREFIX: 'v',
   RELEASE_CHANNEL: 'STABLE',
-  RELEASE_ROLLOUT_PERCENT: '100',
-  RELEASE_MANDATORY: 'false',
   RELEASE_GIT_BASE_URL: 'https://gitlab.com',
   RELEASE_GIT_REF: 'main',
 };
@@ -38,16 +41,6 @@ const runCommand = (command, args, options = {}) =>
       }
     });
   });
-
-const toBoolean = (value, fallback = false) => {
-  if (value === undefined || value === null || value === '') {
-    return fallback;
-  }
-  const normalized = value.toString().trim().toLowerCase();
-  if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) return true;
-  if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false;
-  return fallback;
-};
 
 export const parseEnvContent = (text) => {
   const records = {};
@@ -92,7 +85,7 @@ export const loadRawConfig = async () => {
     ...fileEnv,
     ...Object.fromEntries(
       Object.entries(process.env).filter(
-        ([key]) => key === key.toUpperCase() && (key.startsWith('RELEASE_') || key.startsWith('ADMIN_')),
+        ([key]) => key === key.toUpperCase() && key.startsWith('RELEASE_'),
       ),
     ),
   };
@@ -106,31 +99,18 @@ export const applyDefaults = (rawConfig) => {
 export const normalizeConfig = (rawConfig) => {
   const cfg = applyDefaults(rawConfig);
   const platform = (cfg.RELEASE_PLATFORM || DEFAULTS.RELEASE_PLATFORM).toLowerCase();
-  const rawBaseUrl = cfg.RELEASE_GIT_BASE_URL?.trim();
+  const baseUrl = (cfg.RELEASE_GIT_BASE_URL?.trim() || (platform === 'gitlab' ? DEFAULTS.RELEASE_GIT_BASE_URL : '')).replace(/\/$/, '');
+
   return {
-    adminApiBaseUrl: cfg.ADMIN_API_BASE_URL?.trim(),
-    adminReleaseToken: cfg.ADMIN_RELEASE_TOKEN?.trim(),
-    adminProjectDir: cfg.ADMIN_PROJECT_DIR?.trim() || '',
     releasePlatform: platform,
     releaseRepository: cfg.RELEASE_REPOSITORY?.trim(),
     releaseGitToken: cfg.RELEASE_GIT_TOKEN?.trim(),
-    releaseGitBaseUrl: ((rawBaseUrl && rawBaseUrl.length > 0)
-      ? rawBaseUrl
-      : platform === 'gitlab'
-        ? DEFAULTS.RELEASE_GIT_BASE_URL
-        : '').replace(/\/$/, ''),
+    releaseGitBaseUrl: baseUrl,
     releaseGitRef: cfg.RELEASE_GIT_REF || DEFAULTS.RELEASE_GIT_REF,
     releaseTagPrefix: cfg.RELEASE_TAG_PREFIX || DEFAULTS.RELEASE_TAG_PREFIX,
-    releaseChannel: cfg.RELEASE_CHANNEL || DEFAULTS.RELEASE_CHANNEL,
-    releaseTenantId: cfg.RELEASE_TENANT_ID ?? '',
-    releaseMandatory: toBoolean(cfg.RELEASE_MANDATORY, toBoolean(DEFAULTS.RELEASE_MANDATORY)),
-    releaseRolloutPercent: Number(cfg.RELEASE_ROLLOUT_PERCENT || DEFAULTS.RELEASE_ROLLOUT_PERCENT) || 100,
+    releaseChannel: (cfg.RELEASE_CHANNEL || DEFAULTS.RELEASE_CHANNEL).toUpperCase(),
     releaseNotesFile: cfg.RELEASE_NOTES_FILE?.trim() || '',
     releaseNotes: cfg.RELEASE_NOTES?.trim() || '',
-    releaseAnnounceTitle: cfg.RELEASE_ANNOUNCE_TITLE?.trim() || '',
-    releaseAnnounceFile: cfg.RELEASE_ANNOUNCE_FILE?.trim() || '',
-    releaseAnnounceType: (cfg.RELEASE_ANNOUNCE_TYPE || '').toUpperCase(),
-    releaseAnnounceStatus: (cfg.RELEASE_ANNOUNCE_STATUS || '').toUpperCase(),
   };
 };
 
@@ -153,7 +133,7 @@ export const getPackageVersion = async () => {
 
 export const ensureBuild = async ({ skipBuild } = {}) => {
   if (!skipBuild) {
-    await runCommand('npm', ['run', 'build']);
+    await runCommand('pnpm', ['build']);
     return;
   }
   const version = await getPackageVersion();
@@ -161,7 +141,7 @@ export const ensureBuild = async ({ skipBuild } = {}) => {
   try {
     await fs.access(manifestPath);
   } catch {
-    throw new Error('未找到 manifest.json，请先执行 npm run build');
+    throw new Error('未找到 manifest.json，请先执行 pnpm build');
   }
 };
 
@@ -195,27 +175,33 @@ export const readFileIfExists = async (filePath) => {
   }
 };
 
-export const getReleaseNotes = async (config) => {
+export const getReleaseNotes = async (config, notesInput = '') => {
+  // 优先级: 1. CLI 输入 2. 配置的 RELEASE_NOTES 3. 配置的文件路径
+  if (notesInput) {
+    // 判断是文件路径还是直接内容
+    const trimmed = notesInput.trim();
+    // 如果是文件路径(含 .md 或 / 或 \)
+    if (trimmed.match(/\.(md|markdown|txt)$/i) || trimmed.includes('/') || trimmed.includes('\\')) {
+      const content = await readFileIfExists(trimmed);
+      if (content) {
+        console.log(`📄 已从文件读取更新说明: ${trimmed}`);
+        return content;
+      }
+      console.warn(`⚠️ 文件未找到 ${trimmed},将作为直接内容使用`);
+    }
+    // 否则作为直接输入的内容
+    return trimmed;
+  }
+  
   if (config.releaseNotes) {
     return config.releaseNotes;
   }
+  
   const content = await readFileIfExists(config.releaseNotesFile);
+  if (content) {
+    console.log(`📄 已从配置的默认文件读取更新说明: ${config.releaseNotesFile}`);
+  }
   return content;
-};
-
-const fetchJson = async (url, options) => {
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`请求失败: ${response.status} ${response.statusText} - ${body}`);
-  }
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    const body = await response.text();
-    const preview = body.length > 200 ? body.slice(0, 200) + '...' : body;
-    throw new Error(`服务端返回非 JSON 响应 (Content-Type: ${contentType}): ${preview}`);
-  }
-  return response.json();
 };
 
 const githubHeaders = (token) => ({
@@ -297,6 +283,17 @@ const githubUploadAsset = async ({ token, repository, releaseId, fileName, absPa
 const githubListRelease = async ({ token, repository, releaseId }) => {
   const response = await githubRequest(token, `https://api.github.com/repos/${repository}/releases/${releaseId}`);
   return await parseJsonResponse(response, 'GitHub 查询 Release');
+};
+
+const githubListAssets = async ({ token, repository, releaseId }) => {
+  const response = await githubRequest(token, `https://api.github.com/repos/${repository}/releases/${releaseId}/assets`);
+  return await parseJsonResponse(response, 'GitHub 查询 Release 资产');
+};
+
+const githubDeleteAsset = async ({ token, repository, assetId }) => {
+  await githubRequest(token, `https://api.github.com/repos/${repository}/releases/assets/${assetId}`, {
+    method: 'DELETE',
+  });
 };
 
 const gitlabHeaders = (token) => ({
@@ -403,11 +400,26 @@ export const uploadReleaseAssets = async ({
       prerelease,
     });
 
+    const existingAssets = await githubListAssets({
+      token: config.releaseGitToken,
+      repository: config.releaseRepository,
+      releaseId: release.id,
+    });
+
     console.log(`📤 开始上传 ${artifacts.length} 个安装包...`);
     for (let i = 0; i < artifacts.length; i++) {
       const artifact = artifacts[i];
       const contentType = artifact.contentType ?? 'application/octet-stream';
       console.log(`  [${i + 1}/${artifacts.length}] 上传 ${artifact.fileName}...`);
+      const duplicate = existingAssets.find((asset) => asset.name === artifact.fileName);
+      if (duplicate) {
+        console.log(`    • 发现同名资源，正在删除已有版本...`);
+        await githubDeleteAsset({
+          token: config.releaseGitToken,
+          repository: config.releaseRepository,
+          assetId: duplicate.id,
+        });
+      }
       await githubUploadAsset({
         token: config.releaseGitToken,
         repository: config.releaseRepository,
@@ -511,30 +523,12 @@ const artifactArchFromName = (fileName) => {
   return 'UNKNOWN';
 };
 
-export const syncReleases = async (config) => {
-  if (!config.adminApiBaseUrl || !config.adminReleaseToken) {
-    throw new Error('缺少后台地址或令牌配置');
-  }
-
-  console.log('🔄 同步 Release 数据到后台...');
-  const response = await fetchJson(`${config.adminApiBaseUrl.replace(/\/$/, '')}/api/service/releases/sync`, {
-    method: 'POST',
-    headers: {
-      'x-release-token': config.adminReleaseToken,
-    },
-  });
-  return response;
-};
-
-export const publishRelease = async ({ skipBuild = false } = {}) => {
+export const publishRelease = async ({ skipBuild = false, notesInput = '' } = {}) => {
   const raw = await loadRawConfig();
   const config = normalizeConfig(raw);
 
   if (!config.releaseRepository || !config.releaseGitToken) {
     throw new Error('请先配置仓库与令牌');
-  }
-  if (!config.adminApiBaseUrl || !config.adminReleaseToken) {
-    throw new Error('请先配置后台地址与令牌');
   }
 
   console.log('\n🚀 开始发布流程...');
@@ -548,7 +542,7 @@ export const publishRelease = async ({ skipBuild = false } = {}) => {
   const { artifacts } = await loadManifest(version);
   console.log(`📦 已准备 ${artifacts.length} 个安装包`);
 
-  const notes = await getReleaseNotes(config);
+  const notes = await getReleaseNotes(config, notesInput);
 
   const enrichedArtifacts = artifacts.map((artifact) => ({
     ...artifact,
@@ -562,11 +556,9 @@ export const publishRelease = async ({ skipBuild = false } = {}) => {
     artifacts: enrichedArtifacts,
   });
 
-  await syncReleases(config);
-  console.log('✅ 后台同步完成');
-
   return {
     version,
+    notes,
     uploadResult,
   };
 };
@@ -577,5 +569,7 @@ const detectContentType = (fileName) => {
   if (fileName.endsWith('.dmg')) return 'application/x-apple-diskimage';
   if (fileName.endsWith('.zip')) return 'application/zip';
   if (fileName.endsWith('.AppImage')) return 'application/octet-stream';
+  if (fileName.endsWith('.blockmap')) return 'application/octet-stream';
+  if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) return 'text/yaml';
   return 'application/octet-stream';
 };

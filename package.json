@@ -2,20 +2,26 @@
   "name": "booltox-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "BoolTox Monorepo - Client, Server and Shared packages",
+  "description": "BoolTox - Run dev tools with a single click",
+  "author": "ByteTrue",
+  "license": "CC-BY-NC-4.0",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:client": "pnpm --filter @booltox/client dev",
+    "cli:dev": "pnpm --filter @booltox/cli dev",
+    "cli:build": "pnpm --filter @booltox/cli build",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "db:migrate": "pnpm --filter @booltox/server db:migrate",
-    "db:studio": "pnpm --filter @booltox/server db:studio",
-    "db:push": "pnpm --filter @booltox/server db:push",
-    "clean": "turbo run clean"
+    "release": "pnpm --filter @booltox/client tools",
+    "clean": "turbo run clean",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "turbo": "^2.3.0",
     "@types/node": "^22.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "turbo": "^2.3.0",
     "typescript": "^5.6.0"
   },
   "engines": {

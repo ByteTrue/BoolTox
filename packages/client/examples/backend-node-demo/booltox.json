@@ -1,0 +1,20 @@
+{
+  "id": "com.booltox.backend-node-demo",
+  "version": "2.0.0",
+  "name": "正则表达式测试器",
+  "description": "基于 Node.js 后端的专业正则调试器，支持实时验证、模板库、历史记录与替换预览",
+  "protocol": "^2.0.0",
+  "runtime": {
+    "type": "http-service",
+    "backend": {
+      "type": "node",
+      "entry": "backend/dist/http_server.js",
+      "port": 8002,
+      "host": "127.0.0.1"
+    },
+    "path": "/",
+    "readyTimeout": 30000
+  },
+  "author": "BoolTox Team",
+  "keywords": ["regex", "backend", "node", "tester", "http-service"]
+}

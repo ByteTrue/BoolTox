@@ -1,5 +1,12 @@
+/**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Fade from '@mui/material/Fade';
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -11,7 +18,6 @@ interface EmptyStateProps {
 
 /**
  * 空状态组件 - 用于引导用户操作
- * 遵循苹果液态玻璃设计风格
  */
 export function EmptyState({
   icon,
@@ -21,69 +27,45 @@ export function EmptyState({
   recommendations,
 }: EmptyStateProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col items-center justify-center py-16 px-6 text-center"
-    >
-      {/* 图标 */}
-      {icon && (
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-          className="mb-6 text-[var(--text-tertiary)]"
-        >
-          {icon}
-        </motion.div>
-      )}
-
-      {/* 标题 */}
-      <motion.h3
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-        className="text-xl font-semibold text-[var(--text-primary)] mb-3"
+    <Fade in timeout={500}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          py: 8,
+          px: 3,
+          textAlign: 'center',
+        }}
       >
-        {title}
-      </motion.h3>
+        {/* 图标 */}
+        {icon && <Box sx={{ mb: 3, color: 'text.disabled' }}>{icon}</Box>}
 
-      {/* 描述 */}
-      {description && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-          className="text-sm text-[var(--text-secondary)] max-w-md mb-8"
-        >
-          {description}
-        </motion.p>
-      )}
+        {/* 标题 */}
+        <Typography variant="h6" fontWeight={600} gutterBottom>
+          {title}
+        </Typography>
 
-      {/* 操作按钮 */}
-      {actions && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-          className="flex flex-wrap gap-3 justify-center"
-        >
-          {actions}
-        </motion.div>
-      )}
+        {/* 描述 */}
+        {description && (
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mb: 4 }}>
+            {description}
+          </Typography>
+        )}
 
-      {/* 推荐内容 */}
-      {recommendations && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-          className="mt-12 w-full max-w-4xl"
-        >
-          {recommendations}
-        </motion.div>
-      )}
-    </motion.div>
+        {/* 操作按钮 */}
+        {actions && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center' }}>
+            {actions}
+          </Box>
+        )}
+
+        {/* 推荐内容 */}
+        {recommendations && (
+          <Box sx={{ mt: 6, width: '100%', maxWidth: 900 }}>{recommendations}</Box>
+        )}
+      </Box>
+    </Fade>
   );
 }

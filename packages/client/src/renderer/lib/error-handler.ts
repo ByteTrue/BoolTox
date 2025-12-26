@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2025 ByteTrue
+ * Licensed under CC-BY-NC-4.0
+ */
+
+/**
  * 统一的错误处理工具
  * 提供标准化的错误格式化、日志记录和用户提示 (遵循 DRY 原则)
  */
@@ -42,7 +47,7 @@ export function formatError(error: unknown, context?: Record<string, unknown>): 
       code,
       type: error.constructor.name,
       timestamp,
-      context
+      context,
     };
   }
 
@@ -52,7 +57,7 @@ export function formatError(error: unknown, context?: Record<string, unknown>): 
       message: error,
       type: 'StringError',
       timestamp,
-      context
+      context,
     };
   }
 
@@ -67,8 +72,8 @@ export function formatError(error: unknown, context?: Record<string, unknown>): 
       timestamp,
       context: {
         ...context,
-        originalError: err
-      }
+        originalError: err,
+      },
     };
   }
 
@@ -77,7 +82,7 @@ export function formatError(error: unknown, context?: Record<string, unknown>): 
     message: String(error),
     type: 'UnknownError',
     timestamp,
-    context
+    context,
   };
 }
 
@@ -140,11 +145,7 @@ export async function safeExecute<T>(
 /**
  * 创建错误包装器
  */
-export function wrapError(
-  message: string,
-  originalError: unknown,
-  code?: string
-): Error {
+export function wrapError(message: string, originalError: unknown, code?: string): Error {
   const formatted = formatError(originalError);
   const error = new Error(`${message}: ${formatted.message}`) as Error & {
     code?: string;
@@ -176,7 +177,7 @@ export function isRecoverableError(error: unknown): boolean {
     'temporary',
     'rate limit',
     'too many requests',
-    'service unavailable'
+    'service unavailable',
   ];
 
   const messageLower = formatted.message.toLowerCase();
@@ -191,19 +192,19 @@ export function getUserFriendlyMessage(error: unknown): string {
 
   // 常见错误的用户友好消息
   const errorMessages: Record<string, string> = {
-    'ECONNRESET': '网络连接已中断,请重试',
-    'ETIMEDOUT': '请求超时,请检查网络连接',
-    'ENOTFOUND': '无法连接到服务器,请检查网络',
-    'ECONNREFUSED': '服务器拒绝连接,请稍后重试',
-    'EACCES': '权限不足,请检查文件权限',
-    'ENOENT': '文件或目录不存在',
-    'EEXIST': '文件或目录已存在',
-    'MODULE_NOT_FOUND': '模块未找到',
-    'MODULE_ALREADY_INSTALLED': '模块已安装',
-    'MODULE_MANIFEST_INVALID': '模块清单文件无效',
-    'DOWNLOAD_FAILED': '下载失败,请重试',
-    'NETWORK_ERROR': '网络错误,请检查连接',
-    'PERMISSION_DENIED': '权限被拒绝'
+    ECONNRESET: '网络连接已中断,请重试',
+    ETIMEDOUT: '请求超时,请检查网络连接',
+    ENOTFOUND: '无法连接到服务器,请检查网络',
+    ECONNREFUSED: '服务器拒绝连接,请稍后重试',
+    EACCES: '权限不足,请检查文件权限',
+    ENOENT: '文件或目录不存在',
+    EEXIST: '文件或目录已存在',
+    MODULE_NOT_FOUND: '模块未找到',
+    MODULE_ALREADY_INSTALLED: '模块已安装',
+    MODULE_MANIFEST_INVALID: '模块清单文件无效',
+    DOWNLOAD_FAILED: '下载失败,请重试',
+    NETWORK_ERROR: '网络错误,请检查连接',
+    PERMISSION_DENIED: '权限被拒绝',
   };
 
   // 根据错误代码返回友好消息
