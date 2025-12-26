@@ -11,6 +11,7 @@
 
 import Store from 'electron-store';
 import type { ToolSourcesConfig } from '@booltox/shared';
+import { BRAND } from '../../src/shared/brand.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('ConfigService');
@@ -57,8 +58,8 @@ class ConfigService {
               enabled: true,
               type: 'remote',
               provider: 'github',
-              owner: 'ByteTrue',
-              repo: 'booltox-tools',
+              owner: BRAND.OWNER,
+              repo: BRAND.TOOLS_REPO_NAME,
               branch: 'main',
               priority: 0,
             },
