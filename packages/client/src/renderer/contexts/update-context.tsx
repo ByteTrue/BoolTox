@@ -15,6 +15,7 @@ import {
 import type { AutoUpdateStatus } from '../../../electron/services/auto-update.service';
 import type { UpdateInfo } from 'electron-updater';
 import { useToast } from './toast-context';
+import { BRAND } from '@shared/brand';
 
 type UpdateDetails = {
   version: string;
@@ -60,9 +61,8 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     if (state.phase === 'available' && details?.version && !details.notes) {
       const fetchNotes = async () => {
         try {
-          // 这里的 owner/repo 暂时硬编码，后续可从配置读取
-          const owner = 'ByteTrue';
-          const repo = 'BoolTox';
+          const owner = BRAND.OWNER;
+          const repo = BRAND.REPO;
           const tags = [`v${details.version}`, details.version];
 
           for (const tag of tags) {

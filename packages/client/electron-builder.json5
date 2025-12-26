@@ -69,11 +69,14 @@
     ],
     "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
   },
-  "publish": [
-    {
-      "provider": "github",
-      "owner": "ByteTrue",
-      "repo": "BoolTox"
-    }
-  ]
+  // 发布配置
+  // electron-builder 从 package.json.repository 推断 owner 和 repo
+  // Fork 后修改 packages/client/package.json 的 repository 字段即可
+  //
+  // 环境变量覆盖:
+  // - GH_OWNER, GH_REPO: 覆盖仓库信息
+  // - GH_TOKEN: GitHub Personal Access Token (发布时必需)
+  "publish": {
+    "provider": "github"
+  }
 }

@@ -5,12 +5,12 @@
 
 /**
  * Git Operations Service
- * 
+ *
  * 资源获取策略:
  * - 索引文件 (index.json): 直连 GitHub raw URL,避免 CDN 缓存导致更新延迟
  * - 元数据文件 (metadata.json): 使用 jsDelivr CDN 加速
  * - 下载文件 (plugin.zip): 使用 jsDelivr CDN 加速
- * 
+ *
  * 这种混合策略确保索引实时更新,同时大文件享受 CDN 加速
  */
 
@@ -19,6 +19,7 @@ import { app } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
 import fsSync from 'fs';
+import { BRAND } from '../../src/shared/brand.js';
 import { createLogger } from '../utils/logger.js';
 import { configService } from './config.service.js';
 
@@ -45,8 +46,8 @@ interface CacheEntry<T> {
 // 默认配置 (主应用仓库)
 const DEFAULT_CONFIG: GitOpsConfig = {
   provider: 'github',
-  owner: 'ByteTrue',
-  repo: 'BoolTox',
+  owner: BRAND.OWNER,
+  repo: BRAND.REPO,
   branch: 'ref',
 };
 

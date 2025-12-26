@@ -30,3 +30,6 @@ dist-ssr
 .spec-workflow/templates/tech-template.md
 dist-electron/
 release/
+
+# Auto-generated brand config
+src/shared/brand.ts

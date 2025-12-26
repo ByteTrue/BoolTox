@@ -6,10 +6,20 @@
   "author": "ByteTrue",
   "license": "CC-BY-NC-4.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ByteTrue/BoolTox"
+  },
+  "homepage": "https://github.com/ByteTrue/BoolTox",
+  "bugs": {
+    "url": "https://github.com/ByteTrue/BoolTox/issues"
+  },
   "scripts": {
+    "predev": "node ./scripts/generate-brand-config.mjs",
     "dev": "vite",
     "dev:wsl": "./scripts/dev-wsl.sh",
     "dev:electron": "vite --host 0.0.0.0",
+    "prebuild": "node ./scripts/generate-brand-config.mjs",
     "build": "tsc && vite build && electron-builder",
     "postbuild": "node ./scripts/generate-release-manifest.mjs",
     "tools": "node ./scripts/release-cli.mjs",

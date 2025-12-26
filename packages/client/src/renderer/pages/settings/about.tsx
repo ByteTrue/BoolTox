@@ -17,12 +17,13 @@ import { ExternalLink, Github, Globe, MessageSquare, Package } from 'lucide-reac
 import { SettingCard } from '@/components/settings';
 import { brandGradient, shimmer, transitions } from '@/theme/animations';
 import { APP_VERSION } from '@/config/app-info';
+import { BRAND } from '@shared/brand';
 
 const LINKS = [
-  { label: '官网', url: 'https://booltox.com', icon: Globe },
-  { label: 'GitHub', url: 'https://github.com/ByteTrue/BoolTox', icon: Github },
-  { label: '工具仓库', url: 'https://github.com/ByteTrue/booltox-plugins', icon: Package },
-  { label: '问题反馈', url: 'https://github.com/ByteTrue/BoolTox/issues', icon: MessageSquare },
+  { label: '官网', url: BRAND.HOMEPAGE, icon: Globe },
+  { label: 'GitHub', url: BRAND.GITHUB_URL, icon: Github },
+  { label: '工具仓库', url: BRAND.TOOLS_REPO_URL, icon: Package },
+  { label: '问题反馈', url: BRAND.ISSUES_URL, icon: MessageSquare },
 ];
 
 export function AboutSettings() {
