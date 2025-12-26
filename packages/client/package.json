@@ -15,6 +15,7 @@
     "url": "https://github.com/ByteTrue/BoolTox/issues"
   },
   "scripts": {
+    "predev": "node ./scripts/generate-brand-config.mjs",
     "dev": "vite",
     "dev:wsl": "./scripts/dev-wsl.sh",
     "dev:electron": "vite --host 0.0.0.0",

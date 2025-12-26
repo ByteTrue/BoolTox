@@ -61,7 +61,6 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     if (state.phase === 'available' && details?.version && !details.notes) {
       const fetchNotes = async () => {
         try {
-          // 从品牌配置读取仓库信息
           const owner = BRAND.OWNER;
           const repo = BRAND.REPO;
           const tags = [`v${details.version}`, details.version];
